@@ -1,0 +1,21 @@
+# Per-plugin config for the shared site builder (plugin-dev/scripts/build_site.py).
+# Every key is optional — an empty file, or no file at all, builds a working site.
+
+# H1 of the home page. Default: the plugin name with underscores.
+# site_title: my_plugin
+
+# Workflow skills render as /<prefix>:<skill>. Default: the plugin name.
+# command_prefix: my-plugin
+
+# Reading order for the pages in site/workflows/ — the order you actually run them.
+# Files not listed are appended alphabetically, so a new page needs no edit here.
+# workflows_order:
+#   - new-repo
+
+# Reading order for workflow skills (frontmatter `context: fork`). Same rule.
+# workflow_skills_order:
+#   - plan-repo
+
+# Extra files rendered verbatim as code pages under "Rules and config".
+# config_files:
+#   - pyproject-lint-config.toml

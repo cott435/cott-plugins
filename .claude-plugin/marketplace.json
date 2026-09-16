@@ -1,0 +1,21 @@
+{
+  "name": "cott-plugins",
+  "owner": {
+    "name": "Connor Ott",
+    "email": "cott7729@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "plugin-dev",
+      "source": "./plugin-dev",
+      "description": "Shared protocol and tooling for building Claude Code plugins: versioning policy, eval logging, and the MkDocs reading site. Install on every machine.",
+      "version": "0.1.0"
+    },
+    {
+      "name": "project-workers",
+      "source": "./project-workers",
+      "description": "Plan, implement, review and document Python monorepo packages section by section, through seven specialist subagents driven by file-based contracts.",
+      "version": "0.1.0"
+    }
+  ]
+}

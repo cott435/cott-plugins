@@ -1,0 +1,31 @@
+# Per-plugin config for the shared site builder (plugin-dev/scripts/build_site.py).
+# Every key is optional. site_title and command_prefix default to the plugin name, and the
+# kit's mkdocs-base.yml / extra.css are used unless this directory overrides them.
+
+# Reading order for the workflow pages in site/workflows/ — one page per pipeline.
+# Files not listed are appended alphabetically, so a new workflow needs no edit here.
+workflows_order:
+  - new-repo
+  - add-package
+  - rebuild-from-legacy
+  - change-shipped-code
+  - adopt-existing-repo
+
+# Reading order for the workflow skills: the order you actually run them, not alphabetical.
+workflow_skills_order:
+  - extract-legacy
+  - plan-repo
+  - plan-package
+  - probe-source
+  - implement-section
+  - review-section
+  - finalize-package
+  - review-package
+  - plan-change
+  - sync-plan
+  - finalize-project
+  - map-project
+
+# Extra files rendered verbatim as code pages under "Rules and config".
+config_files:
+  - pyproject-lint-config.toml
