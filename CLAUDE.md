@@ -42,7 +42,7 @@ cott-plugins/
 ├── .claude-plugin/marketplace.json   every plugin below, by relative path — kept in step
 │                                      with each plugin's own version by bump-version
 ├── plugin-dev/                       this protocol, packaged as a plugin like any other
-├── project-workers/                  a plugin
+├── dev-team/                  a plugin
 └── <next plugin>/                    a plugin
 ```
 

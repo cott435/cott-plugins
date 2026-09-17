@@ -8,9 +8,9 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 ### Added
 - `build-site` skill and `scripts/build_site.py` — the generic site builder, extracted from
-  `project-workers/site/build_site.py` and de-hardcoded. Verified byte-identical against
-  `project-workers`' existing site; see `evals/2026-09-16-build-site-extraction.md`.
+  `dev-team/site/build_site.py` and de-hardcoded. Verified byte-identical against
+  `dev-team`'s existing site; see `evals/2026-09-16-build-site-extraction.md`.
 - `bump-version` skill — the semver, CHANGELOG, tag and marketplace procedure, plus the
-  `model:` field policy, extracted from `project-workers/VERSIONING.md`.
-- `log-eval` skill — the eval record convention, extracted from `project-workers/evals/README.md`.
+  `model:` field policy, extracted from `dev-team/VERSIONING.md`.
+- `log-eval` skill — the eval record convention, extracted from `dev-team/evals/README.md`.
 - `new-plugin` skill and `templates/` — scaffolds a plugin as a subdirectory of this repo.

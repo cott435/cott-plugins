@@ -12,4 +12,4 @@ each section must contain, and the rule that a clean pass is recorded exactly li
 
 | Date | Subject | File | Commit | Verdict |
 |---|---|---|---|---|
-| 2026-09-16 | `build_site.py` extraction — does the generic builder produce the same site as the project-workers original, and does a zero-config bundle still build | [2026-09-16-build-site-extraction.md](2026-09-16-build-site-extraction.md) | v0.1.0 | Held — `docs/` and nav byte-identical; one sandbox-delete bug found and fixed |
+| 2026-09-16 | `build_site.py` extraction — does the generic builder produce the same site as the dev-team original, and does a zero-config bundle still build | [2026-09-16-build-site-extraction.md](2026-09-16-build-site-extraction.md) | v0.1.0 | Held — `docs/` and nav byte-identical; one sandbox-delete bug found and fixed |

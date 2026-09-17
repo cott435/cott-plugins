@@ -12,8 +12,8 @@
       "version": "0.1.0"
     },
     {
-      "name": "project-workers",
-      "source": "./project-workers",
+      "name": "dev-team",
+      "source": "./dev-team",
       "description": "Plan, implement, review and document Python monorepo packages section by section, through seven specialist subagents driven by file-based contracts.",
       "version": "0.1.0"
     }

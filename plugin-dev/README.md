@@ -48,7 +48,7 @@ This plugin lives inside `cott-plugins`, one directory among several:
 cott-plugins/
 ├── .claude-plugin/marketplace.json   the catalog — every plugin below, by relative path
 ├── plugin-dev/                       this kit
-├── project-workers/                  a plugin
+├── dev-team/                  a plugin
 └── <next plugin>/                    a plugin
 ```
 
@@ -59,7 +59,7 @@ everywhere. For a repo of markdown and small scripts, carrying the source of a p
 haven't installed costs nothing.
 
 The trade-off, honestly: a single repo can't version or tag one plugin without touching the
-tag namespace of the others, and a change to `project-workers` shows up in `plugin-dev`'s git
+tag namespace of the others, and a change to `dev-team` shows up in `plugin-dev`'s git
 log even though nothing in `plugin-dev` changed. `bump-version` still works — see below — it
 just tags the whole repo rather than one plugin's own history. If a plugin ever needs to be
 shared outside this account, or versioned on a schedule independent of everything else here,

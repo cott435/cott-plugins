@@ -8,7 +8,7 @@ cott-plugins/
 ├── .claude-plugin/
 │   └── marketplace.json    the catalog: which plugins exist, where each one lives in this repo
 ├── plugin-dev/              a plugin — shared versioning, eval logging, the site builder
-└── project-workers/         a plugin — plan/build/review Python monorepo packages
+└── dev-team/         a plugin — plan/build/review Python monorepo packages
 ```
 
 ## Use it
@@ -16,7 +16,7 @@ cott-plugins/
 ```
 /plugin marketplace add cott435/cott-plugins   # once per machine
 /plugin install plugin-dev@cott-plugins        # every machine
-/plugin install project-workers@cott-plugins   # only the machines that use it
+/plugin install dev-team@cott-plugins   # only the machines that use it
 ```
 
 `marketplace add` clones this whole repo — after that, `install` just points Claude Code at
@@ -40,9 +40,9 @@ different kinds of file doing different jobs.
 | Read when | the plugin is loaded | you run `/plugin marketplace add` or `install` |
 | Makes | agents, skills and commands available | names installable |
 
-A **plugin** is content Claude actually runs. `project-workers/.claude-plugin/plugin.json`
+A **plugin** is content Claude actually runs. `dev-team/.claude-plugin/plugin.json`
 is that plugin's identity card: the `name` there becomes the namespace for everything in the
-bundle, which is why its skills are invoked as `/project-workers:plan-repo`.
+bundle, which is why its skills are invoked as `/dev-team:plan-repo`.
 
 A **marketplace** is a catalog — it runs nothing itself. Each entry names a plugin and a
 `source`. In a bundled repo like this one, `source` is just a relative path to that plugin's
@@ -61,7 +61,7 @@ step is what `bump-version` (in the `plugin-dev` plugin) is for.
 
 ## `plugin-dev` isn't special to this repo
 
-It's a plugin like `project-workers` — its own `plugin.json`, its own skills, listed here
+It's a plugin like `dev-team` — its own `plugin.json`, its own skills, listed here
 like anything else. The only unusual thing about it is what its skills are *about*: the
 shared rules (versioning, eval logging, the site builder) that every plugin in this repo
 follows. That's why it's worth installing everywhere, even though to `marketplace.json` it's

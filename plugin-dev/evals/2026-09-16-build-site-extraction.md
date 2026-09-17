@@ -1,12 +1,12 @@
 # build_site.py extraction — does the generic builder produce the same site?
 
 **Tested against:** `scripts/build_site.py`, as shipped in the `v0.1.0` initial commit of
-this repo · source it was extracted from: `project-workers/site/build_site.py`, since
+this repo · source it was extracted from: `dev-team/site/build_site.py`, since
 removed (superseded by this file) · model: `claude-opus-5` · 2026-09-16
 
 ## What was tested
 
-The claim that pulling the site builder out of `project-workers` and de-hardcoding it (plugin
+The claim that pulling the site builder out of `dev-team` and de-hardcoding it (plugin
 name, command prefix, workflow ordering, rules and config files → `site/site.yml`) is a pure
 refactor: the same bundle must produce the same site, byte for byte, not merely a site that
 looks right.
@@ -19,7 +19,7 @@ plugin needs no site config to be readable.
 Both claims tested by running the scripts, not by reading them. The repo was copied to a
 scratch directory first so nothing in `~/dev` depended on the outcome.
 
-1. Ran the original `project-workers/site/build_site.py` on a copy of `project-workers`.
+1. Ran the original `dev-team/site/build_site.py` on a copy of `dev-team`.
    Moved its `site/docs/` and `site/mkdocs.yml` aside.
 2. Wrote `site/site.yml` carrying the two ordering lists and the one config file that the
    original had as module-level constants.

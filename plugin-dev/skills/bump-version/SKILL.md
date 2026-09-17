@@ -27,7 +27,7 @@ The version lives in the plugin's own `.claude-plugin/plugin.json`. Its row in t
 commit as the change that triggered it.
 
 Tag that commit. In this bundled repo a tag names one moment across every plugin, so scope it
-in the tag message or use a per-plugin tag name (`project-workers-v1.2.0`) if two plugins are
+in the tag message or use a per-plugin tag name (`dev-team-v1.2.0`) if two plugins are
 likely to release independently often enough that a plain `vX.Y.Z` would be ambiguous about
 which one changed.
 

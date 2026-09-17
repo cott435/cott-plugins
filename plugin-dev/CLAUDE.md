@@ -20,5 +20,5 @@ care when editing it:
   for that reason. If you widen a description, check it doesn't start firing in unrelated
   repos.
 - **`scripts/build_site.py` is shared.** A change to it changes every plugin's site at once.
-  Before committing one, rebuild at least `project-workers` and diff the output — its site is
+  Before committing one, rebuild at least `dev-team` and diff the output — its site is
   the reference the builder was verified against.
