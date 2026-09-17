@@ -4,6 +4,35 @@ Format: one entry per tagged release. The versioning policy — what triggers pa
 and how model and eval versioning relate to it — is in the `plugin-dev` plugin's
 `bump-version` skill. This repo's own decisions are in `VERSIONING.md`.
 
+## [0.2.0] - 2026-09-17
+
+### Added
+- `/dev-team:shape-brief` — new skill, runs in the main conversation so it can ask: turns a
+  rough idea into `docs/brief.md` by mapping the domain, narrowing it with the user to
+  now / later / out, and recording constraints, success criteria and open questions. Also
+  corrects an existing brief, or appends scope to one.
+- `/dev-team:plan-repo` **Revise** mode — a corrected brief, or `--revise "<notes>"`: archives
+  and rewrites the repo contract, retires open decisions whose premise is gone, turns a decided
+  one that now conflicts into a question, and lists stale package plans. Mode is decided by how
+  the brief changed against the new `docs/history/brief-contracted.md` snapshot, not only by
+  whether the contract exists.
+- Repo contract Packages table gains a `covers` column mapping brief capabilities to packages.
+  `/dev-team:plan-package` reads only its covered brief rows and quotes their Notes into the
+  package contract's **Purpose**, so the user's own wording reaches designers.
+
+### Changed
+- Built-but-unshipped packages are treated as bound (frozen) at repo scope, like shipped ones.
+- `docs/assessment.md` is written by `plan-repo` only when there is something to survey.
+- A `superseded` decision no longer counts as already asked, so a retired question can be
+  raised again.
+- Site workflow pages cover the new flow: new-repo (shape the brief, and correcting a wrong
+  contract), add-package, rebuild-from-legacy (shape the brief before mining),
+  adopt-existing-repo (new scope on a mapped repo), change-shipped-code (recording scope
+  changes in the brief). `docs/packages/<pkg>/brief.md` is gone from the flow page — there is
+  no per-package brief.
+- `dev-team/CLAUDE.md` records that the shared protocol lives in the parent repo, that git runs
+  from there, and how to rebuild the site without `plugin-dev` installed.
+
 ## [0.1.0] - 2026-09-16
 
 Initial release under `cott-plugins`.

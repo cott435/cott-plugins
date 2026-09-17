@@ -13,6 +13,7 @@ workflows_order:
 
 # Reading order for the workflow skills: the order you actually run them, not alphabetical.
 workflow_skills_order:
+  - shape-brief
   - extract-legacy
   - plan-repo
   - plan-package

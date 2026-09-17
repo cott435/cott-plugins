@@ -5,6 +5,17 @@ parsers, validators, algorithms — and you want a fresh repo whose contracts co
 not from the old shape. The old code reaches the new build as **project skills**, never as a
 map the architect reads. The architect only ever sees skill names and descriptions.
 
+## 0. Shape the brief
+
+```
+/dev-team:shape-brief "<what the rebuild is for>"
+```
+
+The curator uses `docs/brief.md` to suggest which old resources are worth keeping, so settle
+the scope first. Describe what the old repo does; `shape-brief` maps it with you into *now*,
+*later*, and *out* — a rebuild is the moment to drop things — and it never reads the old code.
+Its return names `/dev-team:extract-legacy` as the next step.
+
 ## 1. Mine the old repo
 
 ```
@@ -38,11 +49,13 @@ after this step.
 ## 2. Plan the new repo
 
 ```
-/dev-team:plan-repo docs/brief.md
+/dev-team:plan-repo
 ```
 
 The architect enumerates `.claude/skills/`, finds the extracted skills beside any you wrote by
-hand, and lists them as candidate skills per package. It never opens the old repo.
+hand, and lists them as candidate skills per package, beside the brief capabilities each
+package covers. It never opens the old repo. If the contract comes out wrong, correct the
+brief and re-run — see [New repo](new-repo.md).
 
 ## 3. Plan each package, probing its sources
 

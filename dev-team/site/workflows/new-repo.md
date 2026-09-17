@@ -1,11 +1,23 @@
 # New repo, package by package
 
 ```
-/dev-team:plan-repo docs/brief.md
+/dev-team:shape-brief "a quant research platform: data, forecasting, trading agents, portfolio optimisation"
+```
+
+Runs **in your conversation**, not as a subagent, because it asks. It restates the idea, maps
+the domain — including the areas you did not name — and narrows it with you: each capability
+*now*, *later*, or *out*. Then it asks about the constraints that would change the design and
+what makes the first version done, and writes `docs/brief.md`. The brief says `Status: draft`
+until you approve it, so the discussion can span sessions, and `plan-repo` refuses a draft.
+Skip this step if you already have a brief you trust.
+
+```
+/dev-team:plan-repo
 ```
 
 Forks into the **architect** at repo scope. It reads your brief and your project skills and
-writes `docs/architecture.md` — the **repo contract**: the package list with responsibilities,
+writes `docs/architecture.md` — the **repo contract**: the package list with responsibilities
+and the brief capabilities each one **covers**,
 the dependency graph as an import-linter block, the **shapes** that cross each boundary (a
 DataFrame of bars with these columns, a `Lot` record — not function signatures), the shared
 conventions (error format, log keys, config prefixes, timezone, ID types), and the toolchain
@@ -15,15 +27,43 @@ are planned one at a time, below.
 If it has questions it cannot settle, it **stops** — see **Questions** on the home page — and you
 re-run.
 
+## When the contract comes out wrong
+
+Reading `docs/architecture.md` is often when a brief's gaps show: the architect filled a hole
+with a reasonable guess, and the guess is not what you meant. Correct the brief, not the
+contract:
+
+```
+/dev-team:shape-brief        # "the contract assumed live trading; this is research only"
+/dev-team:plan-repo
+```
+
+or, for a short correction, `/dev-team:plan-repo --revise "research only — no live execution"`.
+
+The architect keeps `docs/history/brief-contracted.md`, a copy of the brief the contract was
+written from, so it can tell a corrected brief from one that only grew. A correction puts it in
+**revise** mode: it archives the old contract to `docs/history/`, rewrites it from the
+corrected brief, retires open decisions whose premise is gone, turns a decided one that now
+conflicts into a question, and lists the package plans that went stale — any package whose
+boundaries changed, or whose covered capabilities changed in the brief. Anything a shipped or
+already-built package is bound by stays as it is and becomes a stub pointing at
+`/dev-team:plan-change`. Growing the scope instead is **extend** — see
+[Adding a package](add-package.md).
+
+## Then each package
+
 ```
 /dev-team:plan-package data
 ```
 
-Forks into the architect at package scope. It reads the repo contract and, for every package
-`data` depends on, that package's `docs/packages/<dep>/interface.md` — the surface as shipped.
+Forks into the architect at package scope. It reads the repo contract; the brief rows for the
+capabilities `data` covers — your notes on them, and nothing else from the brief; and, for
+every package `data` depends on, that package's `docs/packages/<dep>/interface.md` — the
+surface as shipped.
 Then:
 
-1. Writes `docs/packages/data/contract.md` — the **package contract**: the section list, what
+1. Writes `docs/packages/data/contract.md` — the **package contract**: the capabilities it
+   covers with your notes quoted verbatim (designers read this, not the brief), the section list, what
    each section returns to its siblings (signatures now, not shapes), the pipelines that run
    the sections in order (`download → clean → audit → store`), what the package will expose,
    and a `Consumes` table of every upstream name it uses. Its Sections table names the

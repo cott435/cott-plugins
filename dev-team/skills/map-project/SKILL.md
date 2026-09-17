@@ -80,8 +80,10 @@ architecture doc is indistinguishable from one that hallucinated it.
    graph between them as the Dependency graph (if it is cyclic, say so — the import-linter
    block records the order that *should* hold, marked as not yet true), the shapes actually
    crossing each boundary, the conventions actually in use even when inconsistent (note the
-   inconsistency), and the toolchain actually in use. Where the code has no convention at all,
-   say that explicitly rather than inventing one. Its Open decisions heading lists `D<n>`
+   inconsistency), and the toolchain actually in use. The Packages table's `covers` column is
+   `—` unless `docs/brief.md` exists (a re-map of a repo planned from one); then keep each row's
+   `covers` and correct it where the code disagrees. Where the code has no convention at all, say
+   that explicitly rather than inventing one. Its Open decisions heading lists `D<n>`
    numbers only.
 
 5. **Seed the ledger and the queue.** Append a `D<n>` stub for every open question that

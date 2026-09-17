@@ -32,7 +32,7 @@ $ARGUMENTS
 
 - Create `.claude/skills/` if it does not exist; create nothing else outside it.
 - A row whose `skill` collides with a skill this plugin provides is `failed: name reserved`,
-  never extracted: `plan-repo`, `plan-package`, `plan-change`, `map-project`,
+  never extracted: `shape-brief`, `plan-repo`, `plan-package`, `plan-change`, `map-project`,
   `implement-section`, `review-section`, `finalize-package`, `review-package`, `sync-plan`,
   `finalize-project`, `extract-legacy`, `probe-source`, `status`, `project-structure`,
   `python-implementation`, `python-style-guide`, `security-review`, `workspace-scaffold`,

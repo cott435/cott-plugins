@@ -46,7 +46,8 @@ site_title: my_plugin            # H1 of the home page (default: plugin name, un
 command_prefix: my-plugin        # workflow skills render as /<prefix>:<skill> (default: plugin name)
 workflows_order:                 # reading order for site/workflows/*.md; unlisted files follow
   - new-repo                     # alphabetically, so a new page needs no edit here
-workflow_skills_order:           # reading order for skills whose frontmatter is `context: fork`
+workflow_skills_order:           # reading order for the skills you run (`context: fork`, or
+                                 # `disable-model-invocation: true`)
   - plan-repo
 config_files:                    # extra files rendered verbatim as code under "Rules and config"
   - pyproject-lint-config.toml
@@ -223,13 +224,18 @@ def main() -> None:
                    f"commands/{p.name}")
         commands.append((f"/{prefix}:{p.stem}", f"commands/{p.stem}.md"))
 
-    # Skills — a skill that forks into an agent is a workflow skill; the rest are knowledge.
+    # Skills — a skill you run is a workflow skill; the rest are knowledge an agent reads.
+    # "You run it" means it forks into an agent (`context: fork`) or only a person can start it
+    # (`disable-model-invocation: true`) — a skill that runs inline in the conversation, like a
+    # status readout or an interview, is still a step in the workflow.
     workflow: dict[str, tuple[str, str]] = {}
     knowledge: list[tuple[str, str]] = []
     for p in sorted((bundle / "skills").glob("*/SKILL.md")):
         fm, body = split_frontmatter(p.read_text())
         skill = p.parent.name
-        kind = "workflow" if fm.get("context") == "fork" else "knowledge"
+        user_run = (fm.get("context") == "fork"
+                    or str(fm.get("disable-model-invocation", "")).strip().lower() == "true")
+        kind = "workflow" if user_run else "knowledge"
         stitle = f"/{prefix}:{skill}" if kind == "workflow" else skill
         rel = f"skills/{kind}/{skill}.md"
         write_page(docs, rel, stitle, fm, body, f"skills/{skill}/SKILL.md")

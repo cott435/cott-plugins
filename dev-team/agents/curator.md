@@ -145,7 +145,7 @@ Under 20 lines:
   the researcher reported (`imports cleanly` / `unverified`)
 - Rows failed, with the reason
 - Rows skipped: `keep: ?` (count) and `keep: no` (count)
-- Next command: `/dev-team:plan-repo docs/brief.md` if `docs/architecture.md` does not exist; otherwise
+- Next command: `/dev-team:plan-repo` if `docs/architecture.md` does not exist; otherwise
   say the architect will find the new skills on its next `/dev-team:plan-package` run
 
 ## Memory

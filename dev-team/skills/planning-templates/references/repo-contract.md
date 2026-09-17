@@ -1,7 +1,9 @@
 # `docs/architecture.md` — the repo contract
 
 Written at repo scope (`/dev-team:plan-repo`, `/dev-team:map-project`); read by every skill; edited later only
-for parts no shipped package provides or consumes, or by `/dev-team:sync-plan` after a change ships.
+for parts no bound package (shipped, or with code already built) provides or consumes — which
+includes the rewrite `/dev-team:plan-repo` does when a corrected brief puts it in Revise mode —
+or by `/dev-team:sync-plan` after a change ships.
 
 Budget 250 lines. A contract complete enough that a package could be planned from it plus the
 shipped surfaces below it is the requirement; the line count is a hint that you are writing
@@ -9,8 +11,14 @@ prose where a table would do.
 
 1. **Goal** — one paragraph.
 
-2. **Packages** — table: package | responsibility | path | depends on | candidate skills.
-   Dependency-ordered, lowest first. A single-package repo has one row with path `.`.
+2. **Packages** — table: package | responsibility | path | depends on | covers | candidate
+   skills. Dependency-ordered, lowest first. A single-package repo has one row with path `.`.
+   `covers` lists the brief capabilities the package owns, comma-separated, by the names in
+   the brief's **Scope** tables (including `Addition` sections). Every *now* capability
+   appears in exactly one row; a *later* one may appear in parentheses where it will land.
+   It is how `/dev-team:plan-package` finds the user's notes for its package, and how a
+   revised brief finds the package plans it made stale. `—` when there is no brief (a mapped
+   repo). It is bookkeeping, not a shape: it may be updated on a bound package's row.
 
 3. **Dependency graph** — the import-linter block, verbatim TOML: contract 1 from
    `workspace-scaffold` §3 with this repo's packages, highest first. This *is* the graph;

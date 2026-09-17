@@ -36,3 +36,9 @@ describe pre-change behavior — and those stale files are what the next `/dev-t
 designers and what `/dev-team:plan-package` hands the next package as its upstream. It folds in only the
 sections it can verify shipped, records them in `docs/plans/synced.md`, recomputes consumers
 for any `interface.md` it changed, and files follow-ups for consumers the plan did not adapt.
+
+**Scope lives in the brief.** `/dev-team:plan-change` works from the contracts and never edits
+`docs/brief.md`. If the change adds or drops a capability, record that with
+`/dev-team:shape-brief` once it has shipped, then run `/dev-team:plan-repo`: the shipped parts are
+bound, so it finds the contract already matches and only updates `covers` and its brief
+snapshot. Skip this and the next revise reads the brief as older than the code.

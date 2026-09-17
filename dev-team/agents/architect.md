@@ -67,7 +67,8 @@ and package scope fixes signatures, and why nothing at repo scope spawns designe
    homework for the user, and a page of them stops being read.
 3. **Check the ledger.** For each question, look in `docs/decisions.md` for an entry tagged
    `Raised by: <skill> <argument> (interview)` — the tag this rule writes — or an entry that
-   plainly answers it under any status. **If every question has one, proceed**: use
+   plainly answers it under any status other than `superseded` — a retired question counts
+   as never asked. **If every question has one, proceed**: use
    `Decision:` where the status is `decided`, otherwise `Assumption if unanswered:`, and the
    implementer will leave a marker downstream as usual.
 4. **Otherwise stop.** Append one stub per new question in the ledger shape below, tagged
@@ -89,8 +90,8 @@ persisted before you stopped: `/dev-team:plan-repo` (reads `docs/brief.md`),
 before), `/dev-team:plan-change` (continues the newest plan that has an assessment and
 no integration doc), `/dev-team:map-project`. The tag makes step 3 exact:
 on re-run, every entry carrying this skill-and-scope tag counts as already asked, whatever
-its status, so you never ask twice and the user can always choose to proceed on your
-assumptions by doing nothing. The mere existence of `docs/decisions.md` means nothing — only
+its status except `superseded`, so you never ask twice and the user can always choose to
+proceed on your assumptions by doing nothing. The mere existence of `docs/decisions.md` means nothing — only
 the tagged entries do. And a question never goes anywhere but the ledger: not into a return
 message as prose, not at the bottom of a contract.
 
@@ -108,7 +109,7 @@ skill in `~/.claude/skills/` is available to everyone and is not this project's 
 ls -d .claude/skills/*/ 2>/dev/null | xargs -r -n1 basename | sort -u
 ```
 
-Ignore the workflow skills (`plan-repo`, `plan-package`, `plan-change`, `map-project`,
+Ignore the workflow skills (`shape-brief`, `plan-repo`, `plan-package`, `plan-change`, `map-project`,
 `implement-section`, `review-section`, `finalize-package`, `review-package`, `sync-plan`,
 `finalize-project`, `extract-legacy`, `probe-source`, `status`) and the shared ones (`project-structure`,
 `python-implementation`, `python-style-guide`, `security-review`, `workspace-scaffold`,
@@ -143,7 +144,8 @@ reality changes.
 
 | Path | Holds | Written by |
 |---|---|---|
-| `docs/brief.md` | the original statement of intent | you, on the first repo run |
+| `docs/brief.md` | the statement of intent: scope now / later / out, constraints, open questions | the user, usually via `/dev-team:shape-brief`; you append `Addition` / `Revision` sections at repo scope |
+| `docs/history/` | `brief-contracted.md`, the brief the repo contract reflects; dated copies of replaced briefs and contracts | you, repo scope; `/dev-team:shape-brief` |
 | `docs/architecture.md` | the **repo contract** | you, repo scope |
 | `docs/decisions.md` | the decision ledger, `D<n>` entries | you (stubs) / user (answers) / implementer (`Applied:`) |
 | `docs/followups.md` | cross-section work queue | implementer, reviewer, you in sync scope |
@@ -250,7 +252,10 @@ Superseded by: D19
 ```
 
 That is the only edit you may make to an existing entry's status, and only when a newer
-decision or a shipped change plainly overrides it. Without an exit, the ledger accumulates
+decision or a shipped change plainly overrides it — or, in `/dev-team:plan-repo`'s Revise
+mode, when the corrected brief removes an `open` or `deferred` entry's premise; then the
+line reads `Superseded by: brief revision <date>`. A `decided` entry is never retired that
+way: a conflict with it is a question for the user. Without an exit, the ledger accumulates
 questions about code that no longer exists and every later run re-reads them.
 
 **An older ledger.** On a repo whose `decisions.md` predates this format, entries may have

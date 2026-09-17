@@ -17,6 +17,14 @@ From the plugin repo root:
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/build_site.py"
 ```
 
+`CLAUDE_PLUGIN_ROOT` is only set when this plugin is installed. When it is not — a sandbox, a
+session that has the repo but not the plugin — use the path inside the repo instead, from the
+plugin repo root:
+
+```
+python3 ../plugin-dev/scripts/build_site.py
+```
+
 The bundle defaults to the current directory. Pass a path to build a different repo, and
 `--evals evals.json` to add an Evals page. Then:
 
@@ -63,9 +71,10 @@ Everything is discovered from the bundle, so adding a skill, a `references/` fil
 or a rule needs no edit anywhere — re-run the script and it appears. The only reason to touch
 `site.yml` is to put something earlier in the reading order than alphabetical would.
 
-A skill lands under **Workflow skills** when its frontmatter says `context: fork` (it forks
-into an agent, so it is a step you run) and under **Knowledge skills** otherwise (it is
-material an agent reads). A skill's `references/*.md` are always listed as knowledge pages.
+A skill lands under **Workflow skills** when you are the one who runs it: its frontmatter says
+`context: fork` (it forks into an agent) or `disable-model-invocation: true` (only you can start
+it, so it is a step even when it runs inline in your conversation). Everything else is a
+**Knowledge skill** — material an agent reads. A skill's `references/*.md` are always listed as knowledge pages.
 
 ## If it fails
 

@@ -23,6 +23,9 @@ code: keeps wording the code agrees with, rewrites what the code contradicts, re
 longer exists, and reports every edit as *stale doc corrected* or *code looks wrong, filed as a
 follow-up*.
 
+With no brief to map from, the Packages table's `covers` column is `—`; a re-map of a repo that
+has a brief keeps each row's `covers` and corrects it where the code disagrees.
+
 Then, per package, lowest in dependency order first:
 
 ```
@@ -41,3 +44,18 @@ From here the repo is on the same loop as a new one: answer decisions, then
 `/dev-team:implement-section` for follow-ups and `/dev-team:plan-change` for anything that alters a
 shipped surface. Expect blockers on the first implement run — unanswered questions with no
 fallback assumption stop the implementer by design.
+
+## New scope on an adopted repo
+
+A change to existing behaviour is `/dev-team:plan-change`. New capabilities — packages the
+repo does not have yet — start from a brief:
+
+```
+/dev-team:shape-brief
+/dev-team:plan-repo
+```
+
+`shape-brief` seeds its capability map from the mapped contract, marking what already exists,
+and you add what is new. `plan-repo` then runs in **revise** mode, because the contract was
+not written from a brief: every mapped package with code is bound, so its shapes stay exactly
+as mapped, and the run adds the new packages and fills in `covers` on every row.

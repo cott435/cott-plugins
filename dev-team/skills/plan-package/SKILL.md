@@ -30,6 +30,10 @@ invent its own shapes and conventions, and the next package will invent them dif
 
 - `docs/architecture.md` — the repo contract. Your package's row, its `Depends on`, the
   Boundaries subsections for every edge into and out of it, Shared conventions, Toolchain.
+- `docs/brief.md` — only the rows of its **Scope — now** and **Scope — later** tables (and
+  of any `Addition` section) whose capability is in your package's `covers` cell, plus any
+  `Revision` section that names one of them. Not the rest: what applies repo-wide is already
+  in the repo contract. Skip when `covers` is `—` or the brief does not exist.
 - For each package in `Depends on`: `docs/packages/<dep>/interface.md` if it exists — that
   package is **shipped** and those signatures are what your designers build against. If it
   does not, `docs/packages/<dep>/contract.md` if that exists, else only the repo contract's
@@ -52,7 +56,7 @@ invent its own shapes and conventions, and the next package will invent them dif
 
 3. **Interview rule.** Section boundaries the repo contract does not settle, a candidate
    skill with no section, a section with no skill, a pipeline whose ordering is ambiguous, a
-   provisional upstream name you need settled, or a section that plainly needs an external
+   covered *now* capability no section builds, a provisional upstream name you need settled, or a section that plainly needs an external
    `source` whose exact vendor or token you cannot pin down from the repo contract — a wrong
    guess there sends a probe, a design, and a build at the wrong API, which is the cost test's
    textbook case. Check the ledger; stub anything unasked tagged
@@ -60,8 +64,9 @@ invent its own shapes and conventions, and the next package will invent them dif
    proceed.
 
 4. **Package contract.** Invoke `planning-templates`, read `references/package-contract.md`,
-   and write `docs/packages/$pkg/contract.md` to it. **Public surface (intent)** is the
-   filter `surface.md` will be checked against: every entry names the downstream package or
+   and write `docs/packages/$pkg/contract.md` to it. Its **Purpose** carries the covered brief
+   rows, Notes verbatim — designers read the contract, never the brief. **Public surface
+   (intent)** is the filter `surface.md` will be checked against: every entry names the downstream package or
    CLI command that consumes it, and nothing without a consumer is listed. The Sections
    table's `source` column names the external service each section consumes, or `—`; it is
    what the next step iterates over, so a service missing from it is never probed.

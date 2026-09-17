@@ -6,7 +6,12 @@ reviewer, `/dev-team:finalize-package`, and `/dev-team:plan-change` (its **Consu
 Where this contract needs a repo-contract shape to change, do not change it here — raise it
 under **Repo contract deviations** in the integration doc.
 
-1. **Purpose** — one paragraph, and which repo-contract shapes this package provides.
+1. **Purpose** — one paragraph, and which repo-contract shapes this package provides. Then
+   the brief capabilities this package covers (its `covers` cell in the repo contract), one
+   line each: the capability, the section that builds it, and the brief's Notes quoted
+   verbatim — designers read this contract, not the brief, so this is how the user's own
+   wording reaches them. *Later* capabilities are listed as `later — do not rule out`, with
+   no section. Omit the list when `covers` is `—`.
 
 2. **Sections** — table: section | responsibility | path | owner doc | builds with |
    depends on | source. Paths are `packages/<pkg>/src/<pkg>/<section>/` (or `src/<pkg>/<section>/`

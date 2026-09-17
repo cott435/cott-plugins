@@ -43,7 +43,10 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  A["/plan-repo brief<br/>→ docs/architecture.md (repo contract)"]
+  S["/shape-brief (in your conversation)<br/>→ docs/brief.md"]
+  S --> A
+  A["/plan-repo<br/>→ docs/architecture.md (repo contract)"]
+  A -. "contract wrong: correct the brief, re-plan (revise)" .-> S
   A --> B["/plan-package data<br/>→ contract.md, design/*.md, integration.md, surface.md"]
   B --> C["/implement-section data/ingest<br/>→ code, tests, section README"]
   C --> D["/review-section data/ingest<br/>→ reviews/, followups"]
@@ -73,6 +76,7 @@ sequenceDiagram
   participant Impl as implementer
   participant Rev as reviewer
   participant Doc as documenter
+  Note over You: /shape-brief — a discussion in your conversation → docs/brief.md
   You->>Arch: /plan-repo
   Arch-->>You: architecture.md · stubs (or: Stopped for decisions)
   You->>Arch: /plan-package data
@@ -103,13 +107,13 @@ upstream package's `interface.md` — wins over every plan-time document about t
 
 | Path | Kind | Written by | Read by |
 |---|---|---|---|
-| `docs/brief.md` | canonical | plan-repo | plan-repo, map-project |
+| `docs/brief.md` | canonical | shape-brief, you; plan-repo appends | plan-repo, map-project, curator; plan-package (only its `covers` rows) |
+| `docs/history/` | archive | plan-repo, shape-brief | plan-repo (`brief-contracted.md`) |
 | `docs/architecture.md` | **repo contract** | plan-repo; map-project, sync-plan | everyone |
 | `docs/decisions.md` | ledger | architect stubs · you · implementer `Applied:` | every agent |
 | `docs/followups.md` | queue | implementer, reviewer, sync-plan | implementer, documenter |
-| `docs/assessment.md` | survey | map-project, plan-repo (extend) | re-runs |
+| `docs/assessment.md` | survey | map-project, plan-repo (extend, revise) | re-runs |
 | `docs/api/<pkg>.md` | site | finalize-project | mkdocs |
-| `docs/packages/<pkg>/brief.md` | canonical | plan-package | plan-package |
 | `docs/packages/<pkg>/assessment.md` | survey | plan-package, map-project | designers |
 | `docs/packages/<pkg>/contract.md` | **package contract** | plan-package; sync-plan | designers, implementer, reviewer, plan-change (Consumes) |
 | `docs/packages/<pkg>/design/<section>.md` | plan-time | designer; sync-plan | implementer, reviewer |

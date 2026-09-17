@@ -29,7 +29,8 @@ dev-team/
 │   └── python-standards.md   thin pointer; loads on *.py for your own interactive work
 ├── pyproject-lint-config.toml  merge into the root pyproject.toml; enforces the hard limits
 └── skills/
-    ├── plan-repo/          → architect     repo contract: packages, graph, shapes, conventions
+    ├── shape-brief/        (inline)        idea → docs/brief.md, discussed with you: now / later / out
+    ├── plan-repo/          → architect     repo contract: new, extend, or revise from a corrected brief
     ├── plan-package/       → architect     one package: sections, designs, integration, surface
     ├── plan-change/        → architect     change to shipped code, with downstream impact
     ├── map-project/        → architect     adopt an existing repo (repo level; then plan-package per package)
@@ -99,11 +100,14 @@ and then the implementer, so the same conventions apply at design time and at bu
 ## Which skill to run
 
 ```
+rough idea, scope not settled               → /dev-team:shape-brief, then /dev-team:plan-repo
 new repo, nothing exists yet                → /dev-team:plan-repo, then /dev-team:plan-package <pkg> per package
 existing repo, no docs/ yet                 → /dev-team:map-project (repo level), then /dev-team:plan-package <pkg> per package (document mode)
 existing repo, docs/ already there          → /dev-team:plan-change
 docs/ exist but have drifted from the code  → /dev-team:map-project (re-map), then /dev-team:plan-package <pkg> as needed
 adding a package to a planned repo          → /dev-team:plan-repo "<what to add>", then /dev-team:plan-package <pkg>
+repo contract came out wrong                → /dev-team:shape-brief to correct the brief, then /dev-team:plan-repo
+                                              (or /dev-team:plan-repo --revise "<what was wrong>")
 rebuilding from an old, messy repo          → /dev-team:extract-legacy <old repo> (twice), then /dev-team:plan-repo
 an API changed, or a source added later     → /dev-team:probe-source <pkg> <source>
 lost track                                  → /dev-team:status
@@ -114,7 +118,8 @@ lost track                                  → /dev-team:status
 One page per pipeline, in `site/workflows/` — rendered under **Workflows** on the reading site.
 A new pipeline is a new file there; the shared site builder picks it up.
 
-- [New repo, package by package](site/workflows/new-repo.md) — `/dev-team:plan-repo`, then per
+- [New repo, package by package](site/workflows/new-repo.md) — `/dev-team:shape-brief` →
+  `/dev-team:plan-repo` (revised when the contract comes out wrong), then per
   package: `/dev-team:plan-package` → `/dev-team:implement-section` + `/dev-team:review-section` per
   section → `/dev-team:finalize-package` → `/dev-team:review-package`. `/dev-team:finalize-project` any time.
 - [Changing shipped code](site/workflows/change-shipped-code.md) — `/dev-team:plan-change` →
@@ -271,11 +276,12 @@ copy.
 
 ```
 docs/
-├── brief.md                        your input to /dev-team:plan-repo
+├── brief.md                        your input to /dev-team:plan-repo         (shape-brief / you)
+├── history/                        brief-contracted.md + dated copies        (plan-repo, shape-brief)
 ├── architecture.md                 THE REPO CONTRACT                         (plan-repo)
 ├── decisions.md                    D<n> ledger, Scope: field                 (architect stubs / you / implementer)
 ├── followups.md                    queue, entries `- [ ] <pkg>/<section>: …` (implementer, reviewer, sync-plan)
-├── assessment.md                   repo survey                               (map-project, plan-repo extend)
+├── assessment.md                   repo survey                               (map-project, plan-repo extend/revise)
 ├── legacy/inventory.md             what to salvage from an old repo          (curator drafts / you mark keep)
 ├── api/<pkg>.md                    docs-site API pages                       (finalize-project)
 ├── packages/
@@ -314,6 +320,7 @@ against without the consumed names being marked provisional.
 ## Hand-off diagram
 
 ```
+you ⇄ /dev-team:shape-brief ──────────▶ docs/brief.md   (in your conversation; asks, never forks)
 you ── /dev-team:plan-repo ────────────▶ architect ──▶ docs/architecture.md, decision stubs   (may stop for questions)
 
 you ── /dev-team:extract-legacy ../old ──▶ curator ──▶ docs/legacy/inventory.md   (stops; you mark keep)
