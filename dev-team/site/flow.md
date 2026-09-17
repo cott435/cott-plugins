@@ -22,7 +22,7 @@ flowchart LR
     cln["implementer<br/>data/clean"]
     surf["surface.md"]
     fin["/finalize-package data"]
-    init["src/data/__init__.py<br/>pipelines/ scripts/"]
+    init["src/data/__init__.py<br/>pipelines/ cli.py"]
     iface["interface.md<br/>(shipped)"]
     clnD --> cln
     ingR -- "reads what shipped" --> cln
@@ -51,7 +51,7 @@ flowchart TD
   B --> C["/implement-section data/ingest<br/>→ code, tests, section README"]
   C --> D["/review-section data/ingest<br/>→ reviews/, followups"]
   D -->|next section| C
-  D --> E["/finalize-package data<br/>→ __init__.py, pipelines/, scripts/, interface.md"]
+  D --> E["/finalize-package data<br/>→ __init__.py, pipelines/, cli.py, interface.md"]
   E --> F["/review-package data<br/>→ package gate"]
   F --> G["/plan-package analysis<br/>reads data/interface.md as upstream"]
   G -.->|same loop| F
@@ -113,7 +113,7 @@ upstream package's `interface.md` — wins over every plan-time document about t
 | `docs/decisions.md` | ledger | architect stubs · you · implementer `Applied:` | every agent |
 | `docs/followups.md` | queue | implementer, reviewer, sync-plan | implementer, documenter |
 | `docs/assessment.md` | survey | map-project, plan-repo (extend, revise) | re-runs |
-| `docs/api/<pkg>.md` | site | finalize-project | mkdocs |
+| `docs/api/<pkg>.md` | site | finalize-package; finalize-project fills gaps | mkdocs |
 | `docs/packages/<pkg>/assessment.md` | survey | plan-package, map-project | designers |
 | `docs/packages/<pkg>/contract.md` | **package contract** | plan-package; sync-plan | designers, implementer, reviewer, plan-change (Consumes) |
 | `docs/packages/<pkg>/design/<section>.md` | plan-time | designer; sync-plan | implementer, reviewer |

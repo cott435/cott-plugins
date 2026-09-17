@@ -24,8 +24,12 @@ consumers are built against and what a change has to preserve.
 3. **CLI commands** — table: command name | entry point (`<pkg>.cli:<function>`) | arguments
    (name, type, default, one-line help — every one; this table is what the implementer turns
    into the command's docstring, and the docstring is what `--help` and the docs site show) |
-   pipeline it runs. Commands live in `src/<pkg>/cli.py` (or `cli/` when there are many) and
-   are registered under `[project.scripts]`; there is no `scripts/` directory.
+   what it runs. Most commands run a pipeline. A **one-off command** — schema init, a
+   backfill, a cache rebuild — runs a single section entry point instead, and names that
+   entry point in this column; it has no row under **Pipelines**, and that is not a gap.
+   `interface.md`'s **CLI commands** table carries the same column, so a command can ship in
+   the shape it was planned. Commands live in `src/<pkg>/cli.py` (or `cli/` when there are
+   many) and are registered under `[project.scripts]`; there is no `scripts/` directory.
 
 4. **Tests** — one end-to-end test per pipeline, with the fixtures it needs, named; one
    invocation test per CLI command (`--help` parses, a minimal run succeeds against fixtures).

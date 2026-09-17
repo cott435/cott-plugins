@@ -35,6 +35,9 @@ under **Repo contract deviations** in the integration doc.
    realizes each, and which downstream package or CLI command consumes each. This is the
    list `surface.md` will be checked against: a name with no consumer here does not become
    public later. Keep it short; the surface is what consumers need, not what sections offer.
+   A one-off command that runs one section entry point rather than a pipeline (schema init, a
+   backfill) belongs here too, with the command as the consumer — it will have no row under
+   **Pipelines**.
 
 6. **Consumes** — table: upstream package | name | shape | status (`shipped` /
    `provisional` / `stale`). `/dev-team:plan-change` reads this to find planned consumers of a package,

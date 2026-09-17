@@ -286,7 +286,7 @@ docs/
 ├── followups.md                    queue, entries `- [ ] <pkg>/<section>: …` (implementer, reviewer, sync-plan)
 ├── assessment.md                   repo survey                               (map-project, plan-repo extend/revise)
 ├── legacy/inventory.md             what to salvage from an old repo          (curator drafts / you mark keep)
-├── api/<pkg>.md                    docs-site API pages                       (finalize-project)
+├── api/<pkg>.md                    docs-site API pages                       (finalize-package; finalize-project fills gaps)
 ├── packages/
 │   └── data/
 │       ├── assessment.md           package survey                            (plan-package)

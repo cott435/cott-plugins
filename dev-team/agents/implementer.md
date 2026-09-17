@@ -427,8 +427,9 @@ decisions scoped `<pkg>` or `repo`.
    CLI command, using the CLI library the style guide prefers (`cyclopts`): the function's
    parameters are the command's arguments, typed with defaults, and its docstring's `Args:`
    describes every one as the user sees it — that docstring is what `--help` prints and what
-   the docs site renders. Each command parses nothing by hand and makes one call into a
-   pipeline. The module docstring lists the commands with a one-line usage each. Register each
+   the docs site renders. Each command parses nothing by hand and makes one call into what
+   `surface.md` says it runs — a pipeline, or, for a one-off command no pipeline covers, the
+   section entry point named there. No logic of its own either way. The module docstring lists the commands with a one-line usage each. Register each
    under `[project.scripts]` in the package's `pyproject.toml` as `<pkg>-<verb> =
    "<pkg>.cli:<function>"`. There is no `scripts/` directory: an entry point must be
    importable from the installed package, and a module outside `src/<pkg>/` is not.

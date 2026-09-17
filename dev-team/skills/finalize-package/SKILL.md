@@ -1,6 +1,6 @@
 ---
 name: finalize-package
-description: Build a package's public surface once every section has shipped — the top-level __init__.py re-exports with __all__, the pipelines that cross sections, the scripts that drive them — and write docs/packages/pkg/interface.md, the shipped surface that downstream packages are planned and built against.
+description: Build a package's public surface once every section has shipped — the top-level __init__.py re-exports with __all__, the pipelines that cross sections, the CLI commands that run them — and write docs/packages/pkg/interface.md, the shipped surface that downstream packages are planned and built against.
 argument-hint: "<pkg>"
 arguments: [pkg]
 context: fork
@@ -23,7 +23,7 @@ If `$pkg` reached you unsubstituted, take the first token of `$ARGUMENTS`.
 
 Sections are built one at a time and each publishes only to its siblings. The package as a
 whole publishes once, here, after every section exists: what consumers may import, the
-pipelines that run the sections in order, and the scripts that drive those pipelines. The
+pipelines that run the sections in order, and the CLI commands that run them. The
 document this step writes, `interface.md`, is what `/dev-team:plan-package` hands the next package's
 designers and what `/dev-team:implement-section` in that package codes against. Until it exists, the
 package is not shipped.

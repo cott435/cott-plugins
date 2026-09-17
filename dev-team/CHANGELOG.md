@@ -4,6 +4,31 @@ Format: one entry per tagged release. The versioning policy — what triggers pa
 and how model and eval versioning relate to it — is in the `plugin-dev` plugin's
 `bump-version` skill. This repo's own decisions are in `VERSIONING.md`.
 
+## [0.2.2] - 2026-09-17
+
+### Changed
+- A CLI command may run a **single section entry point**, not only a pipeline. `surface.md`
+  §3's column is now "what it runs" and names the one-off command — schema init, a backfill, a
+  cache rebuild — as the case: it has no row under **Pipelines**, and that is not a gap. The
+  implementer's surface-mode step 3 and `project-structure` §1 say the same, and the package
+  contract's **Public surface (intent)** takes such a command as a consumer. `interface.md`
+  already had the looser column, so a command can now ship in the shape it was planned.
+- `project-structure` §1 says what to do before the surface exists: there is no `cli.py` until
+  `/dev-team:finalize-package` runs, so call the section's function directly and let the
+  command arrive with the surface.
+
+### Fixed
+- Four v3 mentions of "scripts" where the plugin means `cli.py`: `/dev-team:finalize-package`'s
+  description and its "Why this is a separate step" paragraph, and two `site/flow.md` diagram
+  nodes. `project-structure` §1 forbids a `scripts/` directory outright, so these contradicted
+  it.
+- `docs/api/<pkg>.md` was credited to `/dev-team:finalize-project` in `README.md`'s `docs/`
+  layout and in `site/flow.md`'s map. The implementer writes it in surface mode as each package
+  ships; `finalize-project` regenerates `index.md` and fills gaps.
+- Both fixes verified by a mechanical before/after sweep over the bundle —
+  `evals/2026-09-17-cross-file-contract-sweep.md`, which also confirms the 0.2.1 documenter
+  heading fix holds under a check that does not share its assumptions.
+
 ## [0.2.1] - 2026-09-17
 
 ### Fixed
