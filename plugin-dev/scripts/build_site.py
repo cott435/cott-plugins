@@ -42,7 +42,7 @@ from pathlib import Path
 
 SITE_YML_DOC = """\
 # site/site.yml — every key is optional.
-site_title: my_plugin            # H1 of the home page (default: plugin name, underscored)
+site_title: my_plugin            # H1 of the home page (default: the plugin's name)
 command_prefix: my-plugin        # workflow skills render as /<prefix>:<skill> (default: plugin name)
 workflows_order:                 # reading order for site/workflows/*.md; unlisted files follow
   - new-repo                     # alphabetically, so a new page needs no edit here
@@ -163,7 +163,7 @@ def main() -> None:
     docs = site / "docs"
     cfg = load_config(site)
 
-    title = cfg.get("site_title", name.replace("-", "_"))
+    title = cfg.get("site_title", name)
     prefix = cfg.get("command_prefix", name)
 
     site.mkdir(exist_ok=True)
@@ -228,7 +228,7 @@ def main() -> None:
     # "You run it" means it forks into an agent (`context: fork`) or only a person can start it
     # (`disable-model-invocation: true`) — a skill that runs inline in the conversation, like a
     # status readout or an interview, is still a step in the workflow.
-    workflow: dict[str, tuple[str, str]] = {}
+    workflow: dict[str, list[tuple[str, str]]] = {}
     knowledge: list[tuple[str, str]] = []
     for p in sorted((bundle / "skills").glob("*/SKILL.md")):
         fm, body = split_frontmatter(p.read_text())
@@ -240,18 +240,23 @@ def main() -> None:
         rel = f"skills/{kind}/{skill}.md"
         write_page(docs, rel, stitle, fm, body, f"skills/{skill}/SKILL.md")
         if kind == "workflow":
-            workflow.setdefault(skill, (stitle, rel))
+            workflow.setdefault(skill, []).append((stitle, rel))
         else:
             knowledge.append((stitle, rel))
+        # A skill's reference files are listed with the skill that owns them. Filing a workflow
+        # skill's references under Knowledge skills separates a page from the only thing that
+        # explains it, and implies an agent reads it on its own.
         refs = p.parent / "references"
         if refs.exists():
             for r in sorted(refs.glob("*.md")):
                 rrel = f"skills/{kind}/{skill}-{r.stem}.md"
                 write_page(docs, rrel, f"{skill} / {r.stem}", {}, r.read_text(),
                            f"skills/{skill}/references/{r.name}")
-                knowledge.append((f"{skill} / {r.stem}", rrel))
+                entry = (f"{skill} / {r.stem}", rrel)
+                (workflow[skill] if kind == "workflow" else knowledge).append(entry)
 
-    wf_skills = [workflow[n] for n in ordered(workflow, cfg.get("workflow_skills_order") or [])]
+    wf_skills = [e for n in ordered(workflow, cfg.get("workflow_skills_order") or [])
+                 for e in workflow[n]]
 
     # Rules and config
     rules_config: list[tuple[str, str]] = []

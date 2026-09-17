@@ -8,20 +8,23 @@ forbid:
     # project-structure §1 forbids it outright: an entry point must be importable from the
     # installed package, so anything runnable is a function in src/<pkg>/cli.py.
     pattern: '\bscripts/|the scripts that'
+    # `near` scopes every exemption below to the match it pardons plus 40 characters either
+    # side, not the whole line. Line-scoped, these eight pardoned ten lines outright — every
+    # line in the bundle where `scripts/` is discussed, which is exactly where a wrong
+    # statement would be written. Probed: evals/2026-09-17-forbid-exemption-scope.md.
+    near: 40
     unless:
-      - '\[project\.scripts\]'          # the pyproject table, which is where commands register
-      - 'no `scripts/`'                 # the prohibition stating itself
-      - 'There is no `scripts/`'
-      - 'directory beside `src/` looks'   # …and explaining why (phrase kept on one line)
+      - 'no `scripts/`'                 # the prohibition stating itself, and explaining why
+      - 'directory beside `src/` looks'
       - 'skills/status/scripts'         # this plugin's own tooling, not a repo it plans
       - 'scripts/status\.py'
       - 'plugin-dev/scripts'
-      - '\.probe\.py'                   # a researcher's probe script, which lives with its doc
 
   - name: docs/api/<pkg>.md is never credited to finalize-project alone
     # The implementer writes it in surface mode as each package ships; finalize-project
     # regenerates index.md and fills gaps.
     pattern: 'api/<pkg>\.md|api/\$pkg\.md|api/data\.md'
+    near: 40
     all_of: ['finalize-project']
     unless: ['finalize-package']
 

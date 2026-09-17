@@ -3,12 +3,13 @@
 **Date:** 2026-09-16
 **Subject:** `agents/implementer.md` Procedure step 3 ("Security"), and `skills/security-review/SKILL.md`
 **Files touched by the fix:** `agents/implementer.md`
-**Tested against:** commit not recorded at the time — added retroactively per `VERSIONING.md`.
+**Tested against:** commit not recorded at the time — added retroactively per `plugin-dev`'s
+`log-eval`.
 The "before" run was against whatever `agents/implementer.md` looked like prior to this
 file's own fix, which was itself never committed on its own; the "after" run was against the
 patched wording below, also uncommitted as of this note. Model used for both the sandboxed
 `claude -p --agent implementer` runs was also not recorded. This entry is the worked example
-of the gap `VERSIONING.md` exists to close, not a clean instance of the new convention.
+of the gap `log-eval` exists to close, not a clean instance of the new convention.
 
 ## What was tested
 

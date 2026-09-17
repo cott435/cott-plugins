@@ -5,6 +5,40 @@ how model and eval versioning relate to it — is in the `plugin-dev` plugin's `
 skill. This repo's own decisions are in `VERSIONING.md`.
 
 
+
+## [0.5.0] - 2026-09-17
+
+### Added
+- **`near: <n>` on a `forbid` claim** — scopes `all_of` and `unless` to the matched text plus n
+  characters either side instead of the whole line. Almost every exemption means "this occurrence
+  is fine", not "this line is exempt", and an exemption lives exactly where the thing it pardons
+  is discussed — which is where a violation would be written. `dev-team`'s `scripts/` claim, the
+  oldest in the repo, had eight line-scoped exemptions pardoning ten lines outright: a genuine
+  `scripts/` promise planted on any of them passed. Eleven of eleven planted violations leaked
+  before, all eleven caught after, with the legitimate lines still silent —
+  `evals/2026-09-17-forbid-exemption-scope.md`. One residual is documented rather than hidden: a
+  violation inside the window, in the same clause as its exemption, is still pardoned.
+- `check-contracts` states the scoping rule first among the three things to know about writing a
+  claim, with both tighter options (a smaller window, or a negative lookahead in the pattern,
+  which exempts a token and has no window), and says plainly that a claim nobody has watched fail
+  is not enforcement — adding or changing one means planting the defect and running `log-eval`.
+
+### Fixed
+- **A skill's `references/*.md` was always filed under *Knowledge skills*,** whatever kind of
+  skill owned it, so `dev-team`'s `shape-brief / brief` sat six entries away from
+  `/dev-team:shape-brief` — while the page itself was written to `skills/workflow/`. A reference
+  file is now listed with its owner, directly after it. Filing a workflow skill's reference under
+  Knowledge separates the page from the only thing that explains it, and implies an agent reads
+  it on its own.
+- **`site_title` defaulted to the plugin's name with hyphens replaced by underscores,** so
+  `dev-team` rendered as `dev_team`. It defaults to the name as written. This was the source of a
+  wrong spelling that looked bundle-local; `dev-team` has dropped the explicit `site_title` it
+  needed as a workaround, which is what proves the default.
+
+Nav diffed across both bundles before and after — three changed lines in `dev-team`, one in
+`plugin-dev`, each accounted for:
+`evals/2026-09-17-build-site-reference-placement.md`.
+
 ## [0.4.0] - 2026-09-17
 
 ### Added

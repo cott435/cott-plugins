@@ -36,7 +36,10 @@ is the form to use in CI. Each line is `PASS`/`FAIL`, the claim's name, and eith
 checked or the exact `file:line` of every violation.
 
 A `FAIL` is a real finding about the bundle, not a broken tool: fix the file, do not relax the
-claim — unless the claim itself is what changed, in which case edit `contracts.yml` in the same
+claim. A claim that reports `PASS` is worth exactly as much as the last time someone planted a
+violation in it and watched it fail — a claim nobody has seen fail is not enforcement. When you
+add one, or change its pattern or exemptions, plant the defect it exists to catch and record the
+run with `log-eval` — unless the claim itself is what changed, in which case edit `contracts.yml` in the same
 change and say so.
 
 ## When
@@ -56,9 +59,10 @@ Absent, nothing is checked and the script says so. Three kinds:
 ```yaml
 forbid:                 # a pattern that must not appear in an authored file
   - name: no file promises a repo a `scripts/` directory
-    pattern: '\bscripts/'          # regex; a line matching it fails the check
-    all_of: ['finalize-project']   # optional: …and containing every one of these
-    unless:                        # optional: skip the line if any of these matches
+    pattern: '\bscripts/'          # regex; a match fails the check
+    near: 40                       # optional but usually right — see below
+    all_of: ['finalize-project']   # optional: …with every one of these in scope
+    unless:                        # optional: skip the match if any of these is in scope too
       - '\[project\.scripts\]'
     files: ['agents/*.md']         # optional: defaults to the authored set, below
 
@@ -100,14 +104,23 @@ The owner template is **parsed, not restated**: `owner_span` slices the owner fi
 `N. **Name** —` line in that slice is a defined heading. Rename one and the check follows it,
 which is the point — a checker carrying its own copy of the list is one more thing to go stale.
 
-Two things to know about writing claims:
+Three things to know about writing claims:
 
-- **The checks are line-based.** An `unless` phrase must fit on one line as the file wraps it,
-  or it will not match and the legitimate line will fail. Quote the shortest fragment that ends
-  before the line break.
-- **`names_listed` reports both directions** — a directory with no name in the file, and a
-  backticked name in the span with no directory. The second catches a skill that was renamed
-  or removed without the list following.
+- **Scope an exemption with `near`, or it pardons the whole line.** `all_of` and `unless`
+  default to line scope; `near: <n>` narrows them to the matched text plus n characters either
+  side. Almost every exemption means "this occurrence is fine", not "this line is exempt" — and
+  an exemption lives exactly where the thing it pardons is discussed, which is where a real
+  violation would be written. `dev-team`'s `scripts/` claim had eight line-scoped exemptions
+  pardoning ten lines outright; `near: 40` caught all ten planted violations with the
+  legitimate lines still silent. The residual: a violation inside the same clause as the
+  exemption, within the window, is still pardoned. Lower `n` to tighten, or put the exemption
+  in the pattern as a negative lookahead when it can be expressed structurally — that exempts
+  a token and has no window at all.
+- **The checks are line-based.** A `pattern`, `unless` or `all_of` phrase must fit on one line
+  as the file wraps it. Quote the shortest fragment that ends before the line break.
+- **`names_listed` reports both directions** — a directory with no name in the file, and a name
+  in the span with no directory. The second catches a skill that was renamed or removed without
+  the list following.
 
 Authored files only, by default: `agents/*.md`, `skills/**/*.md`, `rules/*.md`, `README.md`,
 `CLAUDE.md`, `site/*.md`, `site/workflows/*.md`, `site/notes/*.md`, `skills/**/*.py`. A script a

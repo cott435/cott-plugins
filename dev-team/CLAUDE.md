@@ -7,8 +7,9 @@ holds only what's specific to this plugin.
 
 ## Repo-specific
 
-`VERSIONING.md` holds this plugin's own versioning decisions — the per-agent `model:` choices
-and the untagged `1.1.0` loose end.
+`VERSIONING.md` holds this plugin's own versioning decisions: the per-agent `model:` choices —
+every agent on `inherit`, with the overrides considered and why none is applied — and nothing
+else. The policy itself is `plugin-dev`'s `bump-version`.
 
 ## Adding a skill means updating three files
 

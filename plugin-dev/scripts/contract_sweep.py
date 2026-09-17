@@ -9,7 +9,8 @@ This runner checks the claims a bundle declares in its own `contracts.yml`.
 Three kinds of claim, all of them about file contents, so all of them decidable without
 running a model:
 
-  forbid        a pattern that must not appear (a rule one file states and another breaks)
+  forbid        a pattern that must not appear (a rule one file states and another breaks),
+                its exemptions scoped to the whole line or, with <near>, to each match
   headings      every heading a reader parses is one the owner's template defines
   names_listed  every directory under <dirs> has its name in <file> (a list that goes stale),
                 narrowed by <where> on frontmatter and read in one of three <form>s
@@ -70,18 +71,27 @@ def bolded(block: str) -> set[str]:
 
 
 def check_forbid(bundle: Path, spec: dict) -> tuple[bool, str]:
-    """A line matching `pattern` (and containing every `all_of`) is a failure unless `unless`."""
+    """A match of `pattern` (with every `all_of` in scope) is a failure unless `unless` is too.
+
+    Scope is the whole line by default. `near: <n>` narrows it to the matched text plus n
+    characters either side, which is what an exemption almost always means: a pardon for the
+    occurrence it describes, not for every other occurrence that shares its line. Without it,
+    one exempt phrase pardons anything written beside it — and an exemption tends to live
+    exactly where the thing it pardons is discussed, so that is where a violation would land.
+    """
     pattern = re.compile(spec["pattern"])
     unless = [re.compile(u) for u in spec.get("unless", [])]
     all_of = spec.get("all_of", [])
+    near = spec.get("near")
     hits = []
     for p in authored(bundle, spec.get("files", DEFAULT_FILES)):
         for n, line in enumerate(p.read_text(errors="ignore").splitlines(), 1):
-            if not pattern.search(line):
-                continue
-            if any(a not in line for a in all_of) or any(u.search(line) for u in unless):
-                continue
-            hits.append(f"{p.relative_to(bundle)}:{n}")
+            for m in pattern.finditer(line):
+                scope = line if not near else line[max(0, m.start() - near):m.end() + near]
+                if any(a not in scope for a in all_of) or any(u.search(scope) for u in unless):
+                    continue
+                hits.append(f"{p.relative_to(bundle)}:{n}")
+                break
     return not hits, ", ".join(hits) or "0 matches"
 
 

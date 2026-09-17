@@ -4,6 +4,67 @@ Format: one entry per tagged release. The versioning policy — what triggers pa
 and how model and eval versioning relate to it — is in the `plugin-dev` plugin's
 `bump-version` skill. This repo's own decisions are in `VERSIONING.md`.
 
+**Versions are the `0.x` line below, and nothing else.** This plugin had generations before
+`0.1.0` — it was `project-workers` until `259785a`, and prose once referred to a "v3" and a
+"v4" — but none of that is recorded here and none of it is a version this repo can resolve. So
+those labels are not used to date anything: where an older artifact still has to be read, it is
+described by what it looks like, not by the generation that produced it. The one surviving use
+of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
+
+
+
+## [0.3.2] - 2026-09-17
+
+Passes 3 and 4 of the 2026-09-17 audit: the documents people read, and the site. No prompt an
+agent loads changes. `flow.md` changes, and no agent reads it.
+
+### Fixed
+- **`README.md` annotated the architect `(opus)`.** It sets `model: inherit`; `VERSIONING.md`
+  records `opus` as a candidate that is not applied.
+- **"The `AskUserQuestion` widget is gone" was true of subagents only.** It is removed from every
+  subagent whatever its `tools:` field says — which is why the architect writes decision stubs
+  instead of asking — but it is there in the main conversation, where
+  `/dev-team:shape-brief` uses it at four questions per call. The README says which is which.
+- **"Three conventions … marked *Project convention*" listed four.** The style guide marks three:
+  docstrings, function shape, `__init__.py`. CLI commands in `src/<pkg>/cli.py` with no
+  `scripts/` is `project-structure` §1's rule and now stands in its own paragraph saying so.
+- **`plugin.json`'s description was "Project planning skills and agents"** — the string `/plugin`
+  shows — while the `marketplace.json` row said what the plugin does. They match now.
+  `README.md`'s heading is `# dev-team`, and the site's H1 follows the plugin name.
+- **`CLAUDE.md` pointed at an "untagged `1.1.0` loose end"** that `VERSIONING.md` never held. It
+  now says what that file holds: the `model:` decisions, and nothing else.
+- **The 2026-09-16 eval credited the eval convention to `VERSIONING.md`** in two places; it is
+  `plugin-dev`'s `log-eval`.
+- **The Workflows section promised one page per pipeline and listed four of five.**
+  `add-package.md` was missing, though it was already in `site.yml` and the nav.
+- **The Contents tree omitted `CHANGELOG.md` and `skills/status/scripts/status.py`**, the only
+  executable here.
+- **`flow.md` credited `docs/packages/<pkg>/assessment.md` to "plan-package, map-project".**
+  `map-project` writes the four repo-level documents and is explicitly told not to write package
+  documents; `docs/assessment.md` is its row, one line up.
+- **`flow.md`'s `docs/` map omitted three things** — `docs/legacy/inventory.md`, the probe docs
+  (`docs/packages/<pkg>/sources/<source>.md` with their sample and probe script), and the
+  package-level review file. The probe docs are the omission that mattered: a designer reading
+  the map would not have known the one document describing an external system as it actually
+  answered. The two review rows now also name `finalize-package`, which gates on their dates.
+- **`skills/python-style-guide/LICENSE` was not on the reading site.** That skill's frontmatter
+  says "Complete terms in LICENSE" for CC BY 3.0 attribution to Google's guide, and a pointer to
+  a file the reader cannot open is not attribution. Added to `config_files`.
+
+### Changed
+- Both `forbid` claims in `contracts.yml` set `near: 40`, scoping their exemptions to the match
+  rather than the line, and the `scripts/` claim drops three of its eight exemptions: two
+  redundant with the prohibition sentence they sat beside, and one (`.probe.py`) that pardoned
+  nothing at all. Line-scoped, those eight had left ten lines unprotected — every line in the
+  bundle where `scripts/` is discussed. Needs `plugin-dev` 0.5.0.
+- The `v3` / `v4` labels are no longer used to date anything, because this repo cannot resolve
+  them: `0.1.0` is the initial release under `cott-plugins`, the plugin was `project-workers`
+  until `259785a`, and nothing earlier is recorded. `CHANGELOG.md` says exactly that, once. The
+  two places that needed the labels describe the artifact instead — an older `decisions.md`
+  "predating `0.1.0`", and **dev_team v4 Flow** as the title of a gallery artifact.
+- `site/README.md` says what `--evals` actually renders (a JSON of eval *definitions*) and that
+  the `evals/` directory is deliberately not on the site: dated records, read in the repo beside
+  the commit they name, turning over faster than the prompts the site mirrors.
 
 ## [0.3.1] - 2026-09-17
 

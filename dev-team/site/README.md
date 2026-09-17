@@ -20,7 +20,10 @@ current directory, so the script needs no arguments. Re-run it after editing any
 skill; the nav is generated from what it finds, so a new skill or a new `references/` file
 appears without editing any config.
 
-Optional: `--evals evals.json` adds an Evals page.
+Optional: `--evals evals.json` adds an Evals page. That flag renders a JSON file of eval
+*definitions*; it has nothing to do with the `evals/` directory, which is this plugin's log of
+test runs and is deliberately not on the site. Those are dated records, read in the repo next to
+the commit they name, and they turn over faster than the prompts the site mirrors.
 
 ## What is generated vs. authored
 

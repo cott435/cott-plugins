@@ -1,7 +1,7 @@
 {
     "name": "dev-team",
-    "description": "Project planning skills and agents",
-    "version": "0.3.1",
+    "description": "Plan, implement, review and document Python monorepo packages section by section, through seven specialist subagents driven by file-based contracts.",
+    "version": "0.3.2",
     "author": {
         "name": "Connor Ott"
     }

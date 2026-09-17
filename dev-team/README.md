@@ -1,4 +1,4 @@
-# dev_team
+# dev-team
 
 A Claude Code **plugin** of **agents** (roles with fixed tools, model, and permissions) and
 **skills** (procedures you invoke with `/name`). Skills fork into agents; agents hand work to
@@ -18,7 +18,7 @@ dev-team/
 ├── .claude-plugin/
 │   └── plugin.json           the plugin manifest
 ├── agents/
-│   ├── architect.md      plans at repo, package, or change scope; delegates; unifies  (opus)
+│   ├── architect.md      plans at repo, package, or change scope; delegates; unifies
 │   ├── designer.md       designs one section against the contracts + upstream interfaces
 │   ├── implementer.md    builds one section — or, in surface mode, a package's public surface
 │   ├── reviewer.md       reviews one section, or one package
@@ -41,6 +41,7 @@ dev-team/
     ├── sync-plan/          → architect     fold a shipped change into canonical docs
     ├── finalize-project/   → documenter    package READMEs, index.md, root README
     ├── status/             (inline)        the checklist: planned / built / reviewed / open, derived
+    │   └── scripts/status.py               the only executable here; `--gate` is finalize-package's
     ├── project-structure/    layout, size limits, config placement        (preloaded: 4 agents)
     ├── python-style-guide/   inside a file: docstrings, function shape, … (preloaded: impl, review)
     ├── planning-templates/   headings for every planning document          (invoked by architect)
@@ -51,6 +52,7 @@ dev-team/
 
 site/                         the authored parts of the reading site — see site/README.md
 CLAUDE.md                     how to work on this repo's own source
+CHANGELOG.md                  one entry per tagged release
 VERSIONING.md                 this plugin's versioning decisions (policy lives in plugin-dev)
 evals/                        test runs against this plugin's own agents and skills
 ```
@@ -123,6 +125,9 @@ A new pipeline is a new file there; the shared site builder picks it up.
   section → `/dev-team:finalize-package` → `/dev-team:review-package`. `/dev-team:finalize-project` any time.
 - [Changing shipped code](site/workflows/change-shipped-code.md) — `/dev-team:plan-change` →
   `/dev-team:implement-section <pkg>/<section> <slug>` → `/dev-team:review-section` → `/dev-team:sync-plan`.
+- [Adding a package to an existing repo](site/workflows/add-package.md) — `/dev-team:plan-repo`
+  with the addition as its argument, which *extends* the repo contract rather than revising it,
+  then `/dev-team:plan-package <pkg>` and the per-section loop.
 - [Adopting an existing repo](site/workflows/adopt-existing-repo.md) — `/dev-team:map-project`, then
   `/dev-team:plan-package <pkg>` per package, bottom-up, in document mode.
 - [Rebuilding from a legacy repo](site/workflows/rebuild-from-legacy.md) — `/dev-team:extract-legacy` (survey,
@@ -146,10 +151,12 @@ Answer in docs/decisions.md, or re-run `/dev-team:plan-package data` as-is to ac
 Fill in `Decision:` and set `Status: decided`, or do nothing — either way, re-run the same
 command. The tag is how it knows not to ask twice: on the re-run, every entry carrying that
 tag counts as asked, and it proceeds on your answer or on its assumption (leaving a marker in
-the code, below). There is no fixed number of questions per stop — v3's "at most four" was
-the batch limit of the `AskUserQuestion` widget, which is gone; the cost test is the only
-gate, and the architect is told that a page of stubs means it should have settled more
-itself.
+the code, below). There is no fixed number of questions per stop — the earlier "at most four"
+was the `AskUserQuestion` batch limit, and that widget is unavailable to *subagents*, which is
+what the architect is. The limit still applies where the widget is still there:
+`/dev-team:shape-brief` runs in your own conversation and asks four questions per call. For the
+architect the cost test is the only gate, and it is told that a page of stubs means it should
+have settled more itself.
 
 ## Decisions
 
@@ -187,8 +194,8 @@ Applied: data/storage, 2026-09-09, packages/data/src/data/storage/session.py
 and the implementer greps its section for `TODO(decision D*)`, re-reads each one's status,
 implements the ones now decided, and deletes their markers.
 
-**Adopting an older ledger.** A `decisions.md` from v3 says `Sections:` instead of `Scope:`
-and has unqualified section names. Nothing breaks: every agent reads `Sections:` as a `Scope:`
+**Adopting an older ledger.** A `decisions.md` predating `0.1.0` says `Sections:` instead of
+`Scope:` and has unqualified section names. Nothing breaks: every agent reads `Sections:` as a `Scope:`
 over the only package, numbers continue above the highest `D<n>` found, and `Applied:` lines
 are added as decisions are applied.
 
@@ -245,10 +252,6 @@ beyond or beside Google's guide:
   touched. Written by `/dev-team:finalize-package`, and by nothing else. Every nested one is empty.
   Inside a package, import from the defining module; from another package, import from its top
   level only. import-linter enforces the second.
-- **CLI commands live in `src/<pkg>/cli.py`**, one function per command, registered under
-  `[project.scripts]`. There is no `scripts/` directory: an entry point must be importable
-  from the installed package, and a file beside `src/` is not. A command's docstring names
-  every argument — it is the `--help` text and the docs page.
 - **Docstrings on everything.** Every module, class, function, and method; one line is enough
   for a private helper. Google style, `Args:` without types, `Examples:` in doctest form on
   public entry points, cross-references in mkdocstrings syntax. The docs build runs strict in
@@ -259,6 +262,13 @@ beyond or beside Google's guide:
   transformation, a retry wrapper, a phase that needs its own docstring, the seam under the
   soft limit). No single-use helpers whose name restates three lines. The reviewer's test: the
   main path reads top to bottom with at most one jump per phase.
+
+Layout is a separate matter and a separate skill: **CLI commands live in `src/<pkg>/cli.py`**,
+one function per command, registered under `[project.scripts]`, with no `scripts/` directory —
+an entry point must be importable from the installed package, and a file beside `src/` is not.
+That is `project-structure` §1's rule, not the style guide's, which is why it carries no
+*Project convention* marker. A command's docstring names every argument: it is the `--help`
+text and the docs page.
 
 **Enforced, not intended.** Dependency direction between packages, "consumers import the top
 level only", and section layering inside a package are import-linter contracts in the root

@@ -1,4 +1,5 @@
 # Per-plugin config for the shared site builder (plugin-dev/scripts/build_site.py).
+
 # Every key is optional. site_title and command_prefix default to the plugin name, and the
 # kit's mkdocs-base.yml / extra.css are used unless this directory overrides them.
 
@@ -31,3 +32,6 @@ workflow_skills_order:
 # Extra files rendered verbatim as code pages under "Rules and config".
 config_files:
   - pyproject-lint-config.toml
+  # python-style-guide's frontmatter says "Complete terms in LICENSE" — CC BY 3.0 attribution
+  # for Google's guide. A pointer to a file nobody reading the site can open is not attribution.
+  - skills/python-style-guide/LICENSE

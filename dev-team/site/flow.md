@@ -1,7 +1,8 @@
 # The flow
 
 The interactive version of this page (click a skill, see what it reads and writes) is the
-**dev_team v4 Flow** artifact in your Claude gallery. This page is the same content as
+artifact titled **dev_team v4 Flow** in your Claude gallery — a name, not a version of this
+plugin; see `CHANGELOG.md`. This page is the same content as
 static diagrams so it lives with the bundle.
 
 ## Where truth comes from
@@ -109,18 +110,21 @@ upstream package's `interface.md` — wins over every plan-time document about t
 |---|---|---|---|
 | `docs/brief.md` | canonical | shape-brief, you; plan-repo appends | plan-repo, map-project, curator; plan-package (only its `covers` rows) |
 | `docs/history/` | archive | plan-repo, shape-brief | plan-repo (`brief-contracted.md`) |
+| `docs/legacy/inventory.md` | survey | curator (extract-legacy); you mark `keep` | curator, researchers in extract mode; probe-source (the `Extracted skill:` row) |
 | `docs/architecture.md` | **repo contract** | plan-repo; map-project, sync-plan | everyone |
 | `docs/decisions.md` | ledger | architect stubs · you · implementer `Applied:` | every agent |
 | `docs/followups.md` | queue | implementer, reviewer, sync-plan | implementer, documenter |
 | `docs/assessment.md` | survey | map-project, plan-repo (extend, revise) | re-runs |
 | `docs/api/<pkg>.md` | site | finalize-package; finalize-project fills gaps | mkdocs |
-| `docs/packages/<pkg>/assessment.md` | survey | plan-package, map-project | designers |
+| `docs/packages/<pkg>/assessment.md` | survey | plan-package | designers |
 | `docs/packages/<pkg>/contract.md` | **package contract** | plan-package; sync-plan | designers, implementer, reviewer, plan-change (Consumes) |
 | `docs/packages/<pkg>/design/<section>.md` | plan-time | designer; sync-plan | implementer, reviewer |
+| `docs/packages/<pkg>/sources/<source>.md` + `.sample.json`, `.probe.py` | **probed** — the external system as it answered, on the date probed | researcher in probe mode, spawned by plan-package or run as probe-source | designers, implementer, reviewer |
 | `docs/packages/<pkg>/integration.md` | plan-time | architect; sync-plan | implementer, reviewer, finalize-package |
 | `docs/packages/<pkg>/surface.md` | plan-time | architect at unify; sync-plan | finalize-package, review-package, implementer |
 | `docs/packages/<pkg>/interface.md` | **shipped** | finalize-package; sync-plan | plan-package and every consumer |
 | `packages/<pkg>/src/<pkg>/<section>/README.md` | **shipped** | implementer | dependents, finalize-package, reviewer, documenter |
-| `docs/reviews/<date>-<pkg>-<section>.md` | report | reviewer | implementer |
+| `docs/reviews/<date>-<pkg>-<section>.md` | report | review-section | implementer; finalize-package (it gates on the date) |
+| `docs/reviews/<date>-<pkg>-package.md` | report | review-package | finalize-package on a re-run |
 | `docs/plans/<slug>/…` | proposal | plan-change, designers | implementer, sync-plan |
 | `docs/plans/synced.md` | ledger | sync-plan | sync-plan, finalize-project |
