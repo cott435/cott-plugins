@@ -26,6 +26,7 @@ rather than a copy. Installing this plugin is what makes the protocol apply.
 | `skills/log-eval/` | The eval record convention: one dated file per test run, with the commit and model it was tested against. |
 | `skills/build-site/` | Builds the MkDocs reading site for whatever plugin repo you're in. |
 | `skills/new-plugin/` | Scaffolds a new plugin repo from `templates/` and registers it in the marketplace. |
+| `skills/check-contracts/` | Checks the cross-file claims a bundle's own prompts act on — a heading one file parses and another owns, a rule one file states and another contradicts, a list of names that goes stale. Reads each bundle's `contracts.yml`. |
 | `scripts/build_site.py` | The builder itself. Fully generic — everything is discovered from the bundle. |
 | `scripts/defaults/` | `mkdocs-base.yml` and `extra.css` used when a repo doesn't override them. |
 | `templates/` | The files a new plugin subdirectory starts with. |

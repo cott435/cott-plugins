@@ -4,6 +4,25 @@ Format: one entry per tagged release. The versioning policy — what triggers pa
 and how model and eval versioning relate to it — is in the `plugin-dev` plugin's
 `bump-version` skill. This repo's own decisions are in `VERSIONING.md`.
 
+## [0.3.0] - 2026-09-17
+
+### Added
+- `reserved-skill-names` — a knowledge skill holding the one copy of the names this plugin's
+  own skills occupy, with what each reader does with them. The architect invokes it to know
+  which `.claude/skills/` entries to skip; `/dev-team:extract-legacy` reads it (the curator has
+  no `Skill` tool, so the skill passes it the path) to refuse a row that would overwrite a
+  plugin skill. Both previously carried their own copy of a 20-name list.
+- `contracts.yml` — the cross-file claims this bundle's prompts act on, checked by
+  `plugin-dev`'s `check-contracts`: the `scripts/` prohibition, the `docs/api/<pkg>.md` writer,
+  the `interface.md` and section-README heading contracts, and that every shipped skill is
+  named in `reserved-skill-names`.
+
+### Changed
+- `CLAUDE.md` states what a new skill must be added to, in the same change:
+  `reserved-skill-names`, `README.md`'s Contents tree and knowledge-scope table, and
+  `site/site.yml`'s `workflow_skills_order` for a workflow skill. `check-contracts` enforces
+  the first mechanically and cannot see the other two.
+
 ## [0.2.2] - 2026-09-17
 
 ### Changed

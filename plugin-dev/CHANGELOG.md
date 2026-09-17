@@ -4,6 +4,26 @@ One entry per tagged release. The versioning policy — what triggers patch/mino
 how model and eval versioning relate to it — is in the `plugin-dev` plugin's `bump-version`
 skill. This repo's own decisions are in `VERSIONING.md`.
 
+## [0.3.0] - 2026-09-17
+
+### Added
+- `check-contracts` + `scripts/contract_sweep.py` — checks the cross-file claims a bundle's own
+  prompts act on, which nothing else in a plugin verifies: a heading one file parses against
+  the template another owns, a rule one file states and another contradicts, a list of names
+  that goes stale when a directory changes. Config-driven like the site builder: each bundle
+  declares its claims in its own `contracts.yml`, absent means nothing is checked. Owner
+  templates are parsed out of the owner file rather than restated, so renaming a heading moves
+  the check with it. Exit 0 all pass, 1 any fail, 2 nothing declared.
+- Verified against planted defects, one per check kind —
+  `evals/2026-09-17-contract-sweep-negative.md`. Two lessons about writing claims (a broad
+  `unless` becomes an escape hatch; the checks are line-based, so an exemption phrase must fit
+  on one line) are written into the skill.
+
+### Changed
+- `CLAUDE.md` carries the shared-script rule for `contract_sweep.py` alongside the one for
+  `build_site.py`: a change to it gets both runs — the real bundle, which must still pass, and
+  a defective copy, which must still fail.
+
 ## [0.2.0] - 2026-09-17
 
 ### Changed

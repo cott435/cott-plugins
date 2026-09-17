@@ -23,7 +23,13 @@ matches, because none of them commit or push anything on their own:
   in `evals/README.md`. Every time, including a clean pass, and written *before* reporting
   results back — a test that exists only in a conversation is a test nobody can check later.
 - **`build-site`** — rebuilds `<plugin>/site/docs/` and `<plugin>/site/mkdocs.yml`. Re-run
-  after editing any agent or skill in a plugin that has a `site/`.
+  after editing any agent or skill in a plugin that has a `site/`. Always check the workflows affected by the adits and update them accordingly.
+- **`check-contracts`** — runs the cross-file claims a plugin declares in its own
+  `contracts.yml`: a heading one prompt parses against the template another owns, a rule one
+  file states and another contradicts, a list of names that goes stale when a directory
+  changes. Re-run beside `build-site` after editing any agent or skill, and always before
+  proposing a bump. A `FAIL` names the exact `file:line`; fix the file rather than relaxing
+  the claim.
 
 **Asks first, always** — `bump-version` decides patch/minor/major, bumps a plugin's
 `.claude-plugin/plugin.json` and its row in the root `marketplace.json`, writes a

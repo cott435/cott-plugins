@@ -31,12 +31,11 @@ $ARGUMENTS
 ## Before extracting
 
 - Create `.claude/skills/` if it does not exist; create nothing else outside it.
-- A row whose `skill` collides with a skill this plugin provides is `failed: name reserved`,
-  never extracted: `shape-brief`, `plan-repo`, `plan-package`, `plan-change`, `map-project`,
-  `implement-section`, `review-section`, `finalize-package`, `review-package`, `sync-plan`,
-  `finalize-project`, `extract-legacy`, `probe-source`, `status`, `project-structure`,
-  `python-implementation`, `python-style-guide`, `security-review`, `workspace-scaffold`,
-  `planning-templates`.
+- Read `${CLAUDE_PLUGIN_ROOT}/skills/reserved-skill-names/SKILL.md` — the one copy of the
+  names this plugin's own skills occupy. A row whose `skill` is one of them is
+  `failed: name reserved`, never extracted. Read the file rather than working from a list in
+  this prompt or from memory: the plugin gains skills, and a stale list lets a researcher
+  overwrite one.
 - A row whose `skill` directory already exists is `failed: skill exists`, unless the user
   reset its `status` to `pending` — then the researcher overwrites it.
 

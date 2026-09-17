@@ -12,5 +12,6 @@ each section must contain, and the rule that a clean pass is recorded exactly li
 
 | Date | Subject | File | Commit | Verdict |
 |---|---|---|---|---|
+| 2026-09-17 | `contract_sweep.py` — does each check kind actually fail when the claim is false | [2026-09-17-contract-sweep-negative.md](2026-09-17-contract-sweep-negative.md) | uncommitted at test time | All 4 planted defects caught, real bundle still 5/5; two lessons about exemption breadth written into the skill |
 | 2026-09-17 | `build_site.py` — does a skill only a person can start (`disable-model-invocation: true`) land under Workflow skills, with nothing else in the site changing | [2026-09-17-build-site-workflow-classification.md](2026-09-17-build-site-workflow-classification.md) | uncommitted at test time | Held on every case; nav diff is the two skills moving and nothing else (strict mkdocs build not run — theme missing in the sandbox) |
 | 2026-09-16 | `build_site.py` extraction — does the generic builder produce the same site as the dev-team original, and does a zero-config bundle still build | [2026-09-16-build-site-extraction.md](2026-09-16-build-site-extraction.md) | v0.1.0 | Held — `docs/` and nav byte-identical; one sandbox-delete bug found and fixed |

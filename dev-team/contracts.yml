@@ -1,0 +1,58 @@
+# contracts.yml — the cross-file claims this bundle's agents act on, checked by
+# plugin-dev's `check-contracts`. One entry per claim that is true only because two files
+# agree, and that nothing fails on when they stop agreeing.
+
+# A pattern that must not appear in an authored file.
+forbid:
+  - name: no file promises a repo a `scripts/` directory
+    # project-structure §1 forbids it outright: an entry point must be importable from the
+    # installed package, so anything runnable is a function in src/<pkg>/cli.py.
+    pattern: '\bscripts/|the scripts that'
+    unless:
+      - '\[project\.scripts\]'          # the pyproject table, which is where commands register
+      - 'no `scripts/`'                 # the prohibition stating itself
+      - 'There is no `scripts/`'
+      - 'directory beside `src/` looks'   # …and explaining why (phrase kept on one line)
+      - 'skills/status/scripts'         # this plugin's own tooling, not a repo it plans
+      - 'scripts/status\.py'
+      - 'plugin-dev/scripts'
+      - '\.probe\.py'                   # a researcher's probe script, which lives with its doc
+
+  - name: docs/api/<pkg>.md is never credited to finalize-project alone
+    # The implementer writes it in surface mode as each package ships; finalize-project
+    # regenerates index.md and fills gaps.
+    pattern: 'api/<pkg>\.md|api/\$pkg\.md|api/data\.md'
+    all_of: ['finalize-project']
+    unless: ['finalize-package']
+
+# Every heading a reader parses is one the owner's template defines.
+headings:
+  - name: interface.md headings its readers parse are ones the implementer writes
+    owner: agents/implementer.md
+    owner_span: ['**Write `docs/packages/<pkg>/interface.md`**', null]
+    readers:
+      - file: agents/documenter.md
+        span: ['The ones you read are', 'spelled exactly like that']
+      - file: agents/reviewer.md
+        cites: ['Public names', 'Shapes provided']
+      - file: skills/sync-plan/SKILL.md
+        cites: ['Consumers (computed)']
+      - file: skills/finalize-project/SKILL.md
+        cites: ['Public names']
+
+  - name: section README headings its readers parse are ones the implementer writes
+    owner: agents/implementer.md
+    owner_span: ['## Section README template', '## Deviations']
+    readers:
+      - file: agents/documenter.md
+        cites: ['Entry points and interfaces']
+
+# A list of names that goes stale when the directory it describes changes.
+names_listed:
+  - name: every skill this plugin ships is named in reserved-skill-names
+    # The architect skips these when enumerating a project's skills and extract-legacy
+    # refuses to overwrite one. Neither can derive the list: at run time a plugin skill and a
+    # project skill are both just directories under .claude/skills/.
+    dirs: 'skills/*'
+    file: skills/reserved-skill-names/SKILL.md
+    span: ['## Workflow skills', '## What each reader does with it']

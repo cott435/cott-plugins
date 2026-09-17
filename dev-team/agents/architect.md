@@ -109,12 +109,12 @@ skill in `~/.claude/skills/` is available to everyone and is not this project's 
 ls -d .claude/skills/*/ 2>/dev/null | xargs -r -n1 basename | sort -u
 ```
 
-Ignore the workflow skills (`shape-brief`, `plan-repo`, `plan-package`, `plan-change`, `map-project`,
-`implement-section`, `review-section`, `finalize-package`, `review-package`, `sync-plan`,
-`finalize-project`, `extract-legacy`, `probe-source`, `status`) and the shared ones (`project-structure`,
-`python-implementation`, `python-style-guide`, `security-review`, `workspace-scaffold`,
-`planning-templates`) — those are preloaded or invoked on their own triggers, so they never
-need a section assignment. Read the frontmatter description of each remaining skill —
+Invoke `reserved-skill-names` and ignore every name it lists: they are this plugin's own
+skills — preloaded into you, invoked on their own triggers, or the workflow skills that
+invoked you — so none of them needs a section assignment. That skill is the only copy of the
+list; do not work from a remembered one, because a name added to the plugin after this prompt
+was written would otherwise look like a project skill and get assigned to a section. What is
+left after the skip is the project's own. Read the frontmatter description of each remaining skill —
 `head -8 .claude/skills/<name>/SKILL.md` — so you know what it covers. If one turns out to be
 general tooling rather than a way of building part of this project, leave it out and say so
 in your return.

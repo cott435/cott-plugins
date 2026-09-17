@@ -22,3 +22,7 @@ care when editing it:
 - **`scripts/build_site.py` is shared.** A change to it changes every plugin's site at once.
   Before committing one, rebuild at least `dev-team` and diff the output — its site is
   the reference the builder was verified against.
+- **`scripts/contract_sweep.py` is shared too**, and a checker that cannot fail is worse than
+  none. A change to it gets both runs before it is committed: the real bundle, which must
+  still pass, and a copy with a deliberate defect per check kind, which must still fail —
+  `evals/2026-09-17-contract-sweep-negative.md` is the worked example.

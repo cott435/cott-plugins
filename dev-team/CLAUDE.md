@@ -10,6 +10,23 @@ holds only what's specific to this plugin.
 `VERSIONING.md` holds this plugin's own versioning decisions — the per-agent `model:` choices
 and the untagged `1.1.0` loose end.
 
+## Adding a skill means updating three files
+
+`skills/reserved-skill-names/SKILL.md` holds the one copy of the names this plugin's own skills
+occupy. The architect invokes it to know which `.claude/skills/` entries to skip, and
+`extract-legacy` reads it to refuse a row that would overwrite a plugin skill. Neither can
+derive the list: at run time a plugin skill and a project skill are both just directories under
+`.claude/skills/`.
+
+So a new skill here — workflow or knowledge — is added, in the same change, to:
+
+1. `skills/reserved-skill-names/SKILL.md`;
+2. `README.md`'s **Contents** tree, and its knowledge-scope table if it is a knowledge skill;
+3. `site/site.yml`'s `workflow_skills_order`, if it is a workflow skill.
+
+A skill *removed* comes out of all three. `plugin-dev`'s `check-contracts` fails on item 1 —
+run it after any change under `skills/` — and cannot see items 2 and 3.
+
 ## The shared protocol is in the parent, and it is not optional
 
 The repo root `CLAUDE.md` carries the rules this plugin is maintained by — when `build-site`,

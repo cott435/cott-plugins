@@ -46,7 +46,8 @@ dev-team/
     ├── planning-templates/   headings for every planning document          (invoked by architect)
     ├── python-implementation/ splitting mechanics, config code            (invoked on demand)
     ├── workspace-scaffold/   pyproject / import-linter / mkdocs skeletons  (invoked on demand)
-    └── security-review/      checklist                                    (invoked on triggers)
+    ├── security-review/      checklist                                    (invoked on triggers)
+    └── reserved-skill-names/ the names this plugin's own skills occupy     (architect, extract-legacy)
 
 site/                         the authored parts of the reading site — see site/README.md
 CLAUDE.md                     how to work on this repo's own source
@@ -233,6 +234,7 @@ is the wrong axis here, since the architect and designer need the size limits an
 | `workspace-scaffold` — pyproject, import-linter, mkdocs skeletons | invoked | — | invoked | — | — |
 | `planning-templates` — headings for every planning document | invoked | — | — | — | — |
 | `security-review` — checklist | — | — | invoked | invoked | — |
+| `reserved-skill-names` — the names this plugin's own skills occupy | invoked | — | — | — | — |
 
 Three conventions in `python-style-guide` are marked *Project convention* because they go
 beyond or beside Google's guide:
