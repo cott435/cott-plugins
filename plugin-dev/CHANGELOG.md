@@ -4,6 +4,39 @@ One entry per tagged release. The versioning policy — what triggers patch/mino
 how model and eval versioning relate to it — is in the `plugin-dev` plugin's `bump-version`
 skill. This repo's own decisions are in `VERSIONING.md`.
 
+
+## [0.4.0] - 2026-09-17
+
+### Added
+- `names_listed` gains **`form`** — how the target list cites a name, so a list is checked where
+  it lives rather than reformatted to suit the checker. `code` (backticks, the default) for
+  prose and tables, `tree` for an indented `── name/` branch in a fenced directory tree where
+  backticks would render literally, `list` for a YAML sequence or Markdown bullet.
+- `names_listed` gains **`where`** — which directories the list answers for, read from their
+  `SKILL.md` frontmatter. A list covering one class of skill is checked against that class, so a
+  knowledge skill is not reported missing from a list of workflow steps and a second list of
+  which skills count never has to exist. A `where` that matches nothing is a `FAIL`, not
+  `0 names, all listed`: a typo would otherwise switch the claim off while still printing PASS.
+- `skills/**/*.py` joins the default authored set. A script a plugin ships is authored too, and
+  it is the one file that prints to a person rather than to a model — which is how `dev-team`'s
+  `status.py` was found printing unnamespaced commands.
+
+### Changed
+- `check-contracts` documents both keys, with a table for `form`, and states the line-level
+  `unless` hazard as a design rule rather than a formatting caveat: one exempt phrase pardons
+  everything else on its line, and an exemption tends to live exactly where the thing it pardons
+  is discussed. Prefer a negative lookahead in the pattern, which exempts a token.
+
+### Fixed
+- `form: list` anchored a bullet to end-of-line, so a YAML entry with a trailing comment read as
+  missing. The checker was fixed rather than the comment removed: a claim that dictates how the
+  file it checks may be annotated will be worked around.
+
+Tested, 15 cases over two rounds —
+`evals/2026-09-17-contract-sweep-names-listed-where-form.md`. Round 1 found `dev-team`'s D2, D3
+and D5; round 2 exists because round 1 tested the command claim with a bare command alone on its
+own line, which is not how one gets written, and so missed the `unless` leak above.
+
 ## [0.3.0] - 2026-09-17
 
 ### Added

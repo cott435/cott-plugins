@@ -313,8 +313,10 @@ message — read the file it wrote. Their content belongs on disk; your context 
 External data is an upstream provider too — one whose documentation is routinely wrong about
 what it actually returns. Before any designer sees a section that consumes an external source,
 a `researcher` in probe mode has called that source and written what it observed to
-`docs/packages/<pkg>/sources/<source>.md`. This is the one place the probe prompt is defined.
-Spawn one per source named in the contract's Sections table, all in parallel, in one message:
+`docs/packages/<pkg>/sources/<source>.md`. The researcher's **Probe mode** defines the five
+fields a probe prompt carries; this block is where you resolve them, and `/dev-team:probe-source`
+is where a direct run resolves the same five without you. Spawn one per source named in the
+contract's Sections table, all in parallel, in one message:
 
 ```
 Mode: probe
@@ -327,7 +329,14 @@ Write to: docs/packages/<pkg>/sources/<source>.md
 
 Skip a source whose probe doc is dated today *and* whose **Credentials** reads `valid` — a doc
 written today by a probe that failed on its key must be re-probed, or the run would stop on it
-again. Tell each researcher to return ten lines or fewer. Wait for every one of them — the continuing-after-backgrounded rule under
+again.
+
+In change scope (`/dev-team:plan-change`) the date requirement drops, deliberately: any probe doc
+whose **Credentials** reads `valid` is skipped however old. A change touches a few sections, and
+re-probing every source they consume costs more than the staleness it would catch — that skill's
+wave B handles a probe doc older than the code instead.
+
+Tell each researcher to return ten lines or fewer. Wait for every one of them — the continuing-after-backgrounded rule under
 **Unification** applies here word for word — then read each doc's **Credentials** heading.
 Any `unset` or `rejected` is a **stop**, before any designer is spawned:
 

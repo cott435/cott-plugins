@@ -11,7 +11,8 @@ running a model:
 
   forbid        a pattern that must not appear (a rule one file states and another breaks)
   headings      every heading a reader parses is one the owner's template defines
-  names_listed  every directory under <dirs> has its name in <file> (a list that goes stale)
+  names_listed  every directory under <dirs> has its name in <file> (a list that goes stale),
+                narrowed by <where> on frontmatter and read in one of three <form>s
 
 Usage:  python3 contract_sweep.py [bundle] [--quiet]
 Exits 1 if any case fails, 0 if all pass, 2 if the bundle has no contracts.yml.
@@ -30,7 +31,7 @@ from pathlib import Path
 # Authored files only. Generated mirrors (site/docs/) would double every finding, and a
 # finding there is fixed in the source anyway.
 DEFAULT_FILES = ["agents/*.md", "skills/**/*.md", "rules/*.md", "README.md", "CLAUDE.md",
-                 "site/*.md", "site/workflows/*.md", "site/notes/*.md"]
+                 "site/*.md", "site/workflows/*.md", "site/notes/*.md", "skills/**/*.py"]
 
 
 def authored(bundle: Path, globs: list[str]) -> list[Path]:
@@ -103,19 +104,58 @@ def check_headings(bundle: Path, spec: dict) -> tuple[bool, str]:
     return not bad, "; ".join(bad) or f"{counted} names across {len(spec['readers'])} readers, all owned"
 
 
+# How a list cites a name, and how to read the names already in it. `code` is the default:
+# a name in backticks, anywhere in the span. `tree` is an indented branch of a directory tree,
+# `list` a YAML or Markdown bullet on its own line.
+FORMS = {
+    "code": (r"`{n}`", r"`([a-z][a-z0-9-]{2,})`"),
+    "tree": (r"── {n}/", r"(?m)^ +[├└]── ([a-z][a-z0-9-]+)/"),
+    "list": (r"(?m)^ *- +{n} *(?:#.*)?$", r"(?m)^ *- +([a-z][a-z0-9-]+) *(?:#.*)?$"),
+}
+
+
+def frontmatter(path: Path) -> dict:
+    """The YAML frontmatter of a Markdown file, or {} when it has none."""
+    import yaml
+    text = path.read_text(errors="ignore")
+    if not text.startswith("---\n"):
+        return {}
+    end = text.find("\n---", 3)
+    return yaml.safe_load(text[4:end]) or {} if end > 0 else {}
+
+
+def qualifies(d: Path, where: dict) -> bool:
+    """A directory counts when its SKILL.md frontmatter matches every key in `where`."""
+    fm = frontmatter(d / "SKILL.md")
+    return all(fm.get(k) == v for k, v in where.items())
+
+
 def check_names_listed(bundle: Path, spec: dict) -> tuple[bool, str]:
-    """Every directory matching `dirs` has its name inside `file` (optionally within a span)."""
+    """Every directory matching `dirs` has its name inside `file` (optionally within a span).
+
+    `where` narrows the directories to those whose SKILL.md frontmatter matches, so a list
+    that covers one class of skill is checked against that class and not all of them.
+    """
     listing = bundle / spec["file"]
     block = span(listing.read_text(), spec.get("span"), spec["file"])
-    names = sorted({p.name for g in [spec["dirs"]] for p in bundle.glob(g.rstrip("/")) if p.is_dir()})
-    missing = [n for n in names if not re.search(rf"`{re.escape(n)}`", block)]
-    extra = [w for w in re.findall(r"`([a-z][a-z0-9-]{2,})`", block) if w not in names]
+    form = spec.get("form", "code")
+    if form not in FORMS:
+        return False, f"unknown form {form!r}; known: {', '.join(FORMS)}"
+    cite, existing = FORMS[form]
+    where = spec.get("where") or {}
+    names = sorted({p.name for g in [spec["dirs"]] for p in bundle.glob(g.rstrip("/"))
+                    if p.is_dir() and qualifies(p, where)})
+    if not names:
+        return False, f"`dirs: {spec['dirs']}`" + (f" + `where`" if where else "") + " matched no directory"
+    missing = [n for n in names if not re.search(cite.format(n=re.escape(n)), block)]
+    extra = [w for w in re.findall(existing, block) if w not in names]
     detail = []
     if missing:
         detail.append(f"not listed in {spec['file']}: {', '.join(missing)}")
     if extra:
         detail.append(f"listed but no such directory: {', '.join(sorted(set(extra)))}")
-    return not detail, "; ".join(detail) or f"{len(names)} names, all listed"
+    scope = f"{len(names)} names" + (" matching `where`" if where else "")
+    return not detail, "; ".join(detail) or f"{scope}, all listed"
 
 
 CHECKS = {"forbid": check_forbid, "headings": check_headings, "names_listed": check_names_listed}

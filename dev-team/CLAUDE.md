@@ -24,8 +24,11 @@ So a new skill here — workflow or knowledge — is added, in the same change, 
 2. `README.md`'s **Contents** tree, and its knowledge-scope table if it is a knowledge skill;
 3. `site/site.yml`'s `workflow_skills_order`, if it is a workflow skill.
 
-A skill *removed* comes out of all three. `plugin-dev`'s `check-contracts` fails on item 1 —
-run it after any change under `skills/` — and cannot see items 2 and 3.
+A skill *removed* comes out of all three. `plugin-dev`'s `check-contracts` fails on all three,
+in both directions — a skill missing from a list, and a name in a list with no such skill — so
+run it after any change under `skills/`. It is the rule's enforcement, not a reminder of it: the
+three claims are `contracts.yml`'s three `names_listed` entries. Item 3 covers the workflow
+skills only, selected by `disable-model-invocation: true` rather than by a second list.
 
 ## The shared protocol is in the parent, and it is not optional
 

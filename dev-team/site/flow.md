@@ -21,7 +21,7 @@ flowchart LR
     clnD["design/clean.md"]
     cln["implementer<br/>data/clean"]
     surf["surface.md"]
-    fin["/finalize-package data"]
+    fin["/dev-team:finalize-package data"]
     init["src/data/__init__.py<br/>pipelines/ cli.py"]
     iface["interface.md<br/>(shipped)"]
     clnD --> cln
@@ -43,22 +43,22 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  S["/shape-brief (in your conversation)<br/>→ docs/brief.md"]
+  S["/dev-team:shape-brief (in your conversation)<br/>→ docs/brief.md"]
   S --> A
-  A["/plan-repo<br/>→ docs/architecture.md (repo contract)"]
+  A["/dev-team:plan-repo<br/>→ docs/architecture.md (repo contract)"]
   A -. "contract wrong: correct the brief, re-plan (revise)" .-> S
-  A --> B["/plan-package data<br/>→ contract.md, design/*.md, integration.md, surface.md"]
-  B --> C["/implement-section data/ingest<br/>→ code, tests, section README"]
-  C --> D["/review-section data/ingest<br/>→ reviews/, followups"]
+  A --> B["/dev-team:plan-package data<br/>→ contract.md, design/*.md, integration.md, surface.md"]
+  B --> C["/dev-team:implement-section data/ingest<br/>→ code, tests, section README"]
+  C --> D["/dev-team:review-section data/ingest<br/>→ reviews/, followups"]
   D -->|next section| C
-  D --> E["/finalize-package data<br/>→ __init__.py, pipelines/, cli.py, interface.md"]
-  E --> F["/review-package data<br/>→ package gate"]
-  F --> G["/plan-package analysis<br/>reads data/interface.md as upstream"]
+  D --> E["/dev-team:finalize-package data<br/>→ __init__.py, pipelines/, cli.py, interface.md"]
+  E --> F["/dev-team:review-package data<br/>→ package gate"]
+  F --> G["/dev-team:plan-package analysis<br/>reads data/interface.md as upstream"]
   G -.->|same loop| F
-  F --> H["/plan-change '…'<br/>→ plans/slug/ with Downstream impact"]
-  H --> I["/implement-section pkg/section slug"]
-  I --> J["/sync-plan slug<br/>→ canonical docs + interface.md updated"]
-  J --> K["/finalize-project<br/>→ package READMEs, docs/api, root README"]
+  F --> H["/dev-team:plan-change '…'<br/>→ plans/slug/ with Downstream impact"]
+  H --> I["/dev-team:implement-section pkg/section slug"]
+  I --> J["/dev-team:sync-plan slug<br/>→ canonical docs + interface.md updated"]
+  J --> K["/dev-team:finalize-project<br/>→ package READMEs, docs/api, root README"]
   classDef stop stroke:#8a2f4a,stroke-width:2px;
   class A,B,G,H stop;
 ```
@@ -76,21 +76,21 @@ sequenceDiagram
   participant Impl as implementer
   participant Rev as reviewer
   participant Doc as documenter
-  Note over You: /shape-brief — a discussion in your conversation → docs/brief.md
-  You->>Arch: /plan-repo
+  Note over You: /dev-team:shape-brief — a discussion in your conversation → docs/brief.md
+  You->>Arch: /dev-team:plan-repo
   Arch-->>You: architecture.md · stubs (or: Stopped for decisions)
-  You->>Arch: /plan-package data
+  You->>Arch: /dev-team:plan-package data
   Arch->>Des: Section, Mode, Contracts, Upstream interfaces, Write to
   Des-->>Arch: ≤10 lines each (designs on disk)
   Arch-->>You: integration.md · surface.md · order
-  You->>Impl: /implement-section data/ingest
+  You->>Impl: /dev-team:implement-section data/ingest
   Impl-->>You: files · tests · deviations · README path
-  You->>Rev: /review-section data/ingest
+  You->>Rev: /dev-team:review-section data/ingest
   Rev-->>You: verdict (report + followups on disk)
-  You->>Impl: /finalize-package data
+  You->>Impl: /dev-team:finalize-package data
   Impl-->>You: interface.md
-  You->>Rev: /review-package data
-  You->>Doc: /finalize-project
+  You->>Rev: /dev-team:review-package data
+  You->>Doc: /dev-team:finalize-project
   Doc-->>You: READMEs · api pages · Known gaps
 ```
 

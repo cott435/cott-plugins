@@ -25,6 +25,17 @@ forbid:
     all_of: ['finalize-project']
     unless: ['finalize-package']
 
+  - name: no unprefixed plugin command is typeable
+    # Plugin skills are always namespaced /dev-team:<name>, so a bare /<name> is a command
+    # nobody can run. Structural rather than a list of the 21 names: any slash-initial token
+    # with a hyphen, plus /status, that is not already prefixed. Claude Code's own commands
+    # have no hyphen (/agents, /model, /plugin) and so never match.
+    #
+    # Both exceptions are in the pattern, not in `unless`, because `unless` exempts the whole
+    # line: /reload-plugins appears in all 14 guard blocks, and a bare command written beside
+    # one would have been exempted with it. /reload-plugins is Claude Code's own command.
+    pattern: '(^|[\s"(\[`])/(?!dev-team:|reload-plugins)(?:[a-z][a-z0-9]*-[a-z0-9-]+|status)\b'
+
 # Every heading a reader parses is one the owner's template defines.
 headings:
   - name: interface.md headings its readers parse are ones the implementer writes
@@ -56,3 +67,22 @@ names_listed:
     dirs: 'skills/*'
     file: skills/reserved-skill-names/SKILL.md
     span: ['## Workflow skills', '## What each reader does with it']
+
+  - name: README's Contents tree names every skill this plugin ships
+    # Item 2 of the three-file rule in CLAUDE.md. The tree is the only place a reader learns
+    # what the plugin contains, and it is a fenced code block, so names appear as branches
+    # rather than in backticks.
+    dirs: 'skills/*'
+    form: tree
+    file: README.md
+    span: ['└── skills/', 'site/                         the authored parts']
+
+  - name: every workflow skill is in site.yml's run order
+    # Item 3 of the same rule. A workflow skill is one the model may not invoke on its own —
+    # the user types it — which is exactly what the site orders by run sequence. Unlisted
+    # files are appended alphabetically, which is the one thing this list exists to prevent.
+    dirs: 'skills/*'
+    where: {disable-model-invocation: true}
+    form: list
+    file: site/site.yml
+    span: ['workflow_skills_order:', '# Extra files rendered']

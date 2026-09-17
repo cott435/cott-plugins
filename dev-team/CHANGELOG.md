@@ -4,6 +4,48 @@ Format: one entry per tagged release. The versioning policy — what triggers pa
 and how model and eval versioning relate to it — is in the `plugin-dev` plugin's
 `bump-version` skill. This repo's own decisions are in `VERSIONING.md`.
 
+
+## [0.3.1] - 2026-09-17
+
+Passes 1 and 2 of the 2026-09-17 audit. Every prompt change here removes a second statement of
+something already stated elsewhere, or corrects a rule that contradicted another file. No
+document path, format, frontmatter shape or invoked command changed.
+
+### Fixed
+- **Two probe-skip rules for the same agent.** `architect.md`'s **Probing** said skip a probe
+  doc dated today *and* valid; `plan-change` told the same architect a valid doc is never
+  re-probed however old. Probing now states the change-scope relaxation as its own paragraph,
+  with the reason it is deliberate, and `plan-change` step 6b states neither rule — it points at
+  Probing and at its own wave B, which handles a valid doc older than the code.
+- **The curator's read boundary forbade three checks `extract-legacy` requires.** "Read only
+  `docs/brief.md`" ruled out testing whether `docs/architecture.md` exists, and "never read
+  `.claude/skills/`" read as ruling out testing whether a skill directory does. The hard rule
+  now says existence checks are fine and content is not, naming both paths.
+- **The finalize-package preconditions, four copies down to two.** `implementer.md` Surface mode
+  defines them and `status.py --gate` computes them; `finalize-package` runs the gate and
+  restates nothing, and the README gotcha states the no-partial-mode rule rather than the list.
+- **The probe prompt claimed to be defined in a file that defines none of it.** `researcher.md`'s
+  **Probe mode** is now named as the definition of the five fields; `architect.md` and
+  `probe-source` each keep only their own resolution rules, which differ and are not duplicates.
+- **`review-section`'s Paths table omitted `docs/followups.md`**, which the run reads — the
+  reviewer skips findings already listed — and appends to in step 4. `review-package` listed it.
+- **Commands nobody could type.** `site/flow.md`'s three diagrams and prose (21 occurrences) and
+  `status.py`'s two user-facing messages printed bare `/plan-package`-style names; plugin skills
+  are always namespaced. All prefixed, and now held by a `contracts.yml` claim.
+- **`site.yml`'s `workflow_skills_order` omitted `status`**, leaving it to the alphabetical tail
+  of a list whose only purpose is run order.
+
+### Changed
+- `contracts.yml` declares 8 claims, up from 5, and `CLAUDE.md`'s three-file rule now *is* three
+  of them rather than a reminder to remember it. Corrects 0.3.0's note that `check-contracts`
+  "cannot see the other two": with `plugin-dev` 0.4.0 it sees all three, in both directions —
+  a skill missing from a list, and a name in a list with no such skill.
+- The new command claim carries no exemptions. `/reload-plugins` is a negative lookahead in the
+  pattern rather than an `unless`, because `unless` matches a whole line and that command
+  appears in all 14 guard blocks; and the one sentence in `reserved-skill-names` that needed the
+  other exemption now names "the project's own unprefixed `plan-repo` command" rather than
+  writing it as a command.
+
 ## [0.3.0] - 2026-09-17
 
 ### Added

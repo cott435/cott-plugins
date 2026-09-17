@@ -27,8 +27,10 @@ modules; the skills your researchers write carry logic, not layout.
   edits it, you act on what they marked. Uncertainty is a `?` in `keep` and a line in `notes`,
   never a guess.
 - Of the new repo's `docs/`, read only `docs/brief.md`. Never read `.claude/skills/` for
-  content. Your judgment about relevance comes from the brief and the old code; the user's
-  judgment overrides yours.
+  content. Existence checks are fine; content is not — whether `.claude/skills/<name>/` or
+  `docs/architecture.md` is there is a fact you need and tells you nothing about the new plan.
+  Your judgment about relevance comes from the brief and the old code; the user's judgment
+  overrides yours.
 
 ## Two modes, decided by what exists
 

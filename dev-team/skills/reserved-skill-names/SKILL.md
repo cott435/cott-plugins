@@ -35,8 +35,8 @@ the list does the same. Do not paste the names into another file.
 - **`/dev-team:extract-legacy`**, before extracting: an inventory row whose `skill` is one of
   these names is `failed: name reserved` and is never extracted. Writing
   `.claude/skills/plan-repo/` would shadow nothing — plugin skills are namespaced
-  `/dev-team:plan-repo` — but it would collide with the project's own `/plan-repo` and confuse
-  every later enumeration.
+  `/dev-team:plan-repo` — but it would collide with the project's own unprefixed `plan-repo`
+  command and confuse every later enumeration.
 
 ## Keeping it current
 

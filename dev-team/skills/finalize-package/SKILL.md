@@ -30,9 +30,9 @@ package is not shipped.
 
 ## Preconditions
 
-Return a blocker naming what is missing if any of these fails. Run the gate first — with
-`--gate` the script prints your **Surface mode** preconditions as `PASS` or `FAIL` with a
-reason per failure, which is the same check stated there:
+Your **Surface mode** section defines them; the gate computes exactly that list, so this
+prompt does not restate it. Run the gate — with `--gate` the script prints each precondition as
+`PASS` or `FAIL`, one reason per failure:
 
 ```
 python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py $pkg --gate
@@ -41,12 +41,9 @@ python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py $pkg --gate
 It exits non-zero on `FAIL`. That is the gate reporting, not the command erring: read the
 `FAIL` lines and return them as the blocker rather than re-running it.
 
-Then confirm: `contract.md` and `surface.md` exist; every section in the Sections table has
-a `README.md`; every section has a review dated on or after its README's last change; no
-unchecked review-sourced follow-up (`review <date>` in its text) is addressed to any
-`$pkg/<section>`. No partial mode — a consumer cannot be built against half a surface, and
-the surface must not re-export code with an open CRITICAL finding. Other open follow-ups
-are listed in your return, not blockers.
+There is no partial mode — a consumer cannot be built against half a surface, and the surface
+must not re-export code with an open CRITICAL finding. Open follow-ups that are not
+review-sourced do not block; list them in your return.
 
 ## Paths
 

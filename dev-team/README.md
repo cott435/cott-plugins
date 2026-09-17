@@ -380,9 +380,9 @@ Every arrow into an agent carries a file path, not a conversation.
 - **Nesting depth.** Architect (layer 1) spawning designers (layer 2) is within the default
   three-layer limit. `/dev-team:plan-repo` deliberately does not spawn package architects — that would
   put designers at layer 3 and plan every package at once, which is not how you work.
-- **`/dev-team:finalize-package` has no partial mode.** Every section needs a README, a review newer
-  than it, and no open review-sourced follow-up; a public surface is a promise consumers build
-  against. `/dev-team:status <pkg> --gate` shows exactly what is missing.
+- **`/dev-team:finalize-package` has no partial mode.** A public surface is a promise consumers
+  build against, so the whole package qualifies or none of it does.
+  `/dev-team:status <pkg> --gate` is the list of what it checks, and shows what is missing.
 - **Expect blockers on the first implement run of an adopted repo.** Unanswered questions with
   no fallback assumption stop the implementer by design. Answer them in `docs/decisions.md` and
   re-run.

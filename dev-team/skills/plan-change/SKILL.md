@@ -96,12 +96,11 @@ it is empty, look for the most recent `docs/plans/*/assessment.md` whose plan ha
    only the contracts added, changed, or removed, grouped by which contract, with every altered
    shipped-surface name carrying its old and new signature.
 
-6b. **Probe.** For every affected section whose `source` — from the package contract, or the
-   contract-delta for a section this change adds — has no probe doc whose **Credentials**
-   reads `valid`, run your **Probing** section: one researcher per source, in parallel, before
-   any designer. The credential stop applies here exactly as in `/dev-team:plan-package`. A probe
-   doc that exists and is `valid` is not re-probed, however old; wave B says what to do when it
-   is older than the code.
+6b. **Probe.** Run your **Probing** section over the `source` of every affected section — from
+   the package contract, or from the contract-delta for a section this change adds — one
+   researcher per source, in parallel, before any designer. Probing states the skip rule for
+   change scope and the credential stop; wave B below says what to do with a valid probe doc
+   older than the code.
 
 7. **Delegate**, in two waves. Everything inside a wave runs in parallel; wave B waits for
    wave A, because a delta needs its baseline to exist first.

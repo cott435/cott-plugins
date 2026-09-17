@@ -23,7 +23,8 @@ the purpose; it may be empty.
 
 ## Resolve the prompt
 
-Build your probe-mode prompt from what exists, so a direct run matches an architect-spawned one:
+Your **Probe mode** section defines the five fields a probe prompt carries. Nothing spawned
+you, so resolve them here, from what exists, and a direct run matches an architect-spawned one:
 
 - `Source:` `$source`, lowercase, the token the package contract's `source` column uses.
 - `Purpose:` the argument text if given; else the `responsibility` of the row in

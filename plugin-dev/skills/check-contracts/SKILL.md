@@ -77,7 +77,24 @@ names_listed:           # every directory under `dirs` has its name in `file`
     dirs: 'skills/*'
     file: skills/reserved-skill-names/SKILL.md
     span: ['## Workflow skills', '## What each reader does with it']
+    where: {disable-model-invocation: true}   # optional: only dirs whose SKILL.md frontmatter matches
+    form: code                                # optional: how the list cites a name — below
 ```
+
+`form` is how the target list writes a name, because a list is checked where it lives rather
+than reformatted to suit the checker:
+
+| `form` | A name appears as | Use it for |
+|---|---|---|
+| `code` (default) | `` `plan-repo` `` anywhere in the span | prose and tables |
+| `tree` | an indented `── plan-repo/` branch | a directory tree in a fenced block, where backticks would render literally |
+| `list` | `- plan-repo` on its own line, trailing comment allowed | a YAML sequence or a Markdown bullet list |
+
+`where` narrows which directories the list is answerable for, from the frontmatter that already
+distinguishes them. A list covering one class of skill — the ones a user types, say — is checked
+against that class, so a knowledge skill is not reported missing from it and a second list of
+which skills count never has to exist. A key that matches nothing is a `FAIL`, not a silent
+pass: a typo in `where` would otherwise turn the claim off.
 
 The owner template is **parsed, not restated**: `owner_span` slices the owner file and every
 `N. **Name** —` line in that slice is a defined heading. Rename one and the check follows it,
@@ -93,8 +110,10 @@ Two things to know about writing claims:
   or removed without the list following.
 
 Authored files only, by default: `agents/*.md`, `skills/**/*.md`, `rules/*.md`, `README.md`,
-`CLAUDE.md`, `site/*.md`, `site/workflows/*.md`, `site/notes/*.md`. `site/docs/` is always
-excluded — it is a generated mirror, so a finding there is a duplicate of one in its source.
+`CLAUDE.md`, `site/*.md`, `site/workflows/*.md`, `site/notes/*.md`, `skills/**/*.py`. A script a
+plugin ships is authored too, and it is the one file that prints to the user rather than to a
+model. `site/docs/` is always excluded — it is a generated mirror, so a finding there is a
+duplicate of one in its source.
 
 ## What this cannot check
 

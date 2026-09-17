@@ -6,7 +6,7 @@ Usage:  python3 status.py [pkg] [--gate]
 Nothing here is written down by anyone; it is all derived: a package is planned when its
 contract exists, built when every section has a README, shipped when interface.md exists. A
 section is reviewed when a review file is dated on or after its README's last change.
-`--gate` exits 1 when the named package fails /finalize-package's preconditions.
+`--gate` exits 1 when the named package fails /dev-team:finalize-package's preconditions.
 """
 
 from __future__ import annotations
@@ -117,7 +117,7 @@ def package_report(pkg: str, pkg_path: Path) -> tuple[list[str], list[str]]:
     lines = [f"\n## {pkg}  —  {status}   " + "  ".join(f"{k}.md {'✓' if v else '·'}" for k, v in have.items())]
     fails: list[str] = []
     if not have["contract"]:
-        return lines + ["  (no contract.md — run /plan-package)"], [f"{pkg}: no contract.md"]
+        return lines + ["  (no contract.md — run /dev-team:plan-package)"], [f"{pkg}: no contract.md"]
     if not have["surface"]:
         fails.append(f"{pkg}: no surface.md")
     rows = table_rows((pdocs / "contract.md").read_text(), ("section", "path"))
