@@ -48,10 +48,14 @@ interfaces with a Public column, Pipeline / workflow, Configuration, Running and
 Implementation notes) — the implementer agent owns that template and writes them. Read those
 headings; do not expect any other shape, and note it as a gap when a README does not have them.
 
-`interface.md` follows a fixed seven-heading template (Public names, Pipelines, Scripts,
-Configuration, Shapes provided, Deviations, Consumers) — the implementer in surface mode owns
-it. It is the package-level equivalent of a section README and outranks the section READMEs for
-anything about the package's public surface.
+`interface.md` is owned by the implementer in surface mode, and its headings are defined
+there — this file does not carry a second copy of that list. The ones you read are **Public
+names**, **Pipelines**, **CLI commands**, **Configuration**, **Shapes provided**, and
+**Consumers (computed)**, spelled exactly like that. A heading you expect and cannot find is a
+**Known gaps** entry naming the package and the heading; never read a similar-looking heading
+in its place, and never infer the content from the code. `interface.md` is the package-level
+equivalent of a section README and outranks the section READMEs for anything about the
+package's public surface.
 
 Deduplicate as you go. Two sections declaring the same env var is one row, unless they declare
 different defaults — that is a finding worth surfacing, not a row to silently pick between.

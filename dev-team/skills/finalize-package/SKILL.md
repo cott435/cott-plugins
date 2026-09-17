@@ -30,12 +30,16 @@ package is not shipped.
 
 ## Preconditions
 
-Return a blocker naming what is missing if any of these fails. Run the check script first —
-it prints the table your **Surface mode** preconditions describe:
+Return a blocker naming what is missing if any of these fails. Run the gate first — with
+`--gate` the script prints your **Surface mode** preconditions as `PASS` or `FAIL` with a
+reason per failure, which is the same check stated there:
 
 ```
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py $pkg
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py $pkg --gate
 ```
+
+It exits non-zero on `FAIL`. That is the gate reporting, not the command erring: read the
+`FAIL` lines and return them as the blocker rather than re-running it.
 
 Then confirm: `contract.md` and `surface.md` exist; every section in the Sections table has
 a `README.md`; every section has a review dated on or after its README's last change; no

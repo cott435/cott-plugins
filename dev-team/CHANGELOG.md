@@ -4,6 +4,28 @@ Format: one entry per tagged release. The versioning policy — what triggers pa
 and how model and eval versioning relate to it — is in the `plugin-dev` plugin's
 `bump-version` skill. This repo's own decisions are in `VERSIONING.md`.
 
+## [0.2.1] - 2026-09-17
+
+### Fixed
+- `documenter` read `interface.md` by two headings the implementer never writes: `Scripts`
+  (heading 3 is **CLI commands**) and `Consumers` (it is **Consumers (computed)**). The
+  paragraph no longer restates that template — it names the six headings the documenter
+  consumes, spelled as the owner writes them, and makes a heading it cannot find a
+  **Known gaps** entry rather than something to substitute a similar heading for. Checked
+  mechanically in `evals/2026-09-17-documenter-interface-heading-contract.md`; the behavioral
+  impact on a real run is recorded there as unverified.
+- `/dev-team:finalize-package` ran `status.py <pkg>` without `--gate`, so it got the section
+  table rather than its own preconditions as `PASS`/`FAIL`. It now runs the gate, and the
+  skill says the non-zero exit is the gate reporting — the `FAIL` lines are the blocker to
+  return.
+
+### Removed
+- `rules/python-standards.md`. A plugin has no `rules/` component — Claude Code loads
+  path-scoped rules only from `.claude/rules/` or `~/.claude/rules/` — so this one never
+  loaded on an installed plugin. The conventions it pointed at already reach the agents
+  through their `skills:` frontmatter; `README.md` now says how to write one in the repo you
+  are building if you want it for interactive work.
+
 ## [0.2.0] - 2026-09-17
 
 ### Added

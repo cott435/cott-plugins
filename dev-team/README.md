@@ -25,8 +25,6 @@ dev-team/
 │   ├── documenter.md     package READMEs, API pages, root README from shipped docs
 │   ├── curator.md        surveys an old repo into docs/legacy/inventory.md; coordinates researchers
 │   └── researcher.md     extract: one inventory row → one project skill · probe: one API → its probe doc
-├── rules/
-│   └── python-standards.md   thin pointer; loads on *.py for your own interactive work
 ├── pyproject-lint-config.toml  merge into the root pyproject.toml; enforces the hard limits
 └── skills/
     ├── shape-brief/        (inline)        idea → docs/brief.md, discussed with you: now / later / out
@@ -267,10 +265,15 @@ The repo contract carries the target block; the first `/dev-team:implement-secti
 grows `root_packages` and the layers list; `/dev-team:finalize-package` adds the `forbidden` contract.
 `lint-imports` runs in CI beside `ruff check`.
 
-`.claude/rules/python-standards.md` is a pointer scoped to `**/*.py` for **you**, working
-interactively, where no agent frontmatter applies. Merge `pyproject-lint-config.toml` into the
-root `pyproject.toml`; it ships beside this README rather than inside a skill so there is one
-copy.
+Merge `pyproject-lint-config.toml` into the root `pyproject.toml`; it ships beside this README
+rather than inside a skill so there is one copy.
+
+This plugin ships no rule. A plugin has no `rules/` component — Claude Code loads path-scoped
+rules only from `.claude/rules/` or `~/.claude/rules/` — so a rule here would never load, and
+the agents that need these conventions already carry them through `skills:` frontmatter. For
+your own interactive work, where no agent frontmatter applies, write a
+`.claude/rules/python-standards.md` in the repo you are building that points at
+`project-structure` and `python-style-guide`.
 
 ## `docs/` layout
 
