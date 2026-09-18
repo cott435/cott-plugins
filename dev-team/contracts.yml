@@ -54,6 +54,29 @@ headings:
       - file: skills/finalize-project/SKILL.md
         cites: ['Public names']
 
+  - name: probe doc headings its readers parse are ones planning-templates defines
+    # A probe doc is the external provider's interface.md, and four agents parse it by heading:
+    # the architect stops on Access and reads Supported tasks and Splitting back into the
+    # package contract, the designer builds the parser and the feature set from it, the reviewer
+    # checks shipped code against Target, Leakage and Splitting, and the implementer falls back
+    # to it when its own design disagrees. The researcher writes the document but owns no
+    # heading: the template is a reference file, like the architect's five. Both kinds — api and
+    # dataset — sit in one span, because a reader cites a heading without knowing which kind the
+    # section it is designing will get.
+    owner: skills/planning-templates/references/source-probe.md
+    owner_span: ['## Kind `api`', null]
+    readers:
+      - file: agents/designer.md
+        cites: ['Observed schema', 'Access', 'Pagination', 'Rate limits and quotas',
+                'Error responses', 'Write semantics', 'Webhooks', 'Duplicates and keys',
+                'Target', 'Leakage', 'Features', 'Splitting', 'Supported tasks', 'Quirks']
+      - file: agents/architect.md
+        cites: ['Access', 'Quirks', 'Observed schema', 'Supported tasks', 'Splitting']
+      - file: agents/reviewer.md
+        cites: ['Observed schema', 'Target', 'Leakage', 'Splitting']
+      - file: agents/implementer.md
+        cites: ['Observed schema', 'Leakage']
+
   - name: section README headings its readers parse are ones the implementer writes
     owner: agents/implementer.md
     owner_span: ['## Section README template', '## Deviations']

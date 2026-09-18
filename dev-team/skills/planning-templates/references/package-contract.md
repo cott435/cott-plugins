@@ -17,11 +17,16 @@ under **Repo contract deviations** in the integration doc.
    depends on | source. Paths are `packages/<pkg>/src/<pkg>/<section>/` (or `src/<pkg>/<section>/`
    in a single-package repo); owner docs are `docs/packages/<pkg>/design/<section>.md`.
    `Depends on` names sections in this package only, and must form a DAG — it becomes an
-   import-linter contract and the order `/dev-team:implement-section` enforces. `source` is the
-   external service the section consumes — one lowercase token, the name
-   `docs/packages/<pkg>/sources/<source>.md` carries — or `—`. `/dev-team:plan-package` probes every
-   source in this column before delegating designers; a service not named here is never
-   probed.
+   import-linter contract and the order `/dev-team:implement-section` enforces.
+
+   `source` is each external source the section consumes, written `<kind>:<token>` — `api` for a
+   service called over the network, `dataset` for a file, table or corpus that is read. The
+   token is one lowercase word and is the name `docs/sources/<token>.md` carries; probe docs are
+   repo-wide, so a source two packages consume is one document. Several sources are
+   comma-separated (`api:fred, dataset:trades-2024`); no source is `—`. A bare token with no
+   prefix means `api`, which is how every contract written before kinds existed still reads.
+   `/dev-team:plan-package` probes every entry in this column before delegating designers, so a
+   source not named here is never probed, and a kind written wrong probes the wrong thing.
 
 3. **Section interfaces** — per section, what it returns to its dependents, as signatures.
    Reference repo shapes by name; never redefine them. This is where "what each section

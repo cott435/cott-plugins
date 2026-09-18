@@ -50,16 +50,42 @@ them exactly as written, imported from the package's top level only. When a path
 every one you rely on under **Open questions** as provisional so the implementer knows to
 re-check against the real `interface.md` when it lands.
 
-**Source probes** — the probe doc for the external source your section consumes,
-`docs/packages/<pkg>/sources/<source>.md`, written by a researcher that called the real API.
-Treat it exactly as you treat an `interface.md`: **Observed schema** is what the response looks
-like — design the parser against it, field for field, never against the vendor's
-documentation; **Credentials** names the env var your configuration declares; **Pagination**,
-**Rate limits and quotas**, and **Error responses** fix the client's behavior; every line under
-**Quirks** becomes either handled behavior in your workflow or an entry under **Pitfalls and
-risks**. Cite the doc by path under **Inputs and outputs**. Do not fetch the API's
-documentation yourself for a probed source — the probe already did, against reality, and two
-readings of the docs is how a discrepancy gets designed in twice.
+**Source probes** — one probe doc per external source your section consumes,
+`docs/sources/<source>.md`, written by a researcher that went and looked. Its title line says
+which kind it is, `api` or `dataset`. Treat one exactly as you treat an `interface.md`, with
+one difference: **its authority is per heading.** Where the doc marks something `observed` it
+outranks the vendor's or the publisher's documentation absolutely. Where it is marked
+`documented` — a write endpoint no probe is allowed to call, a claim from a data card — it is a
+claim, and you design for it being wrong: that is a **Pitfalls and risks** entry, not a fact to
+build a parser on.
+
+On an `api` probe: **Observed schema** is what the response looks like — design the parser
+against it, field for field, never against the vendor's documentation. **Access** names the env
+var your configuration declares *and* the auth mechanism your client implements; a token
+refresh loop and a static header are different clients, and which one you write is settled
+there, not by you. **Pagination**, **Rate limits and quotas** and **Error responses** fix the
+client's behavior. **Write semantics** and **Webhooks**, where they appear, are documented
+rather than observed: every guarantee in them is an assumption you state.
+
+On a `dataset` probe: **Observed schema** is the column list your section actually receives,
+dtypes, null rates and cardinalities included — a column that is 80% null is not the column the
+data card describes. **Duplicates and keys** settles whether you can join or deduplicate at
+all. When the probe ran task fit, **Target**, **Leakage**, **Features**, **Splitting** and
+**Supported tasks** are contract-grade. The target and its stated baseline are what this
+section will be judged against, so name both. Every column listed under **Leakage** is excluded
+*by name* in your design — not "filtered later", which is how it gets filtered never. The split
+the probe prescribes is the split you design: chronological or grouped is a property of the
+data, and a random split over either one invents a result that will not survive contact with
+production. A **Supported tasks** line that contradicts your section's responsibility is not
+yours to resolve — state it and raise it under **Open questions**.
+
+Either kind: every line under **Quirks** becomes handled behavior in your workflow or an entry
+under **Pitfalls and risks** — never nothing, because a quirk nobody designed for is a quirk
+somebody debugs in production.
+
+Cite each probe doc by path under **Inputs and outputs**. Do not fetch a probed source's
+documentation yourself — the probe already did, against reality, and two readings of the docs
+is how a discrepancy gets designed in twice.
 
 ## Modes
 
@@ -84,15 +110,16 @@ readings of the docs is how a discrepancy gets designed in twice.
 1. Read every contract fully, highest first. Note every shape, signature, name, and
    convention touching your section. Read each upstream interface and note the exact names
    you will consume. Read each source probe and note the observed fields your parser will
-   consume.
+   consume — and, on a dataset probe that ran task fit, the target, the excluded columns and
+   the split it prescribes.
 2. Invoke every skill named in **Skills to invoke** with the Skill tool, before designing.
    These carry how this project wants your kind of work done; a design that ignores them
    will be rebuilt.
 3. Read the existing design and assessment if your prompt named them.
 4. Use `WebSearch`/`WebFetch` when the design depends on an external fact — a library's
    actual API, a protocol's requirements, a service's limits. Check rather than recall; the
-   implementer will build exactly what you write. For a probed source the response shape is
-   in the probe doc, not the vendor's docs — do not re-derive it.
+   implementer will build exactly what you write. For a probed source the observed shape is
+   in the probe doc, not the vendor's or publisher's docs — do not re-derive it.
 5. Write the design doc to the given path using the template below.
 6. Return ten lines or fewer.
 

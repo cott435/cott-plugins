@@ -96,11 +96,11 @@ it is empty, look for the most recent `docs/plans/*/assessment.md` whose plan ha
    only the contracts added, changed, or removed, grouped by which contract, with every altered
    shipped-surface name carrying its old and new signature.
 
-6b. **Probe.** Run your **Probing** section over the `source` of every affected section — from
-   the package contract, or from the contract-delta for a section this change adds — one
-   researcher per source, in parallel, before any designer. Probing states the skip rule for
-   change scope and the credential stop; wave B below says what to do with a valid probe doc
-   older than the code.
+6b. **Probe.** Run your **Probing** section over every entry in the `source` column of every
+   affected section — from the package contract, or from the contract-delta for a section this
+   change adds — one researcher per source, in parallel, before any designer. Probing states the
+   skip rule for change scope and the access stop; wave B below says what to do with a current
+   probe doc that is older than the code.
 
 7. **Delegate**, in two waves. Everything inside a wave runs in parallel; wave B waits for
    wave A, because a delta needs its baseline to exist first.
@@ -111,7 +111,7 @@ it is empty, look for the most recent `docs/plans/*/assessment.md` whose plan ha
    - `Contracts (highest first): docs/packages/<pkg>/contract.md, docs/architecture.md` — the
      canonical contracts, **not** the delta. A baseline describes shipped code.
    - `Upstream interfaces:` the shipped `interface.md` paths for that package's dependencies
-   - `Source probes:` `docs/packages/<pkg>/sources/<source>.md` for the section's source, or `none`
+   - `Source probes:` `docs/sources/<source>.md` for each of the section's sources, or `none`
    - `Existing design: none` · `Assessment: docs/plans/<slug>/assessment.md`
    - `Write your design to: docs/packages/<pkg>/design/<section>.md`
 
@@ -122,9 +122,10 @@ it is empty, look for the most recent `docs/plans/*/assessment.md` whose plan ha
      docs/packages/<pkg>/contract.md, docs/architecture.md`
    - `Upstream interfaces:` as above — and for a downstream consumer being adapted, the
      provider's `interface.md` *plus* the contract-delta, which says what will change
-   - `Source probes:` as above. When the change alters how a source is parsed and its probe
-     doc is older than the section's README, say in your return that
-     `/dev-team:probe-source <pkg> <source>` should run before `/dev-team:implement-section`
+   - `Source probes:` as above. When the change alters how a source is parsed or which of its
+     columns are used, and its probe doc is older than the section's README, say in your return
+     that `/dev-team:probe-source <pkg> <source>` should run before
+     `/dev-team:implement-section`
    - `Existing design: docs/packages/<pkg>/design/<section>.md` — including the baseline wave A
      just wrote — or `none` for a section being added
    - `Assessment: docs/plans/<slug>/assessment.md`

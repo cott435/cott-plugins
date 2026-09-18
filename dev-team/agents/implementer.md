@@ -24,7 +24,7 @@ missing, or have gone stale — because that is the normal case, not the excepti
 Your prompt gives you: the section as `<pkg>/<section>`, its design doc path, the package
 contract, the repo contract, the integration doc, the surface doc, the decisions log, the
 follow-up queue, review findings, the shipped documents of what you consume — including the
-probe doc of any external source — and optionally a plan slug for change work. Read all of them before writing any code.
+probe doc of any external source, `docs/sources/<source>.md` — and optionally a plan slug for change work. Read all of them before writing any code.
 
 ## Order of authority
 
@@ -55,9 +55,10 @@ plan-time document about that provider, including the integration doc and the co
 - another package → `docs/packages/<dep>/interface.md`, and you import only the names it
   lists, only from the package's top level (`from data import load_bars`; never
   `from data.ingest.loaders import …`) — import-linter rejects the other form;
-- an external service → its probe doc `docs/packages/<pkg>/sources/<source>.md` and
-  `<source>.sample.json`, over the design's assumed shape; the sample is your parser's test
-  fixture. No probe doc, or one dated before your design → probe it yourself in step 5;
+- an external source → its probe doc `docs/sources/<source>.md`, over the design's assumed
+  shape. For an `api` that is `<source>.sample.json`, which is your parser's test fixture; for a
+  `dataset` it is `<source>.stats.json` and the columns, target and split the doc fixes. No
+  probe doc, or one dated before your design → probe it yourself in step 5;
 - a sibling section with no README → do not build; that is the unbuilt-dependency blocker
   below, and the fix is to build the sibling first. An upstream package with code but no
   `interface.md` → its `contract.md`, every consumed name reported as provisional; with no
@@ -245,17 +246,25 @@ is cheaper than a section built on a guess.
    Where a shipped interface differs from what your design assumed, adapt, and record it under
    README item 7.
 
-   For an external source, read its probe doc and copy `<source>.sample.json` into your
-   section's test fixtures: the parser's tests run against a recorded response, never a
-   hand-written dict shaped like the design. If the probe doc is missing, or dated before the
-   design doc, make one real call with the design's params — credentials from env, loading
-   `.env` without printing it, response scrubbed — and save that as the fixture instead. Diff
-   it against the design's assumed fields. A mismatch is a deviation: build and test against
-   what you observed, record it under README item 7, and append
+   For an external source, read its probe doc. For an `api`, copy `<source>.sample.json` into
+   your section's test fixtures: the parser's tests run against a recorded response, never a
+   hand-written dict shaped like the design. For a `dataset`, the doc's **Observed schema** is
+   what you load and validate against, and where it ran task fit the target column, the excluded
+   leaking columns and the split are fixed there — build those as written, and never widen the
+   feature set to a column the probe named under **Leakage**.
+
+   If the probe doc is missing, or dated before the design doc, establish the facts yourself:
+   for an `api`, one real read call with the design's params — credentials from env, loading
+   `.env` without printing it, response scrubbed — saved as the fixture; for a `dataset`, load
+   it and compute the columns, dtypes and null rates, writing statistics only and never records
+   into the repo. Never send a request that writes, whatever the design says it needs; that is a
+   blocker, not a step. Diff what you found against the design's assumptions. A mismatch is a
+   deviation: build and test against what you observed, record it under README item 7, and
+   append
    `- [ ] <pkg>/<section>: re-run /dev-team:probe-source <pkg> <source> — design assumed <X>, observed <Y> — <date>`
-   to `docs/followups.md`. No credentials available → build against the design, leave
-   `# TODO(probe <source>)` at the parser, and report it. Never edit the probe doc; the
-   researcher is its only writer.
+   to `docs/followups.md`. No credentials, or the dataset is unreachable → build against the
+   design, leave `# TODO(probe <source>)` at the parser, and report it. Never edit the probe
+   doc; the researcher is its only writer.
 
 6. **Pick up follow-ups, review findings, and shared work.** Read `docs/followups.md` and the
    most recent `docs/reviews/<date>-<pkg>-<section>.md` for your section, if either exists.

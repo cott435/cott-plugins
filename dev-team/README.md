@@ -24,7 +24,7 @@ dev-team/
 │   ├── reviewer.md       reviews one section, or one package
 │   ├── documenter.md     package READMEs, API pages, root README from shipped docs
 │   ├── curator.md        surveys an old repo into docs/legacy/inventory.md; coordinates researchers
-│   └── researcher.md     extract: one inventory row → one project skill · probe: one API → its probe doc
+│   └── researcher.md     extract: one inventory row → one project skill · probe: one api or dataset → its probe doc
 ├── pyproject-lint-config.toml  merge into the root pyproject.toml; enforces the hard limits
 └── skills/
     ├── shape-brief/        (inline)        idea → docs/brief.md, discussed with you: now / later / out
@@ -33,7 +33,7 @@ dev-team/
     ├── plan-change/        → architect     change to shipped code, with downstream impact
     ├── map-project/        → architect     adopt an existing repo (repo level; then plan-package per package)
     ├── extract-legacy/     → curator       old repo → inventory (stop) → project skills, one per kept row
-    ├── probe-source/       → researcher    one external API → docs/packages/<pkg>/sources/<source>.md
+    ├── probe-source/       → researcher    one api or dataset → docs/sources/<source>.md
     ├── implement-section/  → implementer   <pkg>/<section> [slug]
     ├── review-section/     → reviewer      <pkg>/<section> [slug]
     ├── finalize-package/   → implementer   <pkg>: lazy __init__, pipelines, cli.py, docs page, interface.md
@@ -44,7 +44,7 @@ dev-team/
     │   └── scripts/status.py               the only executable here; `--gate` is finalize-package's
     ├── project-structure/    layout, size limits, config placement        (preloaded: 4 agents)
     ├── python-style-guide/   inside a file: docstrings, function shape, … (preloaded: impl, review)
-    ├── planning-templates/   headings for every planning document          (invoked by architect)
+    ├── planning-templates/   headings for every planned document           (architect, researcher)
     ├── python-implementation/ splitting mechanics, config code            (invoked on demand)
     ├── workspace-scaffold/   pyproject / import-linter / mkdocs skeletons  (invoked on demand)
     ├── security-review/      checklist                                    (invoked on triggers)
@@ -66,8 +66,8 @@ from drifting apart:
 - The **agent** holds what is true every time it runs: its tools, its discipline, its return
   format, and the templates only it writes — the delegation prompt, the design template, the
   section README template, the `interface.md` template. The architect's five document
-  templates live in `planning-templates` instead, one reference file each, because a run
-  writes one or two of them and should not carry all five.
+  templates and the researcher's source probe live in `planning-templates` instead, one
+  reference file each, because a run writes one or two of them and should not carry all six.
 - The **skill** holds what varies per invocation: which scope, which paths, which order of
   steps, what to do when a file is missing.
 - Nothing is stated in both. If you find yourself editing the same sentence in two files, one
@@ -110,7 +110,8 @@ adding a package to a planned repo          → /dev-team:plan-repo "<what to ad
 repo contract came out wrong                → /dev-team:shape-brief to correct the brief, then /dev-team:plan-repo
                                               (or /dev-team:plan-repo --revise "<what was wrong>")
 rebuilding from an old, messy repo          → /dev-team:extract-legacy <old repo> (twice), then /dev-team:plan-repo
-an API changed, or a source added later     → /dev-team:probe-source <pkg> <source>
+an API changed, a dataset refreshed, or a
+  source added later                        → /dev-team:probe-source <pkg> <source>
 lost track                                  → /dev-team:status
 ```
 
@@ -233,15 +234,15 @@ mechanism in Claude Code that scopes by agent — rules scope by file path or no
 is the wrong axis here, since the architect and designer need the size limits and never open a
 `.py` file.
 
-| Skill | arch | design | impl | review | doc |
-|---|:--:|:--:|:--:|:--:|:--:|
-| `project-structure` — layout, size limits, config placement, naming | ✓ | ✓ | ✓ | ✓ | — |
-| `python-style-guide` — inside a file: docstrings, function shape, `__init__.py`, naming | — | — | ✓ | ✓ | — |
-| `python-implementation` — splitting mechanics, config code | — | — | invoked | — | — |
-| `workspace-scaffold` — pyproject, import-linter, mkdocs skeletons | invoked | — | invoked | — | — |
-| `planning-templates` — headings for every planning document | invoked | — | — | — | — |
-| `security-review` — checklist | — | — | invoked | invoked | — |
-| `reserved-skill-names` — the names this plugin's own skills occupy | invoked | — | — | — | — |
+| Skill | arch | design | impl | review | doc | research |
+|---|:--:|:--:|:--:|:--:|:--:|:--:|
+| `project-structure` — layout, size limits, config placement, naming | ✓ | ✓ | ✓ | ✓ | — | — |
+| `python-style-guide` — inside a file: docstrings, function shape, `__init__.py`, naming | — | — | ✓ | ✓ | — | — |
+| `python-implementation` — splitting mechanics, config code | — | — | invoked | — | — | — |
+| `workspace-scaffold` — pyproject, import-linter, mkdocs skeletons | invoked | — | invoked | — | — | — |
+| `planning-templates` — headings for every planned document | invoked | — | — | — | — | invoked |
+| `security-review` — checklist | — | — | invoked | invoked | — | — |
+| `reserved-skill-names` — the names this plugin's own skills occupy | invoked | — | — | — | — | — |
 
 Three conventions in `python-style-guide` are marked *Project convention* because they go
 beyond or beside Google's guide:
@@ -298,12 +299,13 @@ docs/
 ├── followups.md                    queue, entries `- [ ] <pkg>/<section>: …` (implementer, reviewer, sync-plan)
 ├── assessment.md                   repo survey                               (map-project, plan-repo extend/revise)
 ├── legacy/inventory.md             what to salvage from an old repo          (curator drafts / you mark keep)
+├── sources/<source>.md             SOURCE PROBE: an api as it answered, or a dataset as it reads (researcher)
+├── sources/<source>.sample.json · .probe.py    recorded responses + re-runnable probe   (api)
+├── sources/<source>.stats.json  · .profile.py  column statistics + re-runnable profile  (dataset)
 ├── api/<pkg>.md                    docs-site API pages                       (finalize-package; finalize-project fills gaps)
 ├── packages/
 │   └── data/
 │       ├── assessment.md           package survey                            (plan-package)
-│       ├── sources/<source>.md     SOURCE PROBE: observed schema, limits, errors (researcher)
-│       ├── sources/<source>.sample.json · .probe.py   recorded responses, re-runnable probe
 │       ├── contract.md             THE PACKAGE CONTRACT                      (plan-package)
 │       ├── design/<section>.md     one per section                           (designer)
 │       ├── integration.md          reconciliation, plan-time                 (architect)
@@ -345,8 +347,8 @@ you ── /dev-team:extract-legacy ────────▶ curator ──�
                                      curator ──▶ inventory statuses
 
 you ── /dev-team:plan-package data ────▶ architect ──▶ docs/packages/data/contract.md
-                                architect ──┬──▶ researcher (probe polygon) ──▶ sources/polygon.md   (stops if a key is unset or rejected)
-                                            └──▶ researcher (probe fred)    ──▶ sources/fred.md
+                                architect ──┬──▶ researcher (probe api:polygon)      ──▶ docs/sources/polygon.md   (stops if a key is unset or rejected)
+                                            └──▶ researcher (probe dataset:trades) ──▶ docs/sources/trades.md    (stops if it cannot be read)
                                 architect ──┬──▶ designer (data/ingest)  ──▶ design/ingest.md
                                             ├──▶ designer (data/clean)   ──▶ design/clean.md
                                             └──▶ designer (data/storage) ──▶ design/storage.md
@@ -377,10 +379,19 @@ Every arrow into an agent carries a file path, not a conversation.
 - **Nobody can ask you anything.** The architect stops and writes stubs; designers,
   implementers, and reviewers turn missing information into a stated assumption plus an open
   question, or a blocker returned to you.
-- **Probes make real API calls.** `/dev-team:plan-package` calls every source in the Sections table —
-  one request per endpoint plus one deliberately bad one — and stops before any design if a
-  key is unset or rejected. Keys come from env or a root `.env`; the researcher never writes a
-  value anywhere. A source probed successfully today is not re-probed.
+- **Probes make real API calls, and read real data.** `/dev-team:plan-package` probes every
+  source in the Sections table and stops before any design if one cannot be reached. An `api`
+  gets one request per read endpoint plus one deliberately bad one; it never sends a write, so
+  a write endpoint is recorded as documented rather than observed. A `dataset` is opened and
+  profiled, and only statistics are written down — never rows, and anything that looks like
+  personal data is redacted to its null rate and cardinality. Keys come from env or a root
+  `.env`; the researcher never writes a value anywhere. A source probed successfully today is
+  not re-probed, and probe docs are repo-wide, so two packages consuming one source share
+  one document.
+- **Datasets are probed before the repo contract.** `/dev-team:plan-repo` probes the datasets
+  the brief names, because a target column that cannot support the task, or data that forbids a
+  random split, changes which packages exist — a finding that arrives during package planning
+  arrives too late to act on cheaply.
 - **Re-running the same command is the continue action** after a stop. Doing nothing in the
   ledger means "accept the assumptions".
 - **Return size is context cost.** Designers and implementers return short summaries; the

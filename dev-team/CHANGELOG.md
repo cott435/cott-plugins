@@ -13,6 +13,99 @@ of the name is the **dev_team v4 Flow** artifact in the gallery, which is a titl
 
 
 
+## [0.4.0] - 2026-09-18
+
+Probing generalizes from "one external data API" to "one external source, of a kind".
+
+### Breaking
+- **Probe docs moved to `docs/sources/<source>.md`** from
+  `docs/packages/<pkg>/sources/<source>.md`, and that document's **Credentials** heading is now
+  **Access**. A repo planned under 0.3.2 has its probe docs at the old path under the old
+  heading, so after upgrading `/dev-team:plan-package` finds none and re-probes every source —
+  real requests against real quota — and the architect's stop check looks for a heading that is
+  not there. No fallback read was added: a second path every reader has to know about is the
+  duplication this change exists to remove. The fix in an existing repo is two commands' worth
+  of work, once:
+
+  ```
+  git mv docs/packages/*/sources/* docs/sources/     # then remove the empty sources/ dirs
+  sed -i '' 's/^## Credentials$/## Access/' docs/sources/*.md
+  ```
+
+  A `source` column written before this release still reads correctly: a bare token means
+  `api`, which is what every such column held.
+
+### Added
+- **`dataset` is a probe kind.** `researcher`'s **Probe mode** now branches on a `Kind:` field:
+  `api` keeps the existing procedure, widened; `dataset` is new — resolve and open the data,
+  record its provenance claims, profile it with a re-runnable `<source>.profile.py`, and write
+  columns, dtypes as loaded against dtypes declared, null rates, cardinalities, duplicates and
+  candidate keys. When the purpose names a modeling task it also runs **task fit**: the target
+  and the baseline any model must beat, the leaking columns, the usable features, and whether
+  the rows admit a random split at all — then what the data can and cannot actually support.
+  Ordered so each finding can invalidate the next, with leakage before features, because a
+  leaking column is not a weak feature but a fake result.
+- **Repo-scope dataset probing.** `/dev-team:plan-repo` gains step 2b: probe the datasets the
+  brief names *before* the contract, because a target that cannot carry the task, or data that
+  forbids a random split, decides which packages exist. Contradictions with the brief become
+  interview questions in step 3 rather than assumptions. Only datasets — an api has no call
+  worth making until a section's purpose exists.
+- **Write-side API facts.** The `api` template gains **Write semantics** and **Webhooks**, and
+  **Access** now records the auth *mechanism* — a static key or an OAuth2 grant with its token
+  endpoint, lifetime and scopes — because a client that refreshes a token is a different client
+  from one that sets a header.
+- **A `contracts.yml` headings claim for the probe doc**, owned by `researcher.md` and cited by
+  all four of its readers. The probe doc was the one document parsed by heading with no such
+  claim behind it.
+
+### Changed
+- **Probe docs are repo-wide: `docs/sources/<source>.md`, not
+  `docs/packages/<pkg>/sources/<source>.md`.** An external source belongs to no package, so two
+  packages consuming one were probing it twice and could disagree about what it returned; and a
+  dataset probed before any package exists had nowhere to live. Every reader moved with it —
+  architect, designer, reviewer, implementer, `plan-package`, `plan-change`,
+  `implement-section`, `review-section`, the package-contract template, `workspace-scaffold`'s
+  mkdocs excludes, `README.md` and `flow.md`.
+- **The Sections table's `source` column is `<kind>:<token>`**, comma-separated for a section
+  consuming more than one. A bare token still means `api`, so contracts written before this
+  read unchanged. A section could previously name only one source.
+- **The credential stop is now the access stop**, and the heading it reads is **Access** in both
+  templates rather than **Credentials**. One stop covers a key that is unset or rejected *and* a
+  dataset that is missing or unreadable — the second of which previously had no stop at all.
+- **A probe doc's authority is per heading.** A probe never sends a write, so write endpoints
+  and webhooks are marked `documented` while read endpoints called are `observed` and a vendor
+  sandbox is `sandbox`; the **Endpoints** table carries the marker. The designer treats a
+  `documented` guarantee as an assumption to state, not a fact to build on. Without the
+  distinction, widening to write-side APIs would have quietly diluted the one property that
+  makes a probe doc worth reading.
+- **`/dev-team:probe-source` takes `<pkg | repo> <source>`** and resolves `Kind:` from the
+  argument's prefix, the contract, or `api`. Its artifacts differ by kind:
+  `.sample.json`/`.probe.py` for an api, `.stats.json`/`.profile.py` for a dataset.
+- **The probe doc templates moved out of `researcher.md`** into
+  `skills/planning-templates/references/source-probe.md`, where the architect's five already
+  live, and in the numbered-bolded form its siblings use. That form is not cosmetic:
+  `check_headings` reads an owner template through `template_items()`, which matches only
+  `N. **Name**`, so a template written as fenced `##` headings defines nothing a claim can be
+  declared against — the claim failed on its own owner before the move, not on any reader
+  (`evals/2026-09-18-probe-doc-headings-claim.md`). `researcher.md` drops from 377 to 284 lines
+  and invokes `planning-templates` for the template, as the architect does; `planning-templates`
+  is no longer an architect-only skill.
+- **The repo contract records external sources.** `references/repo-contract.md` §5 now says to
+  list each api's env var and each dataset's location — the field a probe's `Access:` is
+  resolved from, which every caller already assumed was there and no template ever asked for.
+
+### Security
+- **A dataset probe writes statistics, never records.** There is no sample of real rows: example
+  values are allowed only where the value is the statistic (numerics, categoricals under ~50
+  distinct), free text and high-cardinality strings get shape and no contents, and any column
+  that looks like a person is reduced to its null rate and cardinality and named under
+  **Quirks**. The existing secret-scrubbing rule covered credentials in a response; it did not
+  cover personal data in a file, and a record copied into `docs/` is in the repo's history for
+  good.
+- **Probes never mutate.** No POST, PUT, PATCH or DELETE against a live account, whatever the
+  documentation calls reversible — the probe is holding the user's real credential. The
+  implementer's own fallback probe inherits the rule.
+
 ## [0.3.2] - 2026-09-17
 
 Passes 3 and 4 of the 2026-09-17 audit: the documents people read, and the site. No prompt an

@@ -39,6 +39,15 @@ prose where a table would do.
    for something, say so — "no convention" is a decision waiting to be made and "the
    convention is X" is not.
 
+   **External sources** belong here too, one line each: the env var holding the credential for
+   every api the repo consumes, and the location of every dataset. This is where
+   `/dev-team:plan-package` and `/dev-team:probe-source` look when they resolve a probe's
+   `Access:` field, and a source absent from here is probed with `discover` — a guess where a
+   fact was available. Name the probe doc under `docs/sources/` for any source already probed;
+   for a dataset probed at repo scope, add the one line from its **Supported tasks** or
+   **Splitting** that constrains the decomposition, so a package run inherits the constraint
+   without reading the whole document.
+
 6. **Toolchain** — workspace tool; the one-package test command; lint, import-lint, and docs
    build commands; where each config lives; the docs renderer and its cross-reference syntax;
    the skeleton blocks the scaffold step copies. Invoke `workspace-scaffold` and copy its

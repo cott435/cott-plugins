@@ -80,11 +80,31 @@ any row.
        override a decision; it becomes a question in step 3.
      - *still holds* — everything else, applied as before.
 
+2b. **Probe datasets.** When the brief names a dataset the repo is being built around — a
+   file, a table, a corpus, a hub id — probe it now, before the contract, per your **Probing**
+   section with `Kind: dataset`. One researcher per dataset, all in parallel, in one message:
+   `Purpose:` the brief capability that names it, verbatim; `Access:` the location the brief
+   gives, else `discover`. Skip one whose `docs/sources/<name>.md` is dated today and reads
+   `readable`. A brief naming no dataset skips this step entirely.
+
+   This is the only probing at repo scope, and only for datasets. An api is probed inside
+   `/dev-team:plan-package`, where the section's purpose is known and the call can be the one
+   that section will actually make. A dataset is different in kind: its columns, its target, and
+   whether a random split over it is even valid decide *what packages there are*, so a finding
+   that surfaces during package planning surfaces after the decomposition it should have shaped.
+
+   An access failure is a **stop** with the access stop message: a dataset the repo is being
+   built around is not one to plan around unseen. Otherwise read each doc's **Supported tasks**,
+   **Target** and **Splitting**. Anything there that contradicts what the brief asks for is a
+   question for step 3, never an assumption — a brief asking for a classifier over a target with
+   eleven positive rows needs the user, and this is the cheapest moment in the whole pipeline to
+   reach them.
+
 3. **Interview rule.** Decide what you would ask — package boundaries the brief does not
    settle, dependency direction where two orders are defensible, a shared convention with no
    implied default (timezone, ID type, error envelope, config prefix scheme), a project skill
    with no package, an item under the brief's **Open questions** that changes the
-   decomposition, and in Revise each *conflict* ("D3 decided X; the revised brief says Y —
+   decomposition, anything step 2b found that the brief contradicts, and in Revise each *conflict* ("D3 decided X; the revised brief says Y —
    which holds?"). In Revise, first retire every *premise gone* entry (step 5's rule), so the
    ledger check below does not count it as asked. Check the ledger; if anything is unasked,
    stub it tagged `Raised by: /dev-team:plan-repo (interview)` and **stop** with the stop
@@ -140,6 +160,9 @@ any row.
 - Planning documents only. No code, no config, no tests.
 - Do not spawn designers and do not plan sections. Packages are planned one at a time by
   `/dev-team:plan-package`, each against the shipped surface of the packages below it.
+- Researchers in probe mode are the one exception, and only for the datasets of step 2b. Do not
+  probe an api here: without a section's purpose there is no call worth making, and a probe doc
+  written against a guess is worse than none.
 - Shapes, not signatures, at every boundary. A signature belongs to the providing package's
   `surface.md`, which does not exist yet.
 - Never delete a document. Retire it by reference: a history copy, the orphan list, a

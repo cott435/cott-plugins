@@ -43,8 +43,10 @@ invent its own shapes and conventions, and the next package will invent them dif
   package).
 - `docs/legacy/inventory.md` if it exists — its `resource` and `skill` columns only, to fill
   `Extracted skill:` when probing. Never its paths; the old code is not yours to read.
-- `docs/packages/$pkg/sources/*.md` if any — probe docs from an earlier run or from
-  `/dev-team:probe-source`. One dated today whose **Credentials** reads `valid` is not re-probed.
+- `docs/sources/*.md` if any — probe docs from an earlier run, from `/dev-team:plan-repo`, or
+  from `/dev-team:probe-source`. They are repo-wide, so some may belong to another package's
+  sources; the ones that matter here are the sources your Sections table names. One dated today
+  whose **Access** reads `valid` or `readable` is not re-probed.
 
 ## Steps
 
@@ -58,8 +60,8 @@ invent its own shapes and conventions, and the next package will invent them dif
    skill with no section, a section with no skill, a pipeline whose ordering is ambiguous, a
    covered *now* capability no section builds, a provisional upstream name you need settled, or a section that plainly needs an external
    `source` whose exact vendor or token you cannot pin down from the repo contract — a wrong
-   guess there sends a probe, a design, and a build at the wrong API, which is the cost test's
-   textbook case. Check the ledger; stub anything unasked tagged
+   guess there sends a probe, a design, and a build at the wrong API or the wrong dataset, which
+   is the cost test's textbook case. Check the ledger; stub anything unasked tagged
    `Raised by: /dev-team:plan-package $pkg (interview)` and **stop** with the stop message. Otherwise
    proceed.
 
@@ -68,23 +70,30 @@ invent its own shapes and conventions, and the next package will invent them dif
    rows, Notes verbatim — designers read the contract, never the brief. **Public surface
    (intent)** is the filter `surface.md` will be checked against: every entry names the downstream package or
    CLI command that consumes it, and nothing without a consumer is listed. The Sections
-   table's `source` column names the external service each section consumes, or `—`; it is
-   what the next step iterates over, so a service missing from it is never probed.
+   table's `source` column names each external source a section consumes as
+   `<kind>:<token>` — `api:polygon`, `dataset:trades-2024`, several comma-separated, or `—`. It
+   is what the next step iterates over, so a source missing from it is never probed, and a kind
+   guessed wrong sends the probe at the wrong thing entirely.
 
-4b. **Probe.** For every section whose `source` is not `—`, spawn one `researcher` in probe
-   mode per your **Probing** section, all in parallel, in one message — `Purpose:` from the
-   section's responsibility, `Env var:` from the repo contract's Shared conventions when
-   named, `Extracted skill:` from the inventory when a row names this source.
-   Skip a source whose probe doc is dated today and `valid`. Wait for all of them. Any credential failure
-   → **stop** with the credential stop message and write nothing further. Otherwise continue.
+4b. **Probe.** For every entry in every section's `source` column, spawn one `researcher` in
+   probe mode per your **Probing** section, all in parallel, in one message — `Kind:` and
+   `Source:` from the entry, `Purpose:` from the section's responsibility, `Access:` from the
+   repo contract's Shared conventions when it names one, `Extracted skill:` from the inventory
+   when a row names this source. Skip a source whose probe doc is dated today and reads `valid`
+   or `readable`, including one `/dev-team:plan-repo` wrote. Wait for all of them. Any access
+   failure → **stop** with the access stop message and write nothing further.
+
+   Otherwise read each dataset probe's **Supported tasks** and **Splitting**, per your
+   **Probing** section: where either contradicts a section you just wrote into the contract,
+   amend the contract here, before step 5, and say so in your return. Then continue.
 
 5. **Delegate.** One `designer` per section, all in parallel, using your delegation template:
    - `Section: $pkg/<section>`
    - `Mode: new` (or `document` for a section that already has code and is being adopted)
    - `Contracts (highest first): docs/packages/$pkg/contract.md, docs/architecture.md`
    - `Upstream interfaces:` the shipped `interface.md` paths, or `provisional:` paths, or `none`
-   - `Source probes:` the section's probe doc from step 4b, or `none` for a section whose
-     `source` is `—`
+   - `Source probes:` `docs/sources/<source>.md` for each of the section's sources from step
+     4b, comma-separated, or `none` for a section whose `source` is `—`
    - `Existing design: none` · `Assessment:` the package assessment if you wrote one
    - `Skills to invoke:` that section's project skills
    - `Write your design to: docs/packages/$pkg/design/<section>.md`

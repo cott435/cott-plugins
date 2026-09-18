@@ -65,18 +65,21 @@ brief and re-run — see [New repo](new-repo.md).
 
 Same as the new-repo workflow, with one step you will notice: after the package contract is
 written — its Sections table names the external `source` each section consumes — the
-architect spawns one **researcher** per source, in parallel, before any designer. Each
-researcher checks the credential (env or a root `.env`), reads the vendor's docs, calls the
-real endpoints plus one deliberately bad request each, and writes
-`docs/packages/data/sources/<source>.md`: the **observed** schema, pagination, limits, and
-error shapes, with a scrubbed sample and a re-runnable probe script. When an extracted skill
-exists for that source, the probe also diffs the old fixtures against today's responses.
+architect spawns one **researcher** per source, in parallel, before any designer, each
+writing to the repo-wide `docs/sources/<source>.md`. For an `api`, the researcher checks the
+credential (env or a root `.env`), reads the vendor's reference, calls the real read endpoints
+plus one deliberately bad request each, and records the **observed** schema, pagination,
+limits, auth flow and error shapes with a scrubbed sample and a re-runnable probe. For a
+`dataset` it opens the data and records columns, dtypes, null rates and duplicates, plus the
+target, leakage and split when a modeling task is named — statistics only, never rows. When an
+extracted skill exists for that source, the probe also diffs the old fixtures against today's
+responses.
 
-A key that is unset or rejected **stops** the run there:
+A source that cannot be reached **stops** the run there:
 
 ```
-Stopped for credentials: POLYGON_API_KEY unset
-Set them and re-run `/dev-team:plan-package data`.
+Stopped for access: POLYGON_API_KEY unset
+Resolve them and re-run `/dev-team:plan-package data`.
 ```
 
 Nothing is designed until every source has answered. Designers then get `Source probes:` and
@@ -93,6 +96,6 @@ From here it is the new-repo loop: `/dev-team:implement-section`, `/dev-team:rev
 /dev-team:probe-source data polygon
 ```
 
-Re-probes one source on its own — after an API changes, or when a follow-up from an
-implementer says the design assumed one shape and the wire returned another. The doc is
-rewritten with a new date and a **Changes since last probe** section.
+Re-probes one source on its own — after an API changes, after a dataset is refreshed, or when
+a follow-up from an implementer says the design assumed one shape and the wire returned
+another. The doc is rewritten with a new date and a **Changes since last probe** section.

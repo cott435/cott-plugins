@@ -67,12 +67,18 @@ Then:
    each section returns to its siblings (signatures now, not shapes), the pipelines that run
    the sections in order (`download → clean → audit → store`), what the package will expose,
    and a `Consumes` table of every upstream name it uses. Its Sections table names the
-   external `source` each section consumes.
-2. Spawns one **researcher** per source, in parallel. Each checks the credential (env or a
-   root `.env`), reads the vendor's docs, calls the real endpoints plus one bad request each,
-   and writes `docs/packages/data/sources/<source>.md` — the **observed** schema, pagination,
-   limits, error shapes — with a scrubbed sample and a re-runnable probe script. A key that is
-   unset or rejected **stops** the run here, naming the variable, before any design exists.
+   external `source` each section consumes, each written `<kind>:<token>` — `api:polygon`,
+   `dataset:trades-2024`.
+2. Spawns one **researcher** per source, in parallel, and writes each one to
+   `docs/sources/<source>.md` — a repo-wide path, so a source two packages consume is probed
+   once. An `api` researcher checks the credential (env or a root `.env`), reads the vendor's
+   reference, calls the real read endpoints plus one bad request each, and records the
+   **observed** schema, pagination, limits, auth flow and error shapes with a scrubbed sample
+   and a re-runnable probe; it never sends a write, so a write endpoint is recorded as
+   documented rather than observed. A `dataset` researcher opens the data and records its
+   columns, dtypes, null rates, duplicates and — when the purpose names a modeling task — its
+   target, leakage, split and supported tasks, as statistics and never as rows. A source that
+   cannot be reached **stops** the run here, naming it, before any design exists.
 3. Spawns one **designer** per section, in parallel, each given its section's probe doc. Each
    writes `docs/packages/data/design/<section>.md` and returns ten lines.
 4. Reads every design and writes `docs/packages/data/integration.md`: deviations, mismatches,

@@ -111,6 +111,7 @@ upstream package's `interface.md` — wins over every plan-time document about t
 | `docs/brief.md` | canonical | shape-brief, you; plan-repo appends | plan-repo, map-project, curator; plan-package (only its `covers` rows) |
 | `docs/history/` | archive | plan-repo, shape-brief | plan-repo (`brief-contracted.md`) |
 | `docs/legacy/inventory.md` | survey | curator (extract-legacy); you mark `keep` | curator, researchers in extract mode; probe-source (the `Extracted skill:` row) |
+| `docs/sources/<source>.md` + `.sample.json`/`.probe.py` (api) or `.stats.json`/`.profile.py` (dataset) | **probed** — the external system as it answered, or the dataset as it reads, on the date probed. Repo-wide: one document per source, however many packages consume it | researcher in probe mode, spawned by plan-package, by plan-repo for a dataset, or run as probe-source | designers, implementer, reviewer |
 | `docs/architecture.md` | **repo contract** | plan-repo; map-project, sync-plan | everyone |
 | `docs/decisions.md` | ledger | architect stubs · you · implementer `Applied:` | every agent |
 | `docs/followups.md` | queue | implementer, reviewer, sync-plan | implementer, documenter |
@@ -119,7 +120,6 @@ upstream package's `interface.md` — wins over every plan-time document about t
 | `docs/packages/<pkg>/assessment.md` | survey | plan-package | designers |
 | `docs/packages/<pkg>/contract.md` | **package contract** | plan-package; sync-plan | designers, implementer, reviewer, plan-change (Consumes) |
 | `docs/packages/<pkg>/design/<section>.md` | plan-time | designer; sync-plan | implementer, reviewer |
-| `docs/packages/<pkg>/sources/<source>.md` + `.sample.json`, `.probe.py` | **probed** — the external system as it answered, on the date probed | researcher in probe mode, spawned by plan-package or run as probe-source | designers, implementer, reviewer |
 | `docs/packages/<pkg>/integration.md` | plan-time | architect; sync-plan | implementer, reviewer, finalize-package |
 | `docs/packages/<pkg>/surface.md` | plan-time | architect at unify; sync-plan | finalize-package, review-package, implementer |
 | `docs/packages/<pkg>/interface.md` | **shipped** | finalize-package; sync-plan | plan-package and every consumer |

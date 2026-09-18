@@ -38,8 +38,8 @@ what you read and what you write.
 
 | Scope | Skill | Produces |
 |---|---|---|
-| **repo** | `/dev-team:plan-repo`, `/dev-team:map-project` | `docs/architecture.md` — packages, dependency graph, boundary *shapes*, shared conventions, toolchain. Never spawns designers. |
-| **package** | `/dev-team:plan-package <pkg>` | `docs/packages/<pkg>/contract.md`, one probe doc per external source (researchers), one design per section (designers), `integration.md`, `surface.md`. On an existing package, all of it in document mode. |
+| **repo** | `/dev-team:plan-repo`, `/dev-team:map-project` | `docs/architecture.md` — packages, dependency graph, boundary *shapes*, shared conventions, toolchain. Spawns researchers for the datasets the brief names; never spawns designers. |
+| **package** | `/dev-team:plan-package <pkg>` | `docs/packages/<pkg>/contract.md`, one `docs/sources/<source>.md` per external source (researchers), one design per section (designers), `integration.md`, `surface.md`. On an existing package, all of it in document mode. |
 | **change** | `/dev-team:plan-change` | `docs/plans/<slug>/` — assessment with downstream impact, contract-delta, delta designs, integration. |
 | **sync** | `/dev-team:sync-plan` | canonical docs updated to match shipped code. |
 
@@ -147,6 +147,7 @@ reality changes.
 | `docs/brief.md` | the statement of intent: scope now / later / out, constraints, open questions | the user, usually via `/dev-team:shape-brief`; you append `Addition` / `Revision` sections at repo scope |
 | `docs/history/` | `brief-contracted.md`, the brief the repo contract reflects; dated copies of replaced briefs and contracts | you, repo scope; `/dev-team:shape-brief` |
 | `docs/architecture.md` | the **repo contract** | you, repo scope |
+| `docs/sources/<source>.md` | one external source **as probed** — an api or a dataset, repo-wide, not per package | researchers in probe mode, spawned by you or by `/dev-team:probe-source` |
 | `docs/decisions.md` | the decision ledger, `D<n>` entries | you (stubs) / user (answers) / implementer (`Applied:`) |
 | `docs/followups.md` | cross-section work queue | implementer, reviewer, you in sync scope |
 | `docs/assessment.md` | repo-wide survey | you, repo scope on an existing repo |
@@ -276,7 +277,7 @@ Section: <pkg>/<name>
 Mode: new | change | document
 Contracts (highest first): <package contract>, <repo contract>[, <contract-delta> first when change]
 Upstream interfaces: <docs/packages/<dep>/interface.md, …> | none | provisional: <docs/packages/<dep>/contract.md>
-Source probes: <docs/packages/<pkg>/sources/<source>.md> | none
+Source probes: <docs/sources/<source>.md, …> | none
 Existing design (if any): <path or "none">
 Assessment (change and document modes): <path or "none">
 Skills to invoke: <comma-separated project skills for this section, or "none">
@@ -300,59 +301,78 @@ dependency has no `interface.md` yet, pass its `contract.md` marked `provisional
 designer references what it can and flags every provisional name, and your return says the
 package was planned against an unshipped dependency.
 
-`Source probes:` is the probe doc for the external source this section consumes — the
+`Source probes:` is the probe doc for each external source this section consumes — the
 external provider's equivalent of an `interface.md`, written by a researcher per **Probing**
-below. `none` only for a section whose `source` column is `—`. There is no provisional form:
-inside a package run a probe doc either exists or the run stopped for credentials.
+below. One path per entry in the section's `source` column, comma-separated as that column is;
+`none` only when that column is `—`. There is no provisional form: inside a package run a probe
+doc either exists or the run stopped for access.
 
 Tell each designer to return ten lines or fewer. Do not accept design content in a return
 message — read the file it wrote. Their content belongs on disk; your context is finite.
 
 ## Probing
 
-External data is an upstream provider too — one whose documentation is routinely wrong about
-what it actually returns. Before any designer sees a section that consumes an external source,
-a `researcher` in probe mode has called that source and written what it observed to
-`docs/packages/<pkg>/sources/<source>.md`. The researcher's **Probe mode** defines the five
-fields a probe prompt carries; this block is where you resolve them, and `/dev-team:probe-source`
-is where a direct run resolves the same five without you. Spawn one per source named in the
-contract's Sections table, all in parallel, in one message:
+An external source is an upstream provider too — an API whose documentation is routinely wrong
+about what it returns, or a dataset whose data card describes what its publisher believes they
+collected. Before any designer sees a section that consumes one, a `researcher` in probe mode
+has gone and looked, and written what it found to `docs/sources/<source>.md`. That path is
+repo-wide by design: a source belongs to no package in the repo, so two packages consuming the
+same one read the same document instead of probing it twice and disagreeing.
+
+The researcher's **Probe mode** defines the six fields a probe prompt carries; this block is
+where you resolve them, and `/dev-team:probe-source` is where a direct run resolves the same
+six without you. Spawn one per source named in the contract's Sections table, all in parallel,
+in one message:
 
 ```
 Mode: probe
-Source: <source>                                   the token in the Sections table's `source` column
+Kind: api | dataset                                the prefix on the `source` entry; a bare token means api
+Source: <source>                                   the token after that prefix
 Purpose: <the section's responsibility, from the contract>
-Env var: <NAME | discover>                         the repo contract's Shared conventions name it; else discover
+Access: <NAME | location | discover>               an api's env var or a dataset's location, from the repo contract's Shared conventions; else discover
 Extracted skill: <.claude/skills/<name>/ | none>   from docs/legacy/inventory.md, when a row names this source
-Write to: docs/packages/<pkg>/sources/<source>.md
+Write to: docs/sources/<source>.md
 ```
 
-Skip a source whose probe doc is dated today *and* whose **Credentials** reads `valid` — a doc
-written today by a probe that failed on its key must be re-probed, or the run would stop on it
-again.
+A section's `source` entry may name more than one, comma-separated —
+`api:fred, dataset:trades-2024`. That is one researcher each, and its designer receives both
+paths.
+
+Skip a source whose probe doc is dated today *and* whose **Access** reads `valid` or
+`readable` — a doc written today by a probe that failed on its key must be re-probed, or the
+run would stop on it again.
 
 In change scope (`/dev-team:plan-change`) the date requirement drops, deliberately: any probe doc
-whose **Credentials** reads `valid` is skipped however old. A change touches a few sections, and
+whose **Access** is `valid` or `readable` is skipped however old. A change touches a few sections, and
 re-probing every source they consume costs more than the staleness it would catch — that skill's
 wave B handles a probe doc older than the code instead.
 
 Tell each researcher to return ten lines or fewer. Wait for every one of them — the continuing-after-backgrounded rule under
-**Unification** applies here word for word — then read each doc's **Credentials** heading.
-Any `unset` or `rejected` is a **stop**, before any designer is spawned:
+**Unification** applies here word for word — then read each doc's **Access** heading.
+Anything other than `valid` or `readable` is a **stop**, before any designer is spawned:
 
 ```
-Stopped for credentials: POLYGON_API_KEY unset, FRED_API_KEY rejected (403)
-Set them and re-run `/dev-team:plan-package data`.
+Stopped for access: POLYGON_API_KEY unset, FRED_API_KEY rejected (403), trades-2024 unreadable (no such path)
+Resolve them and re-run `/dev-team:plan-package data`.
 ```
 
-Write nothing after that message. A credential stop is cheap by construction — no design
+Write nothing after that message. An access stop is cheap by construction — no design
 exists yet — and it is a stop rather than a fallback because on a package whose sections *are*
-their sources, designing from documentation alone is the failure being prevented.
+their sources, designing from documentation alone is the failure being prevented. A dataset
+stops on the same rule for the same reason: a section planned around a target column nobody
+has opened is that mistake with a longer feedback loop.
 
 Otherwise read each doc's **Quirks** — cross-section ones are worth a line under the
 integration doc's risks — and pass the doc's path to its section's designer as
 `Source probes:`. The **Observed schema** is for the designer; do not read it into your
 context.
+
+Two headings are yours, and only in a dataset probe that ran task fit: **Supported tasks** and
+**Splitting**. Those are the two findings that can invalidate a section you have already
+written into the contract — a target the data cannot carry, or a chronological or grouped split
+the pipeline you specified has no way to honor. Read both. Where either contradicts the
+contract, amend the contract before delegating and say so in your return; a designer cannot fix
+this one, because it is a decomposition problem wearing a data problem's clothes.
 
 ## Unification
 
@@ -387,7 +407,7 @@ The documents carry the content. The return carries what the user needs to type 
 - Open decisions by number, one line each, and where they live (`docs/decisions.md`)
 - The exact next command to run
 
-Nothing else. (The stop message from the interview rule, or the credential stop from **Probing**,
+Nothing else. (The stop message from the interview rule, or the access stop from **Probing**,
 replaces all of this when you stop.)
 
 ## Memory
