@@ -38,6 +38,7 @@ dev-team/
     ├── review-section/     → reviewer      <pkg>/<section> [slug]
     ├── finalize-package/   → implementer   <pkg>: lazy __init__, pipelines, cli.py, docs page, interface.md
     ├── review-package/     → reviewer      <pkg>: surface + package-level checks
+    ├── sync-design/        → architect     <pkg>: fold recorded deviations into designs, as As shipped
     ├── sync-plan/          → architect     fold a shipped change into canonical docs
     ├── finalize-project/   → documenter    package READMEs, index.md, root README
     ├── status/             (inline)        the checklist: planned / built / reviewed / open, derived
@@ -119,6 +120,8 @@ repo contract came out wrong                → /dev-team:shape-brief to correct
 rebuilding from an old, messy repo          → /dev-team:extract-legacy <old repo> (twice), then /dev-team:plan-repo
 an API changed, a dataset refreshed, or a
   source added later                        → /dev-team:probe-source <pkg> <source>
+a package shipped; its designs describe the
+  plan, not the code                        → /dev-team:sync-design <pkg>
 lost track                                  → /dev-team:status
 ```
 
@@ -130,7 +133,8 @@ A new pipeline is a new file there; the shared site builder picks it up.
 - [New repo, package by package](site/workflows/new-repo.md) — `/dev-team:shape-brief` →
   `/dev-team:plan-repo` (revised when the contract comes out wrong), then per
   package: `/dev-team:plan-package` → `/dev-team:implement-section` + `/dev-team:review-section` per
-  section → `/dev-team:finalize-package` → `/dev-team:review-package`. `/dev-team:finalize-project` any time.
+  section → `/dev-team:finalize-package` → `/dev-team:review-package` → `/dev-team:sync-design`.
+  `/dev-team:finalize-project` any time.
 - [Changing shipped code](site/workflows/change-shipped-code.md) — `/dev-team:plan-change` →
   `/dev-team:implement-section <pkg>/<section> <slug>` → `/dev-team:review-section` → `/dev-team:sync-plan`.
 - [Adding a package to an existing repo](site/workflows/add-package.md) — `/dev-team:plan-repo`
@@ -324,7 +328,7 @@ docs/
 │   └── data/
 │       ├── assessment.md           package survey                            (plan-package)
 │       ├── contract.md             THE PACKAGE CONTRACT                      (plan-package)
-│       ├── design/<section>.md     one per section                           (designer)
+│       ├── design/<section>.md     one per section; As shipped appended      (designer; sync-design)
 │       ├── integration.md          reconciliation, plan-time                 (architect)
 │       ├── surface.md              design of the public surface              (architect, at unify)
 │       └── interface.md            THE PUBLIC SURFACE AS SHIPPED             (finalize-package)
@@ -381,6 +385,7 @@ you ── /dev-team:review-section data/ingest ─────▶ reviewer ─�
 you ── /dev-team:finalize-package data ──────────▶ implementer (surface mode) ──▶ src/data/__init__.py, pipelines/, cli.py, docs/api/data.md
                                           implementer ──▶ docs/packages/data/interface.md
 you ── /dev-team:review-package data ────────────▶ reviewer ──▶ docs/reviews/<date>-data-package.md
+you ── /dev-team:sync-design data ───────────────▶ architect ──▶ design/*.md gain As shipped (append-only)
 
 you ── /dev-team:plan-package analysis ──────────▶ architect reads docs/packages/data/interface.md as upstream …
 

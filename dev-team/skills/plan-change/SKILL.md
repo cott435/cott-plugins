@@ -36,7 +36,8 @@ it is empty, look for the most recent `docs/plans/*/assessment.md` whose plan ha
 
    Then read the canonical docs: `docs/architecture.md`, and for every affected package its
    `contract.md`, `design/*.md`, `surface.md`, and `interface.md`; plus `docs/decisions.md`
-   and `docs/followups.md`. If canonical docs are thin, the most recent
+   and `docs/followups.md`. Read each affected section's design including its **As shipped**
+   sections — the latest one is the spec the change departs from. If canonical docs are thin, the most recent
    `docs/plans/*/integration.md` may hold contracts a previous change established.
 
 3. **Downstream impact.** For every affected package that has an `interface.md`, compute its

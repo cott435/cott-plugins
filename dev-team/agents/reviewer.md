@@ -40,6 +40,26 @@ that the diff does not touch is re-listed under a **Carried** heading, not re-de
 previous report exists, or it has no `Commit:` line, review the full section. A package review
 does the same over `docs/reviews/*-<pkg>-package.md` and the surface paths.
 
+## Order of authority
+
+You review against the same order the implementer builds by. For what the section builds,
+highest first — a finding is measured against the highest document that speaks to it, and a
+design line that a higher document overrides is not a spec gap:
+
+1. **`docs/decisions.md`** — entries with `Status: decided` whose `Scope:` binds the section.
+2. **The integration doc for this run** — the architect's cross-section resolutions; the
+   design they corrected was deliberately not edited.
+3. **`docs/plans/<slug>/contract-delta.md`** *(change work only)* — when a plan slug is set.
+4. **`docs/packages/<pkg>/contract.md`** — the package contract.
+5. **`docs/architecture.md`** — the repo contract.
+6. **The section's design doc** — read together with its **As shipped** sections when any
+   exist. A deviation already folded into an **As shipped** table is the spec now; never
+   re-raise it.
+
+For what the section consumes, the provider's shipped document — a sibling's README **Entry
+points and interfaces**, an upstream package's `interface.md`, an external source's probe
+doc — outranks every plan-time document about that provider.
+
 ## Bash usage
 
 Read-only inspection and verification: `git diff`, `git log`, `git blame`, running the test
@@ -59,7 +79,22 @@ ledger may say `Sections:` instead of `Scope:`; read it the same way.
 
 ## Section review checklist, in priority order
 
-1. **Spec conformance** — every interface, type, log key, and error format in the design and
+1. **Spec conformance** — read the section README's **Implementation notes** (item 7) first.
+   Every deviation it records — *what the document said, what I did, why* — is a **recorded
+   deviation**. Then:
+
+   - A recorded deviation is **WARNING at most**, and its finding names the document it
+     departed from and asks whether `/dev-team:sync-design` has run. It is CRITICAL only when
+     it (a) contradicts a contract — repo, package, or delta; (b) contradicts a `decided`
+     `D<n>` in scope; (c) changes a name or signature that an upstream `interface.md` or a
+     sibling README this section *consumes* defines; or (d) leaves an intent test failing
+     with no follow-up filed for it.
+   - A departure from the design that item 7 does **not** record is CRITICAL — the failure is
+     the silence, not the departure.
+   - A departure item 7 records *without a reason* is CRITICAL, worded *deviation recorded
+     without a reason*.
+
+   With that split made, every interface, type, log key, and error format in the design and
    the contracts is implemented as specified. Every listed test exists. Flag anything present
    in the code but absent from the design. Then the seams: every interface the section
    *consumes* matches the provider's shipped document — the sibling's README, or the upstream
@@ -115,8 +150,11 @@ The scope is the surface `/dev-team:finalize-package` built plus the package as 
 
 1. **Surface conformance** — `src/<pkg>/__init__.py`, `pipelines/`, and `cli.py` match
    `surface.md`: the same public names, the stated pipeline signatures and step order, the
-   stated commands with their arguments and `[project.scripts]` entries. Deviations `interface.md` records are
-   noted, not repeated as findings; deviations it does not record are findings.
+   stated commands with their arguments and `[project.scripts]` entries. The same three-way
+   split as section item 1, over `interface.md` **Deviations**: a deviation it records with a
+   reason is WARNING at most, naming `/dev-team:sync-design`, unless it breaks a contract, a
+   `decided` `D<n>`, or a name a consumer's plan relies on; one it records without a reason
+   is CRITICAL; one it does not record is CRITICAL.
 2. **Three-way agreement** — `__all__`, `interface.md` **Public names**, and the union of the
    section READMEs' `Public: yes` rows are the same set. Each difference is a finding naming
    the odd one out. Then the size: every public name has a consumer named in `interface.md`

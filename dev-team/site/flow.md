@@ -54,7 +54,8 @@ flowchart TD
   D -->|next section| C
   D --> E["/dev-team:finalize-package data<br/>→ __init__.py, pipelines/, cli.py, interface.md"]
   E --> F["/dev-team:review-package data<br/>→ package gate"]
-  F --> G["/dev-team:plan-package analysis<br/>reads data/interface.md as upstream"]
+  F --> SD["/dev-team:sync-design data<br/>→ design/*.md gain As shipped"]
+  SD --> G["/dev-team:plan-package analysis<br/>reads data/interface.md as upstream"]
   G -.->|same loop| F
   F --> H["/dev-team:plan-change '…'<br/>→ plans/slug/ with Downstream impact"]
   H --> I["/dev-team:implement-section pkg/section slug"]
@@ -119,9 +120,9 @@ upstream package's `interface.md` — wins over every plan-time document about t
 | `docs/api/<pkg>.md` | site | finalize-package; finalize-project fills gaps | mkdocs |
 | `docs/packages/<pkg>/assessment.md` | survey | plan-package | designers |
 | `docs/packages/<pkg>/contract.md` | **package contract** | plan-package; sync-plan | designers, implementer, reviewer, plan-change (Consumes) |
-| `docs/packages/<pkg>/design/<section>.md` | plan-time | designer; sync-plan | implementer, reviewer |
+| `docs/packages/<pkg>/design/<section>.md` | plan-time; **As shipped** sections appended once built | designer; sync-plan; sync-design (append-only) | implementer, reviewer, plan-change (the latest As shipped) |
 | `docs/packages/<pkg>/integration.md` | plan-time | architect; sync-plan | implementer, reviewer, finalize-package |
-| `docs/packages/<pkg>/surface.md` | plan-time | architect at unify; sync-plan | finalize-package, review-package, implementer |
+| `docs/packages/<pkg>/surface.md` | plan-time | architect at unify; sync-plan; sync-design (As shipped) | finalize-package, review-package, implementer |
 | `docs/packages/<pkg>/interface.md` | **shipped** | finalize-package; sync-plan | plan-package and every consumer |
 | `packages/<pkg>/src/<pkg>/<section>/README.md` | **shipped** | implementer | dependents, finalize-package, reviewer, documenter |
 | `docs/reviews/<date>-<pkg>-<section>.md` | report | review-section | implementer; finalize-package (it gates on the date) |

@@ -1,6 +1,6 @@
 ---
 name: architect
-description: Plans at three scopes — the repo (packages, dependency graph, boundary shapes, conventions), one package (sections, designs, integration, public surface), or a change to shipped code. Delegates per-section design to designer agents in parallel and reconciles the results. Invoked by /dev-team:plan-repo, /dev-team:plan-package, /dev-team:plan-change, /dev-team:map-project, and /dev-team:sync-plan.
+description: Plans at three scopes — the repo (packages, dependency graph, boundary shapes, conventions), one package (sections, designs, integration, public surface), or a change to shipped code. Delegates per-section design to designer agents in parallel and reconciles the results. Invoked by /dev-team:plan-repo, /dev-team:plan-package, /dev-team:plan-change, /dev-team:map-project, /dev-team:sync-plan, and /dev-team:sync-design.
 tools: Agent, Read, Write, Edit, Glob, Grep, Bash, Skill, WebSearch, WebFetch
 model: inherit
 memory: project
@@ -53,7 +53,7 @@ what you read and what you write.
 | **repo** | `/dev-team:plan-repo`, `/dev-team:map-project` | `docs/architecture.md` — packages, dependency graph, boundary *shapes*, shared conventions, toolchain. Spawns researchers for the datasets the brief names; never spawns designers. |
 | **package** | `/dev-team:plan-package <pkg>` | `docs/packages/<pkg>/contract.md`, one `docs/sources/<source>.md` per external source (researchers), one design per section (designers), `integration.md`, `surface.md`. On an existing package, all of it in document mode. |
 | **change** | `/dev-team:plan-change` | `docs/plans/<slug>/` — assessment with downstream impact, contract-delta, delta designs, integration. |
-| **sync** | `/dev-team:sync-plan` | canonical docs updated to match shipped code. |
+| **sync** | `/dev-team:sync-plan`, `/dev-team:sync-design` | canonical docs updated to match shipped code; design docs gain **As shipped** sections (sync-design). |
 
 A repo is planned once; packages are planned one at a time, often a week apart, each built
 against the *shipped* surface of the packages below it. That is why repo scope fixes shapes
@@ -165,7 +165,7 @@ reality changes.
 | `docs/assessment.md` | repo-wide survey | you, repo scope on an existing repo |
 | `docs/packages/<pkg>/assessment.md` | package survey | you, package scope |
 | `docs/packages/<pkg>/contract.md` | the **package contract** | you, package scope |
-| `docs/packages/<pkg>/design/<section>.md` | one design per section | designers you spawn |
+| `docs/packages/<pkg>/design/<section>.md` | one design per section | designers you spawn; you in sync scope (append-only, **As shipped**) |
 | `docs/packages/<pkg>/integration.md` | cross-section reconciliation, plan-time | you, package scope |
 | `docs/packages/<pkg>/surface.md` | the design of the public surface | you, package scope, after unification |
 | `docs/packages/<pkg>/interface.md` | the public surface **as shipped** | implementer (`/dev-team:finalize-package`); you only in sync scope, or transcribing an adopted package's existing re-exports |

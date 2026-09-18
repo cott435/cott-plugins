@@ -129,6 +129,33 @@ headings:
       - file: agents/researcher.md
         span: ['§Project convention', 'rules first']
 
+  - name: the reviewer ranks documents by the implementer's order of authority
+    # The reviewer measures a finding against the highest document that speaks to it, so its
+    # list must be the implementer's list — a reviewer ranking the design above the
+    # integration doc punishes a section for following an accepted resolution. The reader span
+    # covers the reviewer's numbered items only; the bolded names in it must be the
+    # implementer's numbered item names. Items that open with a backticked path are not caught
+    # by the bold-name reader; the full equality is eval E's mechanical half:
+    # evals/2026-09-18-e-order-of-authority-sync-design.md.
+    owner: agents/implementer.md
+    owner_span: ['## Order of authority', '## The decisions file']
+    readers:
+      - file: agents/reviewer.md
+        span: ['design line that a higher document overrides', 'read together with']
+
+  - name: As shipped is a heading sync-design writes before anyone reads it
+    # sync-design is the only writer of a design doc's As shipped sections; the reviewer
+    # treats a folded deviation as the spec, and plan-change starts from the latest one.
+    owner: skills/sync-design/SKILL.md
+    owner_span: ['## What you write', '## Commit and return']
+    readers:
+      - file: agents/reviewer.md
+        cites: ['As shipped']
+      - file: skills/plan-change/SKILL.md
+        cites: ['As shipped']
+      - file: agents/implementer.md
+        cites: ['As shipped']
+
 # A list of names that goes stale when the directory it describes changes.
 names_listed:
   - name: every skill this plugin ships is named in reserved-skill-names

@@ -23,6 +23,7 @@ workflow_skills_order:
   - review-section
   - finalize-package
   - review-package
+  - sync-design
   - plan-change
   - sync-plan
   - finalize-project

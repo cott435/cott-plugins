@@ -55,7 +55,7 @@ planned against `interface.md`.
    or `/dev-team:implement-section` picks them up.
 6. Commit per your **Commit** section — trailer `Dev-Team-Run: review-package $ARGUMENTS` —
    then return your summary. If the verdict is `request changes`, end with the command that fixes
-   the worst finding; otherwise end with `/dev-team:plan-package <next package>` or
-   `/dev-team:finalize-project`.
+   the worst finding; otherwise end with `/dev-team:sync-design $pkg`, which folds the
+   sections' recorded deviations into their designs before the next package is planned.
 
 Change nothing but your report and `docs/followups.md`.

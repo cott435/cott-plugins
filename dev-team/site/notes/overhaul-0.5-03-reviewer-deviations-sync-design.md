@@ -166,3 +166,53 @@ and `site.yml` after `review-package`.
 
 `check-contracts` passes with the two new heading contracts; the behavioral eval's report
 has the 1 WARNING / 1 CRITICAL split; the As shipped section exists on the fixture design.
+
+## Deviations
+
+- **No `docs/constraints.md` item in either list yet.** §A's reviewer list opens with
+  `docs/constraints.md` marked *phase 6*, and note 06 §Order of authority inserts it at the top
+  of both lists. Adding it to the reviewer alone now would make the lists differ, and that
+  equality is the check eval E runs. Both lists are six items until phase 6, which adds the
+  seventh to both.
+- **The reviewer carries the implementer's numbered item names, not the note's one-line
+  prose.** Eval E compares lists "extracted by regex", and a regex has nothing to match in a
+  single sentence of arrows. So the reviewer's section numbers the same six bolded items as the
+  implementer. Item 6 in both is now **The section's design doc**; the implementer's was "Your
+  section's design doc". The implementer's item 6 also gains *read together with its **As
+  shipped** sections*, which the note gave only the reviewer, because an implementer re-running
+  a section after a sync builds against the same design.
+- **The order-of-authority contract uses a reader `span`, not `cites: ['Order of
+  authority']`.** `check_headings` counts as owned only the numbered, bolded items in the
+  owner's span, and the owner's heading is not one of them. `cites: ['Order of authority']`
+  would therefore always FAIL. The reader span (`'design line that a higher document
+  overrides'` → `'read together with'`) holds the reviewer's numbered items. Their bolded names
+  must be the implementer's names, and a missing span marker is a FAIL, so the reviewer's
+  section has to exist. Items that open with a backticked path are invisible to the reader
+  parser. Eval E's control 2 confirms that gap, and eval E's script covers it.
+- **The As shipped contract's owner span is `['## What you write', '## Commit and return']`,
+  not `['## As shipped', null]`.** The template is a fenced block with no numbered items, so the
+  note's span has nothing to own. **As shipped** is item 1 of the skill's numbered **What you
+  write** list, with the surface version as item 2 and contract conflicts as item 3. The
+  implementer is a third reader (`cites: ['As shipped']`) because its item 6 now names the
+  heading.
+- **README template item 7 asks for *why*.** It said "what the document said and what you
+  did". The reviewer now grades a deviation recorded without a reason as CRITICAL, so the
+  template names the reason as well, matching the implementer's own §Deviations.
+- **`sync-design` skips a section whose latest As shipped already cites the section's current
+  last commit.** Without the skip, a second run with nothing new shipped would append a
+  duplicate dated section.
+- **A deviation recorded without a reason is still folded,** with *no reason recorded* in the
+  Why cell. The note does not cover this case, and the reviewer already raises it as CRITICAL.
+- **Contract conflicts cover the repo contract and `decided` decisions too,** not only the
+  package contract. That matches reviewer rules (a) and (b).
+- **Next command after `interface.md` exists**: `/dev-team:finalize-project` when no package
+  is left to plan. The note's two options had no case for the last package.
+- **`review-package` returns `/dev-team:sync-design $pkg` on a passing verdict**, in place of
+  `/dev-team:plan-package <next>` or `/dev-team:finalize-project`. The note puts sync-design
+  after review-package, but nothing in the manual flow pointed the user there until phase 8's
+  driver. `site/workflows/new-repo.md`, `site/flow.md` (the loop diagram and the two document
+  rows) and README (§Which skill to run, §Workflows, the `docs/` layout, the hand-off diagram)
+  name it as well.
+- **Eval E's behavioral fixture state was written by hand**, not produced by
+  `plan-repo` → `plan-package` → `implement-section`. The eval tests how the reviewer grades
+  seeded deviations, so the deviations have to be exactly the ones seeded.

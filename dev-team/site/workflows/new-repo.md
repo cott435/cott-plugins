@@ -133,6 +133,19 @@ the gate: `__all__`, `interface.md`, and the section READMEs agree; every public
 consumer; every shape the repo contract promised is realized; `lint-imports` and `mkdocs
 build --strict` pass; the pipelines and commands run.
 
+Once it passes, fold what the sections recorded back into their designs:
+
+```
+/dev-team:sync-design data
+```
+
+Every section README's **Implementation notes** lists where the code departed from its design,
+with a reason. `/dev-team:sync-design` appends each design an **As shipped** table of those
+departures — never rewriting the design above it — so the reviewer stops measuring the code
+against a line the section correctly left behind, and `/dev-team:plan-change` later starts
+from what shipped. A deviation that contradicts a contract is not folded: it becomes a `D<n>`
+stub and a pointer to `/dev-team:plan-change`.
+
 Next week:
 
 ```

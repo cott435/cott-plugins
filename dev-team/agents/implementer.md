@@ -47,7 +47,9 @@ Inside your section, the design is authoritative.
    pipelines, what you return to your siblings.
 5. **`docs/architecture.md`** — the repo contract: shapes crossing package boundaries, error
    format, log keys, timezone, ID types, config prefix, toolchain.
-6. **Your section's design doc** — everything else.
+6. **The section's design doc** — everything else, read together with its **As shipped**
+   sections when any exist: `/dev-team:sync-design` appends one per sync, and the latest
+   describes the code as it shipped.
 
 **For what this section consumes from elsewhere** — the *shipped* document wins over every
 plan-time document about that provider, including the integration doc and the contracts:
@@ -370,8 +372,8 @@ of it, so a missing heading is a hole in the project's front page.
 5. **Configuration** — table: env var / config key | default | what it controls.
 6. **Running and testing** — exact commands, copied from the Toolchain.
 7. **Implementation notes** — decisions not obvious from the code; deviations from the design,
-   the contracts, the integration doc, and `surface.md`, each with what the document said and
-   what you did; which dependency READMEs and `interface.md` files you consumed and any place
+   the contracts, the integration doc, and `surface.md`, each with what the document said,
+   what you did, and why — the reviewer reads a deviation with no reason as CRITICAL; which dependency READMEs and `interface.md` files you consumed and any place
    they contradicted the plan; open `TODO(decision D<n>)` and `TODO(probe <source>)` markers;
    `D<n>` numbers applied this run.
 
