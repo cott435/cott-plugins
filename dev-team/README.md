@@ -48,6 +48,9 @@ dev-team/
     ├── python-implementation/ splitting mechanics, config code            (invoked on demand)
     ├── workspace-scaffold/   pyproject / import-linter / mkdocs skeletons  (invoked on demand)
     ├── security-review/      checklist                                    (invoked on triggers)
+    ├── test-driven-development/      red-green-refactor, pytest (vendored, MIT)
+    ├── debugging-and-error-recovery/ root-cause triage (vendored, MIT)
+    ├── git-workflow-and-versioning/  commit discipline; §Project convention (vendored, MIT)
     └── reserved-skill-names/ the names this plugin's own skills occupy     (architect, extract-legacy)
 
 site/                         the authored parts of the reading site — see site/README.md
@@ -243,6 +246,14 @@ is the wrong axis here, since the architect and designer need the size limits an
 | `planning-templates` — headings for every planned document | invoked | — | — | — | — | invoked |
 | `security-review` — checklist | — | — | invoked | invoked | — | — |
 | `reserved-skill-names` — the names this plugin's own skills occupy | invoked | — | — | — | — | — |
+| `test-driven-development` — red-green-refactor, test design, pytest | — | — | — | — | — | — |
+| `debugging-and-error-recovery` — root-cause triage for tests and builds | — | — | — | — | — | — |
+| `git-workflow-and-versioning` — commit discipline; the project's commit rule | — | — | — | — | — | — |
+
+The last three are vendored from `addyosmani/agent-skills` (MIT) and adapted to this stack.
+No agent loads them yet: the 0.5 overhaul wires `test-driven-development` into the tester and
+implementer, `debugging-and-error-recovery` into the implementer, and
+`git-workflow-and-versioning` into every agent that commits, in later phases.
 
 Three conventions in `python-style-guide` are marked *Project convention* because they go
 beyond or beside Google's guide:

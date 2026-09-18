@@ -24,7 +24,8 @@ the list does the same. Do not paste the names into another file.
 ## Knowledge skills — preloaded, or invoked on their own triggers
 
 `project-structure` · `python-implementation` · `python-style-guide` · `security-review` ·
-`workspace-scaffold` · `planning-templates` · `reserved-skill-names`
+`workspace-scaffold` · `planning-templates` · `reserved-skill-names` ·
+`test-driven-development` · `debugging-and-error-recovery` · `git-workflow-and-versioning`
 
 ## What each reader does with it
 

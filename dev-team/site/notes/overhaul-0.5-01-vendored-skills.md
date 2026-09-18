@@ -161,3 +161,15 @@ rule sets, `mypy --strict`, `interrogate` for docstring coverage, `lint-imports`
 
 `ls skills/` shows the three new directories; `check-contracts` passes; the grep eval is
 logged with zero hits; no agent frontmatter has changed.
+
+## Deviations
+
+- **Upstream "When to Use" dropped from all three.** The note's Keep lists omit it without
+  listing it under Drop; it was dropped, since each description now carries the plugin's own
+  trigger. Recorded in each Provenance section.
+- **README knowledge-scope rows show `—` in every column.** No agent preloads or invokes the
+  three skills until phases 2 and 4 wire them in, so the rows say what is true at this commit,
+  with one paragraph under the table naming the later wiring. Phases 2 and 4 fill the cells.
+- **`git-workflow-and-versioning` Save Point Pattern:** upstream's `git reset --hard HEAD`
+  recovery became `git restore` on the files the agent touched, because agents here work in a
+  tree that may hold the user's own uncommitted changes.
