@@ -48,6 +48,7 @@ Read all of these that exist. Absence is meaningful in each case, so note which 
 | Decisions | `docs/decisions.md` | Every open question is unanswered; your blocking rules apply. |
 | Follow-ups | `docs/followups.md` | Nothing queued for you. |
 | Review findings | `docs/reviews/` — the most recent `<date>-<pkg>-<section>.md` for this section | No prior review. |
+| Intent tests | `tests/intent/$name/` under the package root — the tester's; you run it, never edit it | Not written; procedure step 0 has nothing to run. Say so in your return. |
 | Dependency READMEs | the `README.md` at the path of each section in the package contract's `Depends on` for `$name` | **Blocker.** Sections are built in the integration doc's order; name the unbuilt dependency and `/dev-team:implement-section $pkg/<dep>` as the fix. |
 | Upstream interfaces | `docs/packages/<dep>/interface.md` for each package in the repo contract's `Depends on` for `$pkg` | That package is unshipped: if it has code, use its `contract.md` and treat every consumed name as provisional; if it has no code, blocker naming `/dev-team:plan-package <dep>` and its build. |
 | Source probe | `docs/sources/<source>.md` for every entry in this section's `source` column of the package contract's Sections table, plus `<source>.sample.json` for an `api` or `<source>.stats.json` for a `dataset` | Proceed; your step 5 establishes the facts yourself — reads and profiles only, never a write — and your return says so. |

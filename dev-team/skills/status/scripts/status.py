@@ -6,13 +6,15 @@ Usage:  python3 status.py [pkg] [--gate]
 Nothing here is written down by anyone; it is all derived: a package is planned when its
 contract exists, built when every section has a README, shipped when interface.md exists. A
 section is reviewed when its newest review's `Commit:` line names a commit after which no
-commit touches the section's source, tests/unit/<section> or tests/intent/<section>.
+commit touches the section's source, tests/unit/<section> or tests/intent/<section>. The
+intent column is the tester's suite, run: `<pass>/<total>`, or `—` with no tests/intent/<section>.
 `--gate` exits 1 when the named package fails /dev-team:finalize-package's preconditions.
 """
 
 from __future__ import annotations
 
 import datetime as dt
+import os
 import re
 import subprocess
 import sys
@@ -121,6 +123,29 @@ def open_followups(target: str) -> tuple[int, int]:
     return total, crit
 
 
+def intent(pkg_path: Path, sec: str) -> str:
+    """Pass/total of tests/intent/<sec> under pkg_path, from a collect and a run; `—` when absent."""
+    tree = pkg_path / "tests" / "intent" / sec
+    if not tree.is_dir():
+        return "—"
+    # uv when the repo is a uv project, else the interpreter on PATH; from the root, so the
+    # repo's own pytest config (pythonpath, rootdir) applies. No bytecode and no cache: a
+    # status run that left files behind would read as uncommitted changes on the next one.
+    runner = ["uv", "run", "pytest"] if (ROOT / "uv.lock").exists() else ["python3", "-m", "pytest"]
+    cmd = [*runner, str(tree.relative_to(ROOT)), "-q", "-p", "no:cacheprovider"]
+    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
+    try:
+        co = subprocess.run([*cmd, "--co"], capture_output=True, text=True, cwd=ROOT, env=env)
+        run = subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT, env=env)
+    except OSError:
+        return "?"
+    total = re.search(r"(\d+) tests? collected", co.stdout)
+    passed = re.search(r"(\d+) passed", run.stdout)
+    if not total:
+        return "?"
+    return f"{passed.group(1) if passed else 0}/{total.group(1)}"
+
+
 def markers(path: Path) -> int:
     """Count TODO(decision ...) markers under a path."""
     if not path.exists():
@@ -153,7 +178,7 @@ def package_report(pkg: str, pkg_path: Path) -> tuple[list[str], list[str]]:
     if not have["surface"]:
         fails.append(f"{pkg}: no surface.md")
     rows = table_rows((pdocs / "contract.md").read_text(), ("section", "path"))
-    lines.append("  section              design  built  reviewed-since-build             open followups  markers")
+    lines.append("  section              design  built  intent   reviewed-since-build             open followups  markers")
     all_built = True
     for row in rows:
         sec = col(row, "section")
@@ -168,7 +193,8 @@ def package_report(pkg: str, pkg_path: Path) -> tuple[list[str], list[str]]:
         state, rev_txt = freshness(f"{pkg}-{sec}", spath, tests / "unit" / sec, tests / "intent" / sec)
         fu, crit = open_followups(f"{pkg}/{sec}")
         mk = markers(spath)
-        lines.append(f"  {sec:<20} {'✓' if design else '·':^6} {'✓' if built else '·':^6}  {rev_txt:<32} {fu:>3} ({crit} review)  {mk:>5}")
+        itxt = intent(pkg_path, sec)
+        lines.append(f"  {sec:<20} {'✓' if design else '·':^6} {'✓' if built else '·':^6} {itxt:^7}  {rev_txt:<32} {fu:>3} ({crit} review)  {mk:>5}")
         if not built:
             fails.append(f"{pkg}/{sec}: no README (unbuilt)")
         elif state == "uncommitted":

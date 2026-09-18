@@ -19,6 +19,7 @@ workflow_skills_order:
   - plan-repo
   - plan-package
   - probe-source
+  - test-section
   - implement-section
   - review-section
   - finalize-package

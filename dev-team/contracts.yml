@@ -63,6 +63,14 @@ forbid:
     pattern: '^agent: (?!dev-team:)'
     files: ['skills/**/SKILL.md']
 
+  - name: the tester names the implementer's test tree only to forbid it
+    # Two vantage points, two trees: tests/unit/<section> is the implementer's, written from
+    # the code; tests/intent/<section> is the tester's, written from the spec. A tester prompt
+    # that tells it to read or write the unit tree collapses the two into one.
+    pattern: 'tests/unit/<section>'
+    files: ['agents/tester.md']
+    unless: ['never `tests/unit/`']
+
 # Every heading a reader parses is one the owner's template defines.
 headings:
   - name: interface.md headings its readers parse are ones the implementer writes
@@ -107,6 +115,20 @@ headings:
     readers:
       - file: agents/documenter.md
         cites: ['Entry points and interfaces']
+      - file: agents/tester.md
+        cites: ['Implementation notes']
+
+  - name: design headings the tester writes tests from are ones the designer's template defines
+    # The tester inventories its cases by design heading and cites them in every test's
+    # docstring; a renamed heading leaves it inventorying a section no design has. The Module
+    # plan is a bolded term inside item 3, not a numbered item, so the owner parser cannot see
+    # it; the tester cites item 3 by name, and the Module plan rides on that.
+    owner: agents/designer.md
+    owner_span: ['## Design document template', null]
+    readers:
+      - file: agents/tester.md
+        cites: ['Interfaces', 'Inputs and outputs', 'Workflow / pipeline',
+                'Error handling and logging', 'Tests', 'Data model / internal contracts']
 
   - name: every agent that commits cites the one commit rule, by its rule names
     # git-workflow-and-versioning §Project convention is the one copy of the branch, baseline,
@@ -128,6 +150,8 @@ headings:
         span: ['§Project convention', 'rules before writing']
       - file: agents/researcher.md
         span: ['§Project convention', 'rules first']
+      - file: agents/tester.md
+        span: ['§Project convention', 'rules before writing']
 
   - name: the reviewer ranks documents by the implementer's order of authority
     # The reviewer measures a finding against the highest document that speaks to it, so its

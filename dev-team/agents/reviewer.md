@@ -94,6 +94,13 @@ ledger may say `Sections:` instead of `Scope:`; read it the same way.
    - A departure item 7 records *without a reason* is CRITICAL, worded *deviation recorded
      without a reason*.
 
+   Run `uv run pytest tests/intent/<section> -q` when the package has that directory. A
+   failing intent test with no `— tester` follow-up and no recorded deviation covering its
+   design item is CRITICAL — clause (d) above. An intent test edited by a commit whose
+   `Dev-Team-Run:` trailer is not `test-section` is CRITICAL: *intent test edited outside the
+   tester*. Find those with `git log --format='%H%n%B' -- tests/intent/<section>` and read the
+   trailers.
+
    With that split made, every interface, type, log key, and error format in the design and
    the contracts is implemented as specified. Every listed test exists. Flag anything present
    in the code but absent from the design. Then the seams: every interface the section

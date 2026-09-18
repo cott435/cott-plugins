@@ -96,16 +96,23 @@ Then:
    commands with every argument, the import-linter contracts for this package.
 6. Appends `D<n>` stubs to `docs/decisions.md`.
 
-Then answer the decisions, and implement in the order `integration.md` gives, reviewing as you
-go:
+Then answer the decisions, and implement in the order `integration.md` gives, testing and
+reviewing as you go:
 
 ```
-/dev-team:implement-section data/ingest
+/dev-team:test-section data/ingest        # intent tests from the design — red
+/dev-team:implement-section data/ingest   # runs them first; done when they pass
+/dev-team:test-section data/ingest        # reconcile: fold recorded deviations, file the rest
 /dev-team:review-section data/ingest
-/dev-team:implement-section data/clean
-/dev-team:review-section data/clean
+/dev-team:test-section data/clean
 …
 ```
+
+`/dev-team:test-section` forks the tester, which writes `tests/intent/<section>/` from the
+design and the contracts without ever opening the section's code. Run before the build, it
+writes tests that fail by construction; run after, it folds each deviation the README records
+into the tests that cite that design item and files every test still failing as a follow-up
+the next `/dev-team:implement-section` picks up. The implementer never edits those tests.
 
 Sections go in that order and cannot be built out of it: `/dev-team:implement-section data/clean`
 refuses while `data/ingest` has no README. Each implementer reads the **READMEs** of the

@@ -136,7 +136,8 @@ line.
 3. **Data model / internal contracts** — tables, schemas, classes, state living inside this
    section. Include a **Module plan**: the files this section will consist of under its path,
    one line each, sized to the soft limits in `project-structure` §2, plus which settings go
-   in the section's `configs.py` per its §3.
+   in the section's `configs.py` per its §3. Each line names the interfaces from §5 it
+   defines — the tester imports every §5 name from the module this plan gives it.
 4. **Workflow / pipeline** — steps in order. For each: trigger, action, output, failure
    behavior. Name which package pipeline (from the package contract) each step serves.
 5. **Interfaces** — functions, classes, endpoints, events this section exposes. Table:

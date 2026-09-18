@@ -206,3 +206,46 @@ does.
 
 `/agents` lists eight; the four eval checks pass and are logged; `status.py` shows the
 intent column; `check-contracts` passes.
+
+## Deviations
+
+- **The design-headings contract cites `Data model / internal contracts`, not `Module plan`.**
+  `check_headings` owns only numbered, bolded template items. **Module plan** is a bolded term
+  inside the designer's item 3, so citing it always FAILs. The tester's Inputs row names item 3
+  and its Module plan together. The contract checks item 3's name, and a comment in
+  `contracts.yml` says why.
+- **The tester is a seventh reader of the commit-rule contract** (span `§Project convention` →
+  `rules before writing`). The note gives it commit steps but no contract entry. Every other
+  agent that commits has one.
+- **The tester does not preload `git-workflow-and-versioning`.** It invokes the skill with the
+  Skill tool, as the reviewer and architect do. The note's frontmatter lists three skills, and
+  that list is kept.
+- **`status.py`'s intent column does not always use `uv run`.** It uses `uv run pytest` when
+  the repo has a `uv.lock`, and `python3 -m pytest` otherwise. It runs from the repo root, so
+  the repo's pytest config applies. It sets `PYTHONDONTWRITEBYTECODE=1` and
+  `-p no:cacheprovider`. A plain `uv run` from the package directory reported `?` on the
+  fixture, whose Toolchain is `python3 -m pytest`. The first version also left `__pycache__/`
+  under the section, which the next run read as uncommitted changes (eval F).
+- **Tester additions the note does not have:** imports go inside each test function, so one
+  missing name fails its own tests and does not error the whole file at collection. The
+  integration doc is an input, because a resolution overrides a design row. A folded test's
+  docstring gains `(deviation: README item 7)`. Reconcile with nothing to fold and nothing to
+  file makes no commit and returns `Commit: none`. There is an explicit "never weaken a test"
+  Hard rule.
+- **The `Invoked by /dev-team:run-package` paragraph is in `test-section` now.** The note puts
+  that paragraph in phase 8 for every other forked skill. Phase 8 should find it already here
+  and word the others to match.
+- **`implement-section` gains an Intent tests row in its Paths table.** Without it the skill
+  never names the tree that the implementer's step 0 runs.
+- **`site/workflows/new-repo.md`'s section loop now includes `test-section`,** in this phase and
+  not phase 9. The root `CLAUDE.md` asks for affected workflows to be updated with the edit.
+  Phase 9 still rewrites the page for spine-first and `run-package`.
+- **README knowledge table:** `test` is a new column. `test-driven-development` is ✓ for the
+  implementer and the tester, and `debugging-and-error-recovery` is *invoked* for the
+  implementer. The paragraph saying those two were "not loaded by any agent yet" is replaced.
+- **The reviewer's trailer check uses `git log --format='%H%n%B'`,** so that each trailer can
+  be tied to its commit.
+- **Not yet in the tester:** the `docs/constraints.md` input row. The note marks it
+  *(phase 6)*, so phase 6 adds it along with the constraints axis.
+- **`agent: dev-team:tester`, not `agent: tester`.** This is phase 2's rule (eval D2). A bare
+  name forks as general-purpose, and `contracts.yml` forbids it.

@@ -1,6 +1,6 @@
 {
     "name": "dev-team",
-    "description": "Plan, implement, review and document Python monorepo packages section by section, through seven specialist subagents driven by file-based contracts.",
+    "description": "Plan, implement, review and document Python monorepo packages section by section, through eight specialist subagents driven by file-based contracts.",
     "version": "0.4.0",
     "author": {
         "name": "Connor Ott"

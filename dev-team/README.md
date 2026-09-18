@@ -21,6 +21,7 @@ dev-team/
 │   ├── architect.md      plans at repo, package, or change scope; delegates; unifies
 │   ├── designer.md       designs one section against the contracts + upstream interfaces
 │   ├── implementer.md    builds one section — or, in surface mode, a package's public surface
+│   ├── tester.md         intent tests for one section, from its design — never from its code
 │   ├── reviewer.md       reviews one section, or one package
 │   ├── documenter.md     package READMEs, API pages, root README from shipped docs
 │   ├── curator.md        surveys an old repo into docs/legacy/inventory.md; coordinates researchers
@@ -34,6 +35,7 @@ dev-team/
     ├── map-project/        → architect     adopt an existing repo (repo level; then plan-package per package)
     ├── extract-legacy/     → curator       old repo → inventory (stop) → project skills, one per kept row
     ├── probe-source/       → researcher    one api or dataset → docs/sources/<source>.md
+    ├── test-section/       → tester        <pkg>/<section> [slug]: intent tests before the build, reconcile after
     ├── implement-section/  → implementer   <pkg>/<section> [slug]
     ├── review-section/     → reviewer      <pkg>/<section> [slug]
     ├── finalize-package/   → implementer   <pkg>: lazy __init__, pipelines, cli.py, docs page, interface.md
@@ -89,7 +91,7 @@ and then the implementer, so the same conventions apply at design time and at bu
    `/plugin install dev-team@cott-plugins`. In Cowork: Customize -> Plugins ->
    Add marketplace, then Install. `cott-plugins` bundles every plugin (this one included) as
    a subdirectory; install only the ones you actually want running on this machine.
-2. **Verify with `/agents`** before the first run: the seven agents must be listed. If they are
+2. **Verify with `/agents`** before the first run: the eight agents must be listed. If they are
    not, run `/reload-plugins` (or restart Claude Code). Until they are registered a workflow
    skill runs in your main conversation instead of forking — you get a question widget instead
    of a stop message, and the run writes the wrong files. Every workflow skill checks for this
@@ -245,25 +247,26 @@ mechanism in Claude Code that scopes by agent — rules scope by file path or no
 is the wrong axis here, since the architect and designer need the size limits and never open a
 `.py` file.
 
-| Skill | arch | design | impl | review | doc | research |
-|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| `project-structure` — layout, size limits, config placement, naming | ✓ | ✓ | ✓ | ✓ | — | — |
-| `python-style-guide` — inside a file: docstrings, function shape, `__init__.py`, naming | — | — | ✓ | ✓ | — | — |
-| `python-implementation` — splitting mechanics, config code | — | — | invoked | — | — | — |
-| `workspace-scaffold` — pyproject, import-linter, mkdocs skeletons | invoked | — | invoked | — | — | — |
-| `planning-templates` — headings for every planned document | invoked | — | — | — | — | invoked |
-| `security-review` — checklist | — | — | invoked | invoked | — | — |
-| `reserved-skill-names` — the names this plugin's own skills occupy | invoked | — | — | — | — | — |
-| `test-driven-development` — red-green-refactor, test design, pytest | — | — | — | — | — | — |
-| `debugging-and-error-recovery` — root-cause triage for tests and builds | — | — | — | — | — | — |
-| `git-workflow-and-versioning` — commit discipline; the project's commit rule | invoked | — | ✓ | invoked | invoked | invoked |
+| Skill | arch | design | impl | test | review | doc | research |
+|---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| `project-structure` — layout, size limits, config placement, naming | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
+| `python-style-guide` — inside a file: docstrings, function shape, `__init__.py`, naming | — | — | ✓ | ✓ | ✓ | — | — |
+| `python-implementation` — splitting mechanics, config code | — | — | invoked | — | — | — | — |
+| `workspace-scaffold` — pyproject, import-linter, mkdocs skeletons | invoked | — | invoked | — | — | — | — |
+| `planning-templates` — headings for every planned document | invoked | — | — | — | — | — | invoked |
+| `security-review` — checklist | — | — | invoked | — | invoked | — | — |
+| `reserved-skill-names` — the names this plugin's own skills occupy | invoked | — | — | — | — | — | — |
+| `test-driven-development` — red-green-refactor, test design, pytest | — | — | ✓ | ✓ | — | — | — |
+| `debugging-and-error-recovery` — root-cause triage for tests and builds | — | — | invoked | — | — | — | — |
+| `git-workflow-and-versioning` — commit discipline; the project's commit rule | invoked | — | ✓ | invoked | invoked | invoked | invoked |
 
 The last three are vendored from `addyosmani/agent-skills` (MIT) and adapted to this stack.
 `git-workflow-and-versioning` §Project convention is the one copy of the commit rule every
 agent that writes follows (the curator invokes it too; the researcher only when
-`/dev-team:probe-source` runs it directly). The other two are not loaded by any agent yet:
-the 0.5 overhaul wires `test-driven-development` into the tester and implementer and
-`debugging-and-error-recovery` into the implementer in a later phase.
+`/dev-team:probe-source` runs it directly). `test-driven-development` is
+preloaded into the tester, whose intent tests are its RED step, and the implementer, which
+uses its Prove-It pattern on review findings that are bugs; the implementer invokes
+`debugging-and-error-recovery` on a test still failing after two fix attempts.
 
 Three conventions in `python-style-guide` are marked *Project convention* because they go
 beyond or beside Google's guide:

@@ -18,7 +18,7 @@ the list does the same. Do not paste the names into another file.
 ## Workflow skills — the ones a person types
 
 `shape-brief` · `plan-repo` · `plan-package` · `plan-change` · `map-project` ·
-`implement-section` · `review-section` · `finalize-package` · `review-package` · `sync-plan` ·
+`test-section` · `implement-section` · `review-section` · `finalize-package` · `review-package` · `sync-plan` ·
 `sync-design` · `finalize-project` · `extract-legacy` · `probe-source` · `status`
 
 ## Knowledge skills — preloaded, or invoked on their own triggers

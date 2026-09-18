@@ -8,6 +8,7 @@ skills:
   - project-structure
   - python-style-guide
   - git-workflow-and-versioning
+  - test-driven-development
 color: green
 ---
 
@@ -171,11 +172,19 @@ Stop before writing code and report back if any of these hold:
   Consumers were built against that file. Return the blocker and name `/dev-team:plan-change`, which
   assesses downstream impact first. Internal changes proceed; change work with a slug
   proceeds, because `/dev-team:plan-change` already did that assessment.
+- **Intent tests unread.** `tests/intent/<section>/` exists and you have not run it before
+  writing code. Not a stop — run it first (step 0 below).
 
 Report the exact blocker. Do not improvise around it — a blocker returned in thirty seconds
 is cheaper than a section built on a guess.
 
 ## Procedure
+
+0. **Run the intent suite.** If `tests/intent/<section>/` exists under the package root, run
+   `uv run pytest tests/intent/<section> -q` (the Toolchain's one-package test command, pointed
+   there) before writing any code, and note the count. Every one of those tests is part of
+   your definition of done. On a re-run they are the RED half of `test-driven-development`'s
+   cycle.
 
 1. **Scaffold, or match the layout.** Confirm the repo's language, package manager, and test
    runner from the repo contract's **Toolchain** section, `CLAUDE.md`, and existing files.
@@ -277,7 +286,11 @@ is cheaper than a section built on a guess.
 6. **Pick up follow-ups, review findings, and shared work.** Read `docs/followups.md` and the
    most recent `docs/reviews/<date>-<pkg>-<section>.md` for your section, if either exists.
    Items addressed to `<pkg>/<section>` are part of your task. Implement them, mark follow-ups
-   `[x]` with the date, and note in your return which review findings you addressed.
+   `[x]` with the date, and note in your return which review findings you addressed. A review
+   finding that is a bug gets `test-driven-development`'s Prove-It pattern: a failing test
+   first, then the fix. Entries ending `— tester <date>` are intent-test failures; each is
+   fixed in your code or answered by a recorded deviation under README item 7, never by
+   editing the test.
 
    Also read the integration doc's **Shared work** section for anything assigned to you. Those
    items belong to your section but are not in your design doc — the architect could not edit
@@ -294,6 +307,13 @@ is cheaper than a section built on a guess.
    run the section's full suite with the Toolchain's one-package test command, and
    `lint-imports`. Fix failures in your own code; a failure in another section's code becomes
    a follow-up, not an edit.
+
+   Then `uv run pytest tests/intent/<section> -q`: every intent test passes, or its failure
+   is a recorded deviation under README item 7 with a reason (and `/dev-team:test-section`
+   will reconcile it). You never edit a file under `tests/intent/`; a test you believe is
+   wrong is a deviation you record, not a test you change. A test — yours or an intent test —
+   still failing after two fix attempts: invoke `debugging-and-error-recovery` with the Skill
+   tool before a third.
 
 9. **Size check.** Against `project-structure` §2. Past a hard limit, split before you finish —
    invoke `python-implementation` for the procedure, since a promotion to a package changes
@@ -333,6 +353,7 @@ is cheaper than a section built on a guess.
 
 Do not modify code outside your section, except: shared utilities the integration doc assigns
 to you, shared test fixtures, the scaffold files in step 1, and the root `.gitignore` as above.
+`tests/intent/` is never yours: the tester writes it, you run it.
 Never edit another package. Never edit your package's top-level `__init__.py` beyond the
 one-line docstring the scaffold gives it, and never create `cli.py` or `pipelines/` — those
 are `/dev-team:finalize-package`'s. A section that needs to be runnable during development exposes a
@@ -393,6 +414,7 @@ Under 25 lines:
 
 - Files created / modified (paths only)
 - Test command and result (pass/fail counts); `lint-imports` result
+- `Intent tests: <pass>/<total>` (`—` when the section has no `tests/intent/`)
 - Deviations (numbered)
 - `D<n>` applied this run, and `TODO(decision D<n>)` markers resolved
 - `TODO(decision D<n>)` markers left, with their decision IDs; `TODO(probe <source>)` markers left

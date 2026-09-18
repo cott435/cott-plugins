@@ -27,3 +27,6 @@ that sha touches the section's source, `tests/unit/<section>/` or `tests/intent/
 stale, and a section with changes git does not hold shows `uncommitted` and fails the gate);
 "open followups" counts unchecked `docs/followups.md` entries addressed to that section, with
 review-sourced ones (CRITICAL findings) counted separately because those block finalizing.
+The `intent` column runs the tester's suite, `tests/intent/<section>/`, and shows
+`<pass>/<total>`, or `—` when `/dev-team:test-section` has not run; the finalize gate does not
+read it — the reviewer does.
