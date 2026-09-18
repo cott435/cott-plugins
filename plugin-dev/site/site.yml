@@ -1,0 +1,13 @@
+# Per-plugin config for the shared site builder (scripts/build_site.py).
+# Every key is optional; this file exists to fix the reading order of the workflow pages.
+
+# The three ways work reaches a plugin, smallest first.
+workflows_order:
+  - small-change
+  - phased-change
+  - new-plugin
+
+# Workflow skills in the order you run them; the automatic three follow alphabetically.
+workflow_skills_order:
+  - plan-phases
+  - run-phase

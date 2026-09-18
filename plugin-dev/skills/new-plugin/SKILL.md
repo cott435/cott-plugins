@@ -65,3 +65,8 @@ wants it: `git pull`, then `/plugin marketplace update cott-plugins`, then
 Build the site to confirm the scaffold is discoverable
 (`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/build_site.py" <name>`). A zero-config plugin builds
 fine: `site.yml` only controls reading order, and every key in it is optional.
+
+A plugin that will have agents, or more than a couple of skills, is not written in the same
+chat as its scaffold: `plan-phases --new <name>` runs this skill's steps as its phase 0 and
+then writes the phased design set that `run-phase` builds, one chat per phase. If that is
+the plugin being started, stop after the scaffold and let `plan-phases` continue.

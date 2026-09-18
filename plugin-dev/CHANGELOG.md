@@ -6,6 +6,30 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [0.6.0] - 2026-09-18
+
+### Added
+- **`plan-phases`** — a typed skill that splits a change too big for one chat into phases: a
+  branch, `site/notes/<slug>-00-overview.md`, one note per phase with its own evals, and a
+  progress ledger, committed as phase 0. `--new <name>` from the repo root starts a whole
+  plugin the same way, with `new-plugin`'s scaffold as its phase 0. Templates in
+  `templates/phases/`.
+- **`run-phase`** — a typed skill that does the next unfinished phase in a fresh chat: exactly
+  that note's edits, the checks, the phase's evals logged, one commit, the ledger updated, then
+  stop.
+- **`plugin-dev`'s own `contracts.yml`** — no bare `/<name>` command in the bundle, the README's
+  skills table names every skill, and every typed skill is in `site/site.yml`'s run order. Each
+  claim watched fail on a planted defect: `evals/2026-09-18-phases-skills-contracts.md`.
+- **`site/`** — the bundle's reading site, with three workflow pages (small change, phased
+  change, new plugin) that the README summarizes.
+
+### Changed
+- `new-plugin` hands a plugin with agents, or more than a couple of skills, to
+  `plan-phases --new` after the scaffold instead of writing it in the same chat.
+- The root `CLAUDE.md` and the plugin `CLAUDE.md` template describe the two typed skills, and
+  the root `CLAUDE.md` gains *Working in one plugin*: stage by plugin path, never `git add -A`,
+  and commit-bearing steps run in Claude Code, not Cowork.
+
 ## [0.5.0] - 2026-09-17
 
 ### Added

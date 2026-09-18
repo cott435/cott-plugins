@@ -14,22 +14,65 @@ protocol works at all is that something tells Claude to write the file every tim
 folder can't do that; a `CLAUDE.md` copied into every repo can, but then there are N copies
 to keep in sync, which is the problem being solved.
 
-A skill is exactly an instruction that travels. So the policy is three skills, the builder
+A skill is exactly an instruction that travels. So the policy is a set of skills, the builder
 rides along in the same bundle, and every plugin repo keeps a `CLAUDE.md` that is a pointer
 rather than a copy. Installing this plugin is what makes the protocol apply.
 
-## What's here
+## The skills
+
+Seven skills, in three groups by how they start. The table is the one list of them: a
+`contracts.yml` claim fails when a directory under `skills/` has no row here.
+
+| Skill | Starts | What it does |
+|---|---|---|
+| `log-eval` | on its own, every test run | Records a test against a plugin's own skills or agents as a dated file under `evals/` with the commit and model it ran against, plus an index row. A clean pass exactly like a failure. |
+| `build-site` | on its own, after any agent or skill edit | Rebuilds `site/docs/` and `site/mkdocs.yml` from the bundle. |
+| `check-contracts` | on its own, beside `build-site` and before any bump | Runs the cross-file claims in a bundle's `contracts.yml`: a heading one file parses and another owns, a pattern no file may contain, a list of names that goes stale. A `FAIL` names the `file:line`. |
+| `new-plugin` | on its own, when a plugin is started | Scaffolds a plugin subdirectory from `templates/` and adds its row to the marketplace. |
+| `plan-phases` | when you type it | Splits a change too big for one chat — or a new plugin — into phases: a branch, an overview note, one note per phase, a progress ledger, all under `site/notes/`. Each phase is sized for one chat and carries its own evals. Commits the design set as phase 0. |
+| `run-phase` | when you type it, once per chat | Does the next unfinished phase: reads the overview, the ledger and that one note; makes exactly its edits; runs the plugin's rules, `check-contracts`, `build-site` and the phase's evals; logs them; commits once; updates the ledger; stops. |
+| `bump-version` | only on your yes | Decides patch/minor/major from what changed, bumps `plugin.json` and the marketplace row, writes the CHANGELOG line, tags, pushes. Proposes itself in chat and waits. |
+
+## The rest of the bundle
 
 | Path | What it is |
 |---|---|
-| `skills/bump-version/` | Semver policy and the bump + CHANGELOG + tag + marketplace procedure, plus the `model:` field policy. Proposes itself in chat and waits for a yes — the one skill here that never runs unasked. |
-| `skills/log-eval/` | The eval record convention: one dated file per test run, with the commit and model it was tested against. |
-| `skills/build-site/` | Builds the MkDocs reading site for whatever plugin repo you're in. |
-| `skills/new-plugin/` | Scaffolds a new plugin repo from `templates/` and registers it in the marketplace. |
-| `skills/check-contracts/` | Checks the cross-file claims a bundle's own prompts act on — a heading one file parses and another owns, a rule one file states and another contradicts, a list of names that goes stale. Reads each bundle's `contracts.yml`. |
-| `scripts/build_site.py` | The builder itself. Fully generic — everything is discovered from the bundle. |
-| `scripts/defaults/` | `mkdocs-base.yml` and `extra.css` used when a repo doesn't override them. |
+| `scripts/build_site.py` | The site builder. Fully generic — everything is discovered from the bundle. |
+| `scripts/contract_sweep.py` | The contracts checker. Shared, so a change to it gets a positive and a negative run before it is committed (this plugin's `CLAUDE.md`). |
+| `scripts/defaults/` | `mkdocs-base.yml` and `extra.css` used when a plugin doesn't override them. |
 | `templates/` | The files a new plugin subdirectory starts with. |
+| `templates/phases/` | The overview, phase-note and ledger shapes `plan-phases` writes. |
+| `site/workflows/` | The three workflows below, one page each, rendered on the reading site. |
+
+## Workflows
+
+Three ways work reaches a plugin. Each is a page under `site/workflows/`; the summaries
+here say which skills run, in what order, and which of them wait for you.
+
+**[A new plugin](site/workflows/new-plugin.md).** From the repo root,
+`/plugin-dev:plan-phases --new <name>`: it asks what the plugin is for, invokes `new-plugin`
+for the scaffold and marketplace row, reads the closest existing plugin for conventions,
+and writes the design set — phase 1 is the smallest bundle that loads, every later phase
+adds to it. Then one chat per phase: `/plugin-dev:run-phase 0.1` from `<name>/`. The last
+phase proposes tagging `0.1.0`; `bump-version` does it on your yes. A plugin that will
+only ever be one or two skills skips the phases: `new-plugin`, write them, `build-site`,
+`check-contracts`, propose the tag.
+
+**[A small change](site/workflows/small-change.md).** One agent or skill, one chat. Edit;
+the plugin's own rules (`CLAUDE.md`); `check-contracts`; `build-site`; if the edit changes
+what an agent *does*, an eval logged with `log-eval` — before results are reported; one
+commit. If it looks bump-worthy, `bump-version` says so and waits.
+
+**[A large change, in phases](site/workflows/phased-change.md).** Inside the plugin,
+`/plugin-dev:plan-phases <slug>`: it researches what the change touches, asks the decisions
+that are yours, writes the branch, the overview, one note per phase and the ledger, and
+commits phase 0. Then one fresh chat per phase, each opened with nothing but
+`/plugin-dev:run-phase <slug>`, until the ledger's last row is `done` and the last phase
+has proposed the bump.
+
+What is the same in all three: every eval is a file before it is a sentence in chat; the
+site is rebuilt after every agent or skill edit; contracts are checked before every commit
+that touches one; and nothing is bumped, tagged or pushed without a yes.
 
 ## Install
 

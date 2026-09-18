@@ -1,0 +1,30 @@
+# contracts.yml — the cross-file claims this bundle makes about itself, checked by its own
+# `check-contracts`. One entry per claim that is true only because two files agree.
+
+forbid:
+  - name: no unprefixed plugin command is typeable
+    # Plugin skills are namespaced /plugin-dev:<name>; a bare /<name> is a command nobody
+    # can run. Any slash-initial hyphenated token that is not already prefixed with
+    # `<something>:` — so /dev-team:plan-repo in an example is fine, /plan-phases is not.
+    # /reload-plugins is Claude Code's own. Claude Code's other commands (/plugin, /agents)
+    # have no hyphen and never match.
+    pattern: '(^|[\s"(\[`])/(?!reload-plugins|[a-z][a-z0-9-]*:)(?:[a-z][a-z0-9]*-[a-z0-9-]+)\b'
+
+names_listed:
+  - name: README's skills table names every skill this plugin ships
+    # "The skills" is the one list of them, and the README says so. Backticked names
+    # anywhere in the span, so the span must contain no other backticked lowercase-hyphen
+    # word: paths carry a slash or a dot and never match.
+    dirs: 'skills/*'
+    form: code
+    file: README.md
+    span: ['## The skills', '## The rest of the bundle']
+
+  - name: every typed skill is in site.yml's run order
+    # The two skills a person types (disable-model-invocation: true) render in run order on
+    # the site; an unlisted one falls to the alphabetical tail.
+    dirs: 'skills/*'
+    where: {disable-model-invocation: true}
+    form: list
+    file: site/site.yml
+    span: ['workflow_skills_order:', null]

@@ -19,6 +19,11 @@ care when editing it:
   "only inside a plugin's own subdirectory (one containing `.claude-plugin/plugin.json`)"
   for that reason. If you widen a description, check it doesn't start firing in unrelated
   repos.
+- **This bundle has its own `contracts.yml`.** The README's **The skills** table is the one
+  list of skills and `site/site.yml` the run order of the typed ones; adding a skill means a
+  row in the first and, if it is typed, a line in the second, in the same commit.
+  `check-contracts` fails otherwise. `site/workflows/` holds the three workflow pages the
+  README summarizes; a change to how work reaches a plugin is a change to both.
 - **`scripts/build_site.py` is shared.** A change to it changes every plugin's site at once.
   Before committing one, rebuild at least `dev-team` and diff the output — its site is
   the reference the builder was verified against.

@@ -16,6 +16,8 @@ every plugin repo:
   `evals/README.md`. Every time, including a clean pass.
 - **`build-site`** — rebuilds `site/docs/` and `site/mkdocs.yml` from the bundle. Re-run
   after editing any agent or skill.
+- **`plan-phases`** / **`run-phase`** — a change too big for one chat is split into phases
+  under `site/notes/`, one chat and one commit each, with a progress ledger between chats.
 
 If `plugin-dev` is not installed, install it (`/plugin install plugin-dev@cott-plugins`)
 rather than reinventing the protocol here.
