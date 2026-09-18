@@ -49,7 +49,9 @@ flowchart TD
   A["/dev-team:plan-repo<br/>→ docs/architecture.md (repo contract)"]
   A -. "contract wrong: correct the brief, re-plan (revise)" .-> S
   A --> B["/dev-team:plan-package data<br/>→ contract.md, design/*.md, integration.md, surface.md"]
-  B --> C["/dev-team:implement-section data/ingest<br/>→ code, tests, section README"]
+  B --> RP["/dev-team:review-plan data<br/>→ reviews/date-data-plan.md, followups data/plan"]
+  RP -. "request changes: re-plan the named sections" .-> B
+  RP --> C["/dev-team:implement-section data/ingest<br/>→ code, tests, section README"]
   C --> D["/dev-team:review-section data/ingest<br/>→ reviews/, followups"]
   D -->|next section| C
   D --> E["/dev-team:finalize-package data<br/>→ __init__.py, pipelines/, cli.py, interface.md"]
@@ -127,5 +129,6 @@ upstream package's `interface.md` — wins over every plan-time document about t
 | `packages/<pkg>/src/<pkg>/<section>/README.md` | **shipped** | implementer | dependents, finalize-package, reviewer, documenter |
 | `docs/reviews/<date>-<pkg>-<section>.md` | report | review-section | implementer; finalize-package (it gates on the date) |
 | `docs/reviews/<date>-<pkg>-package.md` | report | review-package | finalize-package on a re-run |
+| `docs/reviews/<date>-<pkg>-plan.md` | report | review-plan | plan-package on a re-plan; `status.py --plan-gate` |
 | `docs/plans/<slug>/…` | proposal | plan-change, designers | implementer, sync-plan |
 | `docs/plans/synced.md` | ledger | sync-plan | sync-plan, finalize-project |

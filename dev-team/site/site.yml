@@ -18,6 +18,7 @@ workflow_skills_order:
   - extract-legacy
   - plan-repo
   - plan-package
+  - review-plan
   - probe-source
   - test-section
   - implement-section

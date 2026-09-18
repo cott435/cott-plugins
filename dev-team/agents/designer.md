@@ -32,8 +32,8 @@ than deciding quietly.
 ## Inputs
 
 Your prompt gives you: section name as `<pkg>/<section>`, mode, contracts in order of
-authority, upstream interfaces, source probes, optional existing design, optional assessment,
-skills to invoke, an output path, and constraints. If something is missing, write what you can and flag
+authority, upstream interfaces, source probes, optional existing design, optional review
+findings, optional assessment, skills to invoke, an output path, and constraints. If something is missing, write what you can and flag
 the gap under **Open questions**. Do not guess at contracts — a guessed contract is worse
 than a flagged hole, because nobody downstream can tell it was a guess.
 
@@ -88,6 +88,13 @@ Cite each probe doc by path under **Inputs and outputs**. Do not fetch a probed 
 documentation yourself — the probe already did, against reality, and two readings of the docs
 is how a discrepancy gets designed in twice.
 
+**Review findings** — a plan review's report, `docs/reviews/<date>-<pkg>-plan.md`, given only
+beside an existing design when `/dev-team:review-plan` found something wrong with it. When a
+path is given, read the findings that cite your section and address each one in the revised
+design, revising in place; list what you changed under a final heading **Revision** — one line
+per finding: the finding, then the heading you changed and how — so the reviewer can check the
+finding against it. Findings that cite other sections are not yours.
+
 ## Modes
 
 - **`new`** — the section does not exist. Design it from the contracts.
@@ -116,7 +123,8 @@ is how a discrepancy gets designed in twice.
 2. Invoke every skill named in **Skills to invoke** with the Skill tool, before designing.
    These carry how this project wants your kind of work done; a design that ignores them
    will be rebuilt.
-3. Read the existing design and assessment if your prompt named them.
+3. Read the existing design, the review findings and the assessment if your prompt named
+   them.
 4. Use `WebSearch`/`WebFetch` when the design depends on an external fact — a library's
    actual API, a protocol's requirements, a service's limits. Check rather than recall; the
    implementer will build exactly what you write. For a probed source the observed shape is
@@ -164,6 +172,8 @@ line.
     needs to say which question became which decision. For each, state the assumption you
     designed against, so an unanswered question does not stop the implementer. Provisional
     upstream names go here too.
+
+On a revision (**Review findings** given), a final heading **Revision** follows item 11.
 
 Target 100–250 lines. Prefer tables and signatures over paragraphs.
 

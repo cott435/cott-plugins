@@ -172,3 +172,39 @@ The package report also gains a line `plan: reviewed <date> <verdict> @<sha> | u
 
 The three-run eval sequence passes and is logged; `--plan-gate` exists; the implementer
 blocks on an open plan finding (checked mechanically by seeding one).
+
+## Deviations
+
+- **`agent: reviewer` → `agent: dev-team:reviewer`** in the skill frontmatter. A bare name
+  silently forks as general-purpose (eval D2), and `contracts.yml` forbids it.
+- **Plan freshness uses `changed_since`, not equality.** The note says the review's `Commit:`
+  must equal `last_commit("docs/packages/<pkg>")`. A review taken after an unrelated commit
+  (a hand-committed `decisions.md`, say) has a `Commit:` newer than that and would never
+  match. `--plan-gate` instead asks the same question `status.py` asks of sections: has any
+  commit since the review's `Commit:` touched `docs/packages/<pkg>/`, and are there
+  uncommitted changes there.
+- **An `OQ` is closed by a `D` *or* by an integration-doc resolution that names its tag.** The
+  note's item 5 said "CRITICAL: an OQ with no D". Eval G's first real `plan-package` resolved
+  3 of 7 OQs in `integration.md` §2, which outranks the design, and that is correct. It had
+  also dropped all 6 OQs of an earlier run under its own "stub what matters" cost test, which
+  is not. So: the reviewer accepts a named resolution; the architect's **Stub what matters**
+  and `plan-package` step 8 now say a designer's OQ gets one of the two, never neither.
+- **The re-plan rule says which document answers which finding.** The note let the architect
+  "decide which document it corrects". Eval G run 3 answered a design's own defect in
+  `integration.md` and re-delegated nobody. The tester reads the design, not the integration
+  doc, so the defect would have stayed in the spec. Now a finding whose object is a design is
+  answered by that design's revision, and an `OQ` with no `D` by the ledger.
+- **Same-day re-reviews.** The note did not say what a second review on the same day is
+  called. The reviewer wrote `-2`. The reviewer's Output now makes that the rule (never
+  overwrite), and `status.py`'s `latest_review` ranks `<date>-<stem>[-<n>].md` by date, then
+  suffix, for every review kind.
+- **`plan-package`'s next command is now `/dev-team:review-plan $pkg` on every run**, not only
+  on a re-plan, following the overview's flow. `review-plan`'s own next command on approval is
+  `/dev-team:test-section`, not `implement-section`, following phase 4's loop.
+- **Also updated:** `site/workflows/new-repo.md` gets a `review-plan` step, `site/flow.md`
+  gets its node and `docs/` map row, and README gets its `<pkg>/plan` target and hand-off
+  line. None of these were in the note, but the root `CLAUDE.md` asks for affected workflows
+  to be updated.
+- **`contracts.yml` readers use `cites` only, no `span`.** With a span, the reader parser
+  takes every bolded name in the checklist, including the checklist's own item names and the
+  probe headings, and then fails against each owner.

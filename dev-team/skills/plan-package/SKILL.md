@@ -65,6 +65,12 @@ invent its own shapes and conventions, and the next package will invent them dif
    `Raised by: /dev-team:plan-package $pkg (interview)` and **stop** with the stop message. Otherwise
    proceed.
 
+3b. **Plan findings.** Read `docs/followups.md` for open entries addressed to `$pkg/plan`. None
+   → continue. Otherwise this is a re-plan, per your **Plan findings** section: each finding
+   is answered in the contract (step 4 edits it rather than rewriting it), at unify (steps 6
+   and 7), or — when its object is a design — by re-delegating only that section in step 5. Keep the list; step 9
+   ticks it.
+
 4. **Package contract.** Invoke `planning-templates`, read `references/package-contract.md`,
    and write `docs/packages/$pkg/contract.md` to it. Its **Purpose** carries the covered brief
    rows, Notes verbatim — designers read the contract, never the brief. **Public surface
@@ -95,12 +101,15 @@ invent its own shapes and conventions, and the next package will invent them dif
    - `Source probes:` `docs/sources/<source>.md` for each of the section's sources from step
      4b, comma-separated, or `none` for a section whose `source` is `—`
    - `Existing design: none` · `Assessment:` the package assessment if you wrote one
+   - `Review findings: none` — on a re-plan, a section a step-3b finding names gets
+     `Existing design:` its design path and `Review findings:` the plan review's path; a
+     section no finding names is not re-delegated
    - `Skills to invoke:` that section's project skills
    - `Write your design to: docs/packages/$pkg/design/<section>.md`
    - `Constraints:` what the section must not import — including every sibling section it
      does not depend on, and every upstream package's internals
    
-   If every section already has a current design on disk, no designer is spawned this run —
+   If every section already has a current design on disk and no step-3b finding names one, no designer is spawned this run —
    proceed straight to step 6 with those files. Otherwise, once the last spawned designer has
    returned, continue immediately, in that same turn, to step 6 — do not end your turn
    reporting that unification will happen next; nothing else will trigger it.
@@ -119,13 +128,17 @@ invent its own shapes and conventions, and the next package will invent them dif
    CLI commands with every argument spelled out; the end-to-end tests; the two import-linter
    contracts.
 
-8. **Record decisions.** Append a `D<n>` stub for every open question that survived — from
-   the designs' **Open questions**, your **Contract deviations**, **Repo contract deviations**
+8. **Record decisions.** Append a `D<n>` stub for every open question that survived — every
+   `OQ-…` tag in the designs' **Open questions** that `integration.md` does not resolve by
+   name, each cited in its `Raised by:`; your **Contract deviations**, **Repo contract deviations**
    with `needs plan-change`, and `surface.md`'s open questions. `Scope:` the sections it
    binds, or `$pkg` when it is package-wide.
 
-9. **Commit** per your **Commit** section — trailer `Dev-Team-Run: plan-package $ARGUMENTS` — then **return** your standard summary — implementation order, provisional upstreams named —
-   ending with the next command: `/dev-team:implement-section $pkg/<first section in dependency order>`
+9. **Commit** per your **Commit** section — trailer `Dev-Team-Run: plan-package $ARGUMENTS`,
+   staging `docs/followups.md` too on a re-plan, after ticking each step-3b entry
+   `[x] <date>` — then **return** your standard summary — implementation order, provisional
+   upstreams named, and on a re-plan the plan review you answered — ending with the next
+   command: `/dev-team:review-plan $pkg`
 
 ## Adopting an existing package
 

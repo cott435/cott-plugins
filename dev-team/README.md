@@ -31,6 +31,7 @@ dev-team/
     ├── shape-brief/        (inline)        idea → docs/brief.md, discussed with you: now / later / out
     ├── plan-repo/          → architect     repo contract: new, extend, or revise from a corrected brief
     ├── plan-package/       → architect     one package: sections, designs, integration, surface
+    ├── review-plan/        → reviewer      <pkg>: the plan, before any code — CRITICALs go back to plan-package
     ├── plan-change/        → architect     change to shipped code, with downstream impact
     ├── map-project/        → architect     adopt an existing repo (repo level; then plan-package per package)
     ├── extract-legacy/     → curator       old repo → inventory (stop) → project skills, one per kept row
@@ -117,6 +118,7 @@ existing repo, no docs/ yet                 → /dev-team:map-project (repo leve
 existing repo, docs/ already there          → /dev-team:plan-change
 docs/ exist but have drifted from the code  → /dev-team:map-project (re-map), then /dev-team:plan-package <pkg> as needed
 adding a package to a planned repo          → /dev-team:plan-repo "<what to add>", then /dev-team:plan-package <pkg>
+a package is planned; plan reviewed?        → /dev-team:review-plan <pkg> (request changes → /dev-team:plan-package <pkg>, then again)
 repo contract came out wrong                → /dev-team:shape-brief to correct the brief, then /dev-team:plan-repo
                                               (or /dev-team:plan-repo --revise "<what was wrong>")
 rebuilding from an old, messy repo          → /dev-team:extract-legacy <old repo> (twice), then /dev-team:plan-repo
@@ -226,6 +228,10 @@ The implementer only touches its own section. When it needs something elsewhere,
 `<pkg>/surface` is a reserved target: it is what `/dev-team:finalize-package` picks up, and where an
 implementer files any drift between what it shipped and what `surface.md` planned.
 
+`<pkg>/plan` is the other reserved target: `/dev-team:review-plan` files a plan's CRITICAL
+findings there, the next `/dev-team:plan-package <pkg>` answers them and ticks them off, and
+while one is open `/dev-team:implement-section` refuses every section of `<pkg>`.
+
 `/dev-team:review-section` and `/dev-team:review-package` feed the same queue: a full report to
 `docs/reviews/<date>-<pkg>-<section>.md` (or `<date>-<pkg>-package.md`), every CRITICAL finding
 appended to `docs/followups.md`.
@@ -233,7 +239,9 @@ appended to `docs/followups.md`.
 Review per section, as you go. A review after finalize would cover every section under one
 return, and the surface would already re-export whatever a CRITICAL finding is about.
 
-**Fixing a CRITICAL is a re-run, not a new plan.** A section finding: run
+**Fixing a CRITICAL is a re-run, not a new plan.** A plan finding: run
+`/dev-team:plan-package <pkg>` again — it re-delegates only the sections a finding names — then
+`/dev-team:review-plan <pkg>`. A section finding: run
 `/dev-team:implement-section <pkg>/<section>` again — its step 6 picks up follow-ups addressed to it and
 the latest review, fixes them, ticks them off. A surface finding from `/dev-team:review-package`: run
 `/dev-team:finalize-package <pkg>` again, then `/dev-team:review-package <pkg>`. `/dev-team:plan-change` is needed only
@@ -336,6 +344,7 @@ docs/
 │       ├── surface.md              design of the public surface              (architect, at unify)
 │       └── interface.md            THE PUBLIC SURFACE AS SHIPPED             (finalize-package)
 ├── reviews/
+│   ├── 2026-09-03-data-plan.md     one per plan review, before any code      (review-plan)
 │   ├── 2026-09-04-data-ingest.md   one per section review
 │   └── 2026-09-08-data-package.md  one per package review
 └── plans/
@@ -379,6 +388,8 @@ you ── /dev-team:plan-package data ────▶ architect ──▶ docs/
                                 architect ◀── summaries (≤10 lines each)
                                 architect ──▶ integration.md, surface.md, decision stubs
 
+you ── /dev-team:review-plan data ───────────────▶ reviewer ──▶ docs/reviews/<date>-data-plan.md, followups `data/plan: …`
+                                          (request changes → /dev-team:plan-package data re-delegates only the named sections)
 you ── docs/decisions.md (answers)
 
 you ── /dev-team:implement-section data/ingest ──▶ implementer ──▶ src/data/ingest/, tests, section README

@@ -107,6 +107,31 @@ proceed on your assumptions by doing nothing. The mere existence of `docs/decisi
 the tagged entries do. And a question never goes anywhere but the ledger: not into a return
 message as prose, not at the bottom of a contract.
 
+## Plan findings — package scope
+
+Between the interview rule and the contract, read `docs/followups.md` for open entries
+addressed to `<pkg>/plan` — CRITICAL findings `/dev-team:review-plan` filed against this
+package's plan. If there are none, continue. Otherwise this is a re-plan: for each finding,
+decide which document it corrects — usually the one its object, `<document>#<heading or
+row>`, names:
+
+- the **contract** — edit it;
+- the **ledger** — an `OQ` with no `D` is answered by its stub; the design was right to ask,
+  so it is not re-delegated;
+- the **integration doc** or **`surface.md`** — they are rewritten at unify anyway, so the
+  rewrite answers the finding;
+- a **design** — re-delegate that section only, with `Existing design: <path>` and
+  `Review findings: docs/reviews/<date>-<pkg>-plan.md` in the delegation prompt; the designer
+  reads the findings that name its section and revises in place. Any other finding whose
+  object is a design is answered by that design's revision, never by an integration-doc
+  resolution: the integration doc settles disagreements *between* documents, and a design
+  that is wrong on its own is not a disagreement — patched over, it stays wrong for the
+  tester, who reads the design, and for every later `plan-change` that starts from it.
+
+Sections with no finding are not re-delegated. When every finding has been addressed, tick
+each `- [ ] <pkg>/plan:` entry `[x] <date>` in place. Your return names the plan review you
+answered and says `/dev-team:review-plan <pkg>` is the next command.
+
 ## Project skills
 
 Skills in `.claude/skills/` are how this project builds things. Some are the workflow
@@ -170,6 +195,7 @@ reality changes.
 | `docs/packages/<pkg>/surface.md` | the design of the public surface | you, package scope, after unification |
 | `docs/packages/<pkg>/interface.md` | the public surface **as shipped** | implementer (`/dev-team:finalize-package`); you only in sync scope, or transcribing an adopted package's existing re-exports |
 | `docs/reviews/<date>-<pkg>-<section>.md` | review findings | reviewer |
+| `docs/reviews/<date>-<pkg>-plan.md` | plan review findings, before any code | reviewer (`/dev-team:review-plan`); you read it on a re-plan |
 
 **Proposals** — one directory per change, `docs/plans/<slug>/`: `assessment.md` (what exists,
 what the change touches, **Downstream impact**), `contract-delta.md`, `<pkg>/<section>.md`
@@ -251,9 +277,14 @@ message. That number is the join key between a designer's open question, your in
 the user's answer, and a `TODO(decision D7)` marker in source. It is the only thing holding
 those four together.
 
-**Stub what matters.** A question earns a stub when the answer changes what gets built and
-the assumption could reasonably be wrong. A detail with an obvious default belongs in the
-design's own assumptions, not in the ledger.
+**Stub what matters.** A question *you* raise earns a stub when the answer changes what gets
+built and the assumption could reasonably be wrong. A detail with an obvious default belongs in
+the design's own assumptions, not in the ledger. A designer's `OQ-…` tag is different: it is
+already written, the designer was told it becomes a `D<n>`, and `/dev-team:review-plan` files
+an `OQ` with neither a `D` nor a resolution as CRITICAL. Either resolve it in the integration
+doc, naming the tag, or give it a stub whose `Raised by:` cites the tag — a cheap one with its
+`Assumption if unanswered:` filled in, which is what keeps it from blocking anyone. Never
+neither.
 
 **Retiring a decision.** When a change makes an existing decision irrelevant — the feature is
 gone, or a later decision replaces it — append a *new* entry recording that, and add one line
@@ -292,6 +323,7 @@ Contracts (highest first): <package contract>, <repo contract>[, <contract-delta
 Upstream interfaces: <docs/packages/<dep>/interface.md, …> | none | provisional: <docs/packages/<dep>/contract.md>
 Source probes: <docs/sources/<source>.md, …> | none
 Existing design (if any): <path or "none">
+Review findings: <docs/reviews/<date>-<pkg>-plan.md> | none
 Assessment (change and document modes): <path or "none">
 Skills to invoke: <comma-separated project skills for this section, or "none">
 Write your design to: <path>
@@ -308,6 +340,9 @@ The three modes:
 
 A change plan that adds a brand-new section sends `Mode: new` for that section. Mode
 describes the section, not the run.
+
+`Review findings:` is a plan review's report, passed only on a re-plan (**Plan findings**) to a
+section a finding names, always beside `Existing design:`; `none` otherwise.
 
 `Upstream interfaces:` lists the shipped surface of every package this one depends on. When a
 dependency has no `interface.md` yet, pass its `contract.md` marked `provisional:` — the

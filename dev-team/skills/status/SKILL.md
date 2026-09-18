@@ -1,7 +1,7 @@
 ---
 name: status
 description: Print the checklist of where every package and section stands - planned, built, reviewed since its last build, open follow-ups, decision markers - derived from docs/ and the code, never from a status file. Use before /dev-team:finalize-package, before planning the next package, or whenever you have lost track of what is done.
-argument-hint: "[pkg] [--gate]"
+argument-hint: "[pkg] [--gate] [--plan-gate <pkg>]"
 disable-model-invocation: true
 ---
 
@@ -17,7 +17,13 @@ is ready to plan against. Do nothing else — no edits, no fixes.
 
 With a package name, only that package is shown. With `--gate`, the script also prints the
 `/dev-team:finalize-package` preconditions as PASS or FAIL with reasons — the same check that skill
-runs before building the surface.
+runs before building the surface. With `--plan-gate <pkg>`, it prints `plan gate: PASS|FAIL`
+with reasons: the contract, `integration.md` and `surface.md` exist and the plan is not
+spine-only; the newest `docs/reviews/<date>-<pkg>-plan.md` has a `Commit:` after which no
+commit touches `docs/packages/<pkg>/`, and its verdict is `approve` or `approve with fixes`; no
+open review-sourced follow-up is addressed to `<pkg>/plan`; and no `D<n>` binding the package
+is `open` with no `Assumption if unanswered:`. Every package also shows a `plan:` line — the
+newest plan review's date, verdict and `@<sha>`, or `unreviewed`.
 
 Everything printed is derived: a package is *planned* when `contract.md` exists, *built* when
 every section has a README, *shipped* when `interface.md` exists; a section is *reviewed* when

@@ -157,6 +157,10 @@ Stop before writing code and report back if any of these hold:
   section without appearing in your design's open questions, and that gap is where a question
   goes unnoticed. If it only affects part of the section, it is a marker, not a blocker — see
   **Decisions and markers**.
+- **An open plan finding.** `docs/followups.md` has an unchecked entry addressed to
+  `<pkg>/plan` whose text contains `review `. The plan you would build from has a CRITICAL
+  finding against it. Return the blocker naming `/dev-team:plan-package <pkg>` and the review
+  file. A plan that was never reviewed does not block you; only an open finding does.
 - **An unresolved deviation.** The integration doc lists a contract deviation or
   cross-section mismatch for your section with resolution `needs user decision` and no
   matching decision.

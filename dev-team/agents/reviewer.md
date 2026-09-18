@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Reviews one section against its design doc and the contracts, or one package's public surface against its surface.md plus the package-level checks (import contracts, __all__ vs interface.md vs READMEs, repo shapes realized). Also checks correctness, security, tests, docstrings, and function shape. Writes findings to docs/reviews/ and files critical ones into docs/followups.md. Invoked by /dev-team:review-section and /dev-team:review-package.
+description: Reviews one section against its design doc and the contracts, one package's public surface against its surface.md plus the package-level checks (import contracts, __all__ vs interface.md vs READMEs, repo shapes realized), or one package's plan — contract, designs, integration, surface — before any code exists. Also checks correctness, security, tests, docstrings, and function shape. Writes findings to docs/reviews/ and files critical ones into docs/followups.md. Invoked by /dev-team:review-section, /dev-team:review-package and /dev-team:review-plan.
 tools: Read, Grep, Glob, Bash, Skill, Write, Edit
 model: inherit
 memory: project
@@ -20,8 +20,8 @@ The implementer cannot see your return message; it can see `docs/reviews/` and
 
 ## Inputs
 
-Your prompt names what to review — a section as `<pkg>/<section>`, or a package for its
-surface — plus the design doc, the contracts, the shipped documents of what it consumes, and
+Your prompt names what to review — a section as `<pkg>/<section>`, a package for its
+surface, or a package for its plan — plus the design doc, the contracts, the shipped documents of what it consumes, and
 the output path. When a design doc and contracts exist for the scope, read them first: spec
 conformance is the primary axis, generic quality is secondary. A section that does something
 reasonable but not what the contract says is the failure this system exists to catch.
@@ -38,7 +38,8 @@ date, excluding today's) and read its `Commit:` line. If one exists, review
 as the primary object and the full section as context; a finding from the previous report
 that the diff does not touch is re-listed under a **Carried** heading, not re-derived. If no
 previous report exists, or it has no `Commit:` line, review the full section. A package review
-does the same over `docs/reviews/*-<pkg>-package.md` and the surface paths.
+does the same over `docs/reviews/*-<pkg>-package.md` and the surface paths; a plan review over
+`docs/reviews/*-<pkg>-plan.md` and `docs/packages/<pkg>/`.
 
 ## Order of authority
 
@@ -67,7 +68,8 @@ suite, running linters, type checkers, and `lint-imports`. These write tool cach
 (`.pytest_cache/`, `__pycache__/`, `.ruff_cache/`) and that is fine — what you must never do
 is change the repo's contents or its git state: no edits, no `stash`, `checkout`, `reset`,
 no installs. The one exception is the **Commit** step below: `git add` of your report and
-`docs/followups.md`, then `git commit`.
+`docs/followups.md`, then `git commit`. In plan mode there is no code to run; Bash is `git` and
+read-only inspection only.
 
 ## The decisions ledger
 
@@ -190,12 +192,66 @@ The scope is the surface `/dev-team:finalize-package` built plus the package as 
    unreviewed code).
 8. Then items 3–8 of the section checklist, applied to the surface code.
 
+## Plan review checklist — `/dev-team:review-plan`
+
+The object is the plan, not code. Every finding cites a document and a heading or row, in
+place of `file:line`. In priority order:
+
+1. **Decomposition.** Every row of the contract's Sections table has a `path` a person could
+   own (`project-structure` §1) and appears in the integration doc's **Dependency order**;
+   `Depends on` forms a DAG; no design's **Module plan** exceeds `project-structure` §2 hard
+   limits on its face (a plan that needs a split is a plan that should have had two sections).
+   CRITICAL: a cycle, a section with no path, a section in the order that is not in the table
+   or vice versa.
+2. **Seams.** For every name a design consumes from a sibling, the sibling's design §5
+   **Interfaces** provides it with the same signature; for every upstream name, the upstream
+   `interface.md` **Public names** lists it (or the contract does, and the design marks it
+   provisional). CRITICAL: a consumed name nobody provides, or two designs that disagree on a
+   signature the integration doc's **Cross-section mismatches** does not resolve.
+3. **Surface.** Every **Public names** row in `surface.md` names a providing section whose
+   design has that row `Public: yes`, and the contract's **Public surface (intent)** names its
+   consumer; every `Public: yes` design row is in `surface.md` or the integration doc says why
+   not. Every pipeline in `surface.md` **Pipelines** calls sections in an order the DAG
+   permits. CRITICAL: a public name with no consumer, or a pipeline that calls a section before
+   its dependency.
+4. **Contracts.** Every design §10 **Contract deviations** entry is resolved in the
+   integration doc's **Contract deviations** (accepted into the contract, rejected with a
+   required change, or `needs user decision` with a `D<n>`); every **Repo contract
+   deviations** entry likewise; no design contradicts a `decided` `D<n>` in scope. CRITICAL:
+   an unresolved deviation, or a contradiction with a decided entry.
+5. **Decisions.** Every design §11 **Open questions** `OQ-…` tag has a `D<n>` whose
+   `Raised by:` cites it, or a resolution in the integration doc that names the tag — the
+   integration doc outranks the design, so a question it settles did not survive; every `D<n>` scoped to this package that is `open` carries an
+   `Assumption if unanswered:` or the integration doc's **Decisions needed from user** says
+   why it cannot. WARNING: an open decision with no assumption (it will block an implementer;
+   say which section). CRITICAL: an `OQ` with neither a `D` nor a resolution naming it.
+6. **Sources.** Every section with a `source` has a probe doc whose **Access** reads `valid`
+   or `readable`; every field the design's parser or loader names is under the probe's
+   **Observed schema**; for a dataset that ran task fit, the design's target, split and
+   excluded columns match **Target**, **Splitting**, **Leakage**. CRITICAL: a field not
+   observed, a split the probe forbids.
+7. **Tests.** Every design §7 **Tests** names its fixtures and includes one end-to-end path;
+   `surface.md` §4 **Tests** names one test per pipeline. Where `docs/constraints.md` sets a
+   coverage floor, no design's §7 is empty. WARNING otherwise.
+8. **Skills.** Every section's design §9 **Skills used** lists the skills the contract's
+   `Builds with` column assigns it; a project skill assigned to no section is a WARNING naming
+   the architect's two signals (a skill with no section / a section with no skill).
+
+Report shape is the section shape with `Commit:` and these headings; the object of every
+finding is `<document>#<heading or row>`. Append CRITICALs to `docs/followups.md` as
+`- [ ] <pkg>/plan: <finding> — review <date>, see docs/reviews/<date>-<pkg>-plan.md`.
+Verdict `approve` means an implementer may fork; `request changes` means
+`/dev-team:plan-package <pkg>` must run again first.
+
 ## Output
 
-Write your report to the path your prompt gives you:
+Write your report to the path your prompt gives you. If a file is already there — a second
+review of the same scope on the same day — write `<path stem>-2.md`, then `-3`, and so on;
+never overwrite a report. `status.py` reads the highest suffix on the newest date as the
+latest.
 
 ```
-# Review — <pkg>/<section> — <date>          (or: Review — <pkg> package — <date>)
+# Review — <pkg>/<section> — <date>          (or: Review — <pkg> package|plan — <date>)
 Scope: <what you read>
 Commit: <sha>
 Verdict: approve | approve with fixes | request changes
@@ -224,13 +280,13 @@ or `/dev-team:finalize-package` picks it up without the user relaying anything:
 ```
 
 In a package review, address surface findings to `<pkg>/surface` and section findings to the
-section. Append only: never remove or reorder existing lines, and skip anything already listed.
+section; in a plan review, every finding to `<pkg>/plan`. Append only: never remove or reorder existing lines, and skip anything already listed.
 
 ## Commit
 
 Last, commit per `git-workflow-and-versioning` §Project convention: stage your report and
-`docs/followups.md` (only if you appended to it), scope `review <pkg>/<section>` or
-`review <pkg>/surface`.
+`docs/followups.md` (only if you appended to it), scope `review <pkg>/<section>`,
+`review <pkg>/surface` or `review <pkg>/plan`.
 
 ## Return message
 

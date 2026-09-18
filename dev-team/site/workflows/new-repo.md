@@ -96,6 +96,22 @@ Then:
    commands with every argument, the import-linter contracts for this package.
 6. Appends `D<n>` stubs to `docs/decisions.md`.
 
+Then have someone who wrote none of it check the plan before any code exists:
+
+```
+/dev-team:review-plan data
+```
+
+Forks the reviewer in plan mode. It checks the contract, every design, `integration.md` and
+`surface.md` against each other and against the repo contract, the ledger, the upstream
+`interface.md` files and the probe docs: every consumed name has a provider with the same
+signature, every open question became a `D<n>`, every deviation is resolved, every public name
+has a consumer. It writes `docs/reviews/<date>-data-plan.md` and files each CRITICAL to
+`docs/followups.md` as `data/plan: …`. On `request changes`, re-run `/dev-team:plan-package data`:
+it re-delegates only the sections a finding names, ticks the findings, and says to review the
+plan again. While a `data/plan` finding is open, `/dev-team:implement-section` refuses every
+section of `data`.
+
 Then answer the decisions, and implement in the order `integration.md` gives, testing and
 reviewing as you go:
 

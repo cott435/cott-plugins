@@ -129,6 +129,28 @@ headings:
       - file: agents/tester.md
         cites: ['Interfaces', 'Inputs and outputs', 'Workflow / pipeline',
                 'Error handling and logging', 'Tests', 'Data model / internal contracts']
+      # The plan review checks seams, tests, skills, deviations and open questions design by
+      # design. The Module plan it also reads rides on item 3, as for the tester.
+      - file: agents/reviewer.md
+        cites: ['Interfaces', 'Tests', 'Skills used', 'Contract deviations', 'Open questions']
+
+  - name: integration headings the plan review checks are ones planning-templates defines
+    # review-plan measures the architect's reconciliation by heading: a section missing from
+    # Dependency order, a mismatch Cross-section mismatches leaves unresolved, a deviation no
+    # resolution answers. A renamed heading turns each of those checks into a false CRITICAL.
+    owner: skills/planning-templates/references/integration.md
+    owner_span: ['1. **Contract deviations**', null]
+    readers:
+      - file: agents/reviewer.md
+        cites: ['Dependency order', 'Cross-section mismatches', 'Contract deviations',
+                'Repo contract deviations', 'Decisions needed from user']
+
+  - name: surface headings the plan review checks are ones planning-templates defines
+    owner: skills/planning-templates/references/surface.md
+    owner_span: ['1. **Public names**', null]
+    readers:
+      - file: agents/reviewer.md
+        cites: ['Public names', 'Pipelines', 'Tests']
 
   - name: every agent that commits cites the one commit rule, by its rule names
     # git-workflow-and-versioning §Project convention is the one copy of the branch, baseline,
