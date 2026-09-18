@@ -21,8 +21,20 @@ them is through a file.
 ## Hard rules
 
 - Write only under `docs/`. Never create or modify source, config, or test files.
+- Every run starts with the branch and baseline check and ends with one commit — both in
+  **Commit** below. The commit is the last thing you do before your return, whether the run
+  finished or stopped.
 - Bash is for read-only inspection (`ls`, `tree`, `git log`, `wc`, `grep`). Never run
-  builds, tests, installs, or anything that writes to the repo.
+  builds, tests, installs, or anything that writes to the repo. Bash is read-only except for
+  `git add <paths>` and `git commit` at the end of a run — see **Commit**.
+- Every `Agent` call you make — designer, researcher, `Explore` — passes
+  `run_in_background: false`. A fan-out stays parallel: every call of one batch goes in a
+  single message, and they run concurrently and all return as that message's results. The flag
+  is what keeps the run alive. You are a forked run, so a backgrounded agent's completion
+  notification goes to the conversation that forked you, never to you: end a turn to wait for
+  one (`echo waiting`, "the designers are running") and the run is over, with `integration.md`,
+  `surface.md` and the commit never written. If a call returns a background task id instead of
+  a result, that is a failure to name in your return, not something to wait for.
 - Use `WebSearch`/`WebFetch` when a contract depends on an external fact — a library's
   current API shape, a protocol's requirements, a service's limits. A wrong contract
   costs N designs plus N implementations, so it is worth a minute to check rather than
@@ -270,7 +282,8 @@ in or alter `Decision:` or `Status:`. An old `decided` entry with no `Applied:` 
 ## Delegating to designers
 
 This is the one place the delegation prompt is defined. Skills supply the mode and the
-paths; the shape is yours. Spawn one `designer` per section, all in parallel, in one message.
+paths; the shape is yours. Spawn one `designer` per section, all in one message, each call
+`run_in_background: false` per **Hard rules**.
 
 ```
 Section: <pkg>/<name>
@@ -321,8 +334,8 @@ same one read the same document instead of probing it twice and disagreeing.
 
 The researcher's **Probe mode** defines the six fields a probe prompt carries; this block is
 where you resolve them, and `/dev-team:probe-source` is where a direct run resolves the same
-six without you. Spawn one per source named in the contract's Sections table, all in parallel,
-in one message:
+six without you. Spawn one per source named in the contract's Sections table, all in one
+message, each call `run_in_background: false` per **Hard rules**:
 
 ```
 Mode: probe
@@ -347,8 +360,8 @@ whose **Access** is `valid` or `readable` is skipped however old. A change touch
 re-probing every source they consume costs more than the staleness it would catch — that skill's
 wave B handles a probe doc older than the code instead.
 
-Tell each researcher to return ten lines or fewer. Wait for every one of them — the continuing-after-backgrounded rule under
-**Unification** applies here word for word — then read each doc's **Access** heading.
+Tell each researcher to return ten lines or fewer. Every one of them has returned when that
+message's results arrive; in the same turn, read each doc's **Access** heading.
 Anything other than `valid` or `readable` is a **stop**, before any designer is spawned:
 
 ```
@@ -376,7 +389,10 @@ this one, because it is a decomposition problem wearing a data problem's clothes
 
 ## Unification
 
-**Continuing after backgrounded designers.** Designers you spawn may run and report back as separate background-task notifications rather than as one synchronous batch — you may see "designer for X finished" arrive as its own turn, hours apart from the others. Each of those notifications is not a status update to relay to the user; it is a turn in which you check whether every section you delegated this run has now returned. The moment the last one has, proceed immediately, in that same turn, into everything below — do not end a turn narrating that unification "will follow automatically" or "should happen next," and do not describe what you are about to do instead of doing it. Nothing re-invokes you on its own: if you stop here, the run stops here, permanently, with `integration.md` and `surface.md` unwritten.
+Every designer you spawned has returned when the delegating message's results arrive
+(**Hard rules**). Continue in that same turn into everything below — do not end a turn
+narrating that unification "will follow" or "should happen next"; nothing re-invokes you, and a
+run that stops here stops with `integration.md` and `surface.md` unwritten.
 
 After all designers return, read every design doc you delegated — those specific files, not
 the whole directory, which would sweep in your own prior integration output and the
@@ -405,10 +421,21 @@ The documents carry the content. The return carries what the user needs to type 
 - **Implementation order**: `data/ingest, data/clean, …` — one line
 - Any dependency this plan was built against provisionally
 - Open decisions by number, one line each, and where they live (`docs/decisions.md`)
+- `Commit: <sha>`
 - The exact next command to run
 
 Nothing else. (The stop message from the interview rule, or the access stop from **Probing**,
 replaces all of this when you stop.)
+
+## Commit
+
+Every scope ends in one commit, per `git-workflow-and-versioning` §Project convention —
+invoke it with the Skill tool. Check its **Branch** and **Baseline** rules before writing
+anything, and return its blocker text if either fails. At the end, stage exactly the paths
+your return message lists as written or modified — including every file your designers and
+researchers wrote this run: they do not commit; they return to you, and you commit. Scope
+`plan <target>`. A run that stops — for the interview rule or for access — still commits the
+documents it wrote, including `docs/decisions.md`, so the stop is a clean point to resume from.
 
 ## Memory
 

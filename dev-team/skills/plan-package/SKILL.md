@@ -4,7 +4,7 @@ description: Plan one package of a repo that /dev-team:plan-repo has already con
 argument-hint: "<pkg>"
 arguments: [pkg]
 context: fork
-agent: architect
+agent: dev-team:architect
 background: false
 disable-model-invocation: true
 ---
@@ -124,7 +124,7 @@ invent its own shapes and conventions, and the next package will invent them dif
    with `needs plan-change`, and `surface.md`'s open questions. `Scope:` the sections it
    binds, or `$pkg` when it is package-wide.
 
-9. **Return** your standard summary — implementation order, provisional upstreams named —
+9. **Commit** per your **Commit** section — trailer `Dev-Team-Run: plan-package $ARGUMENTS` — then **return** your standard summary — implementation order, provisional upstreams named —
    ending with the next command: `/dev-team:implement-section $pkg/<first section in dependency order>`
 
 ## Adopting an existing package

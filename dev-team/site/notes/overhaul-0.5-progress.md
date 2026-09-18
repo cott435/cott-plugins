@@ -8,9 +8,9 @@ Status values: `todo` · `in progress` (list what is uncommitted under Notes) ·
 
 | Phase | Note | Status | Commit | Eval log(s) | Notes for the next chat |
 |---|---|---|---|---|---|
-| 0 | 00, 09 | done | 3127526 (design set); see phase-0 eval commit | `evals/2026-09-18-platform-facts.md` | Resolved `subagent_type` form: **`dev-team:<agent>`** — bare `reviewer` errors. `${CLAUDE_PLUGIN_ROOT}` is substituted in skill and agent bodies. |
-| 1 | 01 | todo | | | |
-| 2 | 02 | todo | | | Build `evals/fixtures/two-package/` first (note 09) — every later eval uses it |
+| 0 | 00, 09 | done | 3127526 (design set), f69b58b (evals A, B) | `evals/2026-09-18-platform-facts.md` | Resolved `subagent_type` form: **`dev-team:<agent>`** — bare `reviewer` errors. `${CLAUDE_PLUGIN_ROOT}` is substituted in skill and agent bodies. |
+| 1 | 01 | done | 1b5b5f9 | `evals/2026-09-18-c-vendored-skills-js-stack-grep.md` | Upstream SHA `c004a74` (in each `.skillfish.json`). `git-workflow-and-versioning` §Project convention is a one-line placeholder for phase 2 to fill. README knowledge-scope rows for the three are all `—` until phases 2/4 wire them into agents — fill the cells then. Re-run eval C over the fourth file in phase 6. Deviations in note 01. |
+| 2 | 02 | done | the `(phase 2)` commit (`git log --grep="(phase 2)"`) — includes the parallel session's foreground fan-out fix | `evals/2026-09-18-d-commit-per-run.md`, `evals/2026-09-18-d2-foreground-fanout.md` | **Skills now fork `agent: dev-team:<name>`; before this, every forked agent ran as general-purpose (d2).** Re-check whether the per-skill "commit, then return" steps are still needed (note 02 §Deviations). Fixture built (`evals/fixtures/two-package/`, `reset.sh [--no-constraints] [dest]`; set `git config user.name/email` in the copy before headless runs). Forked skills now end "commit, then return" — the note's "no skill change" failed eval D. Headless `plan-package` now finishes (d2). Reviewer commit and `Commit:` line not yet exercised live. Deviations in note 02. |
 | 3 | 03 | todo | | | |
 | 4 | 04 | todo | | | |
 | 5 | 05 | todo | | | |

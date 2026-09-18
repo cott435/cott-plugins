@@ -3,7 +3,7 @@ name: map-project
 description: Adopt an existing codebase into the planning system, at repo scope - reverse-engineers docs/architecture.md, the decision ledger, and the follow-up queue from the code as it stands, then hands each package to /dev-team:plan-package for its own document-mode run. Run once on a repo with code but no docs/, and again when the canonical docs have drifted from the code.
 argument-hint: "[scope — a directory or a note on what to focus on; optional]"
 context: fork
-agent: architect
+agent: dev-team:architect
 background: false
 disable-model-invocation: true
 ---
@@ -92,7 +92,7 @@ architecture doc is indistinguishable from one that hallucinated it.
    the mapping surfaced, addressed to `<pkg>/<section>` where the section is obvious from the
    directory and to `<pkg>` otherwise.
 
-6. **Return** your standard summary plus one line per package: path, whether its top-level
+6. **Commit** per your **Commit** section — trailer `Dev-Team-Run: map-project $ARGUMENTS` — then **return** your standard summary plus one line per package: path, whether its top-level
    `__init__.py` re-exports anything, and whether a `docs/packages/<pkg>/` already exists. End
    with the next command: `/dev-team:plan-package <lowest package in dependency order>` — the
    package runs go bottom-up so each one's dependencies are documented first.

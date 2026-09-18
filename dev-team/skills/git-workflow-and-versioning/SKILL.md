@@ -1,6 +1,6 @@
 ---
 name: git-workflow-and-versioning
-description: Structures git workflow practices — atomic commits, descriptive messages, save points, pre-commit hygiene. Preloaded into the implementer; invoked by the tester, reviewer and architect at the moment they commit. §Project convention is the commit rule every agent follows.
+description: Structures git workflow practices — atomic commits, descriptive messages, save points, pre-commit hygiene. Preloaded into the implementer; invoked by every other agent that commits, at the moment it checks the branch and commits. §Project convention is the commit rule every agent follows.
 license: agent-skills by Addy Osmani, MIT. Complete terms in LICENSE.
 user-invocable: false
 ---
@@ -15,7 +15,59 @@ the mechanism that keeps changes manageable, reviewable, and reversible.
 
 ## Project convention
 
-Defined in phase 2 of the 0.5 overhaul.
+Every dev-team run that writes files ends by committing exactly those files. These rules are
+the one copy; agents cite this section and do not restate it. Where anything below this
+section disagrees, this section wins.
+
+1. **Branch** — Agents never create, switch or delete branches. A run that would commit refuses
+   to start when the current branch is `main` or `master` (`git branch --show-current`), or when
+   the directory is not a git repository. Blocker text: *on `<branch>`; create a feature branch
+   and re-run* / *not a git repository; `git init`, create a branch, and re-run*.
+
+2. **Baseline** — Before writing anything, `git status --porcelain` must be empty except for
+   modifications to `docs/decisions.md`, `docs/brief.md` and `docs/constraints.md` — the three
+   files the user edits by hand between runs — and anything under `.claude/agent-memory/`,
+   which agents write as they go and nobody stages but the user. Anything else is a blocker listing the paths:
+   *uncommitted changes outside the user-edited files: <paths>; commit or stash them and
+   re-run*. The exemption exists so answering a decision never requires a commit first; the
+   run that consumes the answer commits the file.
+
+3. **Staging** — Stage by explicit path — the paths the run wrote, which are the paths its
+   return message lists. Never `git add -A`, `git add .`, or `git commit -a`. A file the run
+   did not write is never staged, even if it is modified; that is the baseline rule's job.
+
+4. **Message** — First line `<scope>: <imperative summary>`, at most 72 characters, where
+   `<scope>` is one of:
+
+   | Run | `<scope>` | Example |
+   |---|---|---|
+   | `implement-section` | `<pkg>/<section>` | `data/ingest: parse polygon aggregates into Bar rows` |
+   | `finalize-package` | `<pkg>/surface` | `data/surface: lazy re-exports, load_bars pipeline, cli` |
+   | `test-section` (intent) | `<pkg>/<section>` | `data/ingest: 14 intent tests from design` |
+   | `test-section` (reconcile) | `<pkg>/<section>` | `data/ingest: reconcile 2 intent tests with deviations` |
+   | `review-section` / `review-package` / `review-plan` | `review <pkg>/<section>` / `review <pkg>/surface` / `review <pkg>/plan` | `review data/ingest: request changes (2 critical)` |
+   | `plan-repo` / `plan-package` / `plan-change` / `sync-plan` / `sync-design` / `map-project` | `plan <target>` | `plan data: contract, spine design (ingest), integration` |
+   | `extract-legacy` | `legacy` | `legacy: inventory of ../old-repo` |
+   | `finalize-project` | `docs` | `docs: package READMEs, api pages, root README` |
+
+   Body: blank line, then one trailer per line and nothing else:
+
+   ```
+   Dev-Team-Run: <skill name> <argument as typed>
+   Plan: <slug>                       (only when a plan slug is set)
+   ```
+
+   The trailer is what lets any tool find a run's commit without parsing the summary.
+
+5. **Hygiene** — The run's own verification (its test command, `lint-imports`, `ruff check`) has
+   already passed before the commit step — the commit step never runs them again. If a
+   pre-commit hook rejects the commit, fix what it names and retry once; a second rejection is a
+   blocker quoting the hook output.
+
+6. **One commit per run** — A run never makes two commits. Mid-run "save points" from the
+   Save Point Pattern below are `git stash`-free and commit-free here: the run is the unit of
+   work, and a partial run that stops on a blocker leaves its files uncommitted for the user to
+   inspect (the next run's baseline rule will name them).
 
 ## Core Principles
 
@@ -223,4 +275,4 @@ Upstream `addyosmani/agent-skills` `skills/git-workflow-and-versioning/SKILL.md`
 Dropped: When to Use, Trunk-Based Development, Branching Strategy and Branch Naming, Working
 with Worktrees, Change Summaries, Release & Versioning, and the release rows of the
 Rationalizations, Red Flags and Verification lists. Rewritten: every command and example to
-`uv`/`ruff`/`pytest`/`lint-imports`. Added: §Project convention (content from phase 2).
+`uv`/`ruff`/`pytest`/`lint-imports`. Added: §Project convention, the dev-team commit rule.

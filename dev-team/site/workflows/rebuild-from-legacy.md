@@ -16,6 +16,11 @@ the scope first. Describe what the old repo does; `shape-brief` maps it with you
 *later*, and *out* — a rebuild is the moment to drop things — and it never reads the old code.
 Its return names `/dev-team:extract-legacy` as the next step.
 
+Every forked run from here on ends in one commit of the files it wrote, and refuses to start on
+`main`/`master` or with other uncommitted changes (your hand edits to `docs/decisions.md`,
+`docs/brief.md` and `docs/constraints.md` excepted). So the repo is a git repository on a
+feature branch before the first one — `git init`, `git switch -c build`, and commit the brief.
+
 ## 1. Mine the old repo
 
 ```

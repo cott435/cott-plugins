@@ -150,3 +150,82 @@ Verdict: approve | approve with fixes | request changes
 `status.py` has no `st_mtime` reference; the reviewer's template has `Commit:`; every
 agent file that commits cites §Project convention and `check-contracts` proves it; the two
 evals are logged.
+
+## Deviations
+
+- **Reviewed rule: "no commit since", not "equals".** The note defined *reviewed* as
+  `review_commit == last_commit(paths)`. The review's `Commit:` is `HEAD` at review time, which
+  is ahead of the section's last commit whenever anything else was committed in between —
+  implement `ingest`, implement `clean`, review `ingest` — so under equality that section could
+  never read as reviewed. `status.py` instead checks that the `Commit:` sha is in `HEAD`'s
+  history and that `git log <sha>..HEAD -- <paths>` is empty. Eval D state 3 is that case.
+- **No separate `review_commit()`.** `latest_review()` returns the `Commit:` sha beside date
+  and verdict, and one `freshness()` gives the state for both the section rows and the
+  `surface:` row; a second reader of the same file would have been dead code.
+- **Surface paths** — left undefined by the note — are `src/<pkg>/__init__.py`, `pipelines/`,
+  `pipelines.py`, `cli.py` and `cli/`.
+- **§Project convention is a numbered list** (`1. **Branch** — …`) under a two-sentence
+  preamble, wording otherwise as the note gives it except "from the vendored skill" → "from the
+  Save Point Pattern below". `check-contracts`' heading parser owns only numbered bolded items.
+- **The `headings` contract uses reader `span`s, not `cites: ['Project convention']`.** `cites`
+  asserts a name without reading the reader's file, so it could not prove an agent cites the
+  section. Each reader's span starts at its `§Project convention` citation — a missing citation
+  is a missing marker, a FAIL — and the bolded rule names inside it (**Branch**, **Baseline**)
+  must be ones the section numbers. Negative controls are in the eval D log.
+- **The reviewer and the architect check Branch and Baseline before they start**, not only
+  commit at the end; the note gave the implementer the blocking rules and the others only a
+  commit step, but every run that commits needs a clean start or it stages someone else's
+  work by omission.
+- **The architect commits when it stops** for questions or access. Its stop writes
+  `docs/decisions.md` stubs and often `docs/assessment.md`; left uncommitted, the latter would
+  fail the next run's baseline.
+- **The researcher commits only on `Commit: yes`, which only `/dev-team:probe-source` sets.**
+  "Nothing — the spawner commits" left a direct probe's `docs/sources/*` uncommitted, and the
+  next run's baseline would refuse it. A first wording ("run directly by probe-source") was
+  misread in eval D run 1 by a researcher the architect spawned, which committed its own probe;
+  the explicit marker replaced it.
+- **The forked skills' last step now says "commit, then return"** — `plan-repo`,
+  `plan-package`, `plan-change`, `sync-plan`, `map-project`, `implement-section`,
+  `review-section`, `review-package`, `finalize-package`, `finalize-project`,
+  `extract-legacy`, `probe-source` — each naming its `Dev-Team-Run:` trailer with
+  `$ARGUMENTS`. The note said the skills needed no text change because the rule lives in the
+  agent; eval D run 1 showed otherwise: the architect followed `plan-repo`'s numbered steps to
+  "Return" and never reached its own **Commit** section. The architect's Hard rules also gained
+  a bullet naming the start check and the final commit.
+- **Baseline exempts `.claude/agent-memory/`.** Every agent has `memory: project` and writes
+  there as it goes (eval D run 1: the researcher wrote after its commit), so without the
+  exemption every run would fail the next one's baseline. Agents never stage it.
+- **Implementer, outside the table:** step 7's "Commit-sized chunks" became "Small chunks … a
+  save point, not a commit"; surface mode's precondition on review freshness, which still
+  described the 0.4 date/mtime rule, now states the commit rule; surface mode gains its commit
+  as step 9 of **Build**.
+- **Workflows.** `site/workflows/new-repo.md`, `rebuild-from-legacy.md` and
+  `adopt-existing-repo.md` gain one paragraph: the repo must be on a feature branch before the
+  first forked run. The root `CLAUDE.md` asks for affected workflows to be updated with the
+  skills; phase 9 still rewrites `new-repo.md`.
+- **README knowledge-scope row** for `git-workflow-and-versioning` filled (phase 1 left it `—`):
+  ✓ implementer; invoked by architect, reviewer, documenter, researcher (direct probes); the
+  curator, which has no column, is named under the table.
+
+### Included from a parallel session: the foreground fan-out fix
+
+Eval D's headless `plan-package` never finished. That was filed as a separate task, and a
+second session fixed it in the same working tree. It is committed with this phase because it
+shares files with it (`architect.md`, `curator.md`, `contracts.yml`). Evidence:
+`evals/2026-09-18-d2-foreground-fanout.md`. The change:
+
+- **`agent: dev-team:<name>` in all 12 forked skills.** This is the root cause. A bare
+  `agent: architect` gives no error: the fork runs as general-purpose, without the agent's
+  prompt, so none of its rules apply unless it happens to `Read` its own agent file.
+- **`run_in_background: false`** on every `Agent` call from the architect and the curator,
+  as a Hard rule. The spawn sites point to it. Fan-outs stay parallel: one batch goes in one
+  message. The "continuing after backgrounded designers" paragraph is replaced, because a fork
+  never receives those notifications.
+- **`contracts.yml`** gains `every forked skill names its agent with the plugin prefix` and
+  `no forked run waits on a background notification`. 13/13 pass.
+
+This bears on the deviation above that made each forked skill's last step "commit, then
+return". Eval D's architect ran as general-purpose, so its **Commit** section was never loaded.
+The skill-step wording may now be redundant with the agents' own sections. It is kept for this
+commit, and a later phase should re-run eval D's `plan-repo` case without it before deciding.
+The rule for `probe-source`'s researcher (it commits only on `Commit: yes`) is unaffected.

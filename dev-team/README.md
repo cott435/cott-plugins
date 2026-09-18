@@ -100,6 +100,10 @@ and then the implementer, so the same conventions apply at design time and at bu
 4. Every agent inherits your session model, so set `/model` before you start a run.
 5. `/dev-team:status` at any time prints where everything stands; `/dev-team:status <pkg> --gate` runs the exact
    preconditions `/dev-team:finalize-package` will check.
+6. The repo you build in is a git repository on a feature branch; agents refuse `main`. Every
+   run ends in one commit of exactly the files it wrote, and refuses to start while anything
+   else is uncommitted — except `docs/decisions.md`, `docs/brief.md` and `docs/constraints.md`,
+   which you edit by hand between runs.
 
 ## Which skill to run
 
@@ -248,12 +252,14 @@ is the wrong axis here, since the architect and designer need the size limits an
 | `reserved-skill-names` — the names this plugin's own skills occupy | invoked | — | — | — | — | — |
 | `test-driven-development` — red-green-refactor, test design, pytest | — | — | — | — | — | — |
 | `debugging-and-error-recovery` — root-cause triage for tests and builds | — | — | — | — | — | — |
-| `git-workflow-and-versioning` — commit discipline; the project's commit rule | — | — | — | — | — | — |
+| `git-workflow-and-versioning` — commit discipline; the project's commit rule | invoked | — | ✓ | invoked | invoked | invoked |
 
 The last three are vendored from `addyosmani/agent-skills` (MIT) and adapted to this stack.
-No agent loads them yet: the 0.5 overhaul wires `test-driven-development` into the tester and
-implementer, `debugging-and-error-recovery` into the implementer, and
-`git-workflow-and-versioning` into every agent that commits, in later phases.
+`git-workflow-and-versioning` §Project convention is the one copy of the commit rule every
+agent that writes follows (the curator invokes it too; the researcher only when
+`/dev-team:probe-source` runs it directly). The other two are not loaded by any agent yet:
+the 0.5 overhaul wires `test-driven-development` into the tester and implementer and
+`debugging-and-error-recovery` into the implementer in a later phase.
 
 Three conventions in `python-style-guide` are marked *Project convention* because they go
 beyond or beside Google's guide:
@@ -433,7 +439,8 @@ Every arrow into an agent carries a file path, not a conversation.
 - **Parallel sections.** Add `isolation: worktree` to `implementer.md` frontmatter and each run
   works in its own git worktree. Only for sections `integration.md` shows as independent — and
   note that `.gitignore`, `docs/followups.md`, `docs/decisions.md`, and the root
-  `pyproject.toml` are shared files that runs append to, so expect to merge them.
+  `pyproject.toml` are shared files that runs append to, so expect to merge them. Every run
+  commits what it wrote, so a worktree merge is a commit merge, not a copy of files.
 - **Interactive session for a hard section:** `claude --agent implementer` gives the main thread
   the implementer's system prompt, tools, and model, so you get the blocking rules and return
   format while steering turn by turn.

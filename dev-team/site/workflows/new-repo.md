@@ -11,6 +11,11 @@ what makes the first version done, and writes `docs/brief.md`. The brief says `S
 until you approve it, so the discussion can span sessions, and `plan-repo` refuses a draft.
 Skip this step if you already have a brief you trust.
 
+Every forked run from here on ends in one commit of the files it wrote, and refuses to start on
+`main`/`master` or with other uncommitted changes (your hand edits to `docs/decisions.md`,
+`docs/brief.md` and `docs/constraints.md` excepted). So the repo is a git repository on a
+feature branch before the first one — `git init`, `git switch -c build`, and commit the brief.
+
 ```
 /dev-team:plan-repo
 ```

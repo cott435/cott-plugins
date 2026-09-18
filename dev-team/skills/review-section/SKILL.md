@@ -4,7 +4,7 @@ description: Review an implemented section of a package against its design doc, 
 argument-hint: "<pkg>/<section> [plan-slug]"
 arguments: [section, plan]
 context: fork
-agent: reviewer
+agent: dev-team:reviewer
 background: false
 disable-model-invocation: true
 ---
@@ -60,6 +60,7 @@ checked and why.
 3. Write your report to the path above.
 4. Append every CRITICAL finding to `docs/followups.md` addressed to `$pkg/$name`, so the next
    `/dev-team:implement-section $pkg/$name` picks them up without anything passing through chat.
-5. Return your summary.
+5. Commit per your **Commit** section — trailer `Dev-Team-Run: review-section $ARGUMENTS` —
+   then return your summary.
 
 Change nothing but your report and `docs/followups.md`.

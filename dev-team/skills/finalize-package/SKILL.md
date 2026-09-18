@@ -4,7 +4,7 @@ description: Build a package's public surface once every section has shipped —
 argument-hint: "<pkg>"
 arguments: [pkg]
 context: fork
-agent: implementer
+agent: dev-team:implementer
 background: false
 disable-model-invocation: true
 ---
@@ -75,7 +75,8 @@ On a single-package repo the code paths drop the `packages/$pkg/` prefix.
    **Consumers** snapshot.
 5. Tick off the `$pkg/surface` follow-ups you addressed; file follow-ups to sections for any
    name `surface.md` expected that no README provides.
-6. Return your surface-mode summary, ending with the next command: `/dev-team:review-package $pkg`.
+6. Commit per your **Surface mode** Build step 9 — trailer
+   `Dev-Team-Run: finalize-package $ARGUMENTS` — then return your surface-mode summary, ending with the next command: `/dev-team:review-package $pkg`.
 
 ## Constraints
 

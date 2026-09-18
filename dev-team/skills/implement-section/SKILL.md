@@ -4,7 +4,7 @@ description: Implement one section of one package from its design doc, applying 
 argument-hint: "<pkg>/<section> [plan-slug]"
 arguments: [section, plan]
 context: fork
-agent: implementer
+agent: dev-team:implementer
 background: false
 disable-model-invocation: true
 ---
@@ -64,7 +64,8 @@ construction, and `/dev-team:plan-change` deliberately does not fold it back unt
 2. Implement per your procedure — the scaffold step on a first run, the stale `TODO(decision)`
    sweep, and the `Applied:` write-back are the steps nothing else in this system will do for
    you.
-3. Return your summary in your standard format.
+3. Commit per your procedure step 13 — trailer `Dev-Team-Run: implement-section $ARGUMENTS` —
+   then return your summary in your standard format.
 
 Implement only this section. Under `docs/`, you may append to `followups.md` and fill in
 `Applied:` fields in `decisions.md`; everything else under `docs/` is read-only. Never touch

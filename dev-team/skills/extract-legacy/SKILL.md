@@ -3,7 +3,7 @@ name: extract-legacy
 description: Mine an old codebase for resources worth carrying into a rebuild - API clients, schemas, parsers, validators, algorithms - and turn each one the user keeps into a project skill under .claude/skills/ that the architect assigns and designers and implementers invoke. The first run drafts docs/legacy/inventory.md and stops; mark keep on each row and re-run to extract. Run before /dev-team:plan-repo so the architect sees the skills.
 argument-hint: "<path to the old repo - required on the first run, ignored afterwards>"
 context: fork
-agent: curator
+agent: dev-team:curator
 background: false
 disable-model-invocation: true
 ---
@@ -44,7 +44,9 @@ $ARGUMENTS
 Survey: your **Survey** steps 1–5, ending with the stop message.
 
 Extract: your **Extract** steps 1–4 — spawn every researcher in one message, wait for all of
-them, update the inventory, return.
+them, update the inventory, commit per your **Commit** section — trailer
+`Dev-Team-Run: extract-legacy $ARGUMENTS` — and return. A Survey run commits the inventory the
+same way before its stop message.
 
 ## Constraints
 

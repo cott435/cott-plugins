@@ -3,6 +3,10 @@
 For a repo that has code but no `docs/`, or whose canonical docs have drifted from the code far
 enough to mislead. Two levels, one run each, bottom-up.
 
+Every run ends in one commit of the files it wrote, and refuses to start on `main`/`master` or
+with other uncommitted changes — so commit or stash your own work and switch to a feature
+branch first.
+
 ```
 /dev-team:map-project [scope]
 ```

@@ -5,7 +5,8 @@ Usage:  python3 status.py [pkg] [--gate]
 
 Nothing here is written down by anyone; it is all derived: a package is planned when its
 contract exists, built when every section has a README, shipped when interface.md exists. A
-section is reviewed when a review file is dated on or after its README's last change.
+section is reviewed when its newest review's `Commit:` line names a commit after which no
+commit touches the section's source, tests/unit/<section> or tests/intent/<section>.
 `--gate` exits 1 when the named package fails /dev-team:finalize-package's preconditions.
 """
 
@@ -47,21 +48,34 @@ def col(row: dict[str, str], name: str) -> str:
     return ""
 
 
-def last_change(path: Path) -> dt.date | None:
-    """Date a file last changed: git commit date if committed, else mtime."""
-    if not path.exists():
-        return None
+def git(*args: str) -> str | None:
+    """Run a git command in the repo root; its stripped stdout, or None when git fails."""
     try:
-        out = subprocess.run(["git", "log", "-1", "--format=%cs", "--", str(path)], capture_output=True, text=True, cwd=ROOT)
-        if out.stdout.strip():
-            return dt.date.fromisoformat(out.stdout.strip())
-    except (OSError, ValueError):
-        pass
-    return dt.date.fromtimestamp(path.stat().st_mtime)
+        out = subprocess.run(["git", *args], capture_output=True, text=True, cwd=ROOT)
+    except OSError:
+        return None
+    return out.stdout.strip() if out.returncode == 0 else None
 
 
-def latest_review(stem: str) -> tuple[dt.date | None, str]:
-    """Newest docs/reviews/<date>-<stem>.md → (date, verdict)."""
+def last_commit(*paths: Path) -> str | None:
+    """Full SHA of the newest commit touching any of paths; None when not a repo or none does."""
+    return git("log", "-1", "--format=%H", "--", *map(str, paths)) or None
+
+
+def uncommitted(*paths: Path) -> bool:
+    """True when any of paths has staged, unstaged or untracked changes."""
+    return bool(git("status", "--porcelain", "--", *map(str, paths)))
+
+
+def changed_since(sha: str, *paths: Path) -> bool:
+    """True when a commit after sha touches any of paths, or sha is not in this history."""
+    if git("merge-base", "--is-ancestor", sha, "HEAD") is None:
+        return True
+    return bool(git("log", "--format=%H", f"{sha}..HEAD", "--", *map(str, paths)))
+
+
+def latest_review(stem: str) -> tuple[dt.date | None, str, str | None]:
+    """Newest docs/reviews/<date>-<stem>.md → (date, verdict, its Commit: sha or None)."""
     best: tuple[dt.date, Path] | None = None
     for f in (DOCS / "reviews").glob(f"*-{stem}.md"):
         m = re.match(r"(\d{4}-\d{2}-\d{2})-", f.name)
@@ -70,9 +84,27 @@ def latest_review(stem: str) -> tuple[dt.date | None, str]:
             if best is None or d > best[0]:
                 best = (d, f)
     if not best:
-        return None, ""
-    v = re.search(r"^Verdict:\s*(.+)$", best[1].read_text(), re.M)
-    return best[0], (v.group(1).strip() if v else "?")
+        return None, "", None
+    text = best[1].read_text()
+    v = re.search(r"^Verdict:\s*(.+)$", text, re.M)
+    c = re.search(r"^Commit:\s*([0-9a-f]{7,40})\b", text, re.M)
+    return best[0], (v.group(1).strip() if v else "?"), (c.group(1) if c else None)
+
+
+def freshness(stem: str, *paths: Path) -> tuple[str, str]:
+    """Review state of the code at paths → (state, column text).
+
+    state is `reviewed` when the newest review has a Commit: line and no commit since it
+    touches paths; `uncommitted` when paths have changes git does not hold; else `stale`.
+    A review with no Commit: line is stale by definition — there is no mtime fallback.
+    """
+    rdate, verdict, rsha = latest_review(stem)
+    tail = f"{rdate or '—'} {verdict} @{rsha[:7] if rsha else '—'}".replace("  ", " ")
+    if uncommitted(*paths):
+        return "uncommitted", "uncommitted"
+    if rsha and last_commit(*paths) and not changed_since(rsha, *paths):
+        return "reviewed", f"✓ {tail}"
+    return "stale", f"· {tail}"
 
 
 def open_followups(target: str) -> tuple[int, int]:
@@ -121,7 +153,7 @@ def package_report(pkg: str, pkg_path: Path) -> tuple[list[str], list[str]]:
     if not have["surface"]:
         fails.append(f"{pkg}: no surface.md")
     rows = table_rows((pdocs / "contract.md").read_text(), ("section", "path"))
-    lines.append("  section              design  built  reviewed-since-build   open followups  markers")
+    lines.append("  section              design  built  reviewed-since-build             open followups  markers")
     all_built = True
     for row in rows:
         sec = col(row, "section")
@@ -132,22 +164,24 @@ def package_report(pkg: str, pkg_path: Path) -> tuple[list[str], list[str]]:
         design = (pdocs / "design" / f"{sec}.md").exists()
         built = readme.exists()
         all_built &= built
-        rdate, verdict = latest_review(f"{pkg}-{sec}")
-        bdate = last_change(readme)
-        reviewed = bool(rdate and bdate and rdate >= bdate)
+        tests = pkg_path / "tests"
+        state, rev_txt = freshness(f"{pkg}-{sec}", spath, tests / "unit" / sec, tests / "intent" / sec)
         fu, crit = open_followups(f"{pkg}/{sec}")
         mk = markers(spath)
-        rev_txt = f"{'✓' if reviewed else '·'} {rdate or '—'} {verdict}".strip()
-        lines.append(f"  {sec:<20} {'✓' if design else '·':^6} {'✓' if built else '·':^6}  {rev_txt:<22} {fu:>3} ({crit} review)  {mk:>5}")
+        lines.append(f"  {sec:<20} {'✓' if design else '·':^6} {'✓' if built else '·':^6}  {rev_txt:<32} {fu:>3} ({crit} review)  {mk:>5}")
         if not built:
             fails.append(f"{pkg}/{sec}: no README (unbuilt)")
-        elif not reviewed:
+        elif state == "uncommitted":
+            fails.append(f"{pkg}/{sec}: uncommitted changes")
+        elif state != "reviewed":
             fails.append(f"{pkg}/{sec}: not reviewed since last build")
         if crit:
             fails.append(f"{pkg}/{sec}: {crit} open review-sourced follow-up(s)")
     sfu, _ = open_followups(f"{pkg}/surface")
-    prd, pverdict = latest_review(f"{pkg}-package")
-    lines.append(f"  surface: open followups {sfu}; package review {prd or '—'} {pverdict}")
+    src = pkg_path / "src" / pkg
+    surface_paths = [src / n for n in ("__init__.py", "pipelines", "pipelines.py", "cli.py", "cli")]
+    _, prev = freshness(f"{pkg}-package", *surface_paths)
+    lines.append(f"  surface: open followups {sfu}; package review {prev}")
     if all_built and status == "planned":
         lines[0] = lines[0].replace("planned", "built, not finalized")
     return lines, fails

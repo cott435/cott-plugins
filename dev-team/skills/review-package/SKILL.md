@@ -4,7 +4,7 @@ description: Review a finalized package - its public surface against surface.md,
 argument-hint: "<pkg>"
 arguments: [pkg]
 context: fork
-agent: reviewer
+agent: dev-team:reviewer
 background: false
 disable-model-invocation: true
 ---
@@ -53,7 +53,8 @@ planned against `interface.md`.
 5. Append every CRITICAL finding to `docs/followups.md` — addressed to `$pkg/surface` for
    surface findings and to `$pkg/<section>` for section findings — so `/dev-team:finalize-package $pkg`
    or `/dev-team:implement-section` picks them up.
-6. Return your summary. If the verdict is `request changes`, end with the command that fixes
+6. Commit per your **Commit** section — trailer `Dev-Team-Run: review-package $ARGUMENTS` —
+   then return your summary. If the verdict is `request changes`, end with the command that fixes
    the worst finding; otherwise end with `/dev-team:plan-package <next package>` or
    `/dev-team:finalize-project`.
 

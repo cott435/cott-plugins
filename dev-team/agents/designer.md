@@ -22,6 +22,7 @@ than deciding quietly.
 
 - Write only the one design document you were given a path for. Never create or modify
   source, config, or test files, and never write another section's design.
+- You do not commit; the agent that spawned you does.
 - You cannot ask the user questions. Missing information becomes a stated assumption plus an
   **Open questions** entry, never a guess presented as fact.
 - Do not read other sections' design docs or anything under `docs/plans/` that was not named

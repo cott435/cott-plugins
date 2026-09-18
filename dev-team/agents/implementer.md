@@ -7,6 +7,7 @@ memory: project
 skills:
   - project-structure
   - python-style-guide
+  - git-workflow-and-versioning
 color: green
 ---
 
@@ -137,6 +138,11 @@ what the user needs to see.
 
 Stop before writing code and report back if any of these hold:
 
+- **Not on a branch.** The current branch is `main` or `master`, or the directory is not a git
+  repository. Return the blocker text `git-workflow-and-versioning` §Project convention gives
+  under **Branch**; never create or switch a branch yourself.
+- **Dirty tree.** `git status --porcelain` shows changes other than the user-edited files
+  §Project convention exempts under **Baseline**. Return its blocker text with the paths.
 - **No contract.** Neither `docs/architecture.md` nor a contract-delta exists. Without shared
   shapes, an error format, log keys, and a toolchain you will invent all of them, and the next
   section will invent them differently — which is the exact failure the contracts prevent.
@@ -275,8 +281,9 @@ is cheaper than a section built on a guess.
    items belong to your section but are not in your design doc — the architect could not edit
    it — so this is the only place they appear. A consuming section will block without them.
 
-7. **Build.** Work in the order the design's **Workflow / pipeline** lists. Commit-sized
-   chunks: after each coherent unit, run the relevant tests. Follow `python-style-guide` —
+7. **Build.** Work in the order the design's **Workflow / pipeline** lists. Small
+   chunks: after each coherent unit, run the relevant tests — a save point, not a commit; the
+   run commits once, at step 13. Follow `python-style-guide` —
    docstrings on everything, phases commented, helpers extracted only when the jump buys
    something.
 
@@ -315,6 +322,10 @@ is cheaper than a section built on a guess.
     integration doc says it would be, append
     `- [ ] <pkg>/surface: <name> is <what shipped>, surface.md said <what was planned> — <date>`
     to `docs/followups.md`, so `/dev-team:finalize-package` finds the drift without diffing every README.
+
+13. **Commit** per `git-workflow-and-versioning` §Project convention; stage the paths in your
+    return message's "Files created / modified" list plus the docs files you edited. Only
+    after steps 8–12 are done; a run that stopped on a blocker commits nothing.
 
 ## Files outside your section
 
@@ -387,6 +398,7 @@ Under 25 lines:
 - Review findings addressed, if any
 - Dependencies consumed from plan-time documents rather than shipped ones, if any
 - Path of the section README
+- `Commit: <sha>`
 
 ## Surface mode — `/dev-team:finalize-package <pkg>`
 
@@ -398,10 +410,10 @@ Everything above applies with these differences.
 
 - `contract.md` and `surface.md` exist.
 - Every section in the contract's Sections table has a `README.md` at its path.
-- Every section has been reviewed since it was last built: a `docs/reviews/<date>-<pkg>-<section>.md`
-  whose date is on or after the README's last change (`git log -1 --format=%cs -- <readme>`,
-  or the file's mtime when not committed). A section built after its last review is
-  unreviewed.
+- Every section has been reviewed since it was last built: the newest
+  `docs/reviews/<date>-<pkg>-<section>.md` has a `Commit:` line, and no commit after that sha
+  touches the section's source, `tests/unit/<section>/` or `tests/intent/<section>/`, and none
+  of them has uncommitted changes. A review with no `Commit:` line is stale.
 - No unchecked entry in `docs/followups.md` addressed to `<pkg>/<section>` that came from a
   review (its text contains `review <date>`). Those are CRITICAL findings; the surface must not
   re-export code with an open one. Other open follow-ups do not block, but list them in your
@@ -462,6 +474,9 @@ decisions scoped `<pkg>` or `repo`.
    README item 7 and the code, not by the field. Add the missing lines. Section implementers
    tend to skip decisions scoped wider than their section; this is where the ledger catches
    up, and you are the implementer, so the field is yours to fill.
+9. **Commit** — after `interface.md` below is written, the same step 13 as a section run: per
+   `git-workflow-and-versioning` §Project convention, staging the surface files you wrote and
+   the docs files you edited, scope `<pkg>/surface`.
 
 **Write `docs/packages/<pkg>/interface.md`** — the public surface as shipped, the document
 every consumer is planned and built against:
@@ -486,7 +501,7 @@ package-level equivalent.
 **Return**: files; test, `lint-imports`, and `mkdocs build --strict` results; names omitted
 from `__all__` and why; deviations from `surface.md`; `Applied:` lines added by the ledger
 sweep; open non-review follow-ups for this package; follow-ups filed; path of `interface.md`;
-next command `/dev-team:review-package <pkg>`.
+`Commit: <sha>`; next command `/dev-team:review-package <pkg>`.
 
 ## Memory
 

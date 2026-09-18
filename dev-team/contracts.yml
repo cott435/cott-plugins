@@ -39,6 +39,30 @@ forbid:
     # one would have been exempted with it. /reload-plugins is Claude Code's own command.
     pattern: '(^|[\s"(\[`])/(?!dev-team:|reload-plugins)(?:[a-z][a-z0-9]*-[a-z0-9-]+|status)\b'
 
+  - name: no agent or skill stages everything
+    # §Project convention stages by explicit path, so a run never commits a file it did not
+    # write. Scoped with `files:` so the 0.5 design note, which quotes the pattern, is not a
+    # finding; the one exemption is the rule stating itself.
+    pattern: 'git add -A|git add \.|git commit -a\b'
+    files: ['agents/*.md', 'skills/**/*.md']
+    unless: ['Never `git add -A`']
+
+  - name: no forked run waits on a background notification
+    # A forked architect or curator never receives its backgrounded agents' completion
+    # notifications — they go to the conversation that forked it — so every spawn is
+    # run_in_background: false (each agent's Hard rules). Eval D run 2 ended on `echo waiting`
+    # with integration.md unwritten: evals/2026-09-18-d2-foreground-fanout.md.
+    pattern: 'background-task notification|completion notification is your cue|[Cc]ontinuing after backgrounded'
+    files: ['agents/*.md', 'skills/**/*.md']
+
+  - name: every forked skill names its agent with the plugin prefix
+    # A bare `agent: architect` does not resolve to the plugin agent: the fork silently runs as
+    # general-purpose, without the agent's prompt, and eval D's architect fork never saw its own
+    # Hard rules. Only `dev-team:<agent>` resolves, as for subagent_type in eval A3.
+    # Probed: evals/2026-09-18-d2-foreground-fanout.md.
+    pattern: '^agent: (?!dev-team:)'
+    files: ['skills/**/SKILL.md']
+
 # Every heading a reader parses is one the owner's template defines.
 headings:
   - name: interface.md headings its readers parse are ones the implementer writes
@@ -83,6 +107,27 @@ headings:
     readers:
       - file: agents/documenter.md
         cites: ['Entry points and interfaces']
+
+  - name: every agent that commits cites the one commit rule, by its rule names
+    # git-workflow-and-versioning §Project convention is the one copy of the branch, baseline,
+    # staging and message rules; agents cite it and never restate it. Each reader's span starts
+    # at its `§Project convention` citation, so an agent that stops citing it fails as a missing
+    # marker, and the bolded rule names inside the span must be ones the section numbers.
+    owner: skills/git-workflow-and-versioning/SKILL.md
+    owner_span: ['## Project convention', '## Core Principles']
+    readers:
+      - file: agents/implementer.md
+        span: ['§Project convention', 'never create or switch']
+      - file: agents/reviewer.md
+        span: ['§Project convention', 'rules; return']
+      - file: agents/architect.md
+        span: ['§Project convention', 'rules before writing']
+      - file: agents/curator.md
+        span: ['§Project convention', 'rules before writing']
+      - file: agents/documenter.md
+        span: ['§Project convention', 'rules before writing']
+      - file: agents/researcher.md
+        span: ['§Project convention', 'rules first']
 
 # A list of names that goes stale when the directory it describes changes.
 names_listed:

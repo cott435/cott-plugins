@@ -21,6 +21,9 @@ runs before building the surface.
 
 Everything printed is derived: a package is *planned* when `contract.md` exists, *built* when
 every section has a README, *shipped* when `interface.md` exists; a section is *reviewed* when
-a `docs/reviews/<date>-<pkg>-<section>.md` is dated on or after the README's last change;
+the newest `docs/reviews/<date>-<pkg>-<section>.md` has a `Commit:` line and no commit after
+that sha touches the section's source, `tests/unit/<section>/` or `tests/intent/<section>/`
+(the column shows the review's date, verdict and `@<sha>`; a review with no `Commit:` line is
+stale, and a section with changes git does not hold shows `uncommitted` and fails the gate);
 "open followups" counts unchecked `docs/followups.md` entries addressed to that section, with
 review-sourced ones (CRITICAL findings) counted separately because those block finalizing.
