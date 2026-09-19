@@ -69,7 +69,9 @@ a plan runs them once, before anything depends on them.
 - Paths are relative to the plugin directory.
 
 `python3 S validate evals/sets/<target>.json` enforces the shape and exits 1 naming each
-problem as `path: eval <id>: <problem>`.
+problem as `path: eval <id>: <problem>`. It accepts a `target_path` that does not exist yet —
+a plan writes a new target's set in phase 0, before the phase that creates the target —
+and `S init` refuses one, since there is nothing to run.
 
 ## The workspace
 

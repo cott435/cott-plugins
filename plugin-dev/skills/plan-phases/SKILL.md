@@ -226,7 +226,9 @@ no file — exists before the user approves. The proposal holds, in this order:
    alternatives it beat.
 7. **The phases** — one line each: number, what it adds, what it depends on; which may
    pair. Suggestions get their own phases or are named as optional additions to one, and
-   the line says what disappears if the suggestion is rejected.
+   the line says what disappears if the suggestion is rejected; and, per phase, its eval
+   budget — which kinds it runs and, for behavioral and trigger evals, roughly how many
+   tokens, from the cost table in `run-evals`' eval kinds.
 8. **Non-goals** — what this deliberately does not do.
 
 Then one `AskUserQuestion`: approve as shown; approve with changes (the user says which);
@@ -253,6 +255,25 @@ All under `<plugin>/site/notes/`, so the site builder renders them under Notes:
 Templates are at `${CLAUDE_PLUGIN_ROOT}/templates/phases/`. Copy the headings; fill every
 one or delete it with a line saying why.
 
+### The phase note
+
+Its sections, in order:
+
+- **`# NN — <name>`**, then a purpose paragraph: what the phase adds and the gap it closes,
+  written for a chat that has read only the overview, the ledger and this note.
+- **`## Decisions`** — anything settled here rather than in the overview, each with its
+  reason.
+- **`## Files`** — a Path · Change table, one row per file the phase touches.
+- **`## Specification`** — the exact content: frontmatter, heading names, rules,
+  `contracts.yml` entries, and any prompt another model will be given, verbatim.
+- **`## Steps`** — ordered so the bundle is consistent after each one.
+- **`## Evals`** — the table described under **Rules for the split**.
+- **`## Done when`** — conditions checkable without judgment.
+- **`## Deviations`** — appended by `run-phase` when the note could not be followed as
+  written; this skill never writes it.
+
+`references/example-phase.md` walks through a real one.
+
 ## Rules for the split
 
 - **A phase is mergeable on its own.** The branch is releasable at every boundary: no phase
@@ -276,12 +297,25 @@ one or delete it with a line saying why.
 - **The last phase is always** the end-to-end eval, the docs (`README.md`, `site/flow.md`,
   `site/workflows/`, `CHANGELOG.md`'s unreleased section), and the release *proposal* —
   which `bump-version` decides on a yes; never this skill or `run-phase`.
-- **Every phase has at least one eval**, named in its note by ID and kind (mechanical or
-  behavioral) with its pass condition. Behavioral evals run against one fixture that an
-  early phase creates under `evals/fixtures/`, so results compare across phases.
+- **Every phase has an `## Evals` table**: `| ID | Kind | Target | Baseline | Set evals |
+  Pass bar |`.
+  - Kind is one of `run-evals`' kinds — `mechanical`, `load`, `behavioral`, `trigger`,
+    `platform-fact` — whose methods are in `run-evals/references/eval-kinds.md`; read it
+    before choosing.
+  - A behavioral row names `evals/sets/<target>.json` and eval IDs; the prompts and
+    expectations are written into that set in the phase-0 commit, with a harness sheet under
+    `evals/sets/files/<target>/` for any target that asks the user something. A new target
+    gets a new set; a changed one gets evals appended with `added_in: "<slug> phase 0, run
+    from phase N"`. Trigger sets are the exception: the phase that adds a model-invoked
+    skill writes its `<target>.trigger.json`, since it needs the final description.
+  - A phase that changes a target with an existing set reruns that set as regression, as
+    its own row.
+  - The pass bar is checkable without judgment (default: every expectation passes and the
+    target's pass rate ≥ the baseline's).
 - **Every phase touching an agent or skill** runs the plugin's own rules, `check-contracts`
   (once a `contracts.yml` exists — in **new** mode, phase 1 creates it with the first claim
-  the README makes about the bundle), and `build-site`, before its evals.
+  the README makes about the bundle), and `build-site`, then its Evals table through
+  `run-evals`.
 
 ## No ambiguity
 
@@ -304,13 +338,14 @@ in the interview.
 4. From the default branch: `git checkout -b <plugin>-<slug>` (**new**: `<name>-0.1`).
 5. **new only:** invoke `new-plugin` and complete its scaffold and marketplace steps. Do not
    push; the phases will.
-6. Write the overview from the approved proposal, then one note per phase, then the ledger
-   with phase 0 `in progress` and every other row `todo`.
+6. Write the overview from the approved proposal, then one note per phase, then the eval
+   sets and harness sheets the notes' behavioral rows name, then the ledger with phase 0
+   `in progress` and every other row `todo`.
 7. If the plugin has a `contracts.yml`, run `check-contracts` — `site/notes/` is in its
    scope, so a note that quotes a forbidden pattern must scope the pattern with `files:` or
    be reworded. Fix the note, not the claim.
-8. Commit the notes and the ledger (**new**: and the scaffold and marketplace row):
-   `<plugin> <slug> (phase 0): design set for <what>`. This is the only commit this skill
+8. Commit the notes, the eval sets and the ledger (**new**: and the scaffold and
+   marketplace row): `<plugin> <slug> (phase 0): design set for <what>`. This is the only commit this skill
    makes; it pushes nothing.
 9. Print, for the user to paste into the next chat:
 

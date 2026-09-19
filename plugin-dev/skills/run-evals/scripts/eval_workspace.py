@@ -52,7 +52,9 @@ def plugin_root(start):
 
 # ---------------------------------------------------------------- validate
 
-def validate_set(path):
+def validate_set(path, require_target=False):
+    # A set is written in a plan's phase 0, before the phase that creates its target, so
+    # `validate` accepts a missing target_path; `init` cannot run without one and requires it.
     problems = []
     path = Path(path)
     try:
@@ -65,7 +67,7 @@ def validate_set(path):
         if key not in data:
             problems.append(f"{path}: missing top-level key '{key}'")
     root = plugin_root(path.parent) or path.parent
-    if "target_path" in data and not (root / data["target_path"]).exists():
+    if require_target and "target_path" in data and not (root / data["target_path"]).exists():
         problems.append(f"{path}: target_path '{data['target_path']}' does not exist")
     evals = data.get("evals", [])
     if not isinstance(evals, list) or not evals:
@@ -209,7 +211,7 @@ def cmd_init(args):
     if not set_path.is_file():
         print(f"no set at {set_path}")
         return 1
-    problems = validate_set(set_path)
+    problems = validate_set(set_path, require_target=True)
     if problems:
         print("\n".join(problems))
         return 1

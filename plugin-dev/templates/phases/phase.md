@@ -29,9 +29,18 @@ readers — that is the `contracts.yml` entry.>
 2. …
 3. The plugin's own rules for an added or removed file (its `CLAUDE.md`).
 4. `check-contracts` (if `contracts.yml`); `build-site` (if `site/`).
-5. Evals — <ID>: <kind> — <the claim> — passes when <observable condition>. Logged with
-   `log-eval` before results are reported.
+5. Evals — the table below, run with `run-evals` (it stops for review when a row is
+   behavioral) and logged with `log-eval` before results are reported.
 6. Commit: `<plugin> <slug> (phase NN): <what>`.
+
+## Evals
+
+<!-- Kind is one of run-evals' kinds: mechanical · load · behavioral · trigger · platform-fact.
+     A behavioral row names its set file and eval IDs; the prompts are in that set already. -->
+
+| ID | Kind | Target | Baseline | Set evals | Pass bar |
+|---|---|---|---|---|---|
+| <ID> | <kind> | <skill or agent> | <none / previous / ref> | <evals/sets/x.json 1,2> | <checkable condition> |
 
 ## Done when
 

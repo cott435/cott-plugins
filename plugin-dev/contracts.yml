@@ -37,3 +37,5 @@ headings:
     readers:
       - file: skills/run-evals/SKILL.md
         cites: ['mechanical', 'load', 'behavioral', 'trigger', 'platform-fact']
+      - file: skills/plan-phases/SKILL.md
+        cites: ['mechanical', 'load', 'behavioral', 'trigger', 'platform-fact']
