@@ -6,6 +6,23 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [0.8.0] - 2026-09-19
+
+### Changed
+- **`plan-phases` composes jobs into shared layers before it proposes** (72712ec). A new
+  *Compose the workflows* step designs from the unit of work a practitioner reads one at a
+  time: per-unit agents fanned out in parallel (extract), one status file per entity that
+  every job reads (synthesize), a comparison against peers or baseline that is core by
+  default (compare), and thin typed commands on top (act). Agents are methods shared across
+  jobs; the proposal states each job's first-run and warm-run cost and each shared file's
+  rules (what it cites, never claims, when it goes stale). Suggestions attach and never
+  carry the core; components are labelled *asked*, *composed* or *suggested*.
+- **The proposal is a page, not code in chat.** Published as an Artifact with the flow
+  chart rendered; the page declares UTF-8 and loads mermaid from cdnjs with a
+  theme-aware, full-size init, so it also renders as a downloaded file. The chart is
+  budgeted to about 20 nodes and 30 edges, grouped by layer. README and both phased
+  workflow pages follow. Eval: `evals/2026-09-19-plan-phases-compose-layers.md`.
+
 ## [0.7.0] - 2026-09-19
 
 ### Changed
