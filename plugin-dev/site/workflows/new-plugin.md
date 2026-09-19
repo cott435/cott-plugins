@@ -40,9 +40,14 @@ so the new one follows the same shapes, then expands your idea in an interview: 
 two to four questions — purpose and users, the workflow and its hand-offs, data and
 integrations, boundaries and risk — each built on the last answers. It proposes what you
 did not ask for but the design needs (an agent nobody else covers, a safeguard a risky step
-lacks), marked as suggestions. Then it shows the proposal in chat — the idea restated, a
-mermaid flow chart of every command, skill, agent and file, a components table, the
-decisions, the phase outline, the non-goals — and waits. You approve, ask for changes (it
+lacks), marked as suggestions. Before proposing, it composes the jobs from the work rather
+than the commands: the unit a practitioner reads one at a time (a filing, a paper, a ticket)
+gets an agent fanned out in parallel, an entity's status is synthesized once and read by
+every job that needs it, the entity is compared with its peers, and the commands become
+thin layers on top. Then it publishes the proposal as an Artifact page — the idea restated,
+a rendered flow chart grouped by layer, the components with who uses each, what each output
+must say, what each job costs on a first and a warm run, the decisions, the phase outline,
+the non-goals — gives you the link in chat, and waits. You approve, ask for changes (it
 re-shows the whole proposal), and accept or reject each suggestion. Nothing exists before
 that yes. Then it invokes `new-plugin` for the scaffold, creates the branch `<name>-0.1`,
 writes `site/notes/0.1-00-overview.md`, one note per phase, and `0.1-progress.md`, and

@@ -29,7 +29,7 @@ Seven skills, in three groups by how they start. The table is the one list of th
 | `build-site` | on its own, after any agent or skill edit | Rebuilds `site/docs/` and `site/mkdocs.yml` from the bundle. |
 | `check-contracts` | on its own, beside `build-site` and before any bump | Runs the cross-file claims in a bundle's `contracts.yml`: a heading one file parses and another owns, a pattern no file may contain, a list of names that goes stale. A `FAIL` names the `file:line`. |
 | `new-plugin` | on its own, when a plugin is started | Scaffolds a plugin subdirectory from `templates/` and adds its row to the marketplace. |
-| `plan-phases` | when you type it | Expands a change too big for one chat — or a new plugin — from an idea into an approved design: interviews you in rounds, then proposes a flow chart of every skill and agent (its own suggestions marked) and waits for your yes. Then splits it into phases: a branch, an overview note, one note per phase, a progress ledger, all under `site/notes/`. Each phase is sized for one chat and carries its own evals. Commits the design set as phase 0. |
+| `plan-phases` | when you type it | Expands a change too big for one chat — or a new plugin — from an idea into an approved design: interviews you in rounds, composes your jobs into shared layers (per-unit readers fanned out in parallel, a status per entity, a peer comparison, thin commands on top), publishes the proposal as a page with the flow chart rendered (its own suggestions marked) and waits for your yes. Then splits it into phases: a branch, an overview note, one note per phase, a progress ledger, all under `site/notes/`. Each phase is sized for one chat and carries its own evals. Commits the design set as phase 0. |
 | `run-phase` | when you type it, once per chat | Does the next unfinished phase: reads the overview, the ledger and that one note; makes exactly its edits; runs the plugin's rules, `check-contracts`, `build-site` and the phase's evals; logs them; commits once; updates the ledger; stops. |
 | `bump-version` | only on your yes | Decides patch/minor/major from what changed, bumps `plugin.json` and the marketplace row, writes the CHANGELOG line, tags, pushes. Proposes itself in chat and waits. |
 
@@ -51,8 +51,9 @@ here say which skills run, in what order, and which of them wait for you.
 
 **[A new plugin](site/workflows/new-plugin.md).** From the repo root,
 `/plugin-dev:plan-phases --new <name>`: it reads the closest existing plugin for
-conventions, interviews you in rounds about what the plugin is for, proposes a flow chart of
-every skill and agent with its suggested additions marked, and waits for your yes. Only then
+conventions, interviews you in rounds about what the plugin is for, composes the jobs into
+shared layers, publishes the proposal as a page with a rendered flow chart of every agent and
+command (its suggested additions marked), and waits for your yes. Only then
 does it invoke `new-plugin` for the scaffold and marketplace row and write the design set — phase 1 is the smallest bundle that loads, every later phase
 adds to it. Then one chat per phase: `/plugin-dev:run-phase 0.1` from `<name>/`. The last
 phase proposes tagging `0.1.0`; `bump-version` does it on your yes. A plugin that will
@@ -66,8 +67,8 @@ commit. If it looks bump-worthy, `bump-version` says so and waits.
 
 **[A large change, in phases](site/workflows/phased-change.md).** Inside the plugin,
 `/plugin-dev:plan-phases <slug>`: it researches what the change touches, interviews you in
-rounds, proposes the changed flow chart (new, changed and suggested components marked) and
-waits for your yes; then it writes the branch, the overview, one note per phase and the
+rounds, publishes the proposal as a page with the changed flow chart rendered (new, changed
+and suggested components marked) and waits for your yes; then it writes the branch, the overview, one note per phase and the
 ledger, and commits phase 0. Then one fresh chat per phase, each opened with nothing but
 `/plugin-dev:run-phase <slug>`, until the ledger's last row is `done` and the last phase
 has proposed the bump.

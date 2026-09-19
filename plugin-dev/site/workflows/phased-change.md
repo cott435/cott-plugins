@@ -27,9 +27,10 @@ and rules are quoted from the files, not remembered — and checks the platform 
 design depends on against the docs; a fact the docs do not settle becomes a phase-0 eval
 rather than an assumption. It interviews you in rounds of two to four questions — what is
 wrong today, scope, what must not break, the decisions that are yours — each with a
-recommendation first and each round built on the last answers. Then it shows a proposal in
-chat: the change restated, a mermaid flow chart of every skill and agent with new, changed
-and suggested ones marked, a components table, the decisions, the phase outline, the
+recommendation first and each round built on the last answers. Then it publishes a
+proposal as an Artifact page and links it in chat: the change restated, a rendered flow chart
+grouped by layer with new, changed and suggested components marked, a components table, what
+each output must say, the cost of each job, the decisions, the phase outline, the
 non-goals. It waits for your yes, re-showing the whole proposal after any change, and
 nothing is written before it. Then it writes:
 

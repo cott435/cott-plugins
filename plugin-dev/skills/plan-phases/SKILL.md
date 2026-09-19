@@ -66,7 +66,7 @@ a question whose every option leads to the same design.
 | # | **new** | **change** |
 |---|---|---|
 | 1 | Purpose and users — who types the commands, what they have today instead, what one good outcome looks like | What is wrong today — the review, eval or incident behind it, and what must be true after |
-| 2 | The workflow — the steps a user takes in order, which are typed, which run on their own, what each step hands the next | Scope — which agents and skills are in, which are explicitly out |
+| 2 | The workflows — every job the user wants done, the steps of each, and what each step hands the next; for each, the source material a practitioner would read, one piece at a time, and how deep "done well" goes | Scope — which agents and skills are in, which are explicitly out |
 | 3 | Data, integrations, secrets — sources, APIs, credentials, where files live | What must not break — headings other files parse, commands users already type, defaults |
 | 4 | Boundaries and risk — what it must never do, what needs a human yes, non-goals | Decisions — vendor vs. depend, a default that changes behavior, a name |
 
@@ -75,41 +75,159 @@ design needs: an agent that owns a responsibility nobody else does, a knowledge 
 agents would otherwise each carry, a safeguard a risky step lacks (a trading plugin with no
 risk check, a writer with no reviewer). Each suggestion is named with one line of why and
 carried into the proposal marked as a suggestion; it is the user's to accept, never
-silently folded in.
+silently folded in. A suggestion attaches to the design and never carries it: no
+component the user asked for reads a suggestion's file, and no phase of the core depends
+on a suggestion's phase — so rejecting any one of them removes that component and nothing
+else has to be redesigned.
 
-**The interview is done** when every component the proposal will show can be named with
-its role, what it reads, what it writes, and which answer it serves — and everything still
-open is either a decision (ask it) or a platform fact. Verify platform facts the design
+**The interview is done** when the jobs, their source material and their boundaries are
+known — enough to compose them, per the next section — and everything still open is either
+a decision (ask it) or a platform fact. Verify platform facts the design
 depends on (a frontmatter field, a substitution, a spawn form) against the Claude Code
 docs; a fact the docs do not settle is not assumed: it becomes a **phase-0 eval** with the
 assumed answer written down, and nothing in a later phase depends on it before that eval is
 logged. Two rounds is typical for a change, three or four for a new plugin; a fifth means
 the idea should be split into two plans.
 
+## Compose the workflows
+
+The interview gives you jobs — the things the user will type. The easy design gives each job
+its own command and its own agent: three jobs, three agents, each researching from scratch.
+That design is shallow in every job (no agent can go deep when it must also do everything
+else), repeats the same research in each, and has nothing to run in parallel. It mirrors
+the user's list back to them instead of expanding it, and it is the failure this section
+exists to prevent.
+
+Design from the work instead of from the commands:
+
+1. **Find the unit of work.** For each job, ask what a practitioner in the domain actually
+   reads or judges one piece at a time — one filing, one paper, one support ticket, one
+   source file. That unit is where depth lives, and it is the natural grain for an agent
+   that can be run many times in parallel, one instance per unit.
+2. **Line the jobs up and find what they share.** Two jobs that each need "the current
+   state of this company" or "what this paper found" should not each derive it; that
+   understanding is a layer, built once, written to a file, and read by both. Most
+   multi-job plugins resolve into some of these layers, bottom to top:
+   - **extract** — one agent per unit, fanned out in parallel, each writing one structured
+     file;
+   - **synthesize** — one agent per entity (a company, a topic, an account) reading every
+     unit file for it in order and writing the entity's status — the file everything above
+     reads;
+   - **compare** — the entity against its peers or baseline (sector and industry, the rest
+     of the field, the customer cohort, last period). This layer is core, not a suggestion:
+     a professional's judgment is always relative — a margin is good or bad against the
+     industry's, a result is new or not against the field — and a design without it hands
+     the user conclusions nobody in the domain would sign;
+   - **act** — the typed jobs, now thin: each composes the layers below with whatever only
+     it needs (today's news, the user's own list) and answers its question.
+
+   Extract, synthesize and act appear when the jobs need them; when one is absent, say why
+   in the proposal. Compare is left out only when the entity genuinely has no peer set or
+   baseline, and the proposal says so.
+3. **Agents are methods, workflow skills are orchestrations.** An agent is one way of
+   working, done expertly; if two jobs need the same method they share the agent. A
+   workflow skill decides which layers to build or refresh, in what order, and how wide to
+   fan out. So the count of agents and the count of commands are unrelated, and a 1:1
+   match between them is a sign the composing has not been done yet.
+4. **Freshness makes reuse pay.** Each layer's file records what it was built from and
+   when, so a job rebuilds a layer only when its inputs changed — a new filing, a new
+   paper. That is what makes a screen across thirty entities affordable.
+5. **Ask what a practitioner would miss.** Walk the design as the domain's professional
+   would and name what they would insist on that no component does — the critic that
+   checks a synthesis against its sources, the risk check before a recommendation. Those
+   become suggestions.
+6. **Size it.** For each job, work out what its first run reads (how many units, how far
+   back) and what a warm run reads once the layers exist — a screen of thirty tickers that
+   must first read two years of filings for each is a different product from one that
+   reads the latest filing. Default every horizon to the least the job's question needs,
+   not the most the source offers; a longer one is the user's call. Spend depth where the
+   judgment is made: a screen can rank thirty entities on their status files and run the
+   peer comparison only on its shortlist, and a pass that only counts, filters or dedupes
+   is a script, not an agent.
+7. **Say what each output must say.** For every file a reader depends on — a unit note, a
+   status file, a job's report — name its sections and the domain rules that make it
+   trustworthy: what it must cite, what it must never claim (a suggested reply never
+   promises a refund; a thesis never states a price target as fact), and when it goes
+   stale. Structure without these rules produces well-organized files nobody can rely on.
+
+Before proposing, check the design against this: which file does more than one job read?
+Where does it fan out, and over what? Which layer compares, and against what? If the answer
+to any is "none", either fix the design or say in the proposal why this plugin does not
+need it. Then remove every suggestion in your head and check the core still works end to
+end. Last, read the proposal against itself: the restated idea, the decisions and the cost
+table describe the same depth (a paper is not "read in full" in one section and "skimmed"
+in another), and every fan-out's arithmetic adds up — batch size × batches covers the
+units. If composing surfaces a question only the user can answer — how many entities a
+screen covers, how far back the history goes — ask it as one more round.
+
 ## Propose, then wait
 
-The proposal is shown in chat, in this order, and nothing — no branch, no scaffold, no
-file — exists before the user approves it:
+The proposal is a page the user looks at, not code they have to render in their head. When
+the session has the `Artifact` tool, publish the proposal as an Artifact — an HTML page,
+following that tool's own rules, with the chart in a `<pre class="mermaid">` block and
+the sections below as the page. It must also read correctly as a plain file: open it with
+`<meta charset="utf-8">` (the Artifact viewer adds one, a downloaded file has none, and every
+dash turns to mojibake), and have it load mermaid itself —
+`<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.15.0/mermaid.min.js"></script>`
+at the end of the body, followed by an initializer that matches the viewer's theme and
+keeps the chart at full size:
+
+```html
+<script>
+const t = document.documentElement.dataset.theme;
+const dark = t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+mermaid.initialize({startOnLoad: true, theme: dark ? "dark" : "default",
+                    flowchart: {useMaxWidth: false}});
+</script>
+```
+
+with the `<pre class="mermaid">` inside a container styled `overflow-x: auto`. The chart
+then renders the same when the file is downloaded or opened locally, not only inside the
+Artifact viewer, and a wide chart scrolls instead of shrinking its text to nothing. Republish the same file path after
+every revision so the link stays the same. In chat, give the link and a short summary of
+the design — the layers and what is shared — then ask. Without the `Artifact` tool, use
+whatever tool the session has for showing a rendered diagram; only when there is none,
+put the `mermaid` block in chat. Either way nothing in the repo — no branch, no scaffold,
+no file — exists before the user approves. The proposal holds, in this order:
 
 1. **The idea, restated** — one paragraph, in the user's terms, of what will exist after the
    last phase.
-2. **The flow chart** — a `mermaid` `flowchart` of every component and how they connect:
-   each typed command → the skill it runs → the agent it spawns → the file that agent
-   writes → whoever reads that file next; knowledge skills as dotted links into the agents
-   that preload them; scripts beside the skill that runs them. Suggestions are dashed
-   (`classDef suggested stroke-dasharray:5 5`). In **change** mode, nodes carry
-   `classDef new`, `changed` or are left unmarked, and a node that is removed is shown
-   struck with `classDef removed`. Every component in the table below appears in the chart
-   exactly once — an agent with two modes is one node with its edges labelled by mode — and
-   nothing appears in the chart that is not in the table. Past about thirty nodes, put each
-   typed command's path in its own `subgraph` so the chart still reads top to bottom.
+2. **The flow chart** — a `mermaid` `flowchart TB` of how the work moves: each typed
+   command → the agents it spawns, with fan-out shown as such (`filing-reader ×N`) → the
+   files they write → whoever reads each file next. It is for seeing the shape at a glance,
+   so it must read at page width without scrolling far: aim for at most about 20 nodes and
+   30 edges. A chart past that is a wiring diagram nobody reads — the first trial run drew
+   31 nodes and 55 edges and came out nearly four thousand pixels wide. To stay inside it:
+   - one node per typed command and per agent, each exactly once (an agent with two modes
+     is one node with its edges labelled by mode);
+   - one node per shared file, and one per layer for the per-unit files (`notes/*.md`),
+     not one per job's report — a report nobody else reads can be the command's edge label;
+   - knowledge skills and scripts go in the components table, not the chart; an agent's
+     preloaded skills can be a second line in its label. Dotted preload edges from one
+     skill to five agents are five edges that say nothing about the flow;
+   - one `subgraph` per layer (extract, synthesize, compare, act), not per command, so the
+     chart shows what the commands share; keep edge labels to a word or two, since long
+     labels are what widen a chart most.
+
+   Suggestions are dashed (`classDef suggested stroke-dasharray:5 5`). In **change** mode,
+   nodes carry `classDef new`, `changed` or are left unmarked, and a node that is removed is
+   shown struck with `classDef removed`. Nothing appears in the chart that is not in the
+   table below.
 3. **The components** — one table: Name · Kind (agent, workflow skill, knowledge skill,
-   script) · Role · Reads · Writes · Origin (*asked* or *suggested: <why>*).
-4. **Decisions taken** — every answer from the interview that is a decision, with the
+   script) · Layer · Role · Reads · Writes · Used by (the jobs that depend on it) · Origin:
+   *asked* (an answer names it), *composed* (the layers need it to serve what was asked —
+   extract, synthesize, compare), or *suggested: <why>* (optional; the user accepts or
+   rejects it). Label honestly: a component nobody asked for is not *asked*.
+4. **The outputs** — for each file a reader depends on, its sections and its rules: what it
+   cites, what it must never claim, when it goes stale.
+5. **Cost** — for each job, what a first run reads and what a warm run reads, and the
+   horizon each assumes.
+6. **Decisions taken** — every answer from the interview that is a decision, with the
    alternatives it beat.
-5. **The phases** — one line each: number, what it adds, what it depends on; which may
-   pair.
-6. **Non-goals** — what this deliberately does not do.
+7. **The phases** — one line each: number, what it adds, what it depends on; which may
+   pair. Suggestions get their own phases or are named as optional additions to one, and
+   the line says what disappears if the suggestion is rejected.
+8. **Non-goals** — what this deliberately does not do.
 
 Then one `AskUserQuestion`: approve as shown; approve with changes (the user says which);
 and, when there are suggestions, one multi-select question listing them so each is
@@ -146,8 +264,11 @@ one or delete it with a line saying why.
 - **A phase fits one chat.** Heuristic: one concept; at most six or so files edited; at most
   one new agent or two new skills. Two independent small items may pair; nothing else does.
 - **Ordered by dependency**, foundations first — whatever changes how commits, status or
-  hand-offs work goes before the things that rely on it. The phases table names each
-  phase's dependencies explicitly.
+  hand-offs work goes before the things that rely on it. In a layered design that means
+  bottom-up — the extract agent and its file format before the synthesis that reads them,
+  the shared layers before the jobs that compose them — with the thinnest job that uses a
+  layer shipped in the same phase, so every phase ends with something a user can type. The
+  phases table names each phase's dependencies explicitly.
 - **Phase 0 is the design set** — this skill's commit — plus platform-fact evals. In **new**
   mode it is also the scaffold: invoke `new-plugin` and do exactly its steps (directory,
   templates, `plugin.json`, the marketplace row) before writing the notes, so the notes
@@ -176,8 +297,9 @@ in the interview.
 
 1. Read, per **Read before asking**.
 2. Interview in rounds until the idea is expanded, per **Expand the idea**; verify the
-   platform facts it depends on.
-3. Show the proposal and ask for approval, per **Propose, then wait**. Revise and re-show
+   platform facts it depends on. Compose the jobs into layers, per **Compose the
+   workflows**.
+3. Publish the proposal and ask for approval, per **Propose, then wait**. Revise and re-show
    until approved. Nothing below runs before that.
 4. From the default branch: `git checkout -b <plugin>-<slug>` (**new**: `<name>-0.1`).
 5. **new only:** invoke `new-plugin` and complete its scaffold and marketplace steps. Do not
