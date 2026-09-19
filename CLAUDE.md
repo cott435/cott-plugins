@@ -7,7 +7,7 @@ own subdirectory. This file is the shared protocol every plugin here follows. A 
 
 ## Adding or changing a plugin
 
-Six skills, all from the `plugin-dev` plugin (installed alongside everything else here —
+Four skills, all from the `plugin-dev` plugin (installed alongside everything else here —
 `/plugin install plugin-dev@cott-plugins` if it's ever missing). None of these are commands
 you type — each is a normal skill — but they don't all run the same way:
 
@@ -31,18 +31,6 @@ matches, because none of them commit or push anything on their own:
   proposing a bump. A `FAIL` names the exact `file:line`; fix the file rather than relaxing
   the claim.
 
-**Run when you type them** — two skills for a change too big for one chat. Neither
-pushes; both commit, which is why the model never starts them on its own:
-
-- **`plan-phases`** — splits a change into phases, each sized for one Claude Code chat:
-  a branch, `site/notes/<slug>-00-overview.md`, one note per phase, and a progress ledger.
-  Commits the design set as phase 0. With `--new <name>` from the repo root it starts a
-  plugin the same way — `new-plugin`'s scaffold is its phase 0 — so a plugin with agents or
-  more than a couple of skills is never written in one sitting.
-- **`run-phase`** — the next unfinished phase, in a fresh chat: exactly that note's edits,
-  the checks above, its evals logged, one commit, the ledger updated, then stop. Every chat
-  of the change starts with `/plugin-dev:run-phase <slug>` and nothing else.
-
 **Asks first, always** — `bump-version` decides patch/minor/major, bumps a plugin's
 `.claude-plugin/plugin.json` and its row in the root `marketplace.json`, writes a
 `CHANGELOG.md` line, tags the commit, and pushes. That's several things worth a yes before
@@ -50,20 +38,23 @@ they happen, so it never runs on its own: when a change looks bump-worthy, Claud
 chat and names the level it would pick, then waits. Only a reply along the lines of "yes" or
 "go ahead" makes it actually edit anything, commit, tag, or push.
 
-The first four are still a judgment call, not a guarantee — if the automatic three don't fire when
+All four are still a judgment call, not a guarantee — if the automatic three don't fire when
 you expect, or `bump-version` doesn't speak up when you think it should, ask for it directly.
 
-## Working in one plugin
+## Working across branches
 
-Other plugins' uncommitted files are not this chat's business unless asked about
-directly — don't flag them, and never stage them incidentally. Stage and commit by
-plugin path (`git add dev-team/`), never `git add -A` or a bare `git add .` at the
-repo root.
+This repo gets worked on from several parallel chats at once, each often meaning to target a
+different branch. A single local checkout can only have one branch checked out at a time, so
+any chat that runs git commands directly against the main `cott-plugins` checkout risks
+clobbering another chat's uncommitted work or checking out from under it.
 
-Commits and pushes in this repo happen in Claude Code, not Cowork — a Cowork-run
-`git commit` can get killed mid-write by its own tool timeout and leave a stale
-`.git/index.lock` behind. Cowork is fine for reading, discussing, and drafting; the
-commit-bearing steps (`plan-phases`, `run-phase`, `bump-version`) run in Claude Code.
+Always do branch-specific work in its own `git worktree`, not the main checkout — even if the
+app's own worktree/isolation toggle for that session isn't checked. Before starting
+branch-specific changes: create (or reuse) a worktree for that branch in a sibling directory
+(`git worktree add ../cott-plugins-<branch> <branch>`), do the work there, commit there, and
+when the branch is ready, merge it into the correct target branch (`main` unless told
+otherwise) rather than leaving it stranded in the worktree. Remove the worktree
+(`git worktree remove`) once its branch is merged and no longer needed.
 
 ## Layout
 
