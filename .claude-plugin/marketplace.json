@@ -9,7 +9,7 @@
       "name": "plugin-dev",
       "source": "./plugin-dev",
       "description": "Shared protocol and tooling for building Claude Code plugins: versioning policy, eval logging, and the MkDocs reading site. Install on every machine.",
-      "version": "0.6.0"
+      "version": "0.7.0"
     },
     {
       "name": "dev-team",

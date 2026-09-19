@@ -6,6 +6,20 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [0.7.0] - 2026-09-19
+
+### Changed
+- **`plan-phases` expands the idea before it plans** (1e0b2a0). It reads first, then
+  interviews in themed rounds of 2–4 questions (recommendation first, each round built on the
+  last answers) until every component can be named. It then shows a proposal in chat — the
+  idea restated, a mermaid flow chart of every command, skill, agent and file, a components
+  table, decisions, a phase outline, non-goals — with its own suggested additions dashed and
+  accepted or rejected by name. No branch, scaffold or file exists before the user approves;
+  the approved proposal becomes the overview. `templates/phases/overview.md` gains an Origin
+  column under Decisions taken and a line for declined suggestions under Non-goals; the
+  README and both phased workflow pages follow. Eval:
+  `evals/2026-09-19-plan-phases-interview-and-approval.md`.
+
 ## [0.6.0] - 2026-09-18
 
 ### Added
