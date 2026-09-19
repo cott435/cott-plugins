@@ -1,0 +1,48 @@
+{
+  "target": "run-phase",
+  "target_path": "skills/run-phase/SKILL.md",
+  "evals": [
+    {
+      "id": 1,
+      "name": "toy-phase-with-evals-table",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/run-phase/review-approve.md",
+      "prompt": "/plugin-dev:run-phase 0.2",
+      "expected_output": "run-phase runs phase 1 of the toy plugin's plan, runs its evals through run-evals, stops for review, then commits once and fills the ledger",
+      "files": [
+        "evals/fixtures/toy-plugin/"
+      ],
+      "expectations": [
+        "The transcript shows run-evals invoked for target farewell, and an iteration directory created under the temp copy's evals/workspace/farewell/",
+        "The target stopped for review before committing: outputs/interview.md holds the review question, asked after the viewer or the results table was shown",
+        "Exactly one new commit exists after 'fixture', with the message 'toy 0.2 (phase 1): farewell' or starting 'toy 0.2 (phase 1):'",
+        "That commit contains skills/farewell/SKILL.md, an eval log under evals/, and the updated site/notes/0.2-progress.md",
+        "The committed ledger row for phase 1 is 'done' and its Eval log(s) cell names the log file",
+        "Nothing was pushed and no tag was created",
+        "evals/workspace/ does not appear in the commit"
+      ],
+      "added_in": "0.9-evals phase 0, run from phase 4"
+    },
+    {
+      "id": 2,
+      "name": "toy-phase-old-format-note",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/run-phase/old-format.md",
+      "prompt": "/plugin-dev:run-phase 0.2",
+      "expected_output": "A note with no ## Evals section still runs: its Steps eval is run and logged, and the phase commits once",
+      "files": [
+        "evals/fixtures/toy-plugin/"
+      ],
+      "expectations": [
+        "The target ran the eval named in the note's Steps list and wrote an eval log under evals/",
+        "It did not stop with an error about a missing Evals section",
+        "Exactly one new commit exists after 'fixture', with the message 'toy 0.2 (phase 1): farewell' or starting 'toy 0.2 (phase 1):'",
+        "The committed ledger row for phase 1 is 'done' and its Eval log(s) cell names the log file",
+        "Nothing was pushed and no tag was created"
+      ],
+      "added_in": "0.9-evals phase 0, run from phase 4"
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "target": "plan-phases",
+  "target_path": "skills/plan-phases/SKILL.md",
+  "evals": [
+    {
+      "id": 1,
+      "name": "trading-research-three-jobs",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/plan-phases/trading.md",
+      "prompt": "/plugin-dev:plan-phases --new trading-agents a plugin for stock research agents",
+      "expected_output": "Layered design: per-filing readers fanned out, a per-ticker status every job reads, a core peer/sector comparison, thin deep-dive/screen/review commands; proposal published as a self-contained page",
+      "files": [],
+      "expectations": [
+        "Proposal is delivered as a rendered page: proposal.html exists and contains a <pre class=\"mermaid\"> chart",
+        "Chat message does not dump raw mermaid code (no ```mermaid fence in chat.md)",
+        "Agents are not one-per-job: at least one agent or agent-written file is used by two or more of the typed jobs",
+        "Fan-out: at least one agent is designed to run as parallel instances, one per unit of source material",
+        "Synthesis layer: an agent reads the per-unit outputs for one entity and writes that entity's status file",
+        "Shared layer consumed by multiple jobs: a synthesized/status file is read by at least two typed jobs",
+        "Comparison layer: a component compares an entity against peers/baseline (sector-industry, the field, the cohort)",
+        "Chart and components table agree: every agent and typed command in the table appears in the chart",
+        "Proposal page renders standalone: proposal.html loads mermaid from cdnjs and initializes it",
+        "Core stands without suggestions: no asked/composed component reads a suggested component's file, and no core phase depends on a suggestion's phase",
+        "Comparison layer is part of the core design, not marked as a suggestion",
+        "Cost stated: for each typed job, what a first run reads and what a warm run reads",
+        "Output rules stated: for the files readers depend on, what each must cite, must never claim, and when it goes stale",
+        "Page declares <meta charset=\"utf-8\"> so it reads correctly as a downloaded file",
+        "Mermaid initialized theme-aware (dark/default) with flowchart useMaxWidth false, inside an overflow-x:auto container",
+        "Chart is legible at page width: its mermaid source has at most ~25 nodes and ~35 edges"
+      ],
+      "added_in": "0.9-evals phase 0 (from evals/2026-09-19-plan-phases-compose-layers.md)"
+    },
+    {
+      "id": 2,
+      "name": "ml-papers-three-jobs",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/plan-phases/papers.md",
+      "prompt": "/plugin-dev:plan-phases --new paper-desk a plugin to help me keep up with ML research",
+      "expected_output": "Per-paper reader fanned out, per-topic synthesis, a core comparison against the field, digest and literature review reuse the paper notes; proposal as a page",
+      "files": [],
+      "expectations": [
+        "Proposal is delivered as a rendered page: proposal.html exists and contains a <pre class=\"mermaid\"> chart",
+        "Chat message does not dump raw mermaid code (no ```mermaid fence in chat.md)",
+        "Agents are not one-per-job: at least one agent or agent-written file is used by two or more of the typed jobs",
+        "Fan-out: at least one agent is designed to run as parallel instances, one per unit of source material",
+        "Synthesis layer: an agent reads the per-unit outputs for one entity and writes that entity's status file",
+        "Shared layer consumed by multiple jobs: a synthesized/status file is read by at least two typed jobs",
+        "Comparison layer: a component compares an entity against peers/baseline (sector-industry, the field, the cohort)",
+        "Chart and components table agree: every agent and typed command in the table appears in the chart",
+        "Proposal page renders standalone: proposal.html loads mermaid from cdnjs and initializes it",
+        "Core stands without suggestions: no asked/composed component reads a suggested component's file, and no core phase depends on a suggestion's phase",
+        "Comparison layer is part of the core design, not marked as a suggestion",
+        "Cost stated: for each typed job, what a first run reads and what a warm run reads",
+        "Output rules stated: for the files readers depend on, what each must cite, must never claim, and when it goes stale",
+        "Page declares <meta charset=\"utf-8\"> so it reads correctly as a downloaded file",
+        "Mermaid initialized theme-aware (dark/default) with flowchart useMaxWidth false, inside an overflow-x:auto container",
+        "Chart is legible at page width: its mermaid source has at most ~25 nodes and ~35 edges"
+      ],
+      "added_in": "0.9-evals phase 0 (from evals/2026-09-19-plan-phases-compose-layers.md)"
+    },
+    {
+      "id": 3,
+      "name": "support-tickets-three-jobs",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/plan-phases/support.md",
+      "prompt": "/plugin-dev:plan-phases --new support-insights a plugin that helps our support lead make sense of tickets",
+      "expected_output": "Per-ticket reader fanned out, per-account synthesis, a core cohort/baseline comparison, triage/trends/account review share the layers; proposal as a page",
+      "files": [],
+      "expectations": [
+        "Proposal is delivered as a rendered page: proposal.html exists and contains a <pre class=\"mermaid\"> chart",
+        "Chat message does not dump raw mermaid code (no ```mermaid fence in chat.md)",
+        "Agents are not one-per-job: at least one agent or agent-written file is used by two or more of the typed jobs",
+        "Fan-out: at least one agent is designed to run as parallel instances, one per unit of source material",
+        "Synthesis layer: an agent reads the per-unit outputs for one entity and writes that entity's status file",
+        "Shared layer consumed by multiple jobs: a synthesized/status file is read by at least two typed jobs",
+        "Comparison layer: a component compares an entity against peers/baseline (sector-industry, the field, the cohort)",
+        "Chart and components table agree: every agent and typed command in the table appears in the chart",
+        "Proposal page renders standalone: proposal.html loads mermaid from cdnjs and initializes it",
+        "Core stands without suggestions: no asked/composed component reads a suggested component's file, and no core phase depends on a suggestion's phase",
+        "Comparison layer is part of the core design, not marked as a suggestion",
+        "Cost stated: for each typed job, what a first run reads and what a warm run reads",
+        "Output rules stated: for the files readers depend on, what each must cite, must never claim, and when it goes stale",
+        "Page declares <meta charset=\"utf-8\"> so it reads correctly as a downloaded file",
+        "Mermaid initialized theme-aware (dark/default) with flowchart useMaxWidth false, inside an overflow-x:auto container",
+        "Chart is legible at page width: its mermaid source has at most ~25 nodes and ~35 edges"
+      ],
+      "added_in": "0.9-evals phase 0 (from evals/2026-09-19-plan-phases-compose-layers.md)"
+    },
+    {
+      "id": 4,
+      "name": "trading-through-phase-notes",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/plan-phases/trading-approve.md",
+      "prompt": "/plugin-dev:plan-phases --new trading-agents a plugin for stock research agents",
+      "expected_output": "After approval, the design set's phase-1 note carries a complete ## Evals table against run-evals' eval kinds, and the phase-0 commit's eval sets exist and are well-formed",
+      "files": [],
+      "expectations": [
+        "The phase-1 note has a '## Evals' section containing a table with exactly the columns ID, Kind, Target, Baseline, Set evals, Pass bar",
+        "Every Kind in that table is one of: mechanical, load, behavioral, trigger, platform-fact",
+        "Every behavioral row names a set file under evals/sets/ and the eval IDs it runs, and states a pass bar a reader can check without judgment",
+        "The files written for the phase-0 commit include at least one evals/sets/<target>.json whose evals each have id, name, kind, baseline, prompt, expected_output and a non-empty expectations list",
+        "Every harness file a set names under evals/sets/files/ was also written",
+        "The phases section of the proposal states an eval budget: which phases run behavioral evals and roughly how many tokens",
+        "The phase-1 note has the sections, in order: a purpose paragraph, Decisions, Files, Specification, Steps, Evals, Done when"
+      ],
+      "added_in": "0.9-evals phase 0, run from phase 3"
+    }
+  ]
+}
