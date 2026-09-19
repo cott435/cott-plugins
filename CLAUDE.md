@@ -41,6 +41,21 @@ chat and names the level it would pick, then waits. Only a reply along the lines
 All four are still a judgment call, not a guarantee — if the automatic three don't fire when
 you expect, or `bump-version` doesn't speak up when you think it should, ask for it directly.
 
+## Working across branches
+
+This repo gets worked on from several parallel chats at once, each often meaning to target a
+different branch. A single local checkout can only have one branch checked out at a time, so
+any chat that runs git commands directly against the main `cott-plugins` checkout risks
+clobbering another chat's uncommitted work or checking out from under it.
+
+Always do branch-specific work in its own `git worktree`, not the main checkout — even if the
+app's own worktree/isolation toggle for that session isn't checked. Before starting
+branch-specific changes: create (or reuse) a worktree for that branch in a sibling directory
+(`git worktree add ../cott-plugins-<branch> <branch>`), do the work there, commit there, and
+when the branch is ready, merge it into the correct target branch (`main` unless told
+otherwise) rather than leaving it stranded in the worktree. Remove the worktree
+(`git worktree remove`) once its branch is merged and no longer needed.
+
 ## Layout
 
 ```
