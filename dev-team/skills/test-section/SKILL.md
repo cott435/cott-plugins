@@ -19,9 +19,13 @@ Plan slug (empty for canonical work): **$plan**
 > verify with `/agents`, and re-run. Do not write tests in the main thread.
 
 If `$section` reached you unsubstituted — literally the text `$section` — parse the section
-and optional plan slug from `$ARGUMENTS` instead, first token and second token. If your task
-prompt carries `Section:` and `Plan:` lines instead (`/dev-team:run-package` passes them that
-way), use those.
+and optional plan slug from `$ARGUMENTS` instead, first token and second token.
+
+**Invoked by run-package.** If your task prompt carries `Section:` and `Plan:` lines instead of
+substituted arguments — `/dev-team:run-package` spawns you that way — use those: the section
+from the first, the plan slug (usually empty) from the second, and the two, space-separated,
+as the argument in your commit trailer. The Guard block above does not fire: you have neither
+earlier turns nor `AskUserQuestion`.
 
 ## Resolve the identity
 
@@ -53,8 +57,8 @@ the plan. The design they are written from is the plan's.
 
 ## Mode
 
-**Reconcile** if the section README exists, else **intent**. Say which as the first line of
-your return.
+**Reconcile** if the section README exists, else **intent**. Say which on the line after your
+`Result:` line.
 
 ## Steps
 

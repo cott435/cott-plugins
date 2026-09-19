@@ -44,6 +44,7 @@ dev-team/
     ├── finalize-package/   → implementer   <pkg>: lazy __init__, pipelines, cli.py, docs page, interface.md
     ├── review-package/     → reviewer      <pkg>: surface + package-level checks
     ├── sync-design/        → architect     <pkg>: fold recorded deviations into designs, as As shipped
+    ├── run-package/        (inline)        <pkg>: drives the loop above — test, build, test, review per section; finalize, review, sync-design
     ├── sync-plan/          → architect     fold a shipped change into canonical docs
     ├── finalize-project/   → documenter    package READMEs, index.md, root README
     ├── status/             (inline)        the checklist: planned / built / reviewed / open, derived
@@ -126,6 +127,7 @@ existing repo, docs/ already there          → /dev-team:plan-change
 docs/ exist but have drifted from the code  → /dev-team:map-project (re-map), then /dev-team:plan-package <pkg> as needed
 adding a package to a planned repo          → /dev-team:plan-repo "<what to add>", then /dev-team:plan-package <pkg>
 a package is planned; plan reviewed?        → /dev-team:review-plan <pkg> (request changes → /dev-team:plan-package <pkg>, then again)
+plan reviewed, decisions answered           → /dev-team:run-package <pkg> (or each command by hand; spine-only plan: builds the spine)
 repo contract came out wrong                → /dev-team:shape-brief to correct the brief, then /dev-team:plan-repo
                                               (or /dev-team:plan-repo --revise "<what was wrong>")
 rebuilding from an old, messy repo          → /dev-team:extract-legacy <old repo> (twice), then /dev-team:plan-repo
@@ -135,6 +137,32 @@ a package shipped; its designs describe the
   plan, not the code                        → /dev-team:sync-design <pkg>
 lost track                                  → /dev-team:status
 ```
+
+## Running a package
+
+`/dev-team:run-package <pkg>` types the per-package loop for you. It runs in your conversation
+and spawns each agent itself, handing it the same skill file the manual command would fork —
+there is one copy of every procedure, and the driver holds none of them.
+
+It starts with `/dev-team:status <pkg> --run-gate`: a feature branch, a clean tree (your three
+hand-edited files excepted), and a plan that is either spine-only or passes the plan gate. Then,
+per section in the integration doc's dependency order — skipping any already reviewed with
+`approve` or `approve with fixes`, no open review follow-ups and no failing intent test — it
+writes the intent tests if there are none, builds the section, reconciles the tests, builds
+again if the reconcile filed follow-ups, and reviews. On `request changes` it builds, reconciles
+and reviews again, up to three builds per section. After the last section it finalizes the
+package, reviews it (once more on `request changes`), and runs `sync-design`. Between spawns it
+prints the section's `status.py` row, and it ends with a six-line summary whose `next:` is the
+command you would type from where it left off.
+
+On a spine-only plan it builds the spine, re-runs `plan-package` to complete the plan, runs
+`review-plan`, and stops so you can answer decisions before the rest is built.
+
+It stops, with the agent's first lines, on: a failing run gate; any agent returning `blocked`
+(a blocking rule) or `stopped` (the architect's decisions or access stop); a section still at
+`request changes` after three builds; a package review still at `request changes` after a
+second finalize. It never edits a file, never answers a decision, and never commits — each
+agent commits its own run, exactly as by hand. Every command it drives still works on its own.
 
 ## Workflows
 
@@ -402,6 +430,8 @@ you ── /dev-team:review-plan data ──────────────
                                           (request changes → /dev-team:plan-package data re-delegates only the named sections)
 you ── docs/decisions.md (answers)
 
+you ── /dev-team:run-package data ─ (your conversation) spawns the section runs below, in order, then finalize, review, sync-design
+
 you ── /dev-team:implement-section data/ingest ──▶ implementer ──▶ src/data/ingest/, tests, section README
                                           implementer ──▶ followups.md, decisions.md Applied:
 you ── /dev-team:review-section data/ingest ─────▶ reviewer ──▶ docs/reviews/<date>-data-ingest.md, followups
@@ -440,6 +470,9 @@ Every arrow into an agent carries a file path, not a conversation.
   arrives too late to act on cheaply.
 - **Re-running the same command is the continue action** after a stop. Doing nothing in the
   ledger means "accept the assumptions".
+- **`run-package` is a loop in your conversation.** Each agent return is at most 40 lines and
+  the driver prints a `status.py` row between them, so a five-section package costs the driver
+  roughly 30 short turns of context. Run it with `/clear` behind you.
 - **Return size is context cost.** Designers and implementers return short summaries; the
   content is on disk. If you want detail, read the file.
 - **Descriptions are always loaded.** Keep agent `description` fields short — the combined

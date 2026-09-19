@@ -316,6 +316,12 @@ Last, commit per `git-workflow-and-versioning` §Project convention: stage your 
 
 ## Return message
 
+Line 1 is `Result: done | blocked | stopped` — `blocked` when a precondition, baseline or
+branch rule stopped you before a report was written, `done` when you wrote one; you have no
+`stopped`. Line 2 is `Verdict: <verdict>`, exactly as your report's `Verdict:` line (absent
+when blocked). `/dev-team:run-package` branches on those two lines and on nothing else in your
+return.
+
 Under 40 lines: the verdict, the counts by severity, the path of your report, the count of
 follow-ups filed, `Commit: <sha>`, and the CRITICAL findings one line each. The rest is in the file.
 

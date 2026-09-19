@@ -59,6 +59,7 @@ flowchart TD
   D --> E["/dev-team:finalize-package data<br/>→ __init__.py, pipelines/, cli.py, interface.md"]
   E --> F["/dev-team:review-package data<br/>→ package gate"]
   F --> SD["/dev-team:sync-design data<br/>→ design/*.md gain As shipped"]
+  RP -. "or: /dev-team:run-package data drives C … SD, stopping on every gate" .-> SD
   SD --> G["/dev-team:plan-package analysis<br/>reads data/interface.md as upstream"]
   G -.->|same loop| F
   F --> H["/dev-team:plan-change '…'<br/>→ plans/slug/ with Downstream impact"]
@@ -66,7 +67,7 @@ flowchart TD
   I --> J["/dev-team:sync-plan slug<br/>→ canonical docs + interface.md updated"]
   J --> K["/dev-team:finalize-project<br/>→ package READMEs, docs/api, root README"]
   classDef stop stroke:#8a2f4a,stroke-width:2px;
-  class A,B1,B2,G,H stop;
+  class A,B1,B2,RP,G,H stop;
 ```
 
 Nodes with the dark-red border can **stop** with questions in `docs/decisions.md`; re-running

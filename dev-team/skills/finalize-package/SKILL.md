@@ -19,6 +19,11 @@ Build the public surface of package **$pkg** — **surface mode**.
 
 If `$pkg` reached you unsubstituted, take the first token of `$ARGUMENTS`.
 
+**Invoked by run-package.** If your task prompt carries a `Package:` line instead of a
+substituted argument — `/dev-team:run-package` spawns you that way — use it: the package from
+that line, and the same name as the argument in your commit trailer. The Guard block above
+does not fire: you have neither earlier turns nor `AskUserQuestion`.
+
 ## Why this is a separate step
 
 Sections are built one at a time and each publishes only to its siblings. The package as a

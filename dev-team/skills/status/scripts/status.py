@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Print where every package and section stands, derived from docs/ and the code.
 
-Usage:  python3 status.py [pkg] [--gate] [--plan-gate <pkg>]
+Usage:  python3 status.py [pkg] [--gate] [--plan-gate <pkg>] [--run-gate]
 
 Nothing here is written down by anyone; it is all derived: a package is planned when its
 contract exists, built when every section has a README, shipped when interface.md exists. A
@@ -12,7 +12,11 @@ intent column is the tester's suite, run: `<pass>/<total>`, or `—` with no tes
 `--gate` exits 1 when the named package fails /dev-team:finalize-package's preconditions.
 `--plan-gate <pkg>` exits 1 unless the package's plan is complete, reviewed by
 /dev-team:review-plan since its last change, approved, and carries no open plan finding and no
-open decision without an assumption. When docs/constraints.md exists, every package shows how
+open decision without an assumption. `<pkg> --run-gate` exits 1 unless /dev-team:run-package may
+start on pkg: a feature branch, a clean tree (git-workflow-and-versioning's Baseline
+exemptions), contract.md and integration.md present, and either a spine-only plan (mode: spine)
+or a plan that passes --plan-gate (mode: full) — or, once interface.md exists, mode: full with no
+plan check. When docs/constraints.md exists, every package shows how
 many of its Floor and Enforced rows fail, and `--gate` fails on each one that does.
 """
 
@@ -127,10 +131,11 @@ def open_followups(target: str) -> tuple[int, int]:
     if not f.exists():
         return 0, 0
     total = crit = 0
-    for line in f.read_text().splitlines():
-        if line.startswith("- [ ]") and re.match(rf"- \[ \]\s*{re.escape(target)}\s*:", line):
+    # An entry is its `- [ ]` line plus the indented lines that wrap it; `review ` may be on any.
+    for entry in re.split(r"\n(?=\S)", f.read_text()):
+        if re.match(rf"- \[ \]\s*{re.escape(target)}\s*:", entry):
             total += 1
-            if "review " in line:
+            if "review " in entry:
                 crit += 1
     return total, crit
 
@@ -152,10 +157,12 @@ def intent(pkg_path: Path, sec: str) -> str:
     except OSError:
         return "?"
     total = re.search(r"(\d+) tests? collected", co.stdout)
-    passed = re.search(r"(\d+) passed", run.stdout)
     if not total:
         return "?"
-    return f"{passed.group(1) if passed else 0}/{total.group(1)}"
+    # Not failing = total less failed and errors: an xfail is the tester's mark for a decision
+    # still open on its assumption, and counts as holding.
+    bad = sum(int(n) for n in re.findall(r"(\d+) (?:failed|errors?)\b", run.stdout))
+    return f"{int(total.group(1)) - bad}/{total.group(1)}"
 
 
 def spine(pdocs: Path) -> str | None:
@@ -220,6 +227,52 @@ def plan_gate(pkg: str) -> list[str]:
     for d in blocking_decisions(pkg):
         fails.append(f"{pkg}: {d} is open with no assumption")
     return fails
+
+
+# git-workflow-and-versioning §Project convention, Baseline: the files the user edits between runs,
+# and agent memory, which agents write and nobody stages but the user.
+BASELINE_EXEMPT = ("docs/decisions.md", "docs/brief.md", "docs/constraints.md")
+
+
+def run_gate(pkg: str) -> tuple[str | None, list[str]]:
+    """(mode, reasons) for /dev-team:run-package on pkg: mode `spine` or `full` when reasons is empty."""
+    if git("rev-parse", "--is-inside-work-tree") is None:
+        return None, ["not a git repository; `git init`, create a branch, and re-run"]
+    fails = []
+    branch = git("branch", "--show-current") or ""
+    if branch in ("main", "master"):
+        fails.append(f"on `{branch}`; create a feature branch and re-run")
+    # -z: NUL-separated and unquoted, read unstripped — git() strips the leading status space
+    # of the first entry. A rename or copy entry is followed by its source path, skipped.
+    raw = subprocess.run(["git", "status", "--porcelain", "-z", "--untracked-files=all"],
+                         capture_output=True, text=True, cwd=ROOT).stdout
+    entries = iter(raw.split("\0"))
+    dirty = []
+    for entry in entries:
+        if len(entry) < 4:
+            continue
+        if entry[0] in "RC":
+            next(entries, None)
+        path = entry[3:]
+        if path not in BASELINE_EXEMPT and not path.startswith(".claude/agent-memory/"):
+            dirty.append(path)
+    if dirty:
+        fails.append(f"uncommitted changes outside the user-edited files: {', '.join(dirty)}")
+    pdocs = DOCS / "packages" / pkg
+    missing = [f"{n}.md" for n in ("contract", "integration") if not (pdocs / f"{n}.md").exists()]
+    if missing:
+        fails.append(f"{pkg}: missing {', '.join(missing)} — run /dev-team:plan-package {pkg}")
+    if fails:
+        return None, fails
+    if spine_only(pdocs):
+        return "spine", []
+    if (pdocs / "interface.md").exists():
+        # Shipped: finalize-package wrote interface.md and sync-design appends As shipped under
+        # docs/packages/<pkg>/, so the plan review is stale by construction. The package review
+        # is the gate now; the driver has only the close-out left to resume.
+        return "full", []
+    pfails = plan_gate(pkg)
+    return (None, pfails) if pfails else ("full", [])
 
 
 def constraints_rows(pkg: str) -> list[tuple[str, str, str]]:
@@ -382,6 +435,10 @@ def main() -> int:
         plan_pkg = argv.pop(i + 1)
     args = [a for a in argv if not a.startswith("--")]
     gate = "--gate" in argv
+    run = "--run-gate" in argv
+    if run and not args:
+        print("--run-gate needs a package name: status.py <pkg> --run-gate")
+        return 2
     if plan_pkg and not args:
         args = [plan_pkg]
     only = args[0] if args else None
@@ -404,6 +461,12 @@ def main() -> int:
         for f in pfails:
             print("  -", f)
         code |= 1 if pfails else 0
+    if run:
+        mode, rfails = run_gate(only)
+        print("\nrun gate:", f"PASS (mode: {mode})" if mode else "FAIL")
+        for f in rfails:
+            print("  -", f)
+        code |= 0 if mode else 1
     if gate:
         print("\nfinalize gate:", "PASS" if not all_fails else "FAIL")
         for f in all_fails:

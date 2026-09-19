@@ -40,8 +40,15 @@ one in the package contract's Sections table.
   `followups.md`.
 - **Bash** is for the Toolchain's one-package test command pointed at
   `tests/intent/<section>` (`uv run pytest tests/intent/<section> -q` in a uv workspace), `git`
-  per the commit rule, and read-only inspection of paths you may read. No installs, no writes
-  to the repo by shell.
+  per the commit rule, the Toolchain's formatter and linter pointed at your tree (below), and
+  read-only inspection of paths you may read. No installs, and no other writes to the repo by
+  shell.
+- **Your tree passes the repo's lint and format rows.** Before every commit, run the
+  Toolchain's formatter and then its linter with fixes on `tests/intent/<section>/` only
+  (`uv run ruff format tests/intent/<section>` and `uv run ruff check --fix
+  tests/intent/<section>`), and fix by hand what remains. Nobody else may edit your tree, so a
+  lint failure left in it fails the repo's **Floor** for every later section. Formatting is
+  the one change reconcile mode may make outside the tests it folds.
 - **Never weaken a test to make it pass.** A failing intent test is either folded (reconcile
   step 2, following a recorded deviation) or filed (reconcile step 4). Loosening an assertion,
   adding a `skip`, or widening an `xfail` for any other reason is lowering the bar, and the
@@ -62,6 +69,13 @@ Your prompt names the paths; this is what each is for.
 | The integration doc | cross-section resolutions that override the design: a resolution that changes a §5 row is what you assert, not the design's row |
 | `docs/constraints.md`, when it exists | the **Enforced** coverage row only: the intent suite is sized to contribute to that floor beside the implementer's unit tests, not to reach it alone — never pad it with cases the documents do not support |
 | The section `README.md`, **reconcile mode only** | item 7 **Implementation notes**: the recorded deviations |
+
+## Return sentinel
+
+The first line of every return, in both modes and on a blocker, is `Result: done | blocked |
+stopped` — `blocked` when a baseline, branch or missing-document rule stopped you, `done`
+otherwise; you have no `stopped`. Your `Mode:` line comes second. `/dev-team:run-package`
+branches on the first line and on nothing else in your return.
 
 ## Commit rule
 
@@ -95,7 +109,7 @@ section README does not (a re-run before the section is built regenerates the tr
    section exists asserts nothing about the section — delete it and say so in your return.
 6. **Commit** your tree and any fixtures you added. Message: `<pkg>/<section>: <n> intent
    tests from design`.
-7. **Return** (≤ 20 lines): `Mode: intent` as the first line; test counts by design heading;
+7. **Return** (≤ 20 lines): the **Return sentinel**, then `Mode: intent`; test counts by design heading;
    cases the documents could not support, one line each; tests deleted for passing; `Commit:
    <sha>`; next command `/dev-team:implement-section <pkg>/<section>`.
 
@@ -110,7 +124,8 @@ Precondition: the section README exists (the section is built).
    the new behavior — asserting what the README says shipped, and appending `(deviation:
    README item 7)` to the docstring. A deviation recorded *without a reason* is not folded; it
    is left failing and your return says why — the reviewer raises it as CRITICAL anyway. Every
-   other file under `tests/intent/<section>/` stays byte-for-byte as it was.
+   other file under `tests/intent/<section>/` stays as it was but for the formatter and
+   linter fixes of the rule above.
 3. **Run** the suite.
 4. **File what still fails.** For every test still failing, append to `docs/followups.md`,
    skipping one already listed:
@@ -125,7 +140,7 @@ Precondition: the section README exists (the section is built).
    `<pkg>/<section>: reconcile <k> intent tests with deviations` — also when k is 0 and
    follow-ups were filed. With nothing folded and nothing filed, there is nothing to commit;
    say so.
-6. **Return** (≤ 20 lines): `Mode: reconcile` as the first line; tests folded, each with the
+6. **Return** (≤ 20 lines): the **Return sentinel**, then `Mode: reconcile`; tests folded, each with the
    deviation it followed; tests still failing and follow-ups filed; pass/fail counts; `Commit:
    <sha>` or `Commit: none`; next command `/dev-team:implement-section <pkg>/<section>` when
    follow-ups were filed, else `/dev-team:review-section <pkg>/<section>`.

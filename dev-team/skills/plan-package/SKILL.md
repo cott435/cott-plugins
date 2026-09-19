@@ -27,6 +27,11 @@ Any words after it are flags, and they change what this run does — check for b
 If the package name above reached you unsubstituted, as a literal dollar-sign placeholder,
 take the first word of the arguments line as the package name directly.
 
+**Invoked by run-package.** If your task prompt carries a `Package:` line instead of a
+substituted argument — `/dev-team:run-package` spawns you that way — use it: the package from
+that line, and the same name as the argument in your commit trailer. The Guard block above
+does not fire: you have neither earlier turns nor `AskUserQuestion`.
+
 ## Preconditions
 
 `docs/architecture.md` must exist and its Packages table must have a row for `$pkg`. If not,

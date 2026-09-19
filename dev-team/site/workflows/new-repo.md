@@ -156,6 +156,20 @@ Then answer the decisions, and implement the remaining sections in the order
 …
 ```
 
+Or let the driver type that loop:
+
+```
+/dev-team:run-package data
+```
+
+Runs in your conversation and spawns the same agents the commands above fork, one at a time,
+in `integration.md`'s order — test, build, reconcile, review per section, rebuilding on
+`request changes` up to three times — then `finalize-package`, `review-package` and
+`sync-design` below. It stops on every gate the manual commands stop on and ends with the
+command you would type next. Run it on the spine-only plan instead and it builds the spine,
+re-runs `plan-package`, runs `review-plan`, and stops for your decisions. See **Running a
+package** on the home page.
+
 `/dev-team:test-section` forks the tester, which writes `tests/intent/<section>/` from the
 design and the contracts without ever opening the section's code. Run before the build, it
 writes tests that fail by construction; run after, it folds each deviation the README records

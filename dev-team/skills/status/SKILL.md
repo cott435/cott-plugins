@@ -1,7 +1,7 @@
 ---
 name: status
 description: Print the checklist of where every package and section stands - planned, built, reviewed since its last build, open follow-ups, decision markers - derived from docs/ and the code, never from a status file. Use before /dev-team:finalize-package, before planning the next package, or whenever you have lost track of what is done.
-argument-hint: "[pkg] [--gate] [--plan-gate <pkg>]"
+argument-hint: "[pkg] [--gate] [--plan-gate <pkg>] [--run-gate]"
 disable-model-invocation: true
 ---
 
@@ -29,7 +29,12 @@ open review-sourced follow-up is addressed to `<pkg>/plan`; and no `D<n>` bindin
 is `open` with no `Assumption if unanswered:`. Every package also shows a `plan:` line — the
 newest plan review's date, verdict and `@<sha>`, or `unreviewed` — or, while
 `integration.md`'s **Spine** heading reads `spine only`, `plan: spine only (<section>) — build it,
-then re-run plan-package`.
+then re-run plan-package`. With `<pkg> --run-gate`, it prints `run gate: PASS (mode: spine|full)` or
+`FAIL` with reasons — the check `/dev-team:run-package` starts with: a git repository on a branch
+other than `main`/`master`; `git status --porcelain` empty but for the files
+`git-workflow-and-versioning` §Project convention exempts under **Baseline**; `contract.md` and
+`integration.md` present; then `mode: spine` when the **Spine** heading reads `spine only`, else
+every `--plan-gate` condition, and `mode: full`.
 
 Everything printed is derived: a package is *planned* when `contract.md` exists, *built* when
 every section has a README, *shipped* when `interface.md` exists; a section is *reviewed* when

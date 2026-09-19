@@ -19,7 +19,7 @@ the list does the same. Do not paste the names into another file.
 
 `shape-brief` · `set-constraints` · `plan-repo` · `plan-package` · `review-plan` · `plan-change` · `map-project` ·
 `test-section` · `implement-section` · `review-section` · `finalize-package` · `review-package` · `sync-plan` ·
-`sync-design` · `finalize-project` · `extract-legacy` · `probe-source` · `status`
+`sync-design` · `run-package` · `finalize-project` · `extract-legacy` · `probe-source` · `status`
 
 ## Knowledge skills — preloaded, or invoked on their own triggers
 

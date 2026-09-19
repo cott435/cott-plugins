@@ -80,6 +80,13 @@ forbid:
     files: ['agents/*.md', 'skills/**/*.md', 'README.md']
     unless: ['upstream writes `CONSTRAINTS.md`']
 
+  - name: run-package spawns every agent by its plugin-prefixed name
+    # The driver runs in the main conversation and spawns with the Agent tool; a bare
+    # subagent_type does not resolve to the plugin agent (eval A3: only `dev-team:<agent>`
+    # does). Every spawn it names is namespaced.
+    pattern: 'subagent_type: "(?!dev-team:)'
+    files: ['skills/run-package/SKILL.md']
+
 # Every heading a reader parses is one the owner's template defines.
 headings:
   - name: interface.md headings its readers parse are ones the implementer writes
@@ -163,6 +170,9 @@ headings:
         cites: ['Spine']
       - file: agents/architect.md
         cites: ['Spine', 'Dependency order']
+      # The driver reads Dependency order for its section order and Spine for spine mode.
+      - file: skills/run-package/SKILL.md
+        cites: ['Dependency order', 'Spine']
 
   - name: surface headings the plan review checks are ones planning-templates defines
     owner: skills/planning-templates/references/surface.md

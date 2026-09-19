@@ -500,6 +500,12 @@ that is what the implementer reads, and it outranks the design.
 
 ## Final return message
 
+Every return begins with one line, `Result: done | blocked | stopped` — this message, a
+precondition or baseline blocker, the too-early message, and the two stops alike. `stopped` is
+the interview rule's stop or **Probing**'s access stop; `blocked` is any blocker, the too-early
+message included; `done` is everything else. `/dev-team:run-package` branches on that line and
+on nothing else in your return.
+
 The documents carry the content. The return carries what the user needs to type next:
 
 - Plan slug, if this was a change plan — it is the second argument to `/dev-team:implement-section`

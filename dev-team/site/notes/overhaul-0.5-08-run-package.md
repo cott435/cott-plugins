@@ -165,3 +165,86 @@ Prints `run gate: PASS (mode: spine|full) | FAIL` and reasons; exit 1 on FAIL:
 The three eval runs pass and are logged; no skill body is duplicated in the driver (grep
 the driver for any sentence that also appears in `implement-section/SKILL.md`: zero);
 `check-contracts` passes.
+
+## Deviations
+
+1. **Invoked by run-package in eight skills, not twelve.** The note says every forked skill
+   (12 files). There are fifteen forked skills now, and the driver spawns eight of them:
+   `test-section`, `implement-section`, `review-section`, `plan-package`, `review-plan`,
+   `finalize-package`, `review-package`, `sync-design`. The overview's non-goals rule out
+   changes to `extract-legacy`, `probe-source`, `map-project` and `finalize-project`, and
+   nothing spawns the rest this way, so the paragraph went only where it can fire. It also
+   names the commit-trailer argument, because in a spawned run the trailer's `$ARGUMENTS` is
+   never substituted. `test-section`'s existing one-line version was replaced by the same
+   paragraph. No paragraph uses a `$` placeholder, per phase 7's substitution finding.
+2. **Tester follow-ups come from `status.py`, not the return.** Step 3.4 says "if the
+   tester's return lists follow-ups filed", which contradicts "the driver reads only those
+   lines and `status.py`". The driver checks the section's intent column instead: fewer
+   passing than total means reconcile left failures, and it files every one of them.
+3. **Three implementer runs per section, as a cap.** Step 3.6 says "once more". Written as
+   "while fewer than three implementer runs", so a section whose reconcile needed no second
+   build still gets two review retries, and eval (iii)'s "stops at implementer run 3" holds
+   either way.
+4. **The driver runs read-only git.** "Never runs git itself" left the summary's `commits:`
+   line with no source. It runs `git rev-parse --short HEAD` at the start and end and
+   `git rev-list --count`, and nothing that writes.
+5. **The run gate exempts `.claude/agent-memory/` too.** It checks the same exemptions as
+   `git-workflow-and-versioning` §Project convention **Baseline**, which has exempted agent
+   memory since phase 2. With only the three files, every second `run-package` would fail on
+   the first run's memory. `status.py` reads `git status --porcelain -z` without the helper
+   that strips output: the first version lost the leading space of the first entry and
+   printed `ocs/decisions.md` (mechanical case 2 of eval J).
+6. **Resume skip for the close-out.** Step 5 skips `finalize-package` and `review-package`
+   when `status.py`'s `surface:` line already shows a fresh `approve` package review, so
+   re-running the driver after a stop at `sync-design` does not rebuild the surface.
+   `sync-design` always runs; it skips sections already current on its own.
+7. **`arguments: [pkg]`** in the frontmatter, and the unsubstituted-name fallback every
+   other skill has.
+8. **Workflow pages now, not in phase 9.** The root `CLAUDE.md` asks for affected workflow
+   pages to be updated with the skill. `site/workflows/new-repo.md` gained a paragraph on
+   the driver, and `site/flow.md`'s loop a dotted `run-package` edge. Phase 9 still rewrites
+   both for the end-to-end flow.
+9. **The tester's `Mode:` line moved to second.** The sentinel is the first line of every
+   return, so `test-section`'s "say which as the first line" now reads "on the line after
+   your `Result:` line".
+10. **Three fixes outside the note, found by eval J's spine run.** Each would have stalled
+    the driver on a correct run. (a) `status.py`'s `open_followups` read only an entry's first
+    line. The reviewer wraps its entries, so `review …` sat on a continuation line and two
+    review-sourced follow-ups counted as `(0 review)`. It now reads each entry with its
+    indented continuation lines. (b) The tester's intent tests failed the repo's lint and
+    format Floor rows, and no role may edit them but the tester. The tester now runs the
+    Toolchain's formatter and `ruff check --fix` on its own tree before every commit
+    (**Hard rules**), and reconcile's "byte-for-byte" allows those fixes. (c) ruff 0.16 formats
+    Python blocks inside Markdown, so `ruff format --check` failed on `docs/packages/*/design/*.md`,
+    which no run may edit. `pyproject-lint-config.toml` now sets `extend-exclude = ["docs"]`.
+11. **The summary is the last message, and a spine run is a stop.** The spine eval ended
+    `run-package data: done` with no `next:` line and the step-4 message printed after the
+    block. Step 6 now requires every line and nothing after the block, and reserves `done`
+    for a full-mode run that reached `sync-design`. Step 4's message becomes the summary's
+    `stopped because`.
+12. **Eval (iii) ran on stub agents.** The real seed, an Enforced row that only a contract
+    change can satisfy, made the implementer return `blocked` at run 1. The driver handled
+    that correctly: it stopped with `next: /dev-team:implement-section data/clean`, which is
+    logged as a pass for the blocked path. But it never reached the cap. A disciplined
+    implementer blocks on what it cannot fix, so no real seed reliably reaches three reviews.
+    The cap was tested with a plugin copy whose tester, implementer and reviewer are
+    `haiku` stubs, the reviewer always returning `request changes`. The driver, the skills
+    and `status.py` were the real ones.
+13. **The spawn block says Read, not Skill.** "Carry it out as if you had been invoked as
+    `/dev-team:<skill>`" led the `sync-design` architect to call the Skill tool. The
+    platform refuses that for a `disable-model-invocation` skill and says not to replicate
+    it, so the architect returned `blocked`. The block now says to open the file with the
+    Read tool, not to call the Skill tool, and that the user's own `/dev-team:run-package` is
+    what runs the step. Eleven earlier spawns had read the file without trouble. The resume
+    run's architect read it and folded two deviations.
+14. **`status.py`: xfail holds, and a shipped package skips the plan check.** The intent
+    column counted an `xfail` as failing. The tester writes `xfail` for a decision still open
+    on its assumption, so an approved section read `18/19` and the driver's skip rule would
+    rebuild it. The column is now total less failed and errors. The run gate failed after
+    `finalize-package`, because `interface.md` (and later `sync-design`'s appends) sit under
+    `docs/packages/<pkg>/` and make the plan review stale by construction. With
+    `interface.md` present the gate now returns `mode: full` without the plan check: only the
+    close-out is left to resume, and the package review gates it.
+15. **`next` is resolved, never copied.** The first resume printed the architect's own
+    placeholder (`/dev-team:plan-package <next package in …>`). The `next` table now requires
+    one command with every name filled in; the re-run printed `/dev-team:plan-package analysis`.

@@ -19,6 +19,11 @@ Review package: **$pkg** — the surface `/dev-team:finalize-package` built, and
 
 If `$pkg` reached you unsubstituted, take the first token of `$ARGUMENTS`.
 
+**Invoked by run-package.** If your task prompt carries a `Package:` line instead of a
+substituted argument — `/dev-team:run-package` spawns you that way — use it: the package from
+that line, and the same name as the argument in your commit trailer. The Guard block above
+does not fire: you have neither earlier turns nor `AskUserQuestion`.
+
 ## Why this exists
 
 `/dev-team:review-section` sees one section. Nothing else checks the things that are only true or

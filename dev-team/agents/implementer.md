@@ -429,6 +429,11 @@ item 7: what the document said, what you did, why. Never diverge silently.
 
 ## Return message
 
+The first line of every return, in both modes and on a blocker, is `Result: done | blocked |
+stopped` — `blocked` when a blocking rule stopped you (the blocker text follows on the next
+line), `done` otherwise; you have no `stopped`. `/dev-team:run-package` branches on that line and
+on nothing else in your return.
+
 Under 25 lines:
 
 - Files created / modified (paths only)

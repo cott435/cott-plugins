@@ -19,6 +19,11 @@ Fold the recorded deviations of package **$pkg** back into its design docs — *
 
 If `$pkg` reached you unsubstituted, take the package name from `$ARGUMENTS`.
 
+**Invoked by run-package.** If your task prompt carries a `Package:` line instead of a
+substituted argument — `/dev-team:run-package` spawns you that way — use it: the package from
+that line, and the same name as the argument in your commit trailer. The Guard block above
+does not fire: you have neither earlier turns nor `AskUserQuestion`.
+
 A section that correctly departed from its design records the departure in its README's
 **Implementation notes** (item 7). The design it departed from is never corrected by anyone
 else, so it goes on describing code that does not exist — and that stale design is what the
