@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The workspace and set helper for run-evals.
 
-    eval_workspace.py validate <set.json>...
+    eval_workspace.py validate <set.json | set.trigger.json>...
     eval_workspace.py init <plugin-dir> <target> [--evals 1,2,3] [--baseline REF]
     eval_workspace.py timing <run-dir> --tokens N --duration-ms N
     eval_workspace.py finalize <iteration-dir>
@@ -106,10 +106,53 @@ def validate_set(path):
     return problems
 
 
+def mentions_outside(query):
+    """A should-not query placed outside a plugin repo: it does not say `plugin`, or it
+    says it is not one. The guard in SKILL.md, Trigger evals, keeps these from triggering."""
+    q = query.lower()
+    return "plugin" not in q or "not a plugin" in q
+
+
+def validate_trigger_set(path):
+    """skill-creator's run_eval format: a list of {query, should_trigger}."""
+    path = Path(path)
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError) as e:
+        return [f"{path}: cannot read: {e}"]
+    if not isinstance(data, list) or not data:
+        return [f"{path}: top level must be a non-empty list of {{query, should_trigger}}"]
+    problems, counts, outside, seen = [], {True: 0, False: 0}, 0, set()
+    for i, item in enumerate(data, 1):
+        where = f"{path}: query {i}"
+        if not isinstance(item, dict):
+            problems.append(f"{where}: must be an object")
+            continue
+        q, st = item.get("query"), item.get("should_trigger")
+        if not isinstance(q, str) or not q.strip():
+            problems.append(f"{where}: 'query' must be a non-empty string")
+        elif q in seen:
+            problems.append(f"{where}: duplicate query")
+        else:
+            seen.add(q)
+        if not isinstance(st, bool):
+            problems.append(f"{where}: 'should_trigger' must be true or false")
+            continue
+        counts[st] += 1
+        if st is False and isinstance(q, str) and mentions_outside(q):
+            outside += 1
+    for value, label in ((True, "should-trigger"), (False, "should-not-trigger")):
+        if counts[value] < 8:
+            problems.append(f"{path}: {counts[value]} {label} queries; at least 8 needed")
+    if outside < 3:
+        problems.append(f"{path}: {outside} should-not queries outside a plugin repo; at least 3 needed")
+    return problems
+
+
 def cmd_validate(args):
     problems = []
     for p in args.sets:
-        problems += validate_set(p)
+        problems += validate_trigger_set(p) if str(p).endswith(".trigger.json") else validate_set(p)
     for line in problems:
         print(line)
     return 1 if problems else 0

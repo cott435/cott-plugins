@@ -1,0 +1,22 @@
+[
+  {"query": "does the documenter still write the Public names heading after my edit? test it — dev-team plugin", "should_trigger": true},
+  {"query": "run the evals for plan-phases in plugin-dev — evals/sets/plan-phases.json — against the previous version", "should_trigger": true},
+  {"query": "the phase note says to run P3-B1 on plan-phases; run it and stop for my review", "should_trigger": true},
+  {"query": "I rewrote dev-team's reviewer agent prompt. run it side by side with the old one on the set and grade it", "should_trigger": true},
+  {"query": "before I say run-phase handles old-format notes, prove it — run its eval set in plugin-dev/evals/sets/run-phase.json", "should_trigger": true},
+  {"query": "benchmark the new check-contracts skill against the version on main with the grader and open the viewer", "should_trigger": true},
+  {"query": "run the behavioral evals for the implementer agent in ~/dev/cott-plugins/dev-team and show me the outputs", "should_trigger": true},
+  {"query": "rerun the regression set for log-eval in this plugin; I changed its template", "should_trigger": true},
+  {"query": "test whether build-site's description triggers on the right queries (plugin-dev, evals/sets/build-site.trigger.json)", "should_trigger": true},
+  {"query": "I added eval 5 to dev-team's planner set; run just that one against the baseline", "should_trigger": true},
+  {"query": "run pytest on the scraper and fix whatever fails", "should_trigger": false},
+  {"query": "run the openai evals harness on my fine-tuned model in ~/ml/evals", "should_trigger": false},
+  {"query": "benchmark my sorting function against the stdlib sort with hyperfine", "should_trigger": false},
+  {"query": "write a jest test for the useCart hook in my react app", "should_trigger": false},
+  {"query": "evaluate this pandas expression and tell me what it returns: df.groupby('a').b.mean()", "should_trigger": false},
+  {"query": "set up promptfoo to compare two system prompts for our support chatbot", "should_trigger": false},
+  {"query": "log that the implementer eval passed in dev-team/evals — I already ran it, just record it", "should_trigger": false},
+  {"query": "create a brand-new skill for summarizing meeting notes and test it with a few prompts (not a plugin, just a skill in ~/.claude/skills)", "should_trigger": false},
+  {"query": "check dev-team's contracts.yml claims after my edit", "should_trigger": false},
+  {"query": "rebuild plugin-dev's reading site", "should_trigger": false}
+]

@@ -1,0 +1,22 @@
+[
+  {"query": "I edited dev-team/agents/documenter.md — run the plugin's contracts.yml checks before I propose a bump", "should_trigger": true},
+  {"query": "does plugin-dev still pass its own cross-file claims? I renamed a heading in the phase template", "should_trigger": true},
+  {"query": "check-contracts on dev-team please, the reviewer now parses a heading the implementer writes", "should_trigger": true},
+  {"query": "I added a skill to plugin-dev but I'm not sure README's skills table is updated — is there a check for that in the bundle?", "should_trigger": true},
+  {"query": "the planner agent in dev-team says 'never edit tests' and the tester says the opposite — can you check whether the bundle's rules contradict each other? it has a contracts.yml", "should_trigger": true},
+  {"query": "before bumping plugin-dev to 0.9.0, verify every heading one skill parses still exists in the template another one owns", "should_trigger": true},
+  {"query": "run the contract sweep for the plugin in ~/dev/cott-plugins/dev-team after my agent edits", "should_trigger": true},
+  {"query": "I deleted skills/old-thing from plugin-dev; make sure no list of names in the plugin still mentions it (contracts.yml has a names_listed claim)", "should_trigger": true},
+  {"query": "my contracts.yml in trading-agents has a new headings claim, does it pass?", "should_trigger": true},
+  {"query": "after editing the log-eval skill, check the plugin's contracts and tell me which file:line fails", "should_trigger": true},
+  {"query": "check the API contract tests in tests/contract/ of my payments service", "should_trigger": false},
+  {"query": "run pact contract verification between the orders service and the billing service", "should_trigger": false},
+  {"query": "review this employment contract PDF and flag any unusual clauses", "should_trigger": false},
+  {"query": "does my OpenAPI spec still match the actual routes in the express app?", "should_trigger": false},
+  {"query": "audit the solidity contract in contracts/Token.sol for reentrancy", "should_trigger": false},
+  {"query": "rebuild the reading site for dev-team after my edit", "should_trigger": false},
+  {"query": "add a new claim to plugin-dev's contracts.yml saying the README lists every skill — just write the yaml, don't run anything", "should_trigger": false},
+  {"query": "what's the difference between a headings claim and a names_listed claim? explain, no need to run it", "should_trigger": false},
+  {"query": "lint the markdown files in my docs repo for broken internal links", "should_trigger": false},
+  {"query": "run mypy on the scraper project and fix the type errors", "should_trigger": false}
+]

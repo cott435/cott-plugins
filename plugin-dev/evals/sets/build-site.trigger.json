@@ -1,0 +1,22 @@
+[
+  {"query": "rebuild the reading site for dev-team, I just edited the reviewer agent", "should_trigger": true},
+  {"query": "I changed plugin-dev/skills/plan-phases/SKILL.md — refresh plugin-dev/site/docs and mkdocs.yml", "should_trigger": true},
+  {"query": "generate the mkdocs site for this plugin so I can browse its agents and skills instead of grepping them (I'm in ~/dev/cott-plugins/dev-team)", "should_trigger": true},
+  {"query": "the nav in dev-team/site/mkdocs.yml is missing the new documenter agent, regenerate it", "should_trigger": true},
+  {"query": "can I read the whole trading-agents plugin bundle as a website? it has .claude-plugin/plugin.json and a site/site.yml", "should_trigger": true},
+  {"query": "update the plugin's docs site after my edits to the three workflow pages in plugin-dev/site/workflows", "should_trigger": true},
+  {"query": "site/docs in my claude code plugin is stale — the new run-evals skill isn't there. rebuild", "should_trigger": true},
+  {"query": "render every agent, command and skill of the dev-team plugin into site/docs with a generated nav", "should_trigger": true},
+  {"query": "I added a rules file to my plugin at rules/naming.md; make sure it shows up on the reading site", "should_trigger": true},
+  {"query": "build-site for plugin-dev please, then serve it with mkdocs serve so I can look", "should_trigger": true},
+  {"query": "build the docs for my Python package with mkdocs — the repo is ~/dev/scraper, it has mkdocs.yml and docs/", "should_trigger": false},
+  {"query": "set up a mkdocs-material site for my company's internal API docs", "should_trigger": false},
+  {"query": "my Next.js site won't build, `next build` fails with a type error in pages/index.tsx", "should_trigger": false},
+  {"query": "generate sphinx docs from the docstrings in my numpy-based library", "should_trigger": false},
+  {"query": "deploy the docs folder of my rust project to GitHub Pages", "should_trigger": false},
+  {"query": "write a README section for dev-team describing what the reviewer agent does", "should_trigger": false},
+  {"query": "scaffold a new plugin called trading-agents in the cott-plugins marketplace", "should_trigger": false},
+  {"query": "check the contracts.yml claims in plugin-dev after my edit to plan-phases", "should_trigger": false},
+  {"query": "add a new page to our Hugo blog about the 2026 roadmap", "should_trigger": false},
+  {"query": "why is mkdocs serve showing a 404 for /reference/ in my personal notes site?", "should_trigger": false}
+]

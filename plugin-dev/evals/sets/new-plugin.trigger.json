@@ -1,0 +1,22 @@
+[
+  {"query": "start a new plugin in cott-plugins called trading-agents for stock research agents", "should_trigger": true},
+  {"query": "scaffold a Claude Code plugin named paper-reader in this marketplace repo and register it in marketplace.json", "should_trigger": true},
+  {"query": "I have a loose folder ~/scratch/support-agents with three agent .md files — turn it into a proper plugin in the cott-plugins marketplace", "should_trigger": true},
+  {"query": "create a new plugin 'infra-helpers' — manifest, README, CLAUDE.md, versioning, evals and site config, same as the others in ~/dev/cott-plugins", "should_trigger": true},
+  {"query": "add a brand new plugin to our marketplace for SQL review, one skill to start", "should_trigger": true},
+  {"query": "I want a fresh plugin directory next to dev-team and plugin-dev, called writing-tools", "should_trigger": true},
+  {"query": "new claude code plugin from scratch please: name 'lab-notebook', does experiment logging", "should_trigger": true},
+  {"query": "convert these skills I've been keeping in ~/.claude/skills/finance-* into their own plugin in the cott-plugins repo", "should_trigger": true},
+  {"query": "set up the scaffolding for a plugin called 'release-notes' and add its row to .claude-plugin/marketplace.json", "should_trigger": true},
+  {"query": "bootstrap a plugin for the marketplace: 'k8s-debug', agents for reading pod logs", "should_trigger": true},
+  {"query": "add a new skill to dev-team that summarizes PRs", "should_trigger": false},
+  {"query": "add a reviewer agent to the existing plugin-dev plugin", "should_trigger": false},
+  {"query": "create a new webpack plugin that inlines SVGs in my frontend build", "should_trigger": false},
+  {"query": "scaffold a new VS Code extension with yo code", "should_trigger": false},
+  {"query": "write a new pytest plugin that adds a --slow flag to my test suite", "should_trigger": false},
+  {"query": "start a new Rails app called storefront with postgres", "should_trigger": false},
+  {"query": "install the dev-team plugin from cott-plugins in this project", "should_trigger": false},
+  {"query": "plan a large change to dev-team across several agents, split into phases", "should_trigger": false},
+  {"query": "create a new Obsidian plugin that shows word counts in the status bar", "should_trigger": false},
+  {"query": "bump dev-team's version and tag it", "should_trigger": false}
+]

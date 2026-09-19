@@ -1,0 +1,22 @@
+[
+  {"query": "record that the implementer agent passed the security trigger test in evals/ — dev-team plugin, ran it 5 times, all triggered", "should_trigger": true},
+  {"query": "I just ran the documenter agent in dev-team against the Public names prompt and it wrote the heading correctly this time. log it", "should_trigger": true},
+  {"query": "write an eval log for the before/after comparison I did on plugin-dev's build-site skill — old version put references under Workflows, new one under Reference", "should_trigger": true},
+  {"query": "in ~/dev/cott-plugins/dev-team, the reviewer agent failed my probe (it approved a diff with a hardcoded secret). add a dated entry under evals/ so we have a record", "should_trigger": true},
+  {"query": "add the triggering check results for check-contracts to the plugin's evals/README.md index and a file for today", "should_trigger": true},
+  {"query": "that probe of the planner agent passed cleanly, nothing to fix — still record it in the plugin's evals folder with the commit and model", "should_trigger": true},
+  {"query": "we tested new-plugin's scaffold output on sonnet 5 vs opus 5 just now in the cott-plugins marketplace, can you write the eval entry for plugin-dev", "should_trigger": true},
+  {"query": "log the results of the behavioral run: plan-phases went 45/48 vs baseline 12/48 in iteration 1, workspace at plugin-dev/evals/workspace/plan-phases", "should_trigger": true},
+  {"query": "I'm in dev-team/. The tester agent's skills preload test from this morning — document it as an eval, commit is a1b2c3d", "should_trigger": true},
+  {"query": "save today's trigger-rate check for the run-evals skill description as an eval record under plugin-dev/evals", "should_trigger": true},
+  {"query": "write up the test results in the PR description for my flask app — 42 passed, 3 skipped", "should_trigger": false},
+  {"query": "log the pytest failures from CI into a file called test-failures.md in my django project so I can look later", "should_trigger": false},
+  {"query": "record the benchmark numbers from my rust crate's criterion run in BENCHMARKS.md", "should_trigger": false},
+  {"query": "add an entry to CHANGELOG.md for the fix I just made to the date parser", "should_trigger": false},
+  {"query": "we ran an A/B test on the checkout page, conversion went from 3.1% to 3.4% — write a short summary for the team wiki", "should_trigger": false},
+  {"query": "set up an evals folder for my LLM app with a jsonl of prompts and expected answers so I can run them in pytest", "should_trigger": false},
+  {"query": "in the dev-team plugin, run the tests for the implementer agent — I want to know if it still triggers on 'add a feature'", "should_trigger": false},
+  {"query": "bump plugin-dev to 0.9.0 and write the changelog line", "should_trigger": false},
+  {"query": "what's in dev-team/evals/README.md? just summarize the last three entries for me", "should_trigger": false},
+  {"query": "add structured logging with loguru to my fastapi service's request handlers", "should_trigger": false}
+]

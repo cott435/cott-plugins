@@ -17,7 +17,11 @@ not define, and a phase note's Evals table uses these names in its Kind column.
    the outputs with quoted evidence, then the benchmark and the viewer. The pass bar comes
    from the phase note; the default is every expectation passing for `with_skill`, and its
    pass rate at least the baseline's.
-4. **trigger** — Phase 2 adds this kind.
+4. **trigger** — for a skill the model invokes by its description: skill-creator's
+   `run_eval.py` runs each query of `evals/sets/<target>.trigger.json` three times through
+   `claude -p` and scores whether the description was picked, should-trigger and
+   should-not alike. Below 0.9, `run_loop.py` proposes better descriptions, applied only
+   under the guard in `SKILL.md` **Trigger evals**, which also says where it must run.
 5. **platform-fact** — a fact about Claude Code or a tool that the docs do not settle. Run
    once, in phase 0 of a plan (or first thing in phase 1), with the assumed answer written
    down before the test. No later phase may depend on it until its result is logged.
@@ -62,5 +66,5 @@ they conflict:
 | mechanical | seconds; no model |
 | load | one `claude -p` call, ~10k tokens |
 | behavioral | prompts × 2 executors plus one grader per run — ~0.8M tokens for 3 prompts cold, ~0.4M warm |
-| trigger | phase 2 |
+| trigger | 20 queries × 3 runs = 60 short `claude -p` calls, one at a time — ~20 min per skill; `run_loop` up to 5× that plus one rewrite call per iteration |
 | platform-fact | one small test each, usually under 50k tokens |

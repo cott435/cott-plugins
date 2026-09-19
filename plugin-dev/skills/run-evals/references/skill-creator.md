@@ -32,10 +32,21 @@ On 2026-09-19 (0.9-evals E0.1) this machine had 3 and 5, not 2.
 | `agents/comparator.md` | the blind comparator (phase 5 of 0.9-evals) |
 | `scripts/aggregate_benchmark.py` | `benchmark.json` and `benchmark.md` for an iteration — run as `python3 -m scripts.aggregate_benchmark` from the skill-creator directory |
 | `eval-viewer/generate_review.py` | the review page, served or `--static`, always through `eval_workspace.py review` |
-| `scripts/run_eval.py`, `scripts/run_loop.py` | trigger evals and the description optimizer (phase 2 of 0.9-evals) |
+| `scripts/run_eval.py`, `scripts/run_loop.py` | trigger evals and the description optimizer — see below |
 
 Its scripts import `scripts.utils`, so they run as modules from the skill-creator directory
 (`cd <sc> && python3 -m scripts.<name>`) or with `PYTHONPATH=<sc>`.
+
+### Trigger evals: the mechanism
+
+0.9-evals E0.2 found `run_eval.py --skill-path <plugin>/skills/<name>` detects triggers
+directly — no copy into a project's `.claude/skills/` — but only under three conditions,
+and phase 2 chose that mechanism: the script tests the description as a temporary
+command, so it runs from a scratch project with its own `.claude/` (run as a module with
+`PYTHONPATH=<skill-creator>`, never from the skill-creator directory), with the plugin
+under test disabled in that project's `.claude/settings.json`, and with `--num-workers 1`.
+`run_loop.py` calls `run_eval` the same way and needs the same three. `SKILL.md` **Trigger
+evals** has the commands.
 
 ## Layout its scripts expect
 
@@ -69,8 +80,8 @@ Its scripts import `scripts.utils`, so they run as modules from the skill-creato
   the workspace when the reviewer submits.
 - `run_eval.py` writes a temporary command into `<project>/.claude/commands/`, where
   `<project>` is the nearest ancestor of the working directory that has a `.claude/`. From
-  a repo with none, that is `~` — it writes into the user's own commands. Phase 2 of
-  0.9-evals sets out how trigger evals run safely.
+  a repo with none, that is `~` — it writes into the user's own commands. See **Trigger
+  evals: the mechanism**.
 
 ## Known differences between copies
 

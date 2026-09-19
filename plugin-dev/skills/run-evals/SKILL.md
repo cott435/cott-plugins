@@ -1,6 +1,6 @@
 ---
 name: run-evals
-description: Run the evals for one skill or agent of a Claude Code plugin - mechanical checks, a load check, behavioral runs against a baseline graded assertion by assertion with skill-creator's grader, benchmark and viewer, and trigger tests for skills the model invokes - then record the result with log-eval. Use only inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), whenever a phase note or a change calls for evals, or before claiming that a skill or agent behaves a certain way.
+description: Use when the user wants to test, prove, benchmark, or verify the behavior of a specific skill or agent that lives in a Claude Code plugin repo — e.g. "run the evals for <skill>", "run eval N against the baseline", "does <agent> still do X after my edit?", "benchmark this skill against main/the previous version", "prove it before I claim that", "check whether the description triggers". Covers running a target's committed eval set (evals/sets/<target>.json), comparing the working-tree version against a baseline ref, grading each assertion, opening the benchmark/viewer for review, trigger-rate tests, and logging the result. Use it whether the user names the set file, the target, the plugin directory, or just asks to test behavior after a change. Use only inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json); not for application test suites, generic eval harnesses for models, or creating a new skill from scratch.
 ---
 
 # Running a target's evals
@@ -164,6 +164,58 @@ with its grades; the Benchmark tab, pass rates and cost per configuration — an
 "Submit All Reviews" writes `feedback.json`. Nothing else happens until the user has
 reviewed: read `feedback.json` first (the server writes it into the iteration; the static
 page downloads it — copy it in), and act on each comment. Kill the server when done.
+
+## Trigger evals
+
+**Which skills qualify:** only those the model can invoke by description — no
+`disable-model-invocation: true`, and not a knowledge skill that is only ever preloaded by
+an agent's `skills:` list. Typed skills are started by a person; their description is
+documentation, not a trigger.
+
+**The set** is `evals/sets/<target>.trigger.json`, committed, in skill-creator's format: a
+JSON list of `{"query": "...", "should_trigger": true|false}`. Write the queries the way
+skill-creator says to: realistic and specific, with paths, names and context, as a person
+would type them; 8–10 that should trigger and 8–10 that should not, the negatives
+near-misses — the same words or the same job in a place this skill does not own — rather
+than obviously unrelated. `python3 S validate` checks the shape and the counts.
+
+**The guard.** Every trigger set includes at least three should-not-trigger queries that are
+the same task *outside* a plugin repo (the scoping clause this plugin's `CLAUDE.md` requires
+in every description). A description from `run_loop` is applied only if (a) its held-out
+score beats the current one, (b) every one of those scoping queries still does not trigger,
+and (c) it still contains the current description's scoping clause — for a skill that has
+it, the phrase `only inside a plugin's own subdirectory`. Otherwise the current description
+stays, and the log says why.
+
+**Where it runs.** `run_eval.py` tests a *description*, not the installed skill: it writes
+it as a temporary command into `<project>/.claude/commands/`, where `<project>` is the
+nearest ancestor of the working directory with a `.claude/`, and runs `claude -p` there.
+So, every time:
+
+1. A scratch project outside any repo (the session scratchpad), with its own `.claude/` —
+   otherwise the command lands in `~/.claude/commands/`, and a repo's `CLAUDE.md` would
+   tell the model it is in a plugin.
+2. The plugin under test disabled there — `.claude/settings.json`
+   `{"enabledPlugins": {"<plugin>@<marketplace>": false}}` — otherwise its real skill wins
+   and scores as a miss.
+3. `--num-workers 1` — parallel workers write identically described commands at once and
+   the model picks a sibling's, which scores as a miss.
+4. Run from the scratch project with `PYTHONPATH=<skill-creator>`, not from the
+   skill-creator directory, whose nearest `.claude/` is `~`. `--skill-path` points at the
+   skill in the plugin; nothing is copied.
+
+```
+cd <scratch> && PYTHONPATH=<sc> python3 -m scripts.run_eval --eval-set <set> --skill-path <skill dir> --num-workers 1 --runs-per-query 3 --model <session model> --verbose
+cd <scratch> && PYTHONPATH=<sc> python3 -m scripts.run_loop --eval-set <set> --skill-path <skill dir> --num-workers 1 --model <session model> --max-iterations 5 --report none --results-dir <plugin>/evals/workspace/<target>/trigger --verbose
+```
+
+Optimize only when `run_eval`'s accuracy is below 0.9. `run_loop` is long — run it in the
+background, one skill at a time, tailing its output for progress; it holds out 40% of the
+set and reports the best description by held-out score, with iteration 1 the current
+description. Apply its best only under the guard, editing `description:` and nothing else.
+
+**Record.** The rate before, the rate after, and the applied description — before and after
+text — or the reason none was applied go to `log-eval` as `**Trigger rate:**`.
 
 ## When skill-creator is missing
 

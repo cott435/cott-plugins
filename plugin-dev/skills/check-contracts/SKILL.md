@@ -1,6 +1,6 @@
 ---
 name: check-contracts
-description: Check the cross-file claims a plugin's own agents and skills act on — a heading one file parses and another owns, a rule one file states and another contradicts, a list of names that goes stale when a directory changes. Use only in a plugin repo that has a contracts.yml, after editing any agent or skill, and before proposing a version bump.
+description: Check a Claude Code plugin's own contracts — the cross-file claims its agents and skills make about each other (a heading one file parses and another owns, a rule one file states and another contradicts, a list of skill or agent names that goes stale when a directory changes) — and report PASS/FAIL with exact file:line. Use when someone asks to check, verify, or sweep a plugin's contracts ("check the contracts", "run the contract sweep", "does the bundle still hold after my edit?", "which file:line fails?"), after editing any agent or skill, and before proposing a version bump. Use only in a plugin repo that has a contracts.yml. Not for API/service contract testing (Pact, OpenAPI, tests/contract/), type checking, or markdown/link linting.
 argument-hint: "[bundle path]"
 ---
 
