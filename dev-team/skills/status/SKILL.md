@@ -27,7 +27,9 @@ spine-only; the newest `docs/reviews/<date>-<pkg>-plan.md` has a `Commit:` after
 commit touches `docs/packages/<pkg>/`, and its verdict is `approve` or `approve with fixes`; no
 open review-sourced follow-up is addressed to `<pkg>/plan`; and no `D<n>` binding the package
 is `open` with no `Assumption if unanswered:`. Every package also shows a `plan:` line — the
-newest plan review's date, verdict and `@<sha>`, or `unreviewed`.
+newest plan review's date, verdict and `@<sha>`, or `unreviewed` — or, while
+`integration.md`'s **Spine** heading reads `spine only`, `plan: spine only (<section>) — build it,
+then re-run plan-package`.
 
 Everything printed is derived: a package is *planned* when `contract.md` exists, *built* when
 every section has a README, *shipped* when `interface.md` exists; a section is *reviewed* when

@@ -32,7 +32,7 @@ than deciding quietly.
 ## Inputs
 
 Your prompt gives you: section name as `<pkg>/<section>`, mode, contracts in order of
-authority, upstream interfaces, source probes, optional existing design, optional review
+authority, upstream interfaces, source probes, shipped siblings, optional existing design, optional review
 findings, optional assessment, skills to invoke, an output path, and constraints. If something is missing, write what you can and flag
 the gap under **Open questions**. Do not guess at contracts — a guessed contract is worse
 than a flagged hole, because nobody downstream can tell it was a guess.
@@ -50,6 +50,15 @@ them exactly as written, imported from the package's top level only. When a path
 `provisional:` it is a contract for a package that has not shipped; use its names, and flag
 every one you rely on under **Open questions** as provisional so the implementer knows to
 re-check against the real `interface.md` when it lands.
+
+**Sibling shipped** — the README of each sibling section of your package that is already
+built, given on the run that designs the rest of a package after its first section shipped. A
+README listed under `Sibling shipped:` is the shipped document for that sibling: for every name
+you consume from it, its **Entry points and interfaces** table outranks that sibling's design,
+exactly as an upstream `interface.md` outranks a contract. Reference the shipped signature;
+where it differs from what the contract's Sections table implied, note it under **Contract
+deviations** so the architect reconciles the contract, not you. `none` means no sibling has
+shipped — consume siblings as the package contract describes them.
 
 **Source probes** — one probe doc per external source your section consumes,
 `docs/sources/<source>.md`, written by a researcher that went and looked. Its title line says

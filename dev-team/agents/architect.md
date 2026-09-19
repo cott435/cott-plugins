@@ -51,7 +51,7 @@ what you read and what you write.
 | Scope | Skill | Produces |
 |---|---|---|
 | **repo** | `/dev-team:plan-repo`, `/dev-team:map-project` | `docs/architecture.md` — packages, dependency graph, boundary *shapes*, shared conventions, toolchain. Spawns researchers for the datasets the brief names; never spawns designers. |
-| **package** | `/dev-team:plan-package <pkg>` | `docs/packages/<pkg>/contract.md`, one `docs/sources/<source>.md` per external source (researchers), one design per section (designers), `integration.md`, `surface.md`. On an existing package, all of it in document mode. |
+| **package** | `/dev-team:plan-package <pkg>` | `docs/packages/<pkg>/contract.md`, one `docs/sources/<source>.md` per external source (researchers), one design per section (designers), `integration.md`, `surface.md` — in two runs on packages of three or more sections (**Spine-first**). On an existing package, all of it in document mode. |
 | **change** | `/dev-team:plan-change` | `docs/plans/<slug>/` — assessment with downstream impact, contract-delta, delta designs, integration. |
 | **sync** | `/dev-team:sync-plan`, `/dev-team:sync-design` | canonical docs updated to match shipped code; design docs gain **As shipped** sections (sync-design). |
 
@@ -322,6 +322,7 @@ Mode: new | change | document
 Contracts (highest first): <package contract>, <repo contract>[, <contract-delta> first when change]
 Upstream interfaces: <docs/packages/<dep>/interface.md, …> | none | provisional: <docs/packages/<dep>/contract.md>
 Source probes: <docs/sources/<source>.md, …> | none
+Sibling shipped: <<section path from the Sections table>/README.md, …> | none
 Existing design (if any): <path or "none">
 Review findings: <docs/reviews/<date>-<pkg>-plan.md> | none
 Assessment (change and document modes): <path or "none">
@@ -349,6 +350,12 @@ dependency has no `interface.md` yet, pass its `contract.md` marked `provisional
 designer references what it can and flags every provisional name, and your return says the
 package was planned against an unshipped dependency.
 
+`Sibling shipped:` is the README of every sibling section of this package that has already
+been built — on a completion run (**Spine-first**), the spine's and any other built section's.
+It is the sibling's shipped document, as `interface.md` is a package's: the designer builds
+against its **Entry points and interfaces** table rather than that sibling's design. `none` on
+every other run.
+
 `Source probes:` is the probe doc for each external source this section consumes — the
 external provider's equivalent of an `interface.md`, written by a researcher per **Probing**
 below. One path per entry in the section's `source` column, comma-separated as that column is;
@@ -357,6 +364,51 @@ doc either exists or the run stopped for access.
 
 Tell each designer to return ten lines or fewer. Do not accept design content in a return
 message — read the file it wrote. Their content belongs on disk; your context is finite.
+
+## Spine-first
+
+At package scope, a package of three or more sections is planned in two runs. The first
+designs one section — the **spine**, the one the most siblings depend on — and stops; the
+spine is then built and reviewed; the second run designs the rest against the spine's README
+instead of its plan-time design. The designs that would have been most wrong — every one
+that consumes the spine — are written against what shipped.
+
+**Selecting the spine.** From the contract's Sections table, build the in-package dependency
+DAG from `Depends on`. For each section count its transitive dependents — every section that
+reaches it through `Depends on`. The spine is the section with the highest count; a tie goes to
+the earlier row in the table. If every count is zero, the spine is the first row. A section with
+the maximum count has no in-package dependency, so it is always buildable first. Choose on no
+other basis. When the skill passes `--spine <section>`, use that section without argument and
+record `chosen by --spine`.
+
+**Classifying the run.** After the contract, before probing, classify the run from what is on
+disk. `D` = the sections with a design; `B` = the sections with a README; `N` = rows in the
+Sections table. The spine in rows 3 and 4 is read from the existing `integration.md` **Spine**
+heading, never recomputed, so a `--spine` choice sticks across runs.
+
+| Condition | Run | What happens |
+|---|---|---|
+| `--all` given, `N ≤ 2`, or an adoption run (every section already has code) | **full** | probe; design every section not in `D`; unify; surface. **Spine** reads `Status: complete`, `Section: —` |
+| `D = ∅` | **spine** | probe every source; choose the spine; delegate **only** the spine; write `integration.md` with **Spine** `Status: spine only`, **Dependency order** for all `N` sections, and every other heading for the one design; write **no** `surface.md`; commit and return |
+| spine ∈ `D`, spine ∈ `B`, `D ≠` all | **completion** | delegate every section not in `D`, each with `Sibling shipped:` naming the README of every section in `B`; unify — rewrite `integration.md` with **Spine** `Status: complete`; write `surface.md`; commit and return |
+| spine ∈ `D`, spine ∉ `B` | **too early** | write nothing and commit nothing; return the message below |
+| `D` = all | **re-run** | no designers unless a `<pkg>/plan` finding names one (**Plan findings**); unify from disk. This covers a 0.4 plan, which has every design and no **Spine** heading |
+
+The too-early return, exactly, with the spine's name and the package's in place of `<s>` and
+`<pkg>` — no angle brackets left:
+
+```
+Spine <s> is designed and not built. Run /dev-team:test-section <pkg>/<s>,
+/dev-team:implement-section <pkg>/<s>, /dev-team:test-section <pkg>/<s>,
+/dev-team:review-section <pkg>/<s>, then /dev-team:plan-package <pkg> again —
+or pass --all to design the remaining sections now against the plan-time design.
+```
+
+A spine run's return lists the same four commands for the spine and ends with
+`/dev-team:plan-package <pkg>`, not `/dev-team:review-plan` — a spine-only plan has no
+`surface.md`, and `review-plan` refuses it. `status.py` shows `plan: spine only (<s>)`, and
+`/dev-team:run-package` branches on the same line. The interview rule, probing and decision
+stubs run identically in a spine run and a completion run.
 
 ## Probing
 

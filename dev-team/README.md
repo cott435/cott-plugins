@@ -116,7 +116,11 @@ and then the implementer, so the same conventions apply at design time and at bu
 ```
 rough idea, scope not settled               → /dev-team:shape-brief, then /dev-team:plan-repo
 quality bar not written down                → /dev-team:set-constraints (any time before the first review)
-new repo, nothing exists yet                → /dev-team:plan-repo, then /dev-team:plan-package <pkg> per package
+new repo, nothing exists yet                → /dev-team:plan-repo, then per package: /dev-team:plan-package <pkg>
+                                              (designs the spine only, on three or more sections);
+                                              build the spine — test-section, implement-section,
+                                              test-section, review-section; /dev-team:plan-package <pkg>
+                                              again for the rest (--all plans everything in one run)
 existing repo, no docs/ yet                 → /dev-team:map-project (repo level), then /dev-team:plan-package <pkg> per package (document mode)
 existing repo, docs/ already there          → /dev-team:plan-change
 docs/ exist but have drifted from the code  → /dev-team:map-project (re-map), then /dev-team:plan-package <pkg> as needed
@@ -139,7 +143,9 @@ A new pipeline is a new file there; the shared site builder picks it up.
 
 - [New repo, package by package](site/workflows/new-repo.md) — `/dev-team:shape-brief` →
   `/dev-team:plan-repo` (revised when the contract comes out wrong), then per
-  package: `/dev-team:plan-package` → `/dev-team:implement-section` + `/dev-team:review-section` per
+  package: `/dev-team:plan-package` (the spine section only) → build and review the spine →
+  `/dev-team:plan-package` again (the rest, against the spine's README) → `/dev-team:review-plan` →
+  `/dev-team:test-section`, `/dev-team:implement-section`, `/dev-team:review-section` per
   section → `/dev-team:finalize-package` → `/dev-team:review-package` → `/dev-team:sync-design`.
   `/dev-team:finalize-project` any time.
 - [Changing shipped code](site/workflows/change-shipped-code.md) — `/dev-team:plan-change` →

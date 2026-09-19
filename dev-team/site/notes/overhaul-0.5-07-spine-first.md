@@ -115,3 +115,38 @@ run and a completion run.
 
 The four eval checks pass and are logged; `review-plan` on a spine-only plan returns the
 blocker from note 05; `status.py` prints the spine line.
+
+## Deviations
+
+- **`review-plan` checks the spine before the missing files.** Note 05 put the spine-only
+  blocker after the check for `contract.md`, `integration.md` and `surface.md`. A spine run
+  writes no `surface.md`, so a spine-only plan hit *plan incomplete* first and the spine
+  blocker this note's Done-when names was unreachable. The spine check now comes first, and
+  `status.py --plan-gate` does the same: on a spine-only plan it prints the one reason
+  `plan is spine-only (<s>) — build it, then re-run plan-package`.
+- **Adoption runs are always `full`.** The run table classifies `D = ∅` as a spine run, which
+  would have split an adoption (`Mode: document` for every section, code already there) into
+  two runs — contradicting *What does not change*. The architect's table and step 4c say so.
+- **`Sibling shipped:` paths come from the Sections table's path column**, `<path>/README.md`:
+  the README sits at the section root, and only the contract says where that is.
+- **Flags come from `$ARGUMENTS`, stated up front.** `arguments: [pkg, flags]` binds one word
+  to `$flags`, and `--spine <section>` is two, so the skill reads the flags from the whole
+  argument string. The first version said so in a sentence that named both placeholders; after
+  substitution it read *"Read the flags from `data --all` itself, not from `--all`"*, and the
+  architect ran a spine run under `--all` (eval I run 4). The skill now opens with the
+  substituted arguments on their own line and a bullet per flag, and step 4c checks `--all`
+  before anything else.
+- **The Spine template spells out the full-run form** — `Section: —` and
+  `Chosen because: — (--all or N ≤ 2)` — and **Dependency order** now says it lists every
+  section, including the undesigned ones, which the spine run needs.
+- **No `run-package` in the loop yet.** README §Workflows, `site/flow.md` and
+  `site/workflows/new-repo.md` gained the spine-first loop (plan-package run 1 → build and
+  review the spine → run 2 → review-plan) but not note 00's `run-package` node: that skill does
+  not exist until phase 8, and a doc naming it now would name a command nobody can run. Phases
+  8/9 add it.
+- **`contracts.yml` goes one further.** Besides the designer's reader entry, the integration
+  heading claim's owner span now starts at `0. **Spine**`, with `review-plan` and the architect
+  as readers citing `Spine`; a renamed item would otherwise make a spine-only plan read as
+  complete to all three readers. Planted-defect run in eval I.
+- **The too-early message says to fill `<s>` and `<pkg>` in.** The first eval run printed
+  `Spine <ingest>` with the brackets left in.

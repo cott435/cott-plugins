@@ -94,17 +94,39 @@ Then:
    columns, dtypes, null rates, duplicates and — when the purpose names a modeling task — its
    target, leakage, split and supported tasks, as statistics and never as rows. A source that
    cannot be reached **stops** the run here, naming it, before any design exists.
-3. Spawns one **designer** per section, in parallel, each given its section's probe doc. Each
-   writes `docs/packages/data/design/<section>.md` and returns ten lines.
-4. Reads every design and writes `docs/packages/data/integration.md`: deviations, mismatches,
-   dependency order, shared work, risks, decisions needed — and **Repo contract deviations**,
+3. Picks the **spine** — the section the most other sections depend on, through `Depends on`;
+   in `ingest → clean → storage` that is `ingest` — and spawns one **designer** for it alone,
+   given its probe doc. A package of one or two sections, or `--all`, skips this: every section
+   gets a designer at once, in parallel. Each writes `docs/packages/data/design/<section>.md`
+   and returns ten lines.
+4. Reads the designs and writes `docs/packages/data/integration.md`: a **Spine** heading
+   (`Status: spine only` on this first run), deviations, mismatches, the dependency order of
+   every section, shared work, risks, decisions needed — and **Repo contract deviations**,
    which it may resolve by editing the repo contract only when no shipped package is bound by
    the shape.
-5. Writes `docs/packages/data/surface.md` — the design of the public surface, now that the
+5. On a spine run, stops here and names the next commands. Otherwise writes
+   `docs/packages/data/surface.md` — the design of the public surface, now that the
    section interfaces are concrete: the `__all__` names (only those a downstream package or a
    CLI command consumes, each with its consumer named), the pipeline signatures, the CLI
    commands with every argument, the import-linter contracts for this package.
 6. Appends `D<n>` stubs to `docs/decisions.md`.
+
+Build and review the spine exactly as every section is built below, then plan the rest:
+
+```
+/dev-team:test-section data/ingest
+/dev-team:implement-section data/ingest
+/dev-team:test-section data/ingest
+/dev-team:review-section data/ingest
+/dev-team:plan-package data
+```
+
+The second run designs `clean` and `storage` with `Sibling shipped:` naming
+`ingest`'s README — so the two designs that consume `ingest` are written against what it
+actually returns, not what its design projected — then rewrites `integration.md` with
+`Status: complete` and writes `surface.md`. Run `plan-package` again before the spine is built
+and it writes nothing and names these four commands; `/dev-team:status` shows
+`plan: spine only (ingest)` in the meantime.
 
 Then have someone who wrote none of it check the plan before any code exists:
 
@@ -122,15 +144,15 @@ it re-delegates only the sections a finding names, ticks the findings, and says 
 plan again. While a `data/plan` finding is open, `/dev-team:implement-section` refuses every
 section of `data`.
 
-Then answer the decisions, and implement in the order `integration.md` gives, testing and
-reviewing as you go:
+Then answer the decisions, and implement the remaining sections in the order
+`integration.md` gives, testing and reviewing as you go:
 
 ```
-/dev-team:test-section data/ingest        # intent tests from the design — red
-/dev-team:implement-section data/ingest   # runs them first; done when they pass
-/dev-team:test-section data/ingest        # reconcile: fold recorded deviations, file the rest
-/dev-team:review-section data/ingest
-/dev-team:test-section data/clean
+/dev-team:test-section data/clean         # intent tests from the design — red
+/dev-team:implement-section data/clean    # runs them first; done when they pass
+/dev-team:test-section data/clean         # reconcile: fold recorded deviations, file the rest
+/dev-team:review-section data/clean
+/dev-team:test-section data/storage
 …
 ```
 

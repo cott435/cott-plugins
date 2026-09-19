@@ -30,12 +30,15 @@ above them by someone who wrote none of them.
 
 ## Preconditions
 
-`docs/packages/$pkg/contract.md`, `docs/packages/$pkg/integration.md` and
+First, if `docs/packages/$pkg/integration.md` has a **Spine** heading whose status line reads
+`spine only`, return the blocker *plan is spine-only: build the spine, re-run
+`/dev-team:plan-package $pkg`, then this* and stop — a spine run writes no `surface.md`, so this
+check comes before the next one or it would never be reached.
+
+Then `docs/packages/$pkg/contract.md`, `docs/packages/$pkg/integration.md` and
 `docs/packages/$pkg/surface.md` all exist. If any is missing, return the blocker naming
 `/dev-team:plan-package $pkg` — the plan is not complete, and a partial plan has no seams to
-check. If `integration.md` has a **Spine** heading whose status line reads `spine only`,
-return the blocker *plan is spine-only: build the spine, re-run `/dev-team:plan-package $pkg`,
-then this* and stop.
+check.
 
 ## Paths
 

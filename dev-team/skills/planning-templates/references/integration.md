@@ -5,6 +5,24 @@ Package scope writes `docs/packages/<pkg>/integration.md`; change scope writes
 code (see the last section). Read every design you delegated — those files, not the whole
 directory — before writing.
 
+0. **Spine** — package scope only, in every integration doc a package run writes, full runs
+   included. The architect's **Spine-first** section says what each run writes here. Five
+   lines, the status on its own line — `status.py`, `/dev-team:review-plan` and
+   `/dev-team:run-package` read it:
+
+   ```
+   ## Spine
+   Status: spine only | complete
+   Section: <name> | —
+   Chosen because: <k> of <N−1> other sections depend on it (transitively); tie broken by table order | chosen by --spine | — (--all or N ≤ 2)
+   Designed this run: <names>
+   Pending design: <names> | none
+   ```
+
+   `Section: —` when `--all` or a package of one or two sections skipped selection. A
+   completion run keeps the spine run's `Section:` and `Chosen because:` and sets
+   `Status: complete`.
+
 1. **Contract deviations** — each place a design departs from the package contract: which
    section, what changed, resolution (`update contract` | `update design` | `needs user
    decision`).
@@ -12,7 +30,8 @@ directory — before writing.
 2. **Cross-section mismatches** — a type, signature, or name two designs treat differently.
    Same resolution format.
 
-3. **Dependency order** — the order sections should be implemented, with reason. This is the
+3. **Dependency order** — the order sections should be implemented, with reason — every
+   section in the Sections table, including those a spine run has not designed yet. This is the
    order the user will type `/dev-team:implement-section` in, and `/dev-team:implement-section` refuses a
    section whose dependencies are unbuilt, so the order must respect the Sections table's
    `Depends on`.

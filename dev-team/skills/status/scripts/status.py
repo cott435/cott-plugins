@@ -158,11 +158,11 @@ def intent(pkg_path: Path, sec: str) -> str:
     return f"{passed.group(1) if passed else 0}/{total.group(1)}"
 
 
-def spine_only(pdocs: Path) -> bool:
-    """True when integration.md's **Spine** item or heading reads `spine only` before the next one."""
+def spine(pdocs: Path) -> str | None:
+    """The spine section when integration.md's **Spine** item or heading reads `spine only`, else None."""
     f = pdocs / "integration.md"
     if not f.exists():
-        return False
+        return None
     lines = f.read_text().splitlines()
     for i, line in enumerate(lines):
         if re.match(r"\s*(#+\s*Spine\b|(\d+\.\s*)?\*\*Spine\*\*)", line):
@@ -171,8 +171,17 @@ def spine_only(pdocs: Path) -> bool:
                 if re.match(r"\s*(#|\d+\.\s*\*\*)", nxt):
                     break
                 block.append(nxt)
-            return "spine only" in "\n".join(block).lower()
-    return False
+            text = "\n".join(block)
+            if "spine only" not in text.lower():
+                return None
+            sec = re.search(r"^\W*Section:\W*([\w-]+)", text, re.M)
+            return sec.group(1) if sec else "?"
+    return None
+
+
+def spine_only(pdocs: Path) -> bool:
+    """True when integration.md's **Spine** item or heading reads `spine only` before the next one."""
+    return spine(pdocs) is not None
 
 
 def blocking_decisions(pkg: str) -> list[str]:
@@ -193,12 +202,12 @@ def blocking_decisions(pkg: str) -> list[str]:
 def plan_gate(pkg: str) -> list[str]:
     """Reasons /dev-team:run-package may not build pkg from its plan; empty when it may."""
     pdocs = DOCS / "packages" / pkg
+    if spine_only(pdocs):
+        return [f"{pkg}: plan is spine-only ({spine(pdocs)}) — build it, then re-run plan-package"]
     missing = [f"{n}.md" for n in ("contract", "integration", "surface") if not (pdocs / f"{n}.md").exists()]
     if missing:
         return [f"{pkg}: plan incomplete, missing {', '.join(missing)}"]
     fails = []
-    if spine_only(pdocs):
-        fails.append(f"{pkg}: plan is spine-only")
     _, verdict, _ = latest_review(f"{pkg}-plan")
     state, _ = freshness(f"{pkg}-plan", pdocs)
     if state != "reviewed":
@@ -293,7 +302,10 @@ def package_report(pkg: str, pkg_path: Path) -> tuple[list[str], list[str]]:
     pdate, pverdict, psha = latest_review(f"{pkg}-plan")
     pstate, _ = freshness(f"{pkg}-plan", pdocs)
     ptail = f"{pdate} {pverdict} @{psha[:7] if psha else '—'}"
-    lines.append("  plan: " + ("unreviewed" if not pdate else f"reviewed {ptail}" if pstate == "reviewed" else f"{pstate} (last review {ptail})"))
+    if spine_only(pdocs):
+        lines.append(f"  plan: spine only ({spine(pdocs)}) — build it, then re-run plan-package")
+    else:
+        lines.append("  plan: " + ("unreviewed" if not pdate else f"reviewed {ptail}" if pstate == "reviewed" else f"{pstate} (last review {ptail})"))
     rows = table_rows((pdocs / "contract.md").read_text(), ("section", "path"))
     lines.append("  section              design  built  intent   reviewed-since-build             open followups  markers")
     all_built = True

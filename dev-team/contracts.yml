@@ -126,6 +126,10 @@ headings:
         cites: ['Entry points and interfaces']
       - file: agents/tester.md
         cites: ['Implementation notes']
+      # A README under `Sibling shipped:` outranks that sibling's design for the names a
+      # completion-run designer consumes (spine-first, note 07).
+      - file: agents/designer.md
+        cites: ['Entry points and interfaces']
 
   - name: design headings the tester writes tests from are ones the designer's template defines
     # The tester inventories its cases by design heading and cites them in every test's
@@ -147,12 +151,18 @@ headings:
     # review-plan measures the architect's reconciliation by heading: a section missing from
     # Dependency order, a mismatch Cross-section mismatches leaves unresolved, a deviation no
     # resolution answers. A renamed heading turns each of those checks into a false CRITICAL.
+    # Item 0, **Spine**, is read by review-plan's blocker, the architect's run classification
+    # and status.py's `plan:` line; a renamed heading makes a spine-only plan look complete.
     owner: skills/planning-templates/references/integration.md
-    owner_span: ['1. **Contract deviations**', null]
+    owner_span: ['0. **Spine**', null]
     readers:
       - file: agents/reviewer.md
         cites: ['Dependency order', 'Cross-section mismatches', 'Contract deviations',
                 'Repo contract deviations', 'Decisions needed from user']
+      - file: skills/review-plan/SKILL.md
+        cites: ['Spine']
+      - file: agents/architect.md
+        cites: ['Spine', 'Dependency order']
 
   - name: surface headings the plan review checks are ones planning-templates defines
     owner: skills/planning-templates/references/surface.md

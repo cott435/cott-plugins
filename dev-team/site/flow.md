@@ -48,9 +48,11 @@ flowchart TD
   S --> A
   A["/dev-team:plan-repo<br/>→ docs/architecture.md (repo contract)"]
   A -. "contract wrong: correct the brief, re-plan (revise)" .-> S
-  A --> B["/dev-team:plan-package data<br/>→ contract.md, design/*.md, integration.md, surface.md"]
-  B --> RP["/dev-team:review-plan data<br/>→ reviews/date-data-plan.md, followups data/plan"]
-  RP -. "request changes: re-plan the named sections" .-> B
+  A --> B1["/dev-team:plan-package data (run 1)<br/>→ contract.md, design of the spine only, integration.md with Spine"]
+  B1 --> SP["build the spine: test-section → implement-section<br/>→ test-section → review-section data/ingest"]
+  SP --> B2["/dev-team:plan-package data (run 2)<br/>→ the other designs, against the spine's README; integration.md; surface.md"]
+  B2 --> RP["/dev-team:review-plan data<br/>→ reviews/date-data-plan.md, followups data/plan"]
+  RP -. "request changes: re-plan the named sections" .-> B2
   RP --> C["/dev-team:implement-section data/ingest<br/>→ code, tests, section README"]
   C --> D["/dev-team:review-section data/ingest<br/>→ reviews/, followups"]
   D -->|next section| C
@@ -64,11 +66,12 @@ flowchart TD
   I --> J["/dev-team:sync-plan slug<br/>→ canonical docs + interface.md updated"]
   J --> K["/dev-team:finalize-project<br/>→ package READMEs, docs/api, root README"]
   classDef stop stroke:#8a2f4a,stroke-width:2px;
-  class A,B,G,H stop;
+  class A,B1,B2,G,H stop;
 ```
 
 Nodes with the dark-red border can **stop** with questions in `docs/decisions.md`; re-running
-the same command continues.
+the same command continues. A package of one or two sections — or `--all` — skips the spine:
+one `plan-package` run designs everything and goes straight to `review-plan`.
 
 ## Hand-offs
 
