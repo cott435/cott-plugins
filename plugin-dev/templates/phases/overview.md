@@ -21,9 +21,12 @@ a manual procedure, a loose folder of prompts, nothing. One paragraph.>
 
 ## Decisions taken
 
-| Decision | Chosen | Alternatives | Why |
-|---|---|---|---|
-| <one the user answered> | | | |
+Every decision the interview settled, as approved in the proposal. Origin is *asked* (the
+user answered a question) or *suggested* (plan-phases proposed it and the user accepted).
+
+| Decision | Chosen | Alternatives | Why | Origin |
+|---|---|---|---|---|
+| <one the user answered> | | | | asked |
 
 ## What changes, at a glance
 <!-- (new): retitle "What the plugin is, at a glance" -->
@@ -54,9 +57,11 @@ the plugin as it will be after the last phase.>
 
 ## The flow
 
-<A mermaid diagram or a numbered sequence of the commands a user types, with what each
-reads and writes. Mark the steps that can stop. (new) This is the plugin's `site/flow.md`
-in draft; the last phase makes it that file.>
+<The mermaid flow chart the user approved in the proposal, as shown — every typed command
+→ skill → agent → file written → next reader; accepted suggestions no longer dashed,
+rejected ones deleted. Below it, the numbered sequence of commands a user types, with what
+each reads and writes. Mark the steps that can stop. (new) This is the plugin's
+`site/flow.md` in draft; the last phase makes it that file.>
 
 ## Files other files parse
 
@@ -89,3 +94,6 @@ every phase that touches an agent or skill: the plugin's own rules, `check-contr
 ## Non-goals
 
 <What this deliberately does not do, and why, so a later chat does not add it.>
+
+<Each suggestion the user declined in the proposal: one line — what was suggested, that it
+was considered and declined.>

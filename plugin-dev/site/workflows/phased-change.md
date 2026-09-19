@@ -6,14 +6,18 @@ everything; the phases are done by chats that each read three files.
 
 ```mermaid
 flowchart TD
-  P["/plugin-dev:plan-phases slug<br/>(inside the plugin, one chat)"] --> Z["phase 0 commit on branch plugin-slug:<br/>site/notes/slug-00-overview.md · slug-NN-*.md · slug-progress.md"]
+  P["/plugin-dev:plan-phases slug<br/>(inside the plugin, one chat)"] --> I["read · interview in rounds"]
+  I -->|gaps remain| I
+  I --> A["proposal: flow chart, new / changed / suggested marked<br/>components · decisions · phases"]
+  A -->|changes| A
+  A -->|your yes| Z["phase 0 commit on branch plugin-slug:<br/>site/notes/slug-00-overview.md · slug-NN-*.md · slug-progress.md"]
   Z --> R["/plugin-dev:run-phase slug<br/>(fresh chat; reads overview → ledger → one note)"]
   R --> E["edits · plugin's own rules · check-contracts · build-site<br/>evals logged · one commit · ledger row · stop"]
   E -->|next chat| R
   E -->|last phase| B["end-to-end eval · README · flow.md · workflows/ · CHANGELOG<br/>bump proposed in chat"]
   B --> V["bump-version, on your yes"]
   classDef stop stroke:#8a2f4a,stroke-width:2px;
-  class P,B stop;
+  class A,B stop;
 ```
 
 ## Chat 0 — `plan-phases <slug>`
@@ -21,8 +25,13 @@ flowchart TD
 Run inside the plugin's directory. It reads every file the change touches — heading names
 and rules are quoted from the files, not remembered — and checks the platform facts the
 design depends on against the docs; a fact the docs do not settle becomes a phase-0 eval
-rather than an assumption. It asks the decisions that are yours (a default that changes
-behavior, vendor vs. depend, a name), once, with a recommendation first. Then it writes:
+rather than an assumption. It interviews you in rounds of two to four questions — what is
+wrong today, scope, what must not break, the decisions that are yours — each with a
+recommendation first and each round built on the last answers. Then it shows a proposal in
+chat: the change restated, a mermaid flow chart of every skill and agent with new, changed
+and suggested ones marked, a components table, the decisions, the phase outline, the
+non-goals. It waits for your yes, re-showing the whole proposal after any change, and
+nothing is written before it. Then it writes:
 
 | File | Holds |
 |---|---|

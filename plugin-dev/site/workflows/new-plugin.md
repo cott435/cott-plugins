@@ -23,7 +23,11 @@ From the repo root:
 
 ```mermaid
 flowchart LR
-  A["/plugin-dev:plan-phases --new name<br/>(repo root, one chat)"] --> B["phase 0 commit:<br/>scaffold · marketplace row · design set · ledger"]
+  A["/plugin-dev:plan-phases --new name<br/>(repo root, one chat)"] --> I["interview in rounds"]
+  I -->|gaps remain| I
+  I --> P["proposal: flow chart of every skill and agent<br/>components · decisions · phases · suggestions marked"]
+  P -->|changes| P
+  P -->|your yes| B["phase 0 commit:<br/>scaffold · marketplace row · design set · ledger"]
   B --> C["/plugin-dev:run-phase 0.1<br/>(from name/, one chat per phase)"]
   C -->|phase 1| D["smallest bundle that loads:<br/>one agent or skill · README · CLAUDE.md · contracts.yml"]
   D --> C
@@ -31,10 +35,16 @@ flowchart LR
   E --> F["bump-version, on your yes"]
 ```
 
-**Chat 0 — `plan-phases --new <name>`.** It asks for the name, the one-line purpose,
-whether there are agents, and enough about what the plugin is *for* to name its roles and
-entry points. It reads the closest existing plugin in the repo so the new one follows the
-same shapes. It invokes `new-plugin` for the scaffold, creates the branch `<name>-0.1`,
+**Chat 0 — `plan-phases --new <name>`.** It reads the closest existing plugin in the repo
+so the new one follows the same shapes, then expands your idea in an interview: rounds of
+two to four questions — purpose and users, the workflow and its hand-offs, data and
+integrations, boundaries and risk — each built on the last answers. It proposes what you
+did not ask for but the design needs (an agent nobody else covers, a safeguard a risky step
+lacks), marked as suggestions. Then it shows the proposal in chat — the idea restated, a
+mermaid flow chart of every command, skill, agent and file, a components table, the
+decisions, the phase outline, the non-goals — and waits. You approve, ask for changes (it
+re-shows the whole proposal), and accept or reject each suggestion. Nothing exists before
+that yes. Then it invokes `new-plugin` for the scaffold, creates the branch `<name>-0.1`,
 writes `site/notes/0.1-00-overview.md`, one note per phase, and `0.1-progress.md`, and
 commits all of it as phase 0. It prints the line the next chat starts with.
 
