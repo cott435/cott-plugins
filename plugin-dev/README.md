@@ -20,7 +20,7 @@ rather than a copy. Installing this plugin is what makes the protocol apply.
 
 ## The skills
 
-Seven skills, in three groups by how they start. The table is the one list of them: a
+Eight skills, in three groups by how they start. The table is the one list of them: a
 `contracts.yml` claim fails when a directory under `skills/` has no row here.
 
 | Skill | Starts | What it does |
@@ -28,6 +28,7 @@ Seven skills, in three groups by how they start. The table is the one list of th
 | `log-eval` | on its own, every test run | Records a test against a plugin's own skills or agents as a dated file under `evals/` with the commit and model it ran against, plus an index row. A clean pass exactly like a failure. |
 | `build-site` | on its own, after any agent or skill edit | Rebuilds `site/docs/` and `site/mkdocs.yml` from the bundle. |
 | `check-contracts` | on its own, beside `build-site` and before any bump | Runs the cross-file claims in a bundle's `contracts.yml`: a heading one file parses and another owns, a pattern no file may contain, a list of names that goes stale. A `FAIL` names the `file:line`. |
+| `run-evals` | on its own, whenever a phase or change calls for evals | Runs one skill's or agent's evals from its committed set in `evals/sets/`: mechanical checks, a load check, behavioral runs against a baseline graded assertion by assertion with skill-creator's grader, benchmark and viewer. Stops for your review, then records the result with `log-eval`. |
 | `new-plugin` | on its own, when a plugin is started | Scaffolds a plugin subdirectory from `templates/` and adds its row to the marketplace. |
 | `plan-phases` | when you type it | Expands a change too big for one chat — or a new plugin — from an idea into an approved design: interviews you in rounds, composes your jobs into shared layers (per-unit readers fanned out in parallel, a status per entity, a peer comparison, thin commands on top), publishes the proposal as a page with the flow chart rendered (its own suggestions marked) and waits for your yes. Then splits it into phases: a branch, an overview note, one note per phase, a progress ledger, all under `site/notes/`. Each phase is sized for one chat and carries its own evals. Commits the design set as phase 0. |
 | `run-phase` | when you type it, once per chat | Does the next unfinished phase: reads the overview, the ledger and that one note; makes exactly its edits; runs the plugin's rules, `check-contracts`, `build-site` and the phase's evals; logs them; commits once; updates the ledger; stops. |

@@ -8,3 +8,6 @@ __pycache__/
 site/docs/
 site/mkdocs.yml
 site/_site/
+
+# run-evals workspace — iterations, never committed
+evals/workspace/

@@ -28,3 +28,12 @@ names_listed:
     form: list
     file: site/site.yml
     span: ['workflow_skills_order:', null]
+
+headings:
+  - name: run-evals names every eval kind eval-kinds.md defines
+    # eval-kinds.md is the one list; SKILL.md must not name a kind it does not define.
+    owner: skills/run-evals/references/eval-kinds.md
+    owner_span: ['## The kinds', '## Baselines']
+    readers:
+      - file: skills/run-evals/SKILL.md
+        cites: ['mechanical', 'load', 'behavioral', 'trigger', 'platform-fact']
