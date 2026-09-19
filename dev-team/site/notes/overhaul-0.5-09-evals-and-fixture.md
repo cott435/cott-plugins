@@ -122,3 +122,29 @@ packet is worth building in 0.6. No change to the plugin is made on its basis in
 
 K and L are logged; the README's Contents tree matches `ls` (the `names_listed` claim);
 the site builds; the branch has ten phase commits and is ready for the bump proposal.
+
+## Deviations
+
+- **K ran as eleven headless sessions, not typed in one.** The note: "typed by hand in one
+  session". Done: one `claude -p` run per command on one fixture copy, as in eval J. That
+  way every run leaves its own stream for L and its own cost. The command sequence is the
+  note's, and the only manual step was answering D1.
+- **K has three extra runs.** `review-plan analysis` returned `request changes`, so
+  `plan-package analysis` and `review-plan analysis` ran again before the note's
+  `run-package analysis`. This is the documented answer to a plan CRITICAL.
+- **K's pass line is not met, and phase 9 does not fix it.** Four checks fail on plugin
+  defects (eval K §Verdict): plan-freshness after `sync-design`, a CRITICAL under
+  `approve with fixes`, the root `pytest` collision between two `tests` packages, and bare
+  `designer` in `architect.md`. This phase's commit contents are docs and the eval, and
+  each fix needs its own eval, so they are left for a fix pass before the bump. The bump
+  proposal says so.
+- **L measures context size, not per-turn input.** The note: "input tokens at first model
+  turn … and total tokens". The stream reports `usage.total_tokens` per task as a context
+  size, first after one tool use. L records that value and its end-of-task value, and
+  states the one-tool-result upper bound.
+- **`README.md` needed less than the note lists.** Phases 4–8 had already updated the
+  Contents tree, §One-time setup, §Which skill to run, the conventions table and most of
+  §`docs/` layout. Phase 9 added the rest: the `— tester` follow-ups, the `Commit:` line,
+  `tests/intent/`, the tester in the hand-off diagram, the branch/commit gotcha, and
+  `run-package` in §Workflows.
+

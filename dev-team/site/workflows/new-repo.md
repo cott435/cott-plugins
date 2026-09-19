@@ -104,94 +104,107 @@ Then:
    every section, shared work, risks, decisions needed — and **Repo contract deviations**,
    which it may resolve by editing the repo contract only when no shipped package is bound by
    the shape.
-5. On a spine run, stops here and names the next commands. Otherwise writes
-   `docs/packages/data/surface.md` — the design of the public surface, now that the
+5. On a spine run, stops here and names the spine's four commands, which
+   `/dev-team:run-package data` types for you. Otherwise writes `docs/packages/data/surface.md` — the design of the public surface, now that the
    section interfaces are concrete: the `__all__` names (only those a downstream package or a
    CLI command consumes, each with its consumer named), the pipeline signatures, the CLI
    commands with every argument, the import-linter contracts for this package.
 6. Appends `D<n>` stubs to `docs/decisions.md`.
 
-Build and review the spine exactly as every section is built below, then plan the rest:
-
-```
-/dev-team:test-section data/ingest
-/dev-team:implement-section data/ingest
-/dev-team:test-section data/ingest
-/dev-team:review-section data/ingest
-/dev-team:plan-package data
-```
-
-The second run designs `clean` and `storage` with `Sibling shipped:` naming
-`ingest`'s README — so the two designs that consume `ingest` are written against what it
-actually returns, not what its design projected — then rewrites `integration.md` with
-`Status: complete` and writes `surface.md`. Run `plan-package` again before the spine is built
-and it writes nothing and names these four commands; `/dev-team:status` shows
-`plan: spine only (ingest)` in the meantime.
-
-Then have someone who wrote none of it check the plan before any code exists:
-
-```
-/dev-team:review-plan data
-```
-
-Forks the reviewer in plan mode. It checks the contract, every design, `integration.md` and
-`surface.md` against each other and against the repo contract, the ledger, the upstream
-`interface.md` files and the probe docs: every consumed name has a provider with the same
-signature, every open question became a `D<n>`, every deviation is resolved, every public name
-has a consumer. It writes `docs/reviews/<date>-data-plan.md` and files each CRITICAL to
-`docs/followups.md` as `data/plan: …`. On `request changes`, re-run `/dev-team:plan-package data`:
-it re-delegates only the sections a finding names, ticks the findings, and says to review the
-plan again. While a `data/plan` finding is open, `/dev-team:implement-section` refuses every
-section of `data`.
-
-Then answer the decisions, and implement the remaining sections in the order
-`integration.md` gives, testing and reviewing as you go:
-
-```
-/dev-team:test-section data/clean         # intent tests from the design — red
-/dev-team:implement-section data/clean    # runs them first; done when they pass
-/dev-team:test-section data/clean         # reconcile: fold recorded deviations, file the rest
-/dev-team:review-section data/clean
-/dev-team:test-section data/storage
-…
-```
-
-Or let the driver type that loop:
+### Build the spine, complete the plan
 
 ```
 /dev-team:run-package data
 ```
 
-Runs in your conversation and spawns the same agents the commands above fork, one at a time,
-in `integration.md`'s order — test, build, reconcile, review per section, rebuilding on
-`request changes` up to three times — then `finalize-package`, `review-package` and
-`sync-design` below. It stops on every gate the manual commands stop on and ends with the
-command you would type next. Run it on the spine-only plan instead and it builds the spine,
-re-runs `plan-package`, runs `review-plan`, and stops for your decisions. See **Running a
-package** on the home page.
+Runs **in your conversation** and spawns each agent itself, one at a time, handing it the same
+skill file the manual command would fork. It starts with `/dev-team:status data --run-gate`: a
+feature branch, a clean tree (your three hand-edited files excepted), and a plan that is
+spine-only or passes the plan gate. On this spine-only plan it:
+
+1. builds `ingest` — `test-section` (intent tests, red), `implement-section`, `test-section`
+   again (reconcile), `review-section`, rebuilding on `request changes` up to three times;
+2. re-runs `plan-package data`, which designs `clean` and `storage` with `Sibling shipped:`
+   naming `ingest`'s README — so the two designs that consume `ingest` are written against
+   what it actually returns, not what its design projected — then rewrites `integration.md`
+   with `Status: complete` and writes `surface.md`;
+3. runs `review-plan data`, and **stops** so you can answer decisions before the rest is built.
+
+`review-plan` forks the reviewer in plan mode. Someone who wrote none of it checks the
+contract, every design, `integration.md` and `surface.md` against each other and against the
+repo contract, the ledger, the upstream `interface.md` files and the probe docs: every consumed
+name has a provider with the same signature, every open question became a `D<n>`, every
+deviation is resolved, every public name has a consumer. It writes
+`docs/reviews/<date>-data-plan.md` and files each CRITICAL to `docs/followups.md` as
+`data/plan: …`. On `request changes`, run `/dev-team:plan-package data`: it re-delegates only
+the sections a finding names and ticks the findings. Then run `/dev-team:review-plan data`
+again. While a `data/plan` finding is open, `/dev-team:implement-section` refuses every section
+of `data`.
+
+### Build the rest
+
+Answer the decisions in `docs/decisions.md`, then:
+
+```
+/dev-team:run-package data
+```
+
+In full mode it skips every section already reviewed `approve` or `approve with fixes` with no
+open review follow-ups and no failing intent test, and runs the same four steps for each
+remaining section in `integration.md`'s dependency order. Then it runs `finalize-package`,
+`review-package` (finalizing once more on `request changes`) and `sync-design`. Between spawns
+it prints the section's `status.py` row. It ends with a six-line summary whose `next:` is the
+command you would type from where it stopped. Here that is `/dev-team:plan-package analysis`.
+
+It stops, with the agent's first lines, on a failing run gate; on any agent returning `blocked`
+(a blocking rule) or `stopped` (the architect's decisions or access stop); on a section still at
+`request changes` after three builds; and on a package review still at `request changes` after
+a second finalize. It never edits a file, never answers a decision, and never commits. Each
+agent commits its own run, exactly as by hand. After fixing what stopped it, run it again: it
+resumes from the first section not yet done.
+
+### What it types — every step works by hand
+
+The driver holds no procedure of its own, so each step is a command you can run yourself, for a
+hard section or to watch one step at a time:
+
+```
+/dev-team:test-section data/ingest        # intent tests from the design: red
+/dev-team:implement-section data/ingest   # runs them first; done when they pass
+/dev-team:test-section data/ingest        # reconcile: fold recorded deviations, file the rest
+/dev-team:review-section data/ingest
+/dev-team:plan-package data               # completion run
+/dev-team:review-plan data
+   (answer decisions)
+/dev-team:test-section data/clean
+/dev-team:implement-section data/clean
+…
+/dev-team:finalize-package data
+/dev-team:review-package data
+/dev-team:sync-design data
+```
+
+Run `plan-package` again before the spine is built and it writes nothing and names the four
+spine commands; `/dev-team:status` shows `plan: spine only (ingest)` in the meantime.
 
 `/dev-team:test-section` forks the tester, which writes `tests/intent/<section>/` from the
 design and the contracts without ever opening the section's code. Run before the build, it
-writes tests that fail by construction; run after, it folds each deviation the README records
-into the tests that cite that design item and files every test still failing as a follow-up
+writes tests that fail by construction. Run after, it folds each deviation the README records
+into the tests that cite that design item, and files every test still failing as a follow-up
 the next `/dev-team:implement-section` picks up. The implementer never edits those tests.
 
 Sections go in that order and cannot be built out of it: `/dev-team:implement-section data/clean`
 refuses while `data/ingest` has no README. Each implementer reads the **READMEs** of the
-sections it depends on — what actually shipped — ranked above those sections' design docs. `integration.md` is a plan-time document; it stops
-being true the moment the first implementer deviates, and implementers deviate. The README is
-where a deviation is recorded, so the README is what the next section codes against.
+sections it depends on — what actually shipped — ranked above those sections' design docs.
+`integration.md` is a plan-time document; it stops being true the moment the first
+implementer deviates, and implementers deviate. The README is where a deviation is recorded,
+so the README is what the next section codes against.
 
-When every section has a README *and a review newer than it*, publish the package:
+### Publish the package
 
-```
-/dev-team:status data --gate
-/dev-team:finalize-package data
-/dev-team:review-package data
-```
-
-`/dev-team:finalize-package` refuses until every section is built and reviewed since its last build and
-no review-sourced follow-up is open — `/dev-team:status data --gate` shows the same check. Then it forks
+`/dev-team:finalize-package` refuses until every section is built and reviewed since its last
+build, no review-sourced follow-up is open, and every Floor and Enforced row of
+`docs/constraints.md` passes. `/dev-team:status data --gate` shows the same check. Then it forks
 into the implementer in **surface mode**: it writes the top-level `src/data/__init__.py`
 (lazy re-exports — importing `data` loads nothing until a name is used — of only the names a
 consumer needs), the `pipelines/` that compose the sections, `cli.py` with one function per
@@ -202,18 +215,17 @@ the gate: `__all__`, `interface.md`, and the section READMEs agree; every public
 consumer; every shape the repo contract promised is realized; `lint-imports` and `mkdocs
 build --strict` pass; the pipelines and commands run.
 
-Once it passes, fold what the sections recorded back into their designs:
-
-```
-/dev-team:sync-design data
-```
-
-Every section README's **Implementation notes** lists where the code departed from its design,
-with a reason. `/dev-team:sync-design` appends each design an **As shipped** table of those
+Last, `/dev-team:sync-design` folds what the sections recorded back into their designs. Every
+section README's **Implementation notes** lists where the code departed from its design,
+with a reason. `sync-design` appends each design an **As shipped** table of those
 departures — never rewriting the design above it — so the reviewer stops measuring the code
 against a line the section correctly left behind, and `/dev-team:plan-change` later starts
 from what shipped. A deviation that contradicts a contract is not folded: it becomes a `D<n>`
 stub and a pointer to `/dev-team:plan-change`.
+
+A package of one or two sections, or `/dev-team:plan-package data --all`, has no spine: the
+first run designs everything and writes `surface.md`. Then `/dev-team:review-plan data`,
+decisions, and `/dev-team:run-package data` in full mode.
 
 Next week:
 

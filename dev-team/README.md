@@ -171,13 +171,14 @@ A new pipeline is a new file there; the shared site builder picks it up.
 
 - [New repo, package by package](site/workflows/new-repo.md) — `/dev-team:shape-brief` →
   `/dev-team:plan-repo` (revised when the contract comes out wrong), then per
-  package: `/dev-team:plan-package` (the spine section only) → build and review the spine →
-  `/dev-team:plan-package` again (the rest, against the spine's README) → `/dev-team:review-plan` →
-  `/dev-team:test-section`, `/dev-team:implement-section`, `/dev-team:review-section` per
-  section → `/dev-team:finalize-package` → `/dev-team:review-package` → `/dev-team:sync-design`.
-  `/dev-team:finalize-project` any time.
+  package: `/dev-team:plan-package` (the spine section only) → `/dev-team:run-package`, which
+  builds and reviews the spine, plans the rest against the spine's README, reviews the plan and
+  stops for your decisions → `/dev-team:run-package` again, which tests, builds and reviews
+  every remaining section, then finalizes, reviews and syncs the package. Every command it
+  drives still runs by hand. `/dev-team:finalize-project` any time.
 - [Changing shipped code](site/workflows/change-shipped-code.md) — `/dev-team:plan-change` →
-  `/dev-team:implement-section <pkg>/<section> <slug>` → `/dev-team:review-section` → `/dev-team:sync-plan`.
+  `/dev-team:implement-section <pkg>/<section> <slug>` → `/dev-team:review-section` → `/dev-team:sync-plan`
+  → `/dev-team:sync-design`.
 - [Adding a package to an existing repo](site/workflows/add-package.md) — `/dev-team:plan-repo`
   with the addition as its argument, which *extends* the repo contract rather than revising it,
   then `/dev-team:plan-package <pkg>` and the per-section loop.
@@ -269,9 +270,17 @@ implementer files any drift between what it shipped and what `surface.md` planne
 findings there, the next `/dev-team:plan-package <pkg>` answers them and ticks them off, and
 while one is open `/dev-team:implement-section` refuses every section of `<pkg>`.
 
+`/dev-team:test-section` feeds it too. After a build, the tester files every intent test still
+failing as `- [ ] <pkg>/<section>: intent test <file>::<name> fails — … — tester <date>`; the next
+`/dev-team:implement-section` fixes the code, never the test. The reviewer treats a failing
+intent test with no such entry and no recorded deviation as CRITICAL.
+
 `/dev-team:review-section` and `/dev-team:review-package` feed the same queue: a full report to
 `docs/reviews/<date>-<pkg>-<section>.md` (or `<date>-<pkg>-package.md`), every CRITICAL finding
-appended to `docs/followups.md`.
+appended to `docs/followups.md`. Each report's second line is `Commit: <sha>`, the commit it
+reviewed. The next review of the section covers only the diff since that commit, and
+`/dev-team:status` counts a section as reviewed when that line matches the newest commit
+touching it.
 
 Review per section, as you go. A review after finalize would cover every section under one
 return, and the surface would already re-export whatever a CRITICAL finding is about.
@@ -378,7 +387,7 @@ docs/
 │       ├── assessment.md           package survey                            (plan-package)
 │       ├── contract.md             THE PACKAGE CONTRACT                      (plan-package)
 │       ├── design/<section>.md     one per section; As shipped appended      (designer; sync-design)
-│       ├── integration.md          reconciliation, plan-time                 (architect)
+│       ├── integration.md          reconciliation, plan-time; Spine heading  (architect)
 │       ├── surface.md              design of the public surface              (architect, at unify)
 │       └── interface.md            THE PUBLIC SURFACE AS SHIPPED             (finalize-package)
 ├── reviews/
@@ -393,6 +402,10 @@ docs/
         ├── data/clean.md           delta design per affected section
         └── integration.md          reconciliation + canonical doc updates
 ```
+
+Outside `docs/`, one tree belongs to a single writer: `packages/<pkg>/tests/intent/<section>/`
+holds the tester's intent tests. The implementer runs them and never edits them, the reviewer
+checks they pass, and `status.py` shows the count in its intent column.
 
 **Canonical vs proposal.** Everything outside `plans/` describes the code as it is, with one
 honest exception: a greenfield design describes intended code until its section ships — which
@@ -432,8 +445,10 @@ you ── docs/decisions.md (answers)
 
 you ── /dev-team:run-package data ─ (your conversation) spawns the section runs below, in order, then finalize, review, sync-design
 
+you ── /dev-team:test-section data/ingest ───────▶ tester ──▶ tests/intent/ingest/   (from the design; red)
 you ── /dev-team:implement-section data/ingest ──▶ implementer ──▶ src/data/ingest/, tests, section README
                                           implementer ──▶ followups.md, decisions.md Applied:
+you ── /dev-team:test-section data/ingest ───────▶ tester ──▶ tests/intent/ingest/ reconciled, followups `— tester`
 you ── /dev-team:review-section data/ingest ─────▶ reviewer ──▶ docs/reviews/<date>-data-ingest.md, followups
 
 you ── /dev-team:finalize-package data ──────────▶ implementer (surface mode) ──▶ src/data/__init__.py, pipelines/, cli.py, docs/api/data.md
@@ -468,6 +483,11 @@ Every arrow into an agent carries a file path, not a conversation.
   the brief names, because a target column that cannot support the task, or data that forbids a
   random split, changes which packages exist — a finding that arrives during package planning
   arrives too late to act on cheaply.
+- **Work on a branch, commit your hand edits.** Every forked run refuses `main`/`master` and a
+  dirty tree, and ends in exactly one commit carrying a `Dev-Team-Run:` trailer. Only
+  `docs/decisions.md`, `docs/brief.md` and `docs/constraints.md` may be left uncommitted between
+  runs. Anything else you touched by hand has to be committed first, or the next run refuses.
+  `git log` is the run history.
 - **Re-running the same command is the continue action** after a stop. Doing nothing in the
   ledger means "accept the assumptions".
 - **`run-package` is a loop in your conversation.** Each agent return is at most 40 lines and

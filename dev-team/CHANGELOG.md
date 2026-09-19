@@ -12,6 +12,56 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [Unreleased]
+
+Verification becomes a column beside every layer, not a floor under the last one: a tester
+writes tests from the design, the plan is reviewed before any code exists, the reviewer carries
+the order of authority, designs learn what shipped, every run commits, and a driver runs a
+package end to end. Design set: `site/notes/overhaul-0.5-*.md`.
+
+### Breaking
+1. **`/dev-team:plan-package` is spine-first by default** on packages with three or more
+   sections: the first run designs only the section the most others depend on. `--all`
+   restores 0.4 behavior. A 0.4 plan (every design present, `surface.md` present) is detected
+   as complete and is not re-planned.
+2. **`/dev-team:implement-section` refuses to run on `main`/`master` and refuses a dirty tree.**
+   Your hand edits to `docs/decisions.md`, `docs/brief.md` and `docs/constraints.md` are
+   exempt. A repo that was never committed needs `git init` and a branch.
+3. **`status.py` "reviewed since build" is commit-based**: the newest review's `Commit:` must be
+   the newest commit touching the section. A 0.4 review has no `Commit:` line and reads as
+   stale, so every section reviewed under 0.4 shows `·` until it is reviewed once under 0.5.
+4. **The reviewer grades a deviation recorded under README item 7 as WARNING at most**, unless
+   it breaks a contract, a decided `D<n>`, a shipped interface, or an intent test. A 0.4
+   CRITICAL for the same thing is now a WARNING.
+5. **An open review-sourced follow-up addressed to `<pkg>/plan` blocks
+   `/dev-team:implement-section`** for every section of `<pkg>`.
+
+### Added, by phase
+- Phase 1: three knowledge skills vendored from `addyosmani/agent-skills` (MIT) and adapted to
+  Python: `test-driven-development`, `debugging-and-error-recovery`,
+  `git-workflow-and-versioning`.
+- Phase 2: every forked run ends in one commit of exactly the files it wrote, with a
+  `Dev-Team-Run:` trailer. Reviews record `Commit:` and diff from the previous one. Skills
+  fork `agent: dev-team:<name>`: under the bare name every fork had run as general-purpose.
+- Phase 3: the reviewer carries the implementer's order of authority verbatim and splits
+  recorded from unrecorded deviations. New `/dev-team:sync-design` appends **As shipped** to
+  each design.
+- Phase 4: new `tester` agent (eight agents) and `/dev-team:test-section`. Intent tests are
+  written from the design before the build and reconciled after. The implementer runs them
+  and never edits them.
+- Phase 5: new `/dev-team:review-plan` (reviewer plan mode), the `<pkg>/plan` follow-up target,
+  the architect's re-plan of only the named sections, and `status.py --plan-gate`.
+- Phase 6: new `/dev-team:set-constraints` and `docs/constraints.md`. It comes first in both
+  authority lists and is the reviewer's axis 0. `status.py --gate` runs the constraint rows.
+- Phase 7: spine-first package planning. Integration item 0 is **Spine**, and designers accept
+  `Sibling shipped:`.
+- Phase 8: new `/dev-team:run-package`, a driver in your conversation over the manual
+  commands. It adds `status.py --run-gate` and a `Result:` first line on every agent return.
+- Phase 9: README, `site/flow.md` and the workflow pages rewritten for the above. The
+  end-to-end eval on `evals/fixtures/two-package/` is logged. It found four defects that are
+  still open: the plan reads stale after `sync-design`, a CRITICAL passes under `approve with
+  fixes`, root `pytest` collides across packages, and the architect spawns bare `designer`.
+
 
 ## [0.4.0] - 2026-09-18
 
