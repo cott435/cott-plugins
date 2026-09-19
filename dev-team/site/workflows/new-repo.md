@@ -17,6 +17,16 @@ Every forked run from here on ends in one commit of the files it wrote, and refu
 feature branch before the first one — `git init`, `git switch -c build`, and commit the brief.
 
 ```
+/dev-team:set-constraints
+```
+
+Optional, and any time before the first review; also in your conversation. Four questions —
+coverage floor, type strictness, docstring coverage, anything to measure without enforcing —
+each with a default, then `docs/constraints.md`: the commands the implementer runs after its
+tests, the reviewer runs before anything else, and `/dev-team:status --gate` runs before a
+package is finalized. Skip it and the Toolchain's commands are the only bar.
+
+```
 /dev-team:plan-repo
 ```
 

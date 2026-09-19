@@ -158,3 +158,32 @@ verification of every section.
 
 The two evals are logged; `check-contracts` proves the four readers cite headings the
 template owns; `grep -r CONSTRAINTS.md` across the bundle hits only the Provenance line.
+
+## Deviations
+
+- **Two template commands changed** (found by eval H). The note's `--cov=<pkg>` became
+  `--cov=packages/<pkg>/src`: coverage read `data` as the fixture's root `data/` directory and
+  measured 0 %. `interrogate -f 95` became `interrogate -I -i -f 95`: `project-structure` keeps
+  nested `__init__.py` files empty and `python-style-guide` documents constructor arguments in
+  the class docstring, so without the flags every package fails by construction. The template's
+  **Filling it** says why; the fixture's `docs/constraints.md` carries the same commands.
+- **The template gains a numbered list, "What each heading is for".** `check-contracts` reads
+  an owner's headings as numbered bold items; `## Floor` headings inside a fenced block are
+  invisible to it. The list names each heading's readers.
+- **`workspace-scaffold` §4 is §5.** The note's CI section number is the file's `mkdocs.yml`
+  section; the CI sentence went in §5, and the dev-dependency sentence in §1, where the `dev`
+  group is.
+- **Five skill prompt tables gain a Constraints row** (`implement-section`, `review-section`,
+  `review-package`, `test-section`, `finalize-package`), and surface mode's preconditions a
+  constraints bullet: an agent reads the paths its prompt lists. `git-workflow-and-versioning`
+  §Project convention's Message table gains the `set-constraints` row. `site/workflows/new-repo.md`
+  gains one paragraph for the step (phase 9 still rewrites the page).
+- **`set-constraints` checks the Branch rule** before asking: it commits, so it is bound by it.
+  The Baseline rule already exempts `docs/constraints.md`.
+- **`status.py`:** the report line runs the rows only for a package with code (`not run (no
+  code)` otherwise), and `<n> enforced` counts Floor and Enforced rows together. Each command
+  runs with its tool caches (`COVERAGE_FILE`, `MYPY_CACHE_DIR`, `RUFF_CACHE_DIR`, the pytest
+  cache provider, bytecode) sent to a temporary directory, for the same reason the intent
+  column does: a status run must not leave files that read as uncommitted.
+- **`.skillfish.json`** for the vendored reference sits at the skill root with a
+  `vendored_as` key, since the vendored file is not the skill's `SKILL.md`.

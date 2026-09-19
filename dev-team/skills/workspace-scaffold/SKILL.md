@@ -41,6 +41,11 @@ dev = ["pytest", "pytest-mock", "ruff", "pylint", "import-linter", "mkdocs-mater
 root_packages = []          # grown by the scaffold step as packages are first built
 ```
 
+When `docs/constraints.md` exists, the `dev` group also carries what its **Floor** and
+**Enforced** commands run that the list above lacks — `pytest-cov` for `--cov`, `mypy`,
+`interrogate`. The implementer adds them at the first section's scaffold; nobody else edits
+this file for them.
+
 The root is itself a workspace member (uv requires it), so it needs a `[project]` table even
 though it holds no code. One lockfile, one virtual environment, shared by every package.
 
@@ -169,3 +174,8 @@ uv run mkdocs build --strict
 
 These are the commands the repo contract's Toolchain section states, and the ones every
 implementer and reviewer copies rather than guesses.
+
+When `docs/constraints.md` exists, CI runs its **Floor** and **Enforced** rows instead of the
+fixed list above — `repo` rows once, `package` rows once per package with `<pkg>`
+substituted — after `uv sync --all-packages`, plus the `pylint` size check, which the Floor
+does not carry. Without that file, the list above is the CI.

@@ -55,6 +55,7 @@ review-sourced do not block; list them in your return.
 | Integration | `docs/packages/$pkg/integration.md` |
 | Section READMEs | at each section's path; item 3 is what exists |
 | Decisions | `docs/decisions.md` — entries scoped `$pkg` or `repo` |
+| Constraints | `docs/constraints.md` — **Floor** and **Enforced** rows; read-only |
 | Follow-ups | `docs/followups.md` — entries addressed to `$pkg/surface` |
 | Review findings | `docs/reviews/` — the most recent `<date>-<pkg>-package.md` for this package |
 | Existing interface | `docs/packages/$pkg/interface.md` if this is a re-run after changes |

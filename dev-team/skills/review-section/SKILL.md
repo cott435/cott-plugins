@@ -39,6 +39,7 @@ for the qualified name if there is more than one. If `$name` is `surface`, stop 
 | Integration | `docs/plans/$plan/integration.md` if a slug is set, else `docs/packages/$pkg/integration.md` |
 | Surface | `docs/packages/$pkg/surface.md` — which entry points should be `Public: yes` |
 | Decisions | `docs/decisions.md` |
+| Constraints | `docs/constraints.md` — axis 0: **Floor** and **Enforced** rows to run, **Guarded** items to grep the diff for, **Exceptions** |
 | Follow-ups | `docs/followups.md` — entries addressed to `$pkg/$name`: skip what is already listed, and append your CRITICAL findings here in step 4 |
 | Section README | the README at the section's path in the package contract's Sections table |
 | Dependency READMEs | the README of each section in `Depends on` for `$name` |

@@ -17,7 +17,11 @@ is ready to plan against. Do nothing else — no edits, no fixes.
 
 With a package name, only that package is shown. With `--gate`, the script also prints the
 `/dev-team:finalize-package` preconditions as PASS or FAIL with reasons — the same check that skill
-runs before building the surface. With `--plan-gate <pkg>`, it prints `plan gate: PASS|FAIL`
+runs before building the surface. When `docs/constraints.md` exists, the gate also runs its
+**Floor** and **Enforced** rows for the package — `repo` rows once, `package` rows with `<pkg>`
+substituted, no shell, from the root, ten minutes each — and prints one line per failing row,
+`<pkg>: constraint <dimension> FAIL (<command>)`. Every package with code shows a
+`constraints:` line — `<n> enforced, <k> failing`, or `no docs/constraints.md`. With `--plan-gate <pkg>`, it prints `plan gate: PASS|FAIL`
 with reasons: the contract, `integration.md` and `surface.md` exist and the plan is not
 spine-only; the newest `docs/reviews/<date>-<pkg>-plan.md` has a `Commit:` after which no
 commit touches `docs/packages/<pkg>/`, and its verdict is `approve` or `approve with fixes`; no

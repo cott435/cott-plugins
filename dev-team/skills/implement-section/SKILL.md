@@ -46,6 +46,7 @@ Read all of these that exist. Absence is meaningful in each case, so note which 
 | Interface (shipped) | `docs/packages/$pkg/interface.md` | Not shipped; the shipped-surface blocking rule does not apply. |
 | Assessment | `docs/plans/$plan/assessment.md` *(only when a slug is set)* | Proceed. |
 | Decisions | `docs/decisions.md` | Every open question is unanswered; your blocking rules apply. |
+| Constraints | `docs/constraints.md` — **Floor** and **Enforced** rows you run at step 8; read-only | The Toolchain's commands are the bar; say so. |
 | Follow-ups | `docs/followups.md` | Nothing queued for you. |
 | Review findings | `docs/reviews/` — the most recent `<date>-<pkg>-<section>.md` for this section | No prior review. |
 | Intent tests | `tests/intent/$name/` under the package root — the tester's; you run it, never edit it | Not written; procedure step 0 has nothing to run. Say so in your return. |

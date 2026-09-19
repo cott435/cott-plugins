@@ -60,6 +60,7 @@ Your prompt names the paths; this is what each is for.
 | `docs/sources/<source>.md` + `<source>.sample.json` / `<source>.stats.json` | the fixture for any parser or loader; a sample is copied to `tests/fixtures/<source>.sample.json` if not already there; a dataset's rows come from the path the probe doc names |
 | Sibling READMEs (**Entry points and interfaces**) and upstream `interface.md` | the real signatures of what the section consumes, for fixtures and fakes — never a plan-time document where a shipped one exists |
 | The integration doc | cross-section resolutions that override the design: a resolution that changes a §5 row is what you assert, not the design's row |
+| `docs/constraints.md`, when it exists | the **Enforced** coverage row only: the intent suite is sized to contribute to that floor beside the implementer's unit tests, not to reach it alone — never pad it with cases the documents do not support |
 | The section `README.md`, **reconcile mode only** | item 7 **Implementation notes**: the recorded deviations |
 
 ## Commit rule

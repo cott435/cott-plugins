@@ -29,6 +29,8 @@ dev-team/
 ├── pyproject-lint-config.toml  merge into the root pyproject.toml; enforces the hard limits
 └── skills/
     ├── shape-brief/        (inline)        idea → docs/brief.md, discussed with you: now / later / out
+    ├── set-constraints/    (inline)        the quality bar → docs/constraints.md: coverage, types, docstrings
+    │   └── references/                     the constraints template + vendored constraint-driven-development (MIT)
     ├── plan-repo/          → architect     repo contract: new, extend, or revise from a corrected brief
     ├── plan-package/       → architect     one package: sections, designs, integration, surface
     ├── review-plan/        → reviewer      <pkg>: the plan, before any code — CRITICALs go back to plan-package
@@ -113,6 +115,7 @@ and then the implementer, so the same conventions apply at design time and at bu
 
 ```
 rough idea, scope not settled               → /dev-team:shape-brief, then /dev-team:plan-repo
+quality bar not written down                → /dev-team:set-constraints (any time before the first review)
 new repo, nothing exists yet                → /dev-team:plan-repo, then /dev-team:plan-package <pkg> per package
 existing repo, no docs/ yet                 → /dev-team:map-project (repo level), then /dev-team:plan-package <pkg> per package (document mode)
 existing repo, docs/ already there          → /dev-team:plan-change
@@ -326,6 +329,7 @@ your own interactive work, where no agent frontmatter applies, write a
 docs/
 ├── brief.md                        your input to /dev-team:plan-repo         (shape-brief / you)
 ├── history/                        brief-contracted.md + dated copies        (plan-repo, shape-brief)
+├── constraints.md                  the quality bar: Floor, Enforced, Guarded (set-constraints / you)
 ├── architecture.md                 THE REPO CONTRACT                         (plan-repo)
 ├── decisions.md                    D<n> ledger, Scope: field                 (architect stubs / you / implementer)
 ├── followups.md                    queue, entries `- [ ] <pkg>/<section>: …` (implementer, reviewer, sync-plan)

@@ -49,6 +49,7 @@ section disagrees, this section wins.
    | `plan-repo` / `plan-package` / `plan-change` / `sync-plan` / `sync-design` / `map-project` | `plan <target>` | `plan data: contract, spine design (ingest), integration` |
    | `extract-legacy` | `legacy` | `legacy: inventory of ../old-repo` |
    | `finalize-project` | `docs` | `docs: package READMEs, api pages, root README` |
+   | `set-constraints` | `docs` | `docs: set constraints (coverage 80, mypy strict, docstrings 95)` |
 
    Body: blank line, then one trailer per line and nothing else:
 

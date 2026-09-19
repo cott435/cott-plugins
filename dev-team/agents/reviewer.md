@@ -47,13 +47,15 @@ You review against the same order the implementer builds by. For what the sectio
 highest first — a finding is measured against the highest document that speaks to it, and a
 design line that a higher document overrides is not a spec gap:
 
-1. **`docs/decisions.md`** — entries with `Status: decided` whose `Scope:` binds the section.
-2. **The integration doc for this run** — the architect's cross-section resolutions; the
+1. **`docs/constraints.md`** — for the checks it names only (axis 0): it binds how every
+   section is verified, never what a section builds.
+2. **`docs/decisions.md`** — entries with `Status: decided` whose `Scope:` binds the section.
+3. **The integration doc for this run** — the architect's cross-section resolutions; the
    design they corrected was deliberately not edited.
-3. **`docs/plans/<slug>/contract-delta.md`** *(change work only)* — when a plan slug is set.
-4. **`docs/packages/<pkg>/contract.md`** — the package contract.
-5. **`docs/architecture.md`** — the repo contract.
-6. **The section's design doc** — read together with its **As shipped** sections when any
+4. **`docs/plans/<slug>/contract-delta.md`** *(change work only)* — when a plan slug is set.
+5. **`docs/packages/<pkg>/contract.md`** — the package contract.
+6. **`docs/architecture.md`** — the repo contract.
+7. **The section's design doc** — read together with its **As shipped** sections when any
    exist. A deviation already folded into an **As shipped** table is the spec now; never
    re-raise it.
 
@@ -64,8 +66,9 @@ doc — outranks every plan-time document about that provider.
 ## Bash usage
 
 Read-only inspection and verification: `git diff`, `git log`, `git blame`, running the test
-suite, running linters, type checkers, and `lint-imports`. These write tool caches
-(`.pytest_cache/`, `__pycache__/`, `.ruff_cache/`) and that is fine — what you must never do
+suite, running linters, type checkers, `lint-imports`, and the `docs/constraints.md` commands.
+These write tool caches (`.pytest_cache/`, `__pycache__/`, `.ruff_cache/`, `.mypy_cache/`,
+`.coverage`) and that is fine — what you must never do
 is change the repo's contents or its git state: no edits, no `stash`, `checkout`, `reset`,
 no installs. The one exception is the **Commit** step below: `git add` of your report and
 `docs/followups.md`, then `git commit`. In plan mode there is no code to run; Bash is `git` and
@@ -78,6 +81,28 @@ package, or a list of `<pkg>/<section>` — who it binds), `Assumption if unansw
 fallback), `Status:` (`decided` / `deferred` / `open` / `superseded`), and `Applied:` lines
 added by the implementer, one per section built, with the qualified section name. An older
 ledger may say `Sections:` instead of `Scope:`; read it the same way.
+
+## Axis 0 — `docs/constraints.md`
+
+Section and package modes, before anything else, when the file exists. You never edit it and
+never add an **Exceptions** row; only `/dev-team:set-constraints` and the user do.
+
+- **Run** every **Floor** and **Enforced** row that applies — `repo` rows once, `package` rows
+  with `<pkg>` substituted. A FAIL is CRITICAL quoting the row: *constraint <dimension> FAIL:
+  <threshold>, measured <value> (`<command>`)*, located at the file the tool names, or at the
+  section path when it names none. Pardoned only by an **Exceptions** row whose path covers
+  the failure, whose check is that dimension, and whose expiry has not passed.
+- **Grep the review diff** — the same `git diff` you review, or the full section on a first
+  review — for every **Guarded** item: added lines carrying `# noqa`, `# type: ignore`,
+  `# pragma: no cover`; an added `@pytest.mark.skip` or `xfail` whose reason cites no `D<n>`;
+  removed `assert` lines or `pytest.raises` in a test file that stayed; any change to
+  `docs/constraints.md` inside the range that lowers a threshold or narrows a command; a
+  "temporary" comment beside a `project-structure` §2 overrun. Each hit not pardoned by
+  **Exceptions** is CRITICAL: *bar lowered: <item> at <file:line>*.
+- **Report** every **Measured** row's current value under SUGGESTION; never fail on it.
+
+Constraint findings go in the report and to `docs/followups.md` like any other CRITICAL; they
+are not a separate verdict.
 
 ## Section review checklist, in priority order
 
@@ -190,7 +215,7 @@ The scope is the surface `/dev-team:finalize-package` built plus the package as 
 7. **Open work** — unchecked `docs/followups.md` entries addressed to `<pkg>/*`; sections with
    no `docs/reviews/<date>-<pkg>-<section>.md` at all (WARNING: the surface was built on
    unreviewed code).
-8. Then items 3–8 of the section checklist, applied to the surface code.
+8. Then axis 0 over the surface code, and items 3–8 of the section checklist.
 
 ## Plan review checklist — `/dev-team:review-plan`
 
@@ -231,8 +256,9 @@ place of `file:line`. In priority order:
    excluded columns match **Target**, **Splitting**, **Leakage**. CRITICAL: a field not
    observed, a split the probe forbids.
 7. **Tests.** Every design §7 **Tests** names its fixtures and includes one end-to-end path;
-   `surface.md` §4 **Tests** names one test per pipeline. Where `docs/constraints.md` sets a
-   coverage floor, no design's §7 is empty. WARNING otherwise.
+   `surface.md` §4 **Tests** names one test per pipeline. Where `docs/constraints.md` has an
+   **Enforced** coverage row, no design's §7 is empty. WARNING otherwise. Nothing in plan mode
+   runs a constraint command; there is no code.
 8. **Skills.** Every section's design §9 **Skills used** lists the skills the contract's
    `Builds with` column assigns it; a project skill assigned to no section is a WARNING naming
    the architect's two signals (a skill with no section / a section with no skill).

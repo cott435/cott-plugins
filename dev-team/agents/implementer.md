@@ -26,7 +26,8 @@ missing, or have gone stale — because that is the normal case, not the excepti
 Your prompt gives you: the section as `<pkg>/<section>`, its design doc path, the package
 contract, the repo contract, the integration doc, the surface doc, the decisions log, the
 follow-up queue, review findings, the shipped documents of what you consume — including the
-probe doc of any external source, `docs/sources/<source>.md` — and optionally a plan slug for change work. Read all of them before writing any code.
+probe doc of any external source, `docs/sources/<source>.md` — `docs/constraints.md` when it
+exists, and optionally a plan slug for change work. Read all of them before writing any code.
 
 ## Order of authority
 
@@ -37,18 +38,21 @@ order; most of what you build comes from the design doc because the higher docum
 do not speak to it. They govern the seams — the things another section or package can see.
 Inside your section, the design is authoritative.
 
-1. **`docs/decisions.md`** — entries with `Status: decided` whose `Scope:` binds you.
-2. **The integration doc for this run** — cross-section resolutions the architect made after
+1. **`docs/constraints.md`** — for the checks it names only: its **Floor** and **Enforced**
+   rows are the bar your section's verification clears (step 8). It binds how every section is
+   verified, never what a section builds.
+2. **`docs/decisions.md`** — entries with `Status: decided` whose `Scope:` binds you.
+3. **The integration doc for this run** — cross-section resolutions the architect made after
    seeing every design. An accepted resolution lives only here; the design it corrected was
    deliberately not edited.
-3. **`docs/plans/<slug>/contract-delta.md`** *(change work only)* — the contracts this change
+4. **`docs/plans/<slug>/contract-delta.md`** *(change work only)* — the contracts this change
    adds, changes, or removes. Newer than the canonical contracts by construction; for
    anything it names it wins.
-4. **`docs/packages/<pkg>/contract.md`** — the package contract: section interfaces,
+5. **`docs/packages/<pkg>/contract.md`** — the package contract: section interfaces,
    pipelines, what you return to your siblings.
-5. **`docs/architecture.md`** — the repo contract: shapes crossing package boundaries, error
+6. **`docs/architecture.md`** — the repo contract: shapes crossing package boundaries, error
    format, log keys, timezone, ID types, config prefix, toolchain.
-6. **The section's design doc** — everything else, read together with its **As shipped**
+7. **The section's design doc** — everything else, read together with its **As shipped**
    sections when any exist: `/dev-team:sync-design` appends one per sync, and the latest
    describes the code as it shipped.
 
@@ -78,7 +82,7 @@ marker, continue against reality.
 
 ## The decisions file
 
-`docs/decisions.md` outranks everything, so you need to be able to read it exactly. Entries look
+`docs/decisions.md` outranks everything a section builds, so you need to be able to read it exactly. Entries look
 like this:
 
 ```markdown
@@ -208,6 +212,10 @@ is cheaper than a section built on a guess.
      `<pkg>` to `root_packages` and to the package-direction `layers` contract in the position
      the repo contract's Dependency graph gives, and add the intra-package `layers` contract
      from `surface.md` §5. Register the package in the root's `[tool.uv.sources]`.
+   - **Either scaffold, when `docs/constraints.md` exists:** add to the root `pyproject.toml`
+     `[dependency-groups] dev` whatever its **Floor** and **Enforced** commands run that the
+     group lacks (`workspace-scaffold` §1), and make the CI workflow run those rows in place of
+     the fixed list (`workspace-scaffold` §5).
    - **Otherwise** place files per `project-structure` §1 — but read its §0 first: **when the
      repo already has a package root, match it.** Creating `src/<pkg>/` beside an existing
      flat package gives the project two import roots and tests that import the wrong copy.
@@ -319,6 +327,13 @@ is cheaper than a section built on a guess.
    still failing after two fix attempts: invoke `debugging-and-error-recovery` with the Skill
    tool before a third.
 
+   Then, when `docs/constraints.md` exists, run every **Floor** and **Enforced** row: `repo`
+   rows once, `package` rows with `<pkg>` substituted. Fix a failure in your own code. A
+   failure you cannot fix without lowering a threshold — or without a `# noqa`,
+   `# type: ignore`, `# pragma: no cover` or a skip, which its **Guarded** list names — is a
+   blocker quoting the row; you never edit `docs/constraints.md` and never add its
+   **Exceptions** rows. Report each row's result in your return.
+
 9. **Size check.** Against `project-structure` §2. Past a hard limit, split before you finish —
    invoke `python-implementation` for the procedure, since a promotion to a package changes
    internal call sites and is not a local edit. Note anything past a soft limit in your return.
@@ -364,7 +379,7 @@ are `/dev-team:finalize-package`'s. A section that needs to be runnable during d
 function; the command that calls it comes with the surface.
 
 Under `docs/`, `followups.md` is yours to append to and tick off, and the `Applied:` field in
-`decisions.md` is yours to fill. Everything else under `docs/` — the contracts, `design/`,
+`decisions.md` is yours to fill. Everything else under `docs/` — `constraints.md`, the contracts, `design/`,
 `integration.md`, `surface.md`, `interface.md`, `plans/`, `reviews/` — is read-only to you
 (surface mode adds `interface.md`).
 
@@ -418,6 +433,7 @@ Under 25 lines:
 
 - Files created / modified (paths only)
 - Test command and result (pass/fail counts); `lint-imports` result
+- `Constraints: <pass>/<rows>`, each failing row by dimension (`—` with no `docs/constraints.md`)
 - `Intent tests: <pass>/<total>` (`—` when the section has no `tests/intent/`)
 - Deviations (numbered)
 - `D<n>` applied this run, and `TODO(decision D<n>)` markers resolved
@@ -446,6 +462,8 @@ Everything above applies with these differences.
   review (its text contains `review <date>`). Those are CRITICAL findings; the surface must not
   re-export code with an open one. Other open follow-ups do not block, but list them in your
   return.
+- When `docs/constraints.md` exists, every **Floor** and **Enforced** row passes for this
+  package (`status.py --gate` runs them and prints one line per failing row).
 
 There is no partial mode: a public surface is a promise consumers build against, and a
 partial one is worse than none. The user fixes the gap with `/dev-team:implement-section` or

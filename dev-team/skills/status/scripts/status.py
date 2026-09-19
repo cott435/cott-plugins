@@ -12,7 +12,8 @@ intent column is the tester's suite, run: `<pass>/<total>`, or `—` with no tes
 `--gate` exits 1 when the named package fails /dev-team:finalize-package's preconditions.
 `--plan-gate <pkg>` exits 1 unless the package's plan is complete, reviewed by
 /dev-team:review-plan since its last change, approved, and carries no open plan finding and no
-open decision without an assumption.
+open decision without an assumption. When docs/constraints.md exists, every package shows how
+many of its Floor and Enforced rows fail, and `--gate` fails on each one that does.
 """
 
 from __future__ import annotations
@@ -20,8 +21,10 @@ from __future__ import annotations
 import datetime as dt
 import os
 import re
+import shlex
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path.cwd()
@@ -210,6 +213,52 @@ def plan_gate(pkg: str) -> list[str]:
     return fails
 
 
+def constraints_rows(pkg: str) -> list[tuple[str, str, str]]:
+    """(dimension, command, scope) for every Floor and Enforced row of docs/constraints.md, <pkg> filled in."""
+    f = DOCS / "constraints.md"
+    if not f.exists():
+        return []
+    text = f.read_text()
+    out = []
+    for heading, name_col in (("Floor", "check"), ("Enforced", "dimension")):
+        m = re.search(rf"^##\s+{heading}\b.*?(?=^##\s|\Z)", text, re.M | re.S)
+        for row in table_rows(m.group(0), ("command", "scope")) if m else []:
+            cmd = col(row, "command")
+            if cmd:
+                out.append((col(row, name_col) or col(row, "dimension"), cmd.replace("<pkg>", pkg), col(row, "scope").lower() or "package"))
+    return out
+
+
+_constraint_results: dict[str, bool] = {}
+
+
+def run_constraint(command: str) -> bool:
+    """Run one constraints command from the repo root; True when it exits 0. Cached per command.
+
+    No shell; a 10-minute timeout. Tool caches (pytest, coverage, mypy, ruff, bytecode) go to a
+    temporary directory: a status run that left files behind would read as uncommitted changes.
+    """
+    if command in _constraint_results:
+        return _constraint_results[command]
+    with tempfile.TemporaryDirectory() as tmp:
+        env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "COVERAGE_FILE": f"{tmp}/.coverage",
+               "MYPY_CACHE_DIR": f"{tmp}/mypy", "RUFF_CACHE_DIR": f"{tmp}/ruff",
+               "PYTEST_ADDOPTS": (os.environ.get("PYTEST_ADDOPTS", "") + " -p no:cacheprovider").strip()}
+        try:
+            ok = subprocess.run(shlex.split(command), capture_output=True, cwd=ROOT, env=env, timeout=600).returncode == 0
+        except (OSError, subprocess.TimeoutExpired):
+            ok = False
+    _constraint_results[command] = ok
+    return ok
+
+
+def constraint_failures(pkg: str) -> tuple[int, list[str]]:
+    """(rows run, one gate line per failing row) for pkg; (0, []) with no docs/constraints.md."""
+    rows = constraints_rows(pkg)
+    fails = [f"{pkg}: constraint {dim} FAIL ({cmd})" for dim, cmd, _ in rows if not run_constraint(cmd)]
+    return len(rows), fails
+
+
 def markers(path: Path) -> int:
     """Count TODO(decision ...) markers under a path."""
     if not path.exists():
@@ -276,6 +325,14 @@ def package_report(pkg: str, pkg_path: Path) -> tuple[list[str], list[str]]:
     surface_paths = [src / n for n in ("__init__.py", "pipelines", "pipelines.py", "cli.py", "cli")]
     _, prev = freshness(f"{pkg}-package", *surface_paths)
     lines.append(f"  surface: open followups {sfu}; package review {prev}")
+    if (DOCS / "constraints.md").exists() and not src.exists():
+        lines.append(f"  constraints: {len(constraints_rows(pkg))} enforced, not run (no code)")
+    elif (DOCS / "constraints.md").exists():
+        n, cfails = constraint_failures(pkg)
+        lines.append(f"  constraints: {n} enforced, {len(cfails)} failing")
+        fails += cfails
+    else:
+        lines.append("  constraints: no docs/constraints.md")
     if all_built and status == "planned":
         lines[0] = lines[0].replace("planned", "built, not finalized")
     return lines, fails

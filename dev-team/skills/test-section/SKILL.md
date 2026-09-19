@@ -40,6 +40,7 @@ row, that is `$pkg`; with more, return a blocker asking for the qualified name. 
 | Design | `docs/plans/$plan/$pkg/$name.md` if a slug is set, else `docs/packages/$pkg/design/$name.md` | Blocker. There is no spec to test against. |
 | Integration | `docs/plans/$plan/integration.md` if a slug is set, else `docs/packages/$pkg/integration.md` | Proceed on the design alone; say so. |
 | Decisions | `docs/decisions.md` | No decisions to assert. |
+| Constraints | `docs/constraints.md` — its **Enforced** coverage row | No coverage floor to size the suite against. |
 | Follow-ups | `docs/followups.md` | Created on your first append (reconcile mode). |
 | Dependency READMEs | the README of each section in the package contract's `Depends on` for `$name` | Proceed with fakes built from the package contract; say which consumed signatures are plan-time. |
 | Upstream interfaces | `docs/packages/<dep>/interface.md` for each package `$pkg` depends on | As above, from that package's `contract.md`. |

@@ -71,6 +71,15 @@ forbid:
     files: ['agents/tester.md']
     unless: ['never `tests/unit/`']
 
+  - name: the vendored constraints method never leaks its upstream file name
+    # The file is docs/constraints.md here; upstream writes CONSTRAINTS.md at the repo root. A
+    # reader told to open the upstream name opens nothing. `files:` keeps site/notes/ (the 0.5
+    # design set, which discusses the rename) out of scope; the one exemption is the vendored
+    # reference's Provenance line stating the rename.
+    pattern: 'CONSTRAINTS\.md'
+    files: ['agents/*.md', 'skills/**/*.md', 'README.md']
+    unless: ['upstream writes `CONSTRAINTS.md`']
+
 # Every heading a reader parses is one the owner's template defines.
 headings:
   - name: interface.md headings its readers parse are ones the implementer writes
@@ -201,6 +210,24 @@ headings:
         cites: ['As shipped']
       - file: agents/implementer.md
         cites: ['As shipped']
+
+  - name: docs/constraints.md headings its readers run are ones the template defines
+    # set-constraints writes the file from its template; four readers act on it by heading —
+    # the reviewer runs Floor and Enforced, greps for Guarded and honours Exceptions; the
+    # implementer, status.py and CI run Floor and Enforced. A renamed heading turns each into
+    # a check that silently runs nothing. The template's numbered list under the fenced block
+    # is what the owner parser reads.
+    owner: skills/set-constraints/references/constraints-template.md
+    owner_span: ['## Floor', null]
+    readers:
+      - file: agents/reviewer.md
+        cites: ['Floor', 'Enforced', 'Guarded', 'Exceptions']
+      - file: agents/implementer.md
+        cites: ['Floor', 'Enforced']
+      - file: skills/status/SKILL.md
+        cites: ['Floor', 'Enforced']
+      - file: skills/workspace-scaffold/SKILL.md
+        cites: ['Floor', 'Enforced']
 
 # A list of names that goes stale when the directory it describes changes.
 names_listed:

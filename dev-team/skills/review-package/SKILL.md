@@ -39,6 +39,7 @@ planned against `interface.md`.
 | Section READMEs | at each section's path from the Sections table |
 | Section reviews | `docs/reviews/<date>-<pkg>-<section>.md` for this package — which sections were ever reviewed |
 | Decisions | `docs/decisions.md` — entries scoped `$pkg`, `repo`, or any `$pkg/<section>` |
+| Constraints | `docs/constraints.md` — axis 0, over the surface code |
 | Follow-ups | `docs/followups.md` — entries addressed to `$pkg/*` |
 | Code | `packages/$pkg/src/$pkg/__init__.py`, `…/pipelines/`, `…/cli.py`, `packages/$pkg/pyproject.toml`, `docs/api/$pkg.md`, `mkdocs.yml`, the root `pyproject.toml` |
 | **Write your report to** | `docs/reviews/<today's date, YYYY-MM-DD>-<pkg>-package.md`, with `$pkg` in place of `<pkg>` |
