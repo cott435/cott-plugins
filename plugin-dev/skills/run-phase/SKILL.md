@@ -42,7 +42,14 @@ overview carries what they concluded, and a later phase's note is not this chat'
 Follow the note's **Steps** in order. Whatever the note says, these always apply:
 
 - **Only this phase's edits.** A thing that would be nice to fix but is not in the note is
-  a line under this phase's Notes cell in the ledger (*noticed: …*), not an edit.
+  a line under this phase's Notes cell in the ledger (*noticed: …*), not an edit. One
+  exception: the eval sets this phase's own `run-evals` run reads. When its graders'
+  critique of the expectations names one as trivially satisfied, vacuous, or checking an
+  outcome the outputs cannot show, correcting it in `evals/sets/<target>.json` is part of
+  this phase — `run-evals`' own step 7 requires it, and a set nobody is allowed to fix is a
+  set that rots. Correct the expectation, say so in the eval log, and rerun only if the
+  rewrite changes a verdict. This covers the expectations, not the target's behavior: a
+  change to what the phase *builds* is still out of scope.
 - **The plugin's own rules.** Its `CLAUDE.md` — a three-file rule, a naming list, a site
   order file — applies to every file the phase adds or removes, in the same commit.
 - **Checks before evals.** If the plugin has `contracts.yml`, `check-contracts` passes. If
@@ -57,8 +64,9 @@ Follow the note's **Steps** in order. Whatever the note says, these always apply
 - **Stop for review.** When any row is behavioral, stop once the viewer is open (or the
   results table is in chat, if skill-creator is missing) and wait for the user. Read
   `feedback.json` before continuing. Nothing is committed before the user has replied.
-  Feedback asking for a change within the note's Files is part of this phase; anything
-  else is a *noticed:* line in the ledger.
+  Feedback asking for a change within the note's Files — or within the eval sets this
+  phase ran, per the exception above — is part of this phase; anything else is a
+  *noticed:* line in the ledger.
 - **One fix, then a Deviation.** A missed pass bar: one fix inside the note's Files, rerun
   that target's rows as the next iteration, review again. Still missed: append the outcome
   — the bar, the result, what was tried — to `## Deviations` and ask whether to commit.

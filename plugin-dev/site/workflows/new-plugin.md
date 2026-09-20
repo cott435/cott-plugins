@@ -16,7 +16,9 @@ From the repo root:
 3. `build-site`, then `check-contracts` once the plugin has a `contracts.yml` (the first
    claim is usually "the README names every skill").
 4. An eval for anything behavioral — does the description trigger, does the skill do what
-   it says on a real case — logged with `log-eval` before you report on it.
+   it says on a real case. `run-evals` runs both kinds from `evals/sets/<skill>.json` and
+   `evals/sets/<skill>.trigger.json`, and logs the result with `log-eval` before you report
+   on it.
 5. Commit. `bump-version` proposes tagging `0.1.0`; it tags and pushes on your yes.
 
 ## Larger: phases
@@ -50,15 +52,19 @@ must say, what each job costs on a first and a warm run, the decisions, the phas
 the non-goals — gives you the link in chat, and waits. You approve, ask for changes (it
 re-shows the whole proposal), and accept or reject each suggestion. Nothing exists before
 that yes. Then it invokes `new-plugin` for the scaffold, creates the branch `<name>-0.1`,
-writes `site/notes/0.1-00-overview.md`, one note per phase, and `0.1-progress.md`, and
-commits all of it as phase 0. It prints the line the next chat starts with.
+writes `site/notes/0.1-00-overview.md`, one note per phase, and `0.1-progress.md` — each
+note carrying its own **Evals** table, and every behavioral eval's prompts and expectations
+written into `evals/sets/<target>.json` — and commits all of it as phase 0. It prints the
+line the next chat starts with.
 
 **Chats 1…N — `run-phase 0.1`.** Each reads three files — the overview, the ledger, the
 next note — and does that phase only. Phase 1 is deliberately the smallest thing that is a
 working plugin: one agent or one skill, a README that describes only what exists, the
 plugin's `CLAUDE.md`, and a `contracts.yml` with its first claim. Every later phase adds to
-a bundle that already registers (`/reload-plugins`, `/agents`) and builds. A phase ends with
-its evals logged, one commit, and the ledger row filled; the chat stops there.
+a bundle that already registers (`/reload-plugins`, `/agents`) and builds — that load check
+is one of the phase's evals, not an afterthought. A phase ends with its evals run through
+`run-evals` from the sets phase 0 wrote and logged, one commit, and the ledger row filled;
+the chat stops there.
 
 **The last phase** runs the plugin end to end on its fixture, writes the docs
 (`README.md`, `site/flow.md`, `site/workflows/`, the CHANGELOG), and proposes the first
@@ -70,7 +76,7 @@ tag. `bump-version` tags `0.1.0` — the version the scaffold already carries �
 <name>/
 ├── .claude-plugin/plugin.json      0.1.0
 ├── CLAUDE.md · README.md · VERSIONING.md · CHANGELOG.md · .gitignore   from templates/
-├── evals/README.md
+├── evals/README.md · evals/sets/<target>.json   the phases' behavioral evals
 └── site/
     ├── site.yml
     └── notes/

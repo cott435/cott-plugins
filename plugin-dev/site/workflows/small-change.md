@@ -13,10 +13,14 @@ for when this one would not fit.
 3. **`build-site`.** The nav is generated from the bundle, so a renamed or added file
    appears without config; a broken page is a broken prompt.
 4. **An eval, if the edit changes what an agent does.** A reworded instruction, a new
-   trigger, a changed return shape: `log-eval` writes the dated file under `evals/` and the
-   index row *before* the result is reported in chat, with the commit field reading
-   *uncommitted — see working-tree diff*. A pure typo fix needs none; a changed rule always
-   does, and a clean pass is logged like a failure.
+   trigger, a changed return shape: `run-evals` on that target's committed set,
+   `evals/sets/<target>.json`. Add the case the edit is about to the set first — the set is
+   what the *next* change reruns, so a test that lives only in this chat is a test nobody
+   inherits — then run the set against the pre-edit baseline, look at the outputs when it
+   stops for review, and let it hand the result to `log-eval`, which writes the dated file
+   under `evals/` and the index row *before* the result is reported in chat, with the commit
+   field reading *uncommitted — see working-tree diff*. A pure typo fix needs none; a changed
+   rule always does, and a clean pass is logged like a failure.
 5. **Commit**, staging by explicit path.
 6. **Bump?** `bump-version` decides the level from what changed and says so in chat. It
    edits, tags and pushes only on a yes; a "looks fine" is not a yes.

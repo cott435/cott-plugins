@@ -54,29 +54,36 @@ here say which skills run, in what order, and which of them wait for you.
 `/plugin-dev:plan-phases --new <name>`: it reads the closest existing plugin for
 conventions, interviews you in rounds about what the plugin is for, composes the jobs into
 shared layers, publishes the proposal as a page with a rendered flow chart of every agent and
-command (its suggested additions marked), and waits for your yes. Only then
-does it invoke `new-plugin` for the scaffold and marketplace row and write the design set — phase 1 is the smallest bundle that loads, every later phase
-adds to it. Then one chat per phase: `/plugin-dev:run-phase 0.1` from `<name>/`. The last
-phase proposes tagging `0.1.0`; `bump-version` does it on your yes. A plugin that will
-only ever be one or two skills skips the phases: `new-plugin`, write them, `build-site`,
-`check-contracts`, propose the tag.
+command (its suggested additions marked), and waits for your yes. Only then does it invoke
+`new-plugin` for the scaffold and marketplace row and write the design set — phase 1 is the
+smallest bundle that loads, every later phase adds to it, and every phase's evals go into
+`evals/sets/` in the same phase-0 commit. Then one chat per phase:
+`/plugin-dev:run-phase 0.1` from `<name>/`, each running that phase's evals through
+`run-evals` against those sets. The last phase proposes tagging `0.1.0`; `bump-version` does
+it on your yes. A plugin that will only ever be one or two skills skips the phases:
+`new-plugin`, write them, `build-site`, `check-contracts`, `run-evals` on whatever is
+behavioral, propose the tag.
 
 **[A small change](site/workflows/small-change.md).** One agent or skill, one chat. Edit;
 the plugin's own rules (`CLAUDE.md`); `check-contracts`; `build-site`; if the edit changes
-what an agent *does*, an eval logged with `log-eval` — before results are reported; one
-commit. If it looks bump-worthy, `bump-version` says so and waits.
+what an agent *does*, `run-evals` on the target's set in `evals/sets/` — the new case added
+to the set first — logged with `log-eval` before results are reported; one commit. If it
+looks bump-worthy, `bump-version` says so and waits.
 
 **[A large change, in phases](site/workflows/phased-change.md).** Inside the plugin,
 `/plugin-dev:plan-phases <slug>`: it researches what the change touches, interviews you in
 rounds, publishes the proposal as a page with the changed flow chart rendered (new, changed
-and suggested components marked) and waits for your yes; then it writes the branch, the overview, one note per phase and the
-ledger, and commits phase 0. Then one fresh chat per phase, each opened with nothing but
-`/plugin-dev:run-phase <slug>`, until the ledger's last row is `done` and the last phase
-has proposed the bump.
+and suggested components marked) and waits for your yes; then it writes the branch, the
+overview, one note per phase and the ledger, and commits phase 0 — with every behavioral
+eval's prompts and expectations written into `evals/sets/`. Then one fresh chat per phase,
+each opened with nothing but `/plugin-dev:run-phase <slug>`, which runs that phase's evals
+through `run-evals` and stops for your review of the viewer before it commits, until the
+ledger's last row is `done` and the last phase has proposed the bump.
 
-What is the same in all three: every eval is a file before it is a sentence in chat; the
-site is rebuilt after every agent or skill edit; contracts are checked before every commit
-that touches one; and nothing is bumped, tagged or pushed without a yes.
+What is the same in all three: every eval is a file before it is a sentence in chat; evals
+run through `run-evals` from committed sets in `evals/sets/`; the site is rebuilt after
+every agent or skill edit; contracts are checked before every commit that touches one; and
+nothing is bumped, tagged or pushed without a yes.
 
 ## Install
 

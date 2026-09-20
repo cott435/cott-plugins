@@ -11,7 +11,7 @@ no `model:` field to set — see that file for why.
 
 ## This plugin in particular
 
-It defines the protocol every other plugin in this repo follows, so two things need extra
+It defines the protocol every other plugin in this repo follows, so a few things need extra
 care when editing it:
 
 - **Skill descriptions.** These skills are installed on every machine and are live in every
@@ -27,6 +27,10 @@ care when editing it:
 - **`scripts/build_site.py` is shared.** A change to it changes every plugin's site at once.
   Before committing one, rebuild at least `dev-team` and diff the output — its site is
   the reference the builder was verified against.
+- **`run-evals` is shared.** Its `references/eval-kinds.md` is the one list of eval kinds;
+  `plan-phases` writes notes against it and `run-phase` runs them through it. A kind added
+  or renamed there is a change to all three, and `check-contracts`' eval-kinds claim fails
+  until they agree. Eval sets under `evals/sets/` are committed; `evals/workspace/` never is.
 - **`scripts/contract_sweep.py` is shared too**, and a checker that cannot fail is worse than
   none. A change to it gets both runs before it is committed: the real bundle, which must
   still pass, and a copy with a deliberate defect per check kind, which must still fail —

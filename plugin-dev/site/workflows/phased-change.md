@@ -12,12 +12,15 @@ flowchart TD
   A -->|changes| A
   A -->|your yes| Z["phase 0 commit on branch plugin-slug:<br/>site/notes/slug-00-overview.md · slug-NN-*.md · slug-progress.md"]
   Z --> R["/plugin-dev:run-phase slug<br/>(fresh chat; reads overview → ledger → one note)"]
-  R --> E["edits · plugin's own rules · check-contracts · build-site<br/>evals logged · one commit · ledger row · stop"]
-  E -->|next chat| R
-  E -->|last phase| B["end-to-end eval · README · flow.md · workflows/ · CHANGELOG<br/>bump proposed in chat"]
+  R --> E["edits · plugin's own rules · check-contracts · build-site"]
+  E --> X["run-evals on the note's Evals table<br/>(sets in evals/sets/, graded against the baseline)"]
+  X --> Y["your review of the viewer"]
+  Y --> C["logged with log-eval · one commit · ledger row · stop"]
+  C -->|next chat| R
+  C -->|last phase| B["end-to-end rerun of every set · README · flow.md · workflows/ · CHANGELOG<br/>bump proposed in chat"]
   B --> V["bump-version, on your yes"]
   classDef stop stroke:#8a2f4a,stroke-width:2px;
-  class A,B stop;
+  class A,B,Y stop;
 ```
 
 ## Chat 0 — `plan-phases <slug>`
@@ -49,8 +52,13 @@ has an eval. The last phase is always the end-to-end eval, the docs and the bump
 Each chat opens with that line and nothing else. The skill confirms the branch and a clean
 tree, reads the overview, the ledger and the first note whose row is not `done`, and does
 exactly that note: its edits, the plugin's own rules for added or removed files,
-`check-contracts`, `build-site`, the phase's evals logged with `log-eval` before any result
-is reported, then one commit and the ledger row, then it stops.
+`check-contracts`, `build-site`, then the note's **Evals** table — one row per eval, each
+naming its kind, its target, the baseline to compare against, which evals of that target's
+set in `evals/sets/` it runs, and the pass bar. Each row goes through `run-evals`, which
+runs the target's set against the baseline, grades every expectation, and **stops** on a
+behavioral row until you have looked at the viewer; a missed bar is fixed and rerun once,
+and a bar still missed becomes a Deviation rather than a quiet pass. `log-eval` writes each
+run up before any result is reported. Then one commit and the ledger row, then it stops.
 
 What the ledger row carries forward is everything the next chat cannot get from its own
 note: a platform fact the eval resolved, a heading that turned out to be named differently,

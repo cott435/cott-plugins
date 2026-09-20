@@ -6,6 +6,79 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [Unreleased]
+
+Evals become a thing the kit does, rather than a thing each chat improvises. `run-evals` is
+the loop; every skill and agent gets a committed set that outlives the plan that created it;
+`plan-phases` specifies each phase's evals against it and `run-phase` runs them and stops for
+your review. Planned and built with `plan-phases`/`run-phase` themselves — the design set is
+`site/notes/0.9-evals-*.md`, one commit per phase, each with its evals beside it.
+
+### Added
+- **`run-evals`, an automatic skill: the eval loop** (5fdfdd9). One target, one committed set,
+  one iteration. Mechanical checks, then a load check, then behavioral runs — the working tree
+  and a baseline in parallel, each writing `outputs/` and a `transcript.md`, one grader per run
+  quoting evidence per assertion, a benchmark and the viewer. The grader, benchmark, viewer and
+  trigger scripts are skill-creator's, found where they are installed, with an inline fallback
+  that says so in the log when they are not. `references/eval-kinds.md` is the one list of the
+  five kinds (`mechanical`, `load`, `behavioral`, `trigger`, `platform-fact`);
+  `scripts/eval_workspace.py` lays out the workspace skill-creator's scripts expect. Evals:
+  `evals/2026-09-19-run-evals-platform-facts.md`,
+  `evals/2026-09-19-run-evals-first-loop.md`.
+- **Committed eval sets, one per target** (5fdfdd9, c76777a). `evals/sets/<target>.json` holds
+  each eval's prompt, expectations, baseline and scripted-answer sheet, with `added_in` naming
+  the change that added it, so the next change to that target reruns it as regression.
+  `eval_workspace.py validate` enforces the shape.
+- **Trigger evals and a guarded description optimizer** (29b317b). For a skill the model
+  invokes itself, `evals/sets/<target>.trigger.json` measures how often its description is
+  picked for queries that should invoke it and left alone for near-misses. `run_loop` may
+  rewrite a description below 0.9, and its best is applied only under a guard: the held-out
+  score must beat the current one, every outside-a-plugin query must still not trigger, and the
+  description's scoping clause must survive. Evals:
+  `evals/2026-09-19-trigger-sets-validate.md`,
+  `evals/2026-09-19-trigger-rates-automatic-skills.md`.
+- **Blind comparison for a changed target** (2f256ed). When both configurations pass everything
+  the pass rates stop separating them, so `eval_workspace.py blind` stages each eval's two
+  output directories as `A` and `B` in a random order, keeps the key out of every prompt, and
+  asks skill-creator's comparator which is better. A loss is reported as a loss. Eval:
+  `evals/2026-09-20-blind-comparison.md`.
+- **`dev-team` gets eval sets** (71cd13e). `dev-team/evals/sets/{implementer,researcher,documenter}.json`,
+  seeded from its own eval logs, so its next change has regression tests to rerun. Eval:
+  `dev-team/evals/2026-09-20-implementer-security-review-sets.md`.
+
+### Changed
+- **`plan-phases` specifies each phase's evals** (f688731). Every phase note gains an `## Evals`
+  table — ID, kind, target, baseline, which evals of the target's set, and the pass bar — and
+  the phase-0 commit writes those evals into `evals/sets/`, so a phase arrives with its tests
+  rather than inventing them. `references/example-phase.md` is the worked note; the phase
+  template follows. Eval: `evals/2026-09-19-plan-phases-evals-table.md`.
+- **`run-phase` runs the evals and stops for review** (a0a381f). At the note's Evals step it
+  invokes `run-evals` once per target, fixes and reruns once if a bar is missed, records a
+  Deviation if it is still missed, and does not commit until you have looked at the outputs.
+  `log-eval` entries gain `**Set:**`, `**Iteration:**`, `**Baseline:**`, `**Pass rate:**` and
+  `**Trigger rate:**`. Eval: `evals/2026-09-19-run-phase-evals-and-review-gate.md`.
+
+### Verified
+- **Both sets rerun end to end against `plugin-dev-v0.8.0`** on the finished branch:
+  `plan-phases` 98.5% vs the baseline's 73.5%, `run-phase` 100% vs 85.5%. The difference is
+  carried by the two evals this change added — `plan-phases` eval 4 (7/7 vs 0/7) and
+  `run-phase` eval 1 (7/7 vs 5/7); the rest is regression cover 0.8.0 also passes. Trigger
+  rates on the five automatic skills: 1.00 · 1.00 · 0.90 · 1.00 · 0.95, no description
+  changed. Evals: `evals/2026-09-20-end-to-end-0.9.0.md`,
+  `evals/2026-09-20-release-checks-0.9.0.md`, `evals/2026-09-20-trigger-rates-rerun.md`.
+- **`run-phase` gained one clause the end-to-end run forced.** `run-evals` step 7 requires a
+  weak expectation to be corrected in its set "in this change"; `run-phase`'s "only this
+  phase's edits" forbade it. The eval sets a phase's own `run-evals` run reads are now
+  explicitly in scope for expectation corrections — the target's behavior still is not.
+
+### Breaking
+1. `run-phase` now stops before committing when the phase ran a behavioral eval, until the
+   user has reviewed the viewer. Mechanical-only phases commit as before.
+2. `run-evals`' trigger optimizer may rewrite the `description:` of a skill the model invokes
+   itself; each rewrite is logged with the trigger rate before and after.
+3. Plugins get a gitignored `evals/workspace/`; new plugins get it from the template.
+4. `templates/phases/phase.md` gains a `## Evals` section; notes written before 0.9 still run.
+
 ## [0.8.0] - 2026-09-19
 
 ### Changed
