@@ -219,6 +219,58 @@ description. Apply its best only under the guard, editing `description:` and not
 **Record.** The rate before, the rate after, and the applied description — before and after
 text — or the reason none was applied go to `log-eval` as `**Trigger rate:**`.
 
+## Blind comparison
+
+Assertions answer "did it do the things"; they do not answer "is the new one better". When
+both configurations pass everything, the pass rates are the same number and the change the
+target just made is invisible to its own set. Blind comparison asks skill-creator's
+comparator which output is better, without telling it which side is the working tree.
+
+**When.** For a changed target (an `old_skill` baseline), after grading: automatically when
+every expectation passed in both configurations, or when the two pass rates are within 10
+points; otherwise only when the phase note's Evals row says `blind`. A `without_skill`
+baseline does not need it — the assertions already separate the two.
+
+**It reuses the iteration.** No new executor runs; the cost is one comparator per eval, over
+the outputs `run-1` already produced.
+
+```
+python3 S blind <iteration-dir>
+```
+
+That stages each eval's two output directories as `eval-*/blind/A` and `eval-*/blind/B` in a
+random order, writes which is which to `eval-*/blind/key.json`, and prints one entry per eval
+with `eval`, `a_dir`, `b_dir`, `prompt`, `expected_output` and `expectations`. The key is in
+neither what it prints nor any prompt below.
+
+One comparator per eval, all in one message, each a general-purpose subagent:
+
+> Read `<skill-creator>/agents/comparator.md` and follow it. output_a_path: `<a_dir>`.
+> output_b_path: `<b_dir>`. eval_prompt: `<prompt>`. expectations: `<the eval's expectations
+> as a JSON list>`. The output the task should have produced, for context:
+> `<expected_output>`. Write your comparison to `<eval dir>/blind/comparison.json` in the
+> shape that file defines. Read nothing else under the iteration directory — A and B are all
+> you are given.
+
+Read `comparator.md` first: it owns its input names and the shape of `comparison.json`, and
+if the file has moved on from this prompt, follow the file and record the difference as a
+Deviation.
+
+Then un-blind. Each `comparison.json` has a `winner` of `A`, `B` or `TIE`; `key.json` says
+which configuration wore that label. Append the result to `<iteration>/benchmark.md`:
+
+```markdown
+## Blind comparison
+
+| Eval | Winner | Configuration | Score A / B | Why |
+|---|---|---|---|---|
+```
+
+— one row per eval, then the tally: how many of how many the working tree's version won, a
+tie counting for neither. That tally is `**Blind:** new preferred k/n` in the log-eval entry.
+A loss is reported as a loss: a comparator that prefers the baseline on a changed target is
+the finding, not a number to bury.
+
 ## When skill-creator is missing
 
 `python3 S locate-skill-creator` exits 1, and the manifest's `skill_creator` is null. Then:
@@ -230,6 +282,8 @@ text — or the reason none was applied go to `log-eval` as `**Trigger rate:**`.
   configuration.
 - There is no viewer: the per-expectation table and the output paths go in chat for review,
   and the stop is the same.
+- There is no blind comparison: it is `comparator.md` that defines the rubric and the
+  verdict shape, and a comparator improvising both is not the same instrument twice.
 
 The log says "graded inline — skill-creator not found".
 

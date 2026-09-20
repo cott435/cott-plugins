@@ -29,7 +29,7 @@ On 2026-09-19 (0.9-evals E0.1) this machine had 3 and 5, not 2.
 | File | Used for |
 |---|---|
 | `agents/grader.md` | the grader's instructions, given to a general-purpose subagent per run |
-| `agents/comparator.md` | the blind comparator (phase 5 of 0.9-evals) |
+| `agents/comparator.md` | the blind comparator — which of two outputs is better, without being told which is the working tree's |
 | `scripts/aggregate_benchmark.py` | `benchmark.json` and `benchmark.md` for an iteration — run as `python3 -m scripts.aggregate_benchmark` from the skill-creator directory |
 | `eval-viewer/generate_review.py` | the review page, served or `--static`, always through `eval_workspace.py review` |
 | `scripts/run_eval.py`, `scripts/run_loop.py` | trigger evals and the description optimizer — see below |
@@ -78,6 +78,12 @@ evals** has the commands.
 - `generate_review.py --static <file>` writes one standalone HTML file and exits; without
   it, it serves on port 3117 (killing whatever holds it) and writes `feedback.json` into
   the workspace when the reviewer submits.
+- `agents/comparator.md` names its inputs `output_a_path`, `output_b_path`, `eval_prompt`
+  and `expectations` (the last optional), and writes `comparison.json` with `winner`
+  (`"A"`, `"B"` or `"TIE"`), `reasoning`, `rubric` and `output_quality` per side, plus
+  `expectation_results` when expectations were given. It generates its own rubric from the
+  task, so it needs the prompt, not just the two directories. `SKILL.md` **Blind
+  comparison** has the prompt; `eval_workspace.py blind` stages the two directories.
 - `run_eval.py` writes a temporary command into `<project>/.claude/commands/`, where
   `<project>` is the nearest ancestor of the working directory that has a `.claude/`. From
   a repo with none, that is `~` — it writes into the user's own commands. See **Trigger

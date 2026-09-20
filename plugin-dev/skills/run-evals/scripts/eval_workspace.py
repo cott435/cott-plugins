@@ -6,6 +6,7 @@
     eval_workspace.py timing <run-dir> --tokens N --duration-ms N
     eval_workspace.py finalize <iteration-dir>
     eval_workspace.py review <iteration-dir> [generate_review.py args...]
+    eval_workspace.py blind <iteration-dir>
     eval_workspace.py locate-skill-creator
 
 `init` lays out evals/workspace/<target>/iteration-N/ the way skill-creator's
@@ -17,6 +18,8 @@ import argparse
 import glob
 import json
 import os
+import random
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -353,6 +356,64 @@ def cmd_review(args):
     return 0
 
 
+# ---------------------------------------------------------------- blind
+
+def cmd_blind(args):
+    """Stage each eval's two configurations as A and B in a random order.
+
+    The comparator is told nothing but the two directories, so which one is the working
+    tree's lives only in `blind/key.json` — written here, read after the verdicts, and never
+    part of what this prints.
+    """
+    it = Path(args.iteration).resolve()
+    if not it.is_dir():
+        print(f"no iteration at {it}", file=sys.stderr)
+        return 1
+    # expected_output lives in the set, not in the iteration's eval_metadata.json.
+    expected, root = {}, plugin_root(it)
+    if root:
+        set_path = root / "evals" / "sets" / f"{it.parent.name}.json"
+        if set_path.is_file():
+            try:
+                expected = {e.get("id"): e.get("expected_output", "")
+                            for e in json.loads(set_path.read_text()).get("evals", [])}
+            except (OSError, json.JSONDecodeError):
+                pass
+
+    pairs, skipped = [], []
+    for edir in sorted(it.glob("eval-*")):
+        outs = {d.name: d / "run-1" / "outputs" for d in sorted(edir.iterdir())
+                if d.is_dir() and d.name != "blind" and (d / "run-1" / "outputs").is_dir()}
+        base = next((c for c in outs if c != "with_skill"), None)
+        if "with_skill" not in outs or base is None:
+            skipped.append(f"{edir.name}: needs with_skill and a baseline with run-1/outputs")
+            continue
+        meta = {}
+        if (edir / "eval_metadata.json").is_file():
+            meta = json.loads((edir / "eval_metadata.json").read_text())
+        blind_dir = edir / "blind"
+        if blind_dir.exists():
+            shutil.rmtree(blind_dir)
+        order = ["with_skill", base]
+        random.shuffle(order)
+        for label, config in zip(("A", "B"), order):
+            shutil.copytree(outs[config], blind_dir / label)
+        write_json(blind_dir / "key.json", {"A": order[0], "B": order[1]})
+        pairs.append({
+            "eval": edir.name,
+            "a_dir": str(blind_dir / "A"),
+            "b_dir": str(blind_dir / "B"),
+            "prompt": meta.get("prompt", ""),
+            "expected_output": expected.get(meta.get("eval_id"), ""),
+            "expectations": meta.get("assertions", []),
+        })
+
+    for line in skipped:
+        print(line, file=sys.stderr)
+    print(json.dumps(pairs, indent=2))
+    return 0 if pairs else 1
+
+
 # ---------------------------------------------------------------- locate
 
 def locate_skill_creator():
@@ -403,6 +464,9 @@ def main():
     r.add_argument("iteration")
     r.add_argument("rest", nargs=argparse.REMAINDER)
     r.set_defaults(fn=cmd_review)
+    b = sub.add_parser("blind")
+    b.add_argument("iteration")
+    b.set_defaults(fn=cmd_blind)
     loc = sub.add_parser("locate-skill-creator")
     loc.set_defaults(fn=cmd_locate)
     args = ap.parse_args()

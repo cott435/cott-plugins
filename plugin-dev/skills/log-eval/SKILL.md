@@ -57,7 +57,7 @@ at the bottom of `evals/README.md`. Both, in the same commit.
 # <subject>
 
 **Tested against:** `<sha>` (`<path>`) · model: `<model that ran it>` · <date>
-**Set:** `evals/sets/<target>.json` evals <ids> · **Iteration:** `evals/workspace/<target>/iteration-<N>` · **Baseline:** <none | ref> · **Pass rate:** <with>% vs <baseline>% · **Trigger rate:** <before → after, trigger evals only>
+**Set:** `evals/sets/<target>.json` evals <ids> · **Iteration:** `evals/workspace/<target>/iteration-<N>` · **Baseline:** <none | ref> · **Pass rate:** <with>% vs <baseline>% · **Trigger rate:** <before → after, trigger evals only> · **Blind:** <new preferred k/n, blind comparison only>
 
 ## What was tested
 
