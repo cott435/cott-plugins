@@ -12,7 +12,7 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
-## [Unreleased]
+## [0.5.0] - 2026-09-20
 
 Verification becomes a column beside every layer, not a floor under the last one: a tester
 writes tests from the design, the plan is reviewed before any code exists, the reviewer carries
@@ -65,6 +65,13 @@ package end to end. Design set: `site/notes/overhaul-0.5-*.md`.
   `--import-mode=importlib`, without which a two-package repo fails collection at the root;
   and the architect spawns `dev-team:designer` / `dev-team:researcher` by name, a bare name
   having silently forked a general-purpose agent.
+
+### Fixed
+- The four defects the end-to-end eval found, each re-checked on the repo it built
+  (`39f29d3`): plan freshness after `sync-design`, a standing CRITICAL passing as `approve
+  with fixes`, root `pytest` colliding on two packages' `tests` trees, and the architect
+  spawning a bare `designer`. Evals `2026-09-19-k-end-to-end.md`,
+  `2026-09-19-l-fixed-cost-per-section.md`, `2026-09-20-m-k-defect-fixes.md`.
 
 
 ## [0.4.0] - 2026-09-18
