@@ -1,0 +1,22 @@
+{
+  "target": "farewell",
+  "target_path": "skills/farewell/SKILL.md",
+  "evals": [
+    {
+      "id": 1,
+      "name": "goodbye-ada",
+      "kind": "behavioral",
+      "baseline": "none",
+      "harness": null,
+      "prompt": "Say goodbye to Ada",
+      "expected_output": "outputs/farewell.txt holds the single line 'Goodbye, Ada.'",
+      "files": [],
+      "expectations": [
+        "outputs/farewell.txt exists",
+        "outputs/farewell.txt contains 'Ada'",
+        "outputs/farewell.txt is exactly one line"
+      ],
+      "added_in": "0.2 phase 0"
+    }
+  ]
+}

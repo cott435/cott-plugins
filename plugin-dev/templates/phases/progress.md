@@ -18,7 +18,8 @@ Status values: `todo` · `in progress` (uncommitted paths listed under Notes) ·
 - Run every phase in Claude Code from the repo root with the plugin loaded from its working
   copy (`claude --plugin-dir ./<plugin>`) and `plugin-dev` installed.
 - Every phase: edits → the plugin's own rules → `check-contracts` → `build-site` → the
-  phase's evals logged with `log-eval` → one commit `<plugin> <slug> (phase N): …` → this
+  phase's `## Evals` table run with `run-evals` (stopping for review when a row is
+  behavioral) and logged with `log-eval` → one commit `<plugin> <slug> (phase N): …` → this
   file, in that commit.
 - Deviations from a note go under a `## Deviations` heading at the end of that note, in the
   same commit.

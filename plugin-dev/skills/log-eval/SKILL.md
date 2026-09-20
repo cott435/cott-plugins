@@ -11,8 +11,8 @@ the same agent silently invalidates a "confirmed" result with nothing to flag it
 
 This covers ad hoc tests against a plugin's own skills and agents: does an agent actually
 invoke a skill when it should, does a patched instruction change behavior, does a description
-trigger correctly. It is not the automated skill-creator benchmark loop, which produces its
-own workspace under a skill's `<skill-name>-workspace/`.
+trigger correctly. Runs from `run-evals` are recorded here like any other; their workspace
+stays in the gitignored `evals/workspace/`, and the entry is what is committed.
 
 ## When
 
@@ -39,6 +39,10 @@ at the bottom of `evals/README.md`. Both, in the same commit.
   the frontmatter says: `inherit` resolves to something specific at run time, and that
   specific thing is what the result is about. If the change under test isn't committed yet,
   write "uncommitted — see working-tree diff" rather than leaving it implied.
+- **Linked to its set** — for runs from `run-evals`: the set file and eval IDs, the
+  iteration directory, the baseline (`none` or the ref), and the pass rate of each
+  configuration; for trigger evals the rate before and after. A record that cannot be traced
+  to a set cannot be rerun.
 - **What was tested** — the specific behavioral claim, in one or two sentences.
 - **Method** — how the test was actually run: real runs vs. a proxy, sample size, what was
   held constant, what varied, real API cost incurred if any.
@@ -53,6 +57,7 @@ at the bottom of `evals/README.md`. Both, in the same commit.
 # <subject>
 
 **Tested against:** `<sha>` (`<path>`) · model: `<model that ran it>` · <date>
+**Set:** `evals/sets/<target>.json` evals <ids> · **Iteration:** `evals/workspace/<target>/iteration-<N>` · **Baseline:** <none | ref> · **Pass rate:** <with>% vs <baseline>% · **Trigger rate:** <before → after, trigger evals only>
 
 ## What was tested
 

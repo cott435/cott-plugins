@@ -48,10 +48,22 @@ Follow the note's **Steps** in order. Whatever the note says, these always apply
 - **Checks before evals.** If the plugin has `contracts.yml`, `check-contracts` passes. If
   it has `site/`, `build-site` runs. Both before the evals, so a failed contract is fixed in
   the file rather than discovered by an eval.
-- **Evals, logged first.** Every eval the note names is run and recorded with `log-eval` —
-  the entry written before results are reported here, a clean pass exactly like a failure —
-  with the commit field reading *uncommitted — see working-tree diff*, since the phase's
-  commit comes after.
+- **Evals, through `run-evals`.** For each target in the note's `## Evals` table, invoke
+  `run-evals` with that target's rows — the set file, the eval IDs, the baseline — in the
+  table's order (platform facts and mechanical rows first). Every result is logged with
+  `log-eval` before it is reported here, a clean pass exactly like a failure, with the
+  commit field reading *uncommitted — see working-tree diff*, since the phase's commit
+  comes after.
+- **Stop for review.** When any row is behavioral, stop once the viewer is open (or the
+  results table is in chat, if skill-creator is missing) and wait for the user. Read
+  `feedback.json` before continuing. Nothing is committed before the user has replied.
+  Feedback asking for a change within the note's Files is part of this phase; anything
+  else is a *noticed:* line in the ledger.
+- **One fix, then a Deviation.** A missed pass bar: one fix inside the note's Files, rerun
+  that target's rows as the next iteration, review again. Still missed: append the outcome
+  — the bar, the result, what was tried — to `## Deviations` and ask whether to commit.
+- **Notes written before 0.9** have no `## Evals` section; run the evals their Steps list
+  names, as that list describes, and write "old-format note" in the ledger's Notes cell.
 - **Deviations are written down.** Where the note could not be followed as written — a
   heading did not exist, a platform fact came out differently, a step was wrong — append a
   `## Deviations` section to the note (what the note said, what was done, why) and, if a
@@ -70,9 +82,10 @@ Follow the note's **Steps** in order. Whatever the note says, these always apply
 
 ## Update the ledger
 
-In the same commit as the phase: the row's status `done`, the eval log file names, and a
-Notes cell with anything the next chat must know that its note does not say. The Commit
-cell cannot hold its own SHA, so it holds the message prefix `(phase N)`; the **next** chat,
+In the same commit as the phase: the row's status `done`, the eval log file names — each
+with its iteration directory when it came from `run-evals` (`<log>.md` ·
+`evals/workspace/<target>/iteration-N`) — and a Notes cell with anything the next chat must
+know that its note does not say. The Commit cell cannot hold its own SHA, so it holds the message prefix `(phase N)`; the **next** chat,
 in step 4 of *Find the work*, resolves every `done` row that has a prefix and no SHA with
 `git log --format=%h --grep='(phase N)'` and writes the SHA in its own commit. Phase 0's
 SHA is written the same way by phase 1's chat.
