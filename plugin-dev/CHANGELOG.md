@@ -6,7 +6,7 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
-## [Unreleased]
+## [0.9.0] - 2026-09-20
 
 Evals become a thing the kit does, rather than a thing each chat improvises. `run-evals` is
 the loop; every skill and agent gets a committed set that outlives the plan that created it;
