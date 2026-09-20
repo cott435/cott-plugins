@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "debugging-and-error-recovery",
+  "owner": "addyosmani",
+  "repo": "agent-skills",
+  "path": "skills/debugging-and-error-recovery",
+  "branch": "main",
+  "sha": "c004a74784a08295d52749b04cda634125b9a581",
+  "source": "manual"
+}

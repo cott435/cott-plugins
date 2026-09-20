@@ -4,7 +4,7 @@ description: Implement one section of one package from its design doc, applying 
 argument-hint: "<pkg>/<section> [plan-slug]"
 arguments: [section, plan]
 context: fork
-agent: implementer
+agent: dev-team:implementer
 background: false
 disable-model-invocation: true
 ---
@@ -20,6 +20,12 @@ Plan slug (empty for canonical work): **$plan**
 
 If `$section` reached you unsubstituted — literally the text `$section` — parse the section
 and optional plan slug from `$ARGUMENTS` instead, first token and second token.
+
+**Invoked by run-package.** If your task prompt carries `Section:` and `Plan:` lines instead of
+substituted arguments — `/dev-team:run-package` spawns you that way — use those: the section
+from the first, the plan slug (usually empty) from the second, and the two, space-separated,
+as the argument in your commit trailer. The Guard block above does not fire: you have neither
+earlier turns nor `AskUserQuestion`.
 
 ## Resolve the identity
 
@@ -46,8 +52,10 @@ Read all of these that exist. Absence is meaningful in each case, so note which 
 | Interface (shipped) | `docs/packages/$pkg/interface.md` | Not shipped; the shipped-surface blocking rule does not apply. |
 | Assessment | `docs/plans/$plan/assessment.md` *(only when a slug is set)* | Proceed. |
 | Decisions | `docs/decisions.md` | Every open question is unanswered; your blocking rules apply. |
+| Constraints | `docs/constraints.md` — **Floor** and **Enforced** rows you run at step 8; read-only | The Toolchain's commands are the bar; say so. |
 | Follow-ups | `docs/followups.md` | Nothing queued for you. |
 | Review findings | `docs/reviews/` — the most recent `<date>-<pkg>-<section>.md` for this section | No prior review. |
+| Intent tests | `tests/intent/$name/` under the package root — the tester's; you run it, never edit it | Not written; procedure step 0 has nothing to run. Say so in your return. |
 | Dependency READMEs | the `README.md` at the path of each section in the package contract's `Depends on` for `$name` | **Blocker.** Sections are built in the integration doc's order; name the unbuilt dependency and `/dev-team:implement-section $pkg/<dep>` as the fix. |
 | Upstream interfaces | `docs/packages/<dep>/interface.md` for each package in the repo contract's `Depends on` for `$pkg` | That package is unshipped: if it has code, use its `contract.md` and treat every consumed name as provisional; if it has no code, blocker naming `/dev-team:plan-package <dep>` and its build. |
 | Source probe | `docs/sources/<source>.md` for every entry in this section's `source` column of the package contract's Sections table, plus `<source>.sample.json` for an `api` or `<source>.stats.json` for a `dataset` | Proceed; your step 5 establishes the facts yourself — reads and profiles only, never a write — and your return says so. |
@@ -64,7 +72,8 @@ construction, and `/dev-team:plan-change` deliberately does not fold it back unt
 2. Implement per your procedure — the scaffold step on a first run, the stale `TODO(decision)`
    sweep, and the `Applied:` write-back are the steps nothing else in this system will do for
    you.
-3. Return your summary in your standard format.
+3. Commit per your procedure step 13 — trailer `Dev-Team-Run: implement-section $ARGUMENTS` —
+   then return your summary in your standard format.
 
 Implement only this section. Under `docs/`, you may append to `followups.md` and fill in
 `Applied:` fields in `decisions.md`; everything else under `docs/` is read-only. Never touch

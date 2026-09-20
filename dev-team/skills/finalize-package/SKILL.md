@@ -4,7 +4,7 @@ description: Build a package's public surface once every section has shipped —
 argument-hint: "<pkg>"
 arguments: [pkg]
 context: fork
-agent: implementer
+agent: dev-team:implementer
 background: false
 disable-model-invocation: true
 ---
@@ -18,6 +18,11 @@ Build the public surface of package **$pkg** — **surface mode**.
 > verify with `/agents`, and re-run. Do not build in the main thread.
 
 If `$pkg` reached you unsubstituted, take the first token of `$ARGUMENTS`.
+
+**Invoked by run-package.** If your task prompt carries a `Package:` line instead of a
+substituted argument — `/dev-team:run-package` spawns you that way — use it: the package from
+that line, and the same name as the argument in your commit trailer. The Guard block above
+does not fire: you have neither earlier turns nor `AskUserQuestion`.
 
 ## Why this is a separate step
 
@@ -55,6 +60,7 @@ review-sourced do not block; list them in your return.
 | Integration | `docs/packages/$pkg/integration.md` |
 | Section READMEs | at each section's path; item 3 is what exists |
 | Decisions | `docs/decisions.md` — entries scoped `$pkg` or `repo` |
+| Constraints | `docs/constraints.md` — **Floor** and **Enforced** rows; read-only |
 | Follow-ups | `docs/followups.md` — entries addressed to `$pkg/surface` |
 | Review findings | `docs/reviews/` — the most recent `<date>-<pkg>-package.md` for this package |
 | Existing interface | `docs/packages/$pkg/interface.md` if this is a re-run after changes |
@@ -75,7 +81,8 @@ On a single-package repo the code paths drop the `packages/$pkg/` prefix.
    **Consumers** snapshot.
 5. Tick off the `$pkg/surface` follow-ups you addressed; file follow-ups to sections for any
    name `surface.md` expected that no README provides.
-6. Return your surface-mode summary, ending with the next command: `/dev-team:review-package $pkg`.
+6. Commit per your **Surface mode** Build step 9 — trailer
+   `Dev-Team-Run: finalize-package $ARGUMENTS` — then return your surface-mode summary, ending with the next command: `/dev-team:review-package $pkg`.
 
 ## Constraints
 

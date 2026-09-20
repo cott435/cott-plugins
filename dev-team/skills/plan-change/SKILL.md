@@ -3,7 +3,7 @@ name: plan-change
 description: Plan a change to shipped code in one or more packages. Assesses what the change touches and which downstream packages consume it, seeds canonical docs if missing, scopes the affected sections, runs parallel delta designs, and writes a unified integration doc under docs/plans/. Required for any change to a shipped package's public surface.
 argument-hint: "<change description, or path to a file containing it>"
 context: fork
-agent: architect
+agent: dev-team:architect
 background: false
 disable-model-invocation: true
 ---
@@ -36,7 +36,8 @@ it is empty, look for the most recent `docs/plans/*/assessment.md` whose plan ha
 
    Then read the canonical docs: `docs/architecture.md`, and for every affected package its
    `contract.md`, `design/*.md`, `surface.md`, and `interface.md`; plus `docs/decisions.md`
-   and `docs/followups.md`. If canonical docs are thin, the most recent
+   and `docs/followups.md`. Read each affected section's design including its **As shipped**
+   sections — the latest one is the spec the change departs from. If canonical docs are thin, the most recent
    `docs/plans/*/integration.md` may hold contracts a previous change established.
 
 3. **Downstream impact.** For every affected package that has an `interface.md`, compute its
@@ -149,7 +150,7 @@ it is empty, look for the most recent `docs/plans/*/assessment.md` whose plan ha
    continuing the existing numbering, scoped to the sections they bind. Reference them by
    number in the integration doc.
 
-10. **Return** your standard summary — slug first, the Downstream impact one line per
+10. **Commit** per your **Commit** section — trailer `Dev-Team-Run: plan-change $ARGUMENTS` — then **return** your standard summary — slug first, the Downstream impact one line per
     consumer — ending with the next command:
     `/dev-team:implement-section <first affected section in dependency order> <slug>`
 

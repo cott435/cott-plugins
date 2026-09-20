@@ -34,6 +34,11 @@ analysis = { workspace = true }
 [dependency-groups]
 dev = ["pytest", "pytest-mock", "ruff", "pylint", "import-linter", "mkdocs-material", "mkdocstrings[python]"]
 
+[tool.pytest.ini_options]
+# every package ships its own `tests` tree, so two of them collide on module name
+# (`tests.integration.test_cli`) as soon as a run collects more than one package.
+addopts = "--import-mode=importlib"
+
 # --- merge ${CLAUDE_PLUGIN_ROOT}/pyproject-lint-config.toml here: [tool.ruff*], [tool.pylint*] ---
 
 # --- import-linter: copy the block from docs/architecture.md § Dependency graph ---
@@ -41,8 +46,18 @@ dev = ["pytest", "pytest-mock", "ruff", "pylint", "import-linter", "mkdocs-mater
 root_packages = []          # grown by the scaffold step as packages are first built
 ```
 
+When `docs/constraints.md` exists, the `dev` group also carries what its **Floor** and
+**Enforced** commands run that the list above lacks — `pytest-cov` for `--cov`, `mypy`,
+`interrogate`. The implementer adds them at the first section's scaffold; nobody else edits
+this file for them.
+
 The root is itself a workspace member (uv requires it), so it needs a `[project]` table even
 though it holds no code. One lockfile, one virtual environment, shared by every package.
+
+The `addopts` line is not optional once a second package exists: under pytest's default
+`prepend` import mode a bare `uv run pytest` from the root fails collection with
+`ModuleNotFoundError: No module named 'tests.<...>'`, while each package still passes on its
+own — so the failure shows up only in CI or a full-repo run.
 
 ## 2. Package `pyproject.toml`
 
@@ -169,3 +184,8 @@ uv run mkdocs build --strict
 
 These are the commands the repo contract's Toolchain section states, and the ones every
 implementer and reviewer copies rather than guesses.
+
+When `docs/constraints.md` exists, CI runs its **Floor** and **Enforced** rows instead of the
+fixed list above — `repo` rows once, `package` rows once per package with `<pkg>`
+substituted — after `uv sync --all-packages`, plus the `pylint` size check, which the Floor
+does not carry. Without that file, the list above is the CI.

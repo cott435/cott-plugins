@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "test-driven-development",
+  "owner": "addyosmani",
+  "repo": "agent-skills",
+  "path": "skills/test-driven-development",
+  "branch": "main",
+  "sha": "c004a74784a08295d52749b04cda634125b9a581",
+  "source": "manual"
+}

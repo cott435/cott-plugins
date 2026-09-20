@@ -22,7 +22,18 @@ modules; the skills your researchers write carry logic, not layout.
 - Write only `docs/legacy/inventory.md`. Never create or modify source, config, tests, skills,
   or any other document.
 - Bash is for read-only inspection of the old repo (`ls`, `tree`, `find`, `git log`, `wc`,
-  `grep`). Never run its code, its tests, or installs.
+  `grep`). Never run its code, its tests, or installs. In the new repo, Bash writes nothing
+  except `git add <paths>` and `git commit` at the end of a run — see **Commit**.
+- Your shell stays inside the two repos you were given — this one and the old repo whose path
+  your prompt names — plus `${CLAUDE_PLUGIN_ROOT}` for this plugin's own files, which are read
+  at that path or through the Skill tool, never searched for.
+  `find /` and `find ~` are off limits whatever you are looking for.
+- Every `Agent` call you make — `Explore`, researcher — passes `run_in_background: false`.
+  The researcher fan-out stays parallel: every call goes in one message, and all of them return
+  as that message's results. You are a forked run, so a backgrounded agent's completion
+  notification goes to the conversation that forked you, never to you: end a turn to wait for
+  one and the inventory is never updated and nothing is committed. A call that returns a
+  background task id instead of a result is a failure to name in your return.
 - You cannot ask the user questions. The inventory is the conversation: you draft it, the user
   edits it, you act on what they marked. Uncertainty is a `?` in `keep` and a line in `notes`,
   never a guess.
@@ -81,10 +92,9 @@ modules; the skills your researchers write carry logic, not layout.
 
 1. Read it. Rows with `keep: yes` and `status: pending` are your work. Rows with `keep: ?` are
    skipped and counted. Rows with `keep: no` or `status: extracted` are ignored.
-2. Spawn one `researcher` per row, all in parallel, in one message, with the prompt below. Tell
-   each to return ten lines or fewer.
-3. When every researcher has returned — a completion notification is your cue to check whether
-   all are back, not a status to relay — update each row: `status: extracted` plus the skill
+2. Spawn one `researcher` per row, all in one message, each call `run_in_background: false`
+   per **Hard rules**, with the prompt below. Tell each to return ten lines or fewer.
+3. In the same turn the results arrive, update each row: `status: extracted` plus the skill
    path in `skill`, or `status: failed: <one-line reason>`. Never end a turn saying the update
    "will follow"; nothing re-invokes you.
 4. Return.
@@ -139,6 +149,14 @@ Write your skill to: .claude/skills/<name>/
 Do not accept skill content in a return message. The row's status comes from what the
 researcher reports; the skill is on disk if you need to check it.
 
+## Commit
+
+Each run ends in one commit, per `git-workflow-and-versioning` §Project convention — invoke it
+with the Skill tool. Check its **Branch** and **Baseline** rules before writing anything, and
+return its blocker text if either fails. At the end, stage `docs/legacy/inventory.md` and
+`.claude/skills/<name>/` for each researcher you spawned in extract mode — they do not commit;
+you do. Scope `legacy`.
+
 ## Return message
 
 Under 20 lines:
@@ -147,6 +165,7 @@ Under 20 lines:
   the researcher reported (`imports cleanly` / `unverified`)
 - Rows failed, with the reason
 - Rows skipped: `keep: ?` (count) and `keep: no` (count)
+- `Commit: <sha>`
 - Next command: `/dev-team:plan-repo` if `docs/architecture.md` does not exist; otherwise
   say the architect will find the new skills on its next `/dev-team:plan-package` run
 

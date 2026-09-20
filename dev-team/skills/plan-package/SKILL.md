@@ -1,10 +1,10 @@
 ---
 name: plan-package
-description: Plan one package of a repo that /dev-team:plan-repo has already contracted. Writes the package contract - sections, section interfaces, pipelines - runs parallel section designs, reconciles them into integration.md, and designs the public surface in surface.md. Reads the shipped interface.md of every package this one depends on.
-argument-hint: "<pkg>"
-arguments: [pkg]
+description: Plan one package of a repo that /dev-team:plan-repo has already contracted. Writes the package contract - sections, section interfaces, pipelines - runs parallel section designs, reconciles them into integration.md, and designs the public surface in surface.md. Spine-first on three or more sections - designs the spine, then the rest once it ships; --all plans everything in one run. Reads the shipped interface.md of every package this one depends on.
+argument-hint: "<pkg> [--all] [--spine <section>]"
+arguments: [pkg, flags]
 context: fork
-agent: architect
+agent: dev-team:architect
 background: false
 disable-model-invocation: true
 ---
@@ -17,8 +17,20 @@ Plan package **$pkg** at **package scope**.
 > Code started. Stop, tell the user to run `/reload-plugins` (or restart Claude Code),
 > verify with `/agents`, and re-run. Do not plan in the main thread.
 
-If `$pkg` reached you unsubstituted — literally the text `$pkg` — take `$ARGUMENTS` as the
-package name directly.
+The command was typed with these arguments: **`$ARGUMENTS`**. The first word is the package.
+Any words after it are flags, and they change what this run does — check for both now:
+
+- `--all` — plan every section in this one run: step 4c classifies the run **full**, whatever
+  the section count.
+- `--spine <section>` — use that section as the spine instead of computing one.
+
+If the package name above reached you unsubstituted, as a literal dollar-sign placeholder,
+take the first word of the arguments line as the package name directly.
+
+**Invoked by run-package.** If your task prompt carries a `Package:` line instead of a
+substituted argument — `/dev-team:run-package` spawns you that way — use it: the package from
+that line, and the same name as the argument in your commit trailer. The Guard block above
+does not fire: you have neither earlier turns nor `AskUserQuestion`.
 
 ## Preconditions
 
@@ -65,6 +77,12 @@ invent its own shapes and conventions, and the next package will invent them dif
    `Raised by: /dev-team:plan-package $pkg (interview)` and **stop** with the stop message. Otherwise
    proceed.
 
+3b. **Plan findings.** Read `docs/followups.md` for open entries addressed to `$pkg/plan`. None
+   → continue. Otherwise this is a re-plan, per your **Plan findings** section: each finding
+   is answered in the contract (step 4 edits it rather than rewriting it), at unify (steps 6
+   and 7), or — when its object is a design — by re-delegating only that section in step 5. Keep the list; step 9
+   ticks it.
+
 4. **Package contract.** Invoke `planning-templates`, read `references/package-contract.md`,
    and write `docs/packages/$pkg/contract.md` to it. Its **Purpose** carries the covered brief
    rows, Notes verbatim — designers read the contract, never the brief. **Public surface
@@ -74,6 +92,14 @@ invent its own shapes and conventions, and the next package will invent them dif
    `<kind>:<token>` — `api:polygon`, `dataset:trades-2024`, several comma-separated, or `—`. It
    is what the next step iterates over, so a source missing from it is never probed, and a kind
    guessed wrong sends the probe at the wrong thing entirely.
+
+4c. **Classify the run** per your **Spine-first** section, from the contract's Sections table
+   and what is on disk. `--all` in the arguments line at the top of this prompt makes it
+   **full** before anything else is looked at. Otherwise: **full** (two sections or fewer), **spine**,
+   **completion**, **too early**, or **re-run**. On a spine run, choose the spine now — or take
+   `--spine` — and keep the count for the **Spine** heading. On **too early**, return that
+   section's message and stop here: write nothing, commit nothing. A re-plan for step-3b
+   findings on a complete plan is a **re-run**; an adoption run (below) is always **full**.
 
 4b. **Probe.** For every entry in every section's `source` column, spawn one `researcher` in
    probe mode per your **Probing** section, all in parallel, in one message — `Kind:` and
@@ -87,31 +113,40 @@ invent its own shapes and conventions, and the next package will invent them dif
    **Probing** section: where either contradicts a section you just wrote into the contract,
    amend the contract here, before step 5, and say so in your return. Then continue.
 
-5. **Delegate.** One `designer` per section, all in parallel, using your delegation template:
+5. **Delegate.** One `designer` per section the run classification names — the spine alone on
+   a spine run, every undesigned section on a completion or full run — all in parallel, using
+   your delegation template:
    - `Section: $pkg/<section>`
    - `Mode: new` (or `document` for a section that already has code and is being adopted)
    - `Contracts (highest first): docs/packages/$pkg/contract.md, docs/architecture.md`
    - `Upstream interfaces:` the shipped `interface.md` paths, or `provisional:` paths, or `none`
    - `Source probes:` `docs/sources/<source>.md` for each of the section's sources from step
      4b, comma-separated, or `none` for a section whose `source` is `—`
+   - `Sibling shipped:` on a completion run, the README of every section that has one, at its
+     Sections-table path; `none` otherwise
    - `Existing design: none` · `Assessment:` the package assessment if you wrote one
+   - `Review findings: none` — on a re-plan, a section a step-3b finding names gets
+     `Existing design:` its design path and `Review findings:` the plan review's path; a
+     section no finding names is not re-delegated
    - `Skills to invoke:` that section's project skills
    - `Write your design to: docs/packages/$pkg/design/<section>.md`
    - `Constraints:` what the section must not import — including every sibling section it
      does not depend on, and every upstream package's internals
    
-   If every section already has a current design on disk, no designer is spawned this run —
+   If every section already has a current design on disk and no step-3b finding names one, no designer is spawned this run —
    proceed straight to step 6 with those files. Otherwise, once the last spawned designer has
    returned, continue immediately, in that same turn, to step 6 — do not end your turn
    reporting that unification will happen next; nothing else will trigger it.
 
 6. **Unify.** Read the design docs you delegated, read `references/integration.md`, and write
-   `docs/packages/$pkg/integration.md` to it, including **Repo contract deviations** with its
+   `docs/packages/$pkg/integration.md` to it, starting with its **Spine** heading for this run's
+   classification, including **Repo contract deviations** with its
    shipped-package rule, and any probe-doc **Quirks** that cross sections under its risks.
    Update `docs/packages/$pkg/contract.md` where you accept a deviation into the package
    contract; update `docs/architecture.md` only where the resolution is `update repo contract`.
 
-7. **Surface.** Read `references/surface.md` and write `docs/packages/$pkg/surface.md` to it.
+7. **Surface.** Completion, full and re-run runs only — a spine run writes no `surface.md`,
+   and skips to step 8. Read `references/surface.md` and write `docs/packages/$pkg/surface.md` to it.
    Apply its selection rule strictly: a name is public only when the contract's **Public
    surface (intent)** names a consumer for it — a downstream package or a CLI command. The
    designs' `Public: yes` rows are candidates, not the answer; most section entry points are
@@ -119,13 +154,26 @@ invent its own shapes and conventions, and the next package will invent them dif
    CLI commands with every argument spelled out; the end-to-end tests; the two import-linter
    contracts.
 
-8. **Record decisions.** Append a `D<n>` stub for every open question that survived — from
-   the designs' **Open questions**, your **Contract deviations**, **Repo contract deviations**
+8. **Record decisions.** Append a `D<n>` stub for every open question that survived — every
+   `OQ-…` tag in the designs' **Open questions** that `integration.md` does not resolve by
+   name, each cited in its `Raised by:`; your **Contract deviations**, **Repo contract deviations**
    with `needs plan-change`, and `surface.md`'s open questions. `Scope:` the sections it
    binds, or `$pkg` when it is package-wide.
 
-9. **Return** your standard summary — implementation order, provisional upstreams named —
-   ending with the next command: `/dev-team:implement-section $pkg/<first section in dependency order>`
+9. **Commit** per your **Commit** section — trailer `Dev-Team-Run: plan-package $ARGUMENTS`,
+   staging `docs/followups.md` too on a re-plan, after ticking each step-3b entry
+   `[x] <date>` — then **return** your standard summary — implementation order, provisional
+   upstreams named, and on a re-plan the plan review you answered — ending with the next
+   command: `/dev-team:review-plan $pkg`. A spine run ends instead with the spine's four
+   commands and then this one again:
+
+   ```
+   /dev-team:test-section $pkg/<spine>
+   /dev-team:implement-section $pkg/<spine>
+   /dev-team:test-section $pkg/<spine>
+   /dev-team:review-section $pkg/<spine>
+   /dev-team:plan-package $pkg
+   ```
 
 ## Adopting an existing package
 

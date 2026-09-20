@@ -21,6 +21,7 @@ dev-team/
 │   ├── architect.md      plans at repo, package, or change scope; delegates; unifies
 │   ├── designer.md       designs one section against the contracts + upstream interfaces
 │   ├── implementer.md    builds one section — or, in surface mode, a package's public surface
+│   ├── tester.md         intent tests for one section, from its design — never from its code
 │   ├── reviewer.md       reviews one section, or one package
 │   ├── documenter.md     package READMEs, API pages, root README from shipped docs
 │   ├── curator.md        surveys an old repo into docs/legacy/inventory.md; coordinates researchers
@@ -28,16 +29,22 @@ dev-team/
 ├── pyproject-lint-config.toml  merge into the root pyproject.toml; enforces the hard limits
 └── skills/
     ├── shape-brief/        (inline)        idea → docs/brief.md, discussed with you: now / later / out
+    ├── set-constraints/    (inline)        the quality bar → docs/constraints.md: coverage, types, docstrings
+    │   └── references/                     the constraints template + vendored constraint-driven-development (MIT)
     ├── plan-repo/          → architect     repo contract: new, extend, or revise from a corrected brief
     ├── plan-package/       → architect     one package: sections, designs, integration, surface
+    ├── review-plan/        → reviewer      <pkg>: the plan, before any code — CRITICALs go back to plan-package
     ├── plan-change/        → architect     change to shipped code, with downstream impact
     ├── map-project/        → architect     adopt an existing repo (repo level; then plan-package per package)
     ├── extract-legacy/     → curator       old repo → inventory (stop) → project skills, one per kept row
     ├── probe-source/       → researcher    one api or dataset → docs/sources/<source>.md
+    ├── test-section/       → tester        <pkg>/<section> [slug]: intent tests before the build, reconcile after
     ├── implement-section/  → implementer   <pkg>/<section> [slug]
     ├── review-section/     → reviewer      <pkg>/<section> [slug]
     ├── finalize-package/   → implementer   <pkg>: lazy __init__, pipelines, cli.py, docs page, interface.md
     ├── review-package/     → reviewer      <pkg>: surface + package-level checks
+    ├── sync-design/        → architect     <pkg>: fold recorded deviations into designs, as As shipped
+    ├── run-package/        (inline)        <pkg>: drives the loop above — test, build, test, review per section; finalize, review, sync-design
     ├── sync-plan/          → architect     fold a shipped change into canonical docs
     ├── finalize-project/   → documenter    package READMEs, index.md, root README
     ├── status/             (inline)        the checklist: planned / built / reviewed / open, derived
@@ -48,6 +55,9 @@ dev-team/
     ├── python-implementation/ splitting mechanics, config code            (invoked on demand)
     ├── workspace-scaffold/   pyproject / import-linter / mkdocs skeletons  (invoked on demand)
     ├── security-review/      checklist                                    (invoked on triggers)
+    ├── test-driven-development/      red-green-refactor, pytest (vendored, MIT)
+    ├── debugging-and-error-recovery/ root-cause triage (vendored, MIT)
+    ├── git-workflow-and-versioning/  commit discipline; §Project convention (vendored, MIT)
     └── reserved-skill-names/ the names this plugin's own skills occupy     (architect, extract-legacy)
 
 site/                         the authored parts of the reading site — see site/README.md
@@ -85,7 +95,7 @@ and then the implementer, so the same conventions apply at design time and at bu
    `/plugin install dev-team@cott-plugins`. In Cowork: Customize -> Plugins ->
    Add marketplace, then Install. `cott-plugins` bundles every plugin (this one included) as
    a subdirectory; install only the ones you actually want running on this machine.
-2. **Verify with `/agents`** before the first run: the seven agents must be listed. If they are
+2. **Verify with `/agents`** before the first run: the eight agents must be listed. If they are
    not, run `/reload-plugins` (or restart Claude Code). Until they are registered a workflow
    skill runs in your main conversation instead of forking — you get a question widget instead
    of a stop message, and the run writes the wrong files. Every workflow skill checks for this
@@ -97,23 +107,62 @@ and then the implementer, so the same conventions apply at design time and at bu
 4. Every agent inherits your session model, so set `/model` before you start a run.
 5. `/dev-team:status` at any time prints where everything stands; `/dev-team:status <pkg> --gate` runs the exact
    preconditions `/dev-team:finalize-package` will check.
+6. The repo you build in is a git repository on a feature branch; agents refuse `main`. Every
+   run ends in one commit of exactly the files it wrote, and refuses to start while anything
+   else is uncommitted — except `docs/decisions.md`, `docs/brief.md` and `docs/constraints.md`,
+   which you edit by hand between runs.
 
 ## Which skill to run
 
 ```
 rough idea, scope not settled               → /dev-team:shape-brief, then /dev-team:plan-repo
-new repo, nothing exists yet                → /dev-team:plan-repo, then /dev-team:plan-package <pkg> per package
+quality bar not written down                → /dev-team:set-constraints (any time before the first review)
+new repo, nothing exists yet                → /dev-team:plan-repo, then per package: /dev-team:plan-package <pkg>
+                                              (designs the spine only, on three or more sections);
+                                              build the spine — test-section, implement-section,
+                                              test-section, review-section; /dev-team:plan-package <pkg>
+                                              again for the rest (--all plans everything in one run)
 existing repo, no docs/ yet                 → /dev-team:map-project (repo level), then /dev-team:plan-package <pkg> per package (document mode)
 existing repo, docs/ already there          → /dev-team:plan-change
 docs/ exist but have drifted from the code  → /dev-team:map-project (re-map), then /dev-team:plan-package <pkg> as needed
 adding a package to a planned repo          → /dev-team:plan-repo "<what to add>", then /dev-team:plan-package <pkg>
+a package is planned; plan reviewed?        → /dev-team:review-plan <pkg> (request changes → /dev-team:plan-package <pkg>, then again)
+plan reviewed, decisions answered           → /dev-team:run-package <pkg> (or each command by hand; spine-only plan: builds the spine)
 repo contract came out wrong                → /dev-team:shape-brief to correct the brief, then /dev-team:plan-repo
                                               (or /dev-team:plan-repo --revise "<what was wrong>")
 rebuilding from an old, messy repo          → /dev-team:extract-legacy <old repo> (twice), then /dev-team:plan-repo
 an API changed, a dataset refreshed, or a
   source added later                        → /dev-team:probe-source <pkg> <source>
+a package shipped; its designs describe the
+  plan, not the code                        → /dev-team:sync-design <pkg>
 lost track                                  → /dev-team:status
 ```
+
+## Running a package
+
+`/dev-team:run-package <pkg>` types the per-package loop for you. It runs in your conversation
+and spawns each agent itself, handing it the same skill file the manual command would fork —
+there is one copy of every procedure, and the driver holds none of them.
+
+It starts with `/dev-team:status <pkg> --run-gate`: a feature branch, a clean tree (your three
+hand-edited files excepted), and a plan that is either spine-only or passes the plan gate. Then,
+per section in the integration doc's dependency order — skipping any already reviewed with
+`approve` or `approve with fixes`, no open review follow-ups and no failing intent test — it
+writes the intent tests if there are none, builds the section, reconciles the tests, builds
+again if the reconcile filed follow-ups, and reviews. On `request changes` it builds, reconciles
+and reviews again, up to three builds per section. After the last section it finalizes the
+package, reviews it (once more on `request changes`), and runs `sync-design`. Between spawns it
+prints the section's `status.py` row, and it ends with a six-line summary whose `next:` is the
+command you would type from where it left off.
+
+On a spine-only plan it builds the spine, re-runs `plan-package` to complete the plan, runs
+`review-plan`, and stops so you can answer decisions before the rest is built.
+
+It stops, with the agent's first lines, on: a failing run gate; any agent returning `blocked`
+(a blocking rule) or `stopped` (the architect's decisions or access stop); a section still at
+`request changes` after three builds; a package review still at `request changes` after a
+second finalize. It never edits a file, never answers a decision, and never commits — each
+agent commits its own run, exactly as by hand. Every command it drives still works on its own.
 
 ## Workflows
 
@@ -122,10 +171,14 @@ A new pipeline is a new file there; the shared site builder picks it up.
 
 - [New repo, package by package](site/workflows/new-repo.md) — `/dev-team:shape-brief` →
   `/dev-team:plan-repo` (revised when the contract comes out wrong), then per
-  package: `/dev-team:plan-package` → `/dev-team:implement-section` + `/dev-team:review-section` per
-  section → `/dev-team:finalize-package` → `/dev-team:review-package`. `/dev-team:finalize-project` any time.
+  package: `/dev-team:plan-package` (the spine section only) → `/dev-team:run-package`, which
+  builds and reviews the spine, plans the rest against the spine's README, reviews the plan and
+  stops for your decisions → `/dev-team:run-package` again, which tests, builds and reviews
+  every remaining section, then finalizes, reviews and syncs the package. Every command it
+  drives still runs by hand. `/dev-team:finalize-project` any time.
 - [Changing shipped code](site/workflows/change-shipped-code.md) — `/dev-team:plan-change` →
-  `/dev-team:implement-section <pkg>/<section> <slug>` → `/dev-team:review-section` → `/dev-team:sync-plan`.
+  `/dev-team:implement-section <pkg>/<section> <slug>` → `/dev-team:review-section` → `/dev-team:sync-plan`
+  → `/dev-team:sync-design`.
 - [Adding a package to an existing repo](site/workflows/add-package.md) — `/dev-team:plan-repo`
   with the addition as its argument, which *extends* the repo contract rather than revising it,
   then `/dev-team:plan-package <pkg>` and the per-section loop.
@@ -213,14 +266,33 @@ The implementer only touches its own section. When it needs something elsewhere,
 `<pkg>/surface` is a reserved target: it is what `/dev-team:finalize-package` picks up, and where an
 implementer files any drift between what it shipped and what `surface.md` planned.
 
+`<pkg>/<section>/intent` is the third: the reviewer files a finding in
+`packages/<pkg>/tests/intent/<section>/` there, because the implementer never edits that tree.
+`/dev-team:test-section` clears those in reconcile mode, before it folds anything, and
+`/dev-team:run-package` spawns the tester rather than the implementer while one is open.
+
+`<pkg>/plan` is the other reserved target: `/dev-team:review-plan` files a plan's CRITICAL
+findings there, the next `/dev-team:plan-package <pkg>` answers them and ticks them off, and
+while one is open `/dev-team:implement-section` refuses every section of `<pkg>`.
+
+`/dev-team:test-section` feeds it too. After a build, the tester files every intent test still
+failing as `- [ ] <pkg>/<section>: intent test <file>::<name> fails — … — tester <date>`; the next
+`/dev-team:implement-section` fixes the code, never the test. The reviewer treats a failing
+intent test with no such entry and no recorded deviation as CRITICAL.
+
 `/dev-team:review-section` and `/dev-team:review-package` feed the same queue: a full report to
 `docs/reviews/<date>-<pkg>-<section>.md` (or `<date>-<pkg>-package.md`), every CRITICAL finding
-appended to `docs/followups.md`.
+appended to `docs/followups.md`. Each report's second line is `Commit: <sha>`, the commit it
+reviewed. The next review of the section covers only the diff since that commit, and
+`/dev-team:status` counts a section as reviewed when that line matches the newest commit
+touching it.
 
 Review per section, as you go. A review after finalize would cover every section under one
 return, and the surface would already re-export whatever a CRITICAL finding is about.
 
-**Fixing a CRITICAL is a re-run, not a new plan.** A section finding: run
+**Fixing a CRITICAL is a re-run, not a new plan.** A plan finding: run
+`/dev-team:plan-package <pkg>` again — it re-delegates only the sections a finding names — then
+`/dev-team:review-plan <pkg>`. A section finding: run
 `/dev-team:implement-section <pkg>/<section>` again — its step 6 picks up follow-ups addressed to it and
 the latest review, fixes them, ticks them off. A surface finding from `/dev-team:review-package`: run
 `/dev-team:finalize-package <pkg>` again, then `/dev-team:review-package <pkg>`. `/dev-team:plan-change` is needed only
@@ -234,15 +306,26 @@ mechanism in Claude Code that scopes by agent — rules scope by file path or no
 is the wrong axis here, since the architect and designer need the size limits and never open a
 `.py` file.
 
-| Skill | arch | design | impl | review | doc | research |
-|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| `project-structure` — layout, size limits, config placement, naming | ✓ | ✓ | ✓ | ✓ | — | — |
-| `python-style-guide` — inside a file: docstrings, function shape, `__init__.py`, naming | — | — | ✓ | ✓ | — | — |
-| `python-implementation` — splitting mechanics, config code | — | — | invoked | — | — | — |
-| `workspace-scaffold` — pyproject, import-linter, mkdocs skeletons | invoked | — | invoked | — | — | — |
-| `planning-templates` — headings for every planned document | invoked | — | — | — | — | invoked |
-| `security-review` — checklist | — | — | invoked | invoked | — | — |
-| `reserved-skill-names` — the names this plugin's own skills occupy | invoked | — | — | — | — | — |
+| Skill | arch | design | impl | test | review | doc | research |
+|---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| `project-structure` — layout, size limits, config placement, naming | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
+| `python-style-guide` — inside a file: docstrings, function shape, `__init__.py`, naming | — | — | ✓ | ✓ | ✓ | — | — |
+| `python-implementation` — splitting mechanics, config code | — | — | invoked | — | — | — | — |
+| `workspace-scaffold` — pyproject, import-linter, mkdocs skeletons | invoked | — | invoked | — | — | — | — |
+| `planning-templates` — headings for every planned document | invoked | — | — | — | — | — | invoked |
+| `security-review` — checklist | — | — | invoked | — | invoked | — | — |
+| `reserved-skill-names` — the names this plugin's own skills occupy | invoked | — | — | — | — | — | — |
+| `test-driven-development` — red-green-refactor, test design, pytest | — | — | ✓ | ✓ | — | — | — |
+| `debugging-and-error-recovery` — root-cause triage for tests and builds | — | — | invoked | — | — | — | — |
+| `git-workflow-and-versioning` — commit discipline; the project's commit rule | invoked | — | ✓ | invoked | invoked | invoked | invoked |
+
+The last three are vendored from `addyosmani/agent-skills` (MIT) and adapted to this stack.
+`git-workflow-and-versioning` §Project convention is the one copy of the commit rule every
+agent that writes follows (the curator invokes it too; the researcher only when
+`/dev-team:probe-source` runs it directly). `test-driven-development` is
+preloaded into the tester, whose intent tests are its RED step, and the implementer, which
+uses its Prove-It pattern on review findings that are bugs; the implementer invokes
+`debugging-and-error-recovery` on a test still failing after two fix attempts.
 
 Three conventions in `python-style-guide` are marked *Project convention* because they go
 beyond or beside Google's guide:
@@ -294,6 +377,7 @@ your own interactive work, where no agent frontmatter applies, write a
 docs/
 ├── brief.md                        your input to /dev-team:plan-repo         (shape-brief / you)
 ├── history/                        brief-contracted.md + dated copies        (plan-repo, shape-brief)
+├── constraints.md                  the quality bar: Floor, Enforced, Guarded (set-constraints / you)
 ├── architecture.md                 THE REPO CONTRACT                         (plan-repo)
 ├── decisions.md                    D<n> ledger, Scope: field                 (architect stubs / you / implementer)
 ├── followups.md                    queue, entries `- [ ] <pkg>/<section>: …` (implementer, reviewer, sync-plan)
@@ -307,11 +391,12 @@ docs/
 │   └── data/
 │       ├── assessment.md           package survey                            (plan-package)
 │       ├── contract.md             THE PACKAGE CONTRACT                      (plan-package)
-│       ├── design/<section>.md     one per section                           (designer)
-│       ├── integration.md          reconciliation, plan-time                 (architect)
+│       ├── design/<section>.md     one per section; As shipped appended      (designer; sync-design)
+│       ├── integration.md          reconciliation, plan-time; Spine heading  (architect)
 │       ├── surface.md              design of the public surface              (architect, at unify)
 │       └── interface.md            THE PUBLIC SURFACE AS SHIPPED             (finalize-package)
 ├── reviews/
+│   ├── 2026-09-03-data-plan.md     one per plan review, before any code      (review-plan)
 │   ├── 2026-09-04-data-ingest.md   one per section review
 │   └── 2026-09-08-data-package.md  one per package review
 └── plans/
@@ -322,6 +407,10 @@ docs/
         ├── data/clean.md           delta design per affected section
         └── integration.md          reconciliation + canonical doc updates
 ```
+
+Outside `docs/`, one tree belongs to a single writer: `packages/<pkg>/tests/intent/<section>/`
+holds the tester's intent tests. The implementer runs them and never edits them, the reviewer
+checks they pass, and `status.py` shows the count in its intent column.
 
 **Canonical vs proposal.** Everything outside `plans/` describes the code as it is, with one
 honest exception: a greenfield design describes intended code until its section ships — which
@@ -355,15 +444,22 @@ you ── /dev-team:plan-package data ────▶ architect ──▶ docs/
                                 architect ◀── summaries (≤10 lines each)
                                 architect ──▶ integration.md, surface.md, decision stubs
 
+you ── /dev-team:review-plan data ───────────────▶ reviewer ──▶ docs/reviews/<date>-data-plan.md, followups `data/plan: …`
+                                          (request changes → /dev-team:plan-package data re-delegates only the named sections)
 you ── docs/decisions.md (answers)
 
+you ── /dev-team:run-package data ─ (your conversation) spawns the section runs below, in order, then finalize, review, sync-design
+
+you ── /dev-team:test-section data/ingest ───────▶ tester ──▶ tests/intent/ingest/   (from the design; red)
 you ── /dev-team:implement-section data/ingest ──▶ implementer ──▶ src/data/ingest/, tests, section README
                                           implementer ──▶ followups.md, decisions.md Applied:
+you ── /dev-team:test-section data/ingest ───────▶ tester ──▶ tests/intent/ingest/ reconciled, followups `— tester`
 you ── /dev-team:review-section data/ingest ─────▶ reviewer ──▶ docs/reviews/<date>-data-ingest.md, followups
 
 you ── /dev-team:finalize-package data ──────────▶ implementer (surface mode) ──▶ src/data/__init__.py, pipelines/, cli.py, docs/api/data.md
                                           implementer ──▶ docs/packages/data/interface.md
 you ── /dev-team:review-package data ────────────▶ reviewer ──▶ docs/reviews/<date>-data-package.md
+you ── /dev-team:sync-design data ───────────────▶ architect ──▶ design/*.md gain As shipped (append-only)
 
 you ── /dev-team:plan-package analysis ──────────▶ architect reads docs/packages/data/interface.md as upstream …
 
@@ -392,8 +488,16 @@ Every arrow into an agent carries a file path, not a conversation.
   the brief names, because a target column that cannot support the task, or data that forbids a
   random split, changes which packages exist — a finding that arrives during package planning
   arrives too late to act on cheaply.
+- **Work on a branch, commit your hand edits.** Every forked run refuses `main`/`master` and a
+  dirty tree, and ends in exactly one commit carrying a `Dev-Team-Run:` trailer. Only
+  `docs/decisions.md`, `docs/brief.md` and `docs/constraints.md` may be left uncommitted between
+  runs. Anything else you touched by hand has to be committed first, or the next run refuses.
+  `git log` is the run history.
 - **Re-running the same command is the continue action** after a stop. Doing nothing in the
   ledger means "accept the assumptions".
+- **`run-package` is a loop in your conversation.** Each agent return is at most 40 lines and
+  the driver prints a `status.py` row between them, so a five-section package costs the driver
+  roughly 30 short turns of context. Run it with `/clear` behind you.
 - **Return size is context cost.** Designers and implementers return short summaries; the
   content is on disk. If you want detail, read the file.
 - **Descriptions are always loaded.** Keep agent `description` fields short — the combined
@@ -422,7 +526,8 @@ Every arrow into an agent carries a file path, not a conversation.
 - **Parallel sections.** Add `isolation: worktree` to `implementer.md` frontmatter and each run
   works in its own git worktree. Only for sections `integration.md` shows as independent — and
   note that `.gitignore`, `docs/followups.md`, `docs/decisions.md`, and the root
-  `pyproject.toml` are shared files that runs append to, so expect to merge them.
+  `pyproject.toml` are shared files that runs append to, so expect to merge them. Every run
+  commits what it wrote, so a worktree merge is a commit merge, not a copy of files.
 - **Interactive session for a hard section:** `claude --agent implementer` gives the main thread
   the implementer's system prompt, tools, and model, so you get the blocking rules and return
   format while steering turn by turn.

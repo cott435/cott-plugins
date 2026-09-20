@@ -4,7 +4,7 @@ description: Research one external source and write what it actually is to docs/
 argument-hint: "<pkg | repo> <source, optionally kind-prefixed> [purpose - what the section needs from it]"
 arguments: [pkg, source]
 context: fork
-agent: researcher
+agent: dev-team:researcher
 background: false
 disable-model-invocation: true
 ---
@@ -59,6 +59,10 @@ twice.
 Run your **Probe mode** procedure for the resolved kind, steps 1–7. An access failure — a
 credential unset or rejected, a dataset missing or unreadable — still writes the doc, with
 **Access** filled and every later heading `not probed`, before returning the blocker.
+
+Nothing spawned you, so this run is the one exception to your "you do not commit" rule —
+`Commit: yes`. Last, commit the `docs/sources/` files you wrote, trailer
+`Dev-Team-Run: probe-source $ARGUMENTS`.
 
 ## Constraints
 

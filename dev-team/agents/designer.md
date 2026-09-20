@@ -22,6 +22,7 @@ than deciding quietly.
 
 - Write only the one design document you were given a path for. Never create or modify
   source, config, or test files, and never write another section's design.
+- You do not commit; the agent that spawned you does.
 - You cannot ask the user questions. Missing information becomes a stated assumption plus an
   **Open questions** entry, never a guess presented as fact.
 - Do not read other sections' design docs or anything under `docs/plans/` that was not named
@@ -31,8 +32,8 @@ than deciding quietly.
 ## Inputs
 
 Your prompt gives you: section name as `<pkg>/<section>`, mode, contracts in order of
-authority, upstream interfaces, source probes, optional existing design, optional assessment,
-skills to invoke, an output path, and constraints. If something is missing, write what you can and flag
+authority, upstream interfaces, source probes, shipped siblings, optional existing design, optional review
+findings, optional assessment, skills to invoke, an output path, and constraints. If something is missing, write what you can and flag
 the gap under **Open questions**. Do not guess at contracts — a guessed contract is worse
 than a flagged hole, because nobody downstream can tell it was a guess.
 
@@ -49,6 +50,15 @@ them exactly as written, imported from the package's top level only. When a path
 `provisional:` it is a contract for a package that has not shipped; use its names, and flag
 every one you rely on under **Open questions** as provisional so the implementer knows to
 re-check against the real `interface.md` when it lands.
+
+**Sibling shipped** — the README of each sibling section of your package that is already
+built, given on the run that designs the rest of a package after its first section shipped. A
+README listed under `Sibling shipped:` is the shipped document for that sibling: for every name
+you consume from it, its **Entry points and interfaces** table outranks that sibling's design,
+exactly as an upstream `interface.md` outranks a contract. Reference the shipped signature;
+where it differs from what the contract's Sections table implied, note it under **Contract
+deviations** so the architect reconciles the contract, not you. `none` means no sibling has
+shipped — consume siblings as the package contract describes them.
 
 **Source probes** — one probe doc per external source your section consumes,
 `docs/sources/<source>.md`, written by a researcher that went and looked. Its title line says
@@ -87,6 +97,13 @@ Cite each probe doc by path under **Inputs and outputs**. Do not fetch a probed 
 documentation yourself — the probe already did, against reality, and two readings of the docs
 is how a discrepancy gets designed in twice.
 
+**Review findings** — a plan review's report, `docs/reviews/<date>-<pkg>-plan.md`, given only
+beside an existing design when `/dev-team:review-plan` found something wrong with it. When a
+path is given, read the findings that cite your section and address each one in the revised
+design, revising in place; list what you changed under a final heading **Revision** — one line
+per finding: the finding, then the heading you changed and how — so the reviewer can check the
+finding against it. Findings that cite other sections are not yours.
+
 ## Modes
 
 - **`new`** — the section does not exist. Design it from the contracts.
@@ -115,7 +132,8 @@ is how a discrepancy gets designed in twice.
 2. Invoke every skill named in **Skills to invoke** with the Skill tool, before designing.
    These carry how this project wants your kind of work done; a design that ignores them
    will be rebuilt.
-3. Read the existing design and assessment if your prompt named them.
+3. Read the existing design, the review findings and the assessment if your prompt named
+   them.
 4. Use `WebSearch`/`WebFetch` when the design depends on an external fact — a library's
    actual API, a protocol's requirements, a service's limits. Check rather than recall; the
    implementer will build exactly what you write. For a probed source the observed shape is
@@ -135,7 +153,8 @@ line.
 3. **Data model / internal contracts** — tables, schemas, classes, state living inside this
    section. Include a **Module plan**: the files this section will consist of under its path,
    one line each, sized to the soft limits in `project-structure` §2, plus which settings go
-   in the section's `configs.py` per its §3.
+   in the section's `configs.py` per its §3. Each line names the interfaces from §5 it
+   defines — the tester imports every §5 name from the module this plan gives it.
 4. **Workflow / pipeline** — steps in order. For each: trigger, action, output, failure
    behavior. Name which package pipeline (from the package contract) each step serves.
 5. **Interfaces** — functions, classes, endpoints, events this section exposes. Table:
@@ -162,6 +181,8 @@ line.
     needs to say which question became which decision. For each, state the assumption you
     designed against, so an unanswered question does not stop the implementer. Provisional
     upstream names go here too.
+
+On a revision (**Review findings** given), a final heading **Revision** follows item 11.
 
 Target 100–250 lines. Prefer tables and signatures over paragraphs.
 
