@@ -1,0 +1,247 @@
+patient_id,full_name,email,admitted_at,age,region,systolic,cholesterol,site_version,discharge_code,notes,readmitted_30d
+P1060,Pia Haas,pia.haas@example.invalid,2025-12-26 21:00:00,85,south,146,201.3,v3,D02,no acute distress afebrile ambulatory ambulatory afebrile no acute distress stable declined followup,0
+P1026,Hana Kovac,hana.kovac@example.invalid,2025-10-25 15:00:00,53,west,132,275.7,v3,R30,declined no acute distress ambulatory no acute distress afebrile stable followup tolerating diet declined,1
+P1030,Noor Ege,noor.ege@example.invalid,2025-12-09 08:00:00,70,east,104,160.3,v3,D03,declined stable followup stable,0
+P1079,Esi Tran,esi.tran@example.invalid,2025-04-12 05:00:00,66,south,169,264.7,v3,D02,ambulatory ambulatory stable declined tolerating diet stable afebrile,0
+P1077,Lior Quaye,lior.quaye@example.invalid,2025-07-21 02:00:00,57,east,161,194.4,v3,D01,stable followup no acute distress stable followup ambulatory declined tolerating diet followup,0
+P1052,Cleo Ege,cleo.ege@example.invalid,2025-12-05 14:00:00,40,west,98,153.6,v3,D01,afebrile afebrile no acute distress ambulatory declined,0
+P1093,Juno Nagy,juno.nagy@example.invalid,2025-03-02 09:00:00,54,east,123,144.4,v3,D01,tolerating diet followup tolerating diet,0
+P1065,Sol Diallo,sol.diallo@example.invalid,2025-02-06 15:00:00,79,east,156,216.0,v3,R30,no acute distress stable stable tolerating diet stable stable no acute distress,1
+P1005,Ada Sato,ada.sato@example.invalid,2025-09-21 21:00:00,75,east,173,177.0,v3,D02,afebrile afebrile afebrile declined tolerating diet ambulatory tolerating diet followup ambulatory,0
+P1088,Noor Bui,noor.bui@example.invalid,2025-08-24 12:00:00,93,east,127,126.9,v3,D03,ambulatory ambulatory ambulatory tolerating diet,0
+P1078,Tam Sato,tam.sato@example.invalid,2025-11-10 11:00:00,87,east,130,279.5,v3,R30,no acute distress followup afebrile afebrile,1
+P1115,Cleo Rossi,cleo.rossi@example.invalid,2025-04-07 20:00:00,29,east,103,274.4,v3,D03,afebrile ambulatory stable no acute distress declined followup declined declined stable,0
+P1073,Tam Diallo,tam.diallo@example.invalid,2025-08-15 05:00:00,22,west,170,180.3,v3,D02,tolerating diet ambulatory no acute distress ambulatory,0
+P1034,Lior Park,lior.park@example.invalid,2025-07-11 01:00:00,93,east,183,268.7,v3,D02,ambulatory followup declined followup declined,0
+P1060,Oz Haas,oz.haas@example.invalid,2025-12-02 20:00:00,58,west,182,127.4,v3,D01,tolerating diet stable tolerating diet stable declined afebrile,0
+P1134,Cleo Alvarez,cleo.alvarez@example.invalid,2025-04-29 07:00:00,44,east,158,267.2,v3,D03,tolerating diet stable afebrile stable stable ambulatory tolerating diet,0
+P1107,Tam Lund,tam.lund@example.invalid,2025-03-15 10:00:00,57,north,114,,v3,R30,afebrile no acute distress tolerating diet no acute distress afebrile stable,1
+P1055,Dev Alvarez,dev.alvarez@example.invalid,2025-04-05 06:00:00,54,south,162,139.5,v3,D01,afebrile no acute distress stable,0
+P1069,Bo Quaye,bo.quaye@example.invalid,2025-01-06 20:00:00,82,east,176,,v3,D03,ambulatory no acute distress ambulatory followup,0
+P1081,Kai Diallo,kai.diallo@example.invalid,2025-12-16 07:00:00,27,west,n/a,192.1,v3,D03,afebrile followup declined,0
+P1126,Fen Bui,fen.bui@example.invalid,2025-06-10 09:00:00,86,east,167,215.1,v3,D03,followup declined no acute distress,0
+P1079,Sol Alvarez,sol.alvarez@example.invalid,2025-09-07 05:00:00,52,west,173,239.1,v3,D01,stable tolerating diet tolerating diet followup,0
+P1021,Tam Jansen,tam.jansen@example.invalid,2025-06-07 00:00:00,53,north,106,246.3,v3,D03,followup tolerating diet ambulatory stable stable ambulatory,0
+P1089,Bo Oyelaran,bo.oyelaran@example.invalid,2025-12-13 11:00:00,94,south,111,261.1,v3,D03,tolerating diet no acute distress declined stable no acute distress afebrile stable afebrile ambulatory,0
+P1107,Quin Gupta,quin.gupta@example.invalid,2025-11-05 23:00:00,39,east,135,163.2,v3,D03,ambulatory ambulatory followup no acute distress no acute distress no acute distress,0
+P1003,Fen Mbeki,fen.mbeki@example.invalid,2025-10-04 12:00:00,27,north,147,230.5,v3,D02,stable stable stable,0
+P1059,Pia Chen,pia.chen@example.invalid,2025-12-26 12:00:00,46,south,119,259.4,v3,D01,no acute distress ambulatory stable ambulatory declined,0
+P1038,Tam Haas,tam.haas@example.invalid,2025-01-27 22:00:00,48,east,131,181.9,v3,D03,tolerating diet tolerating diet afebrile stable declined stable no acute distress,0
+P1081,Ada Chen,ada.chen@example.invalid,2025-06-17 13:00:00,62,east,142,229.8,v3,D01,no acute distress no acute distress stable followup followup,0
+P1117,Esi Mbeki,esi.mbeki@example.invalid,2025-05-08 21:00:00,93,west,108,165.2,v3,D02,stable afebrile followup tolerating diet tolerating diet followup ambulatory,0
+P1008,Noor Jansen,noor.jansen@example.invalid,2025-10-31 06:00:00,42,south,123,262.8,v3,R30,followup no acute distress tolerating diet followup declined no acute distress followup declined,1
+P1103,Mina Rossi,mina.rossi@example.invalid,2025-12-16 08:00:00,66,north,168,,v3,D01,stable stable declined stable,0
+P1139,Sol Ilves,sol.ilves@example.invalid,2025-12-16 04:00:00,37,north,133,269.8,v3,D02,followup declined ambulatory stable declined followup afebrile afebrile stable,0
+P1023,Rui Chen,rui.chen@example.invalid,2025-09-22 14:00:00,86,south,141,272.6,v3,D03,ambulatory ambulatory tolerating diet stable ambulatory afebrile,0
+P1082,Kai Ege,kai.ege@example.invalid,2025-12-08 18:00:00,61,west,134,,v3,D02,ambulatory afebrile no acute distress tolerating diet declined,0
+P1071,Lior Park,lior.park@example.invalid,2025-04-20 11:00:00,37,west,181,,v3,D01,followup afebrile stable,0
+P1037,Lior Oyelaran,lior.oyelaran@example.invalid,2026-01-02 04:00:00,45,south,,157.4,v3,D01,afebrile no acute distress ambulatory declined stable no acute distress no acute distress stable followup,0
+P1062,Fen Ilves,fen.ilves@example.invalid,2025-02-24 19:00:00,37,south,118,248.2,v3,D01,afebrile tolerating diet no acute distress ambulatory,0
+P1017,Mina Quaye,mina.quaye@example.invalid,2025-07-06 01:00:00,88,west,151,246.4,v3,D02,afebrile stable followup tolerating diet,0
+P1010,Ada Ilves,ada.ilves@example.invalid,2025-06-19 09:00:00,92,east,182,,v3,D03,no acute distress ambulatory no acute distress followup,0
+P1122,Tam Gupta,tam.gupta@example.invalid,2025-05-12 11:00:00,66,north,129,219.4,v3,D01,afebrile declined stable,0
+P1049,Cleo Nagy,cleo.nagy@example.invalid,2025-07-28 08:00:00,90,east,105,154.1,v3,D02,afebrile followup tolerating diet,0
+P1028,Hana Tran,hana.tran@example.invalid,2025-09-18 11:00:00,60,south,136,188.3,v3,R30,stable stable stable declined ambulatory stable,1
+P1127,Lior Ege,lior.ege@example.invalid,2025-02-05 18:00:00,57,east,147,131.4,v3,D01,declined declined followup afebrile afebrile ambulatory tolerating diet stable stable,0
+P1011,Sol Park,sol.park@example.invalid,2025-08-19 18:00:00,78,south,132,131.3,v3,D02,stable followup no acute distress declined afebrile,0
+P1073,Sol Gupta,sol.gupta@example.invalid,2025-08-26 09:00:00,78,west,107,144.7,v3,D03,ambulatory tolerating diet stable tolerating diet followup tolerating diet declined tolerating diet stable,0
+P1086,Pia Ilves,pia.ilves@example.invalid,2025-10-11 10:00:00,34,north,134,280.2,v3,D03,stable no acute distress followup no acute distress ambulatory tolerating diet followup no acute distress,0
+P1109,Gio Bui,gio.bui@example.invalid,2025-03-28 17:00:00,83,west,118,128.5,v3,D01,afebrile stable ambulatory,0
+P1073,Gio Lund,gio.lund@example.invalid,2025-05-27 03:00:00,33,north,161,241.3,v3,D03,no acute distress declined followup declined,0
+P1028,Sol Oyelaran,sol.oyelaran@example.invalid,2025-08-09 03:00:00,26,north,127,264.2,v3,D01,ambulatory ambulatory afebrile,0
+P1095,Noor Kovac,noor.kovac@example.invalid,2025-03-14 21:00:00,80,west,175,219.0,v3,D02,tolerating diet declined afebrile followup tolerating diet tolerating diet declined,0
+P1021,Quin Chen,quin.chen@example.invalid,2025-11-05 01:00:00,38,west,163,238.5,v3,D03,declined stable tolerating diet declined afebrile no acute distress declined,0
+P1058,Quin Nagy,quin.nagy@example.invalid,2025-04-30 19:00:00,77,north,162,173.0,v3,D02,declined no acute distress declined no acute distress tolerating diet,0
+P1111,Esi Nagy,esi.nagy@example.invalid,2025-01-19 17:00:00,72,south,109,216.5,v3,R30,afebrile afebrile ambulatory declined tolerating diet ambulatory,1
+P1075,Gio Diallo,gio.diallo@example.invalid,2025-09-02 02:00:00,90,north,153,156.8,v3,D03,ambulatory afebrile ambulatory,0
+P1082,Kai Sato,kai.sato@example.invalid,2025-10-03 14:00:00,83,north,148,243.7,v3,D03,followup no acute distress afebrile tolerating diet,0
+P1022,Cleo Tran,cleo.tran@example.invalid,2025-07-18 19:00:00,77,north,152,253.0,v3,D01,followup tolerating diet stable afebrile ambulatory declined ambulatory tolerating diet,0
+P1091,Sol Alvarez,sol.alvarez@example.invalid,2025-08-04 23:00:00,48,west,136,130.8,v3,D03,ambulatory afebrile tolerating diet afebrile declined followup,0
+P1073,Tam Ilves,tam.ilves@example.invalid,2025-07-16 01:00:00,61,east,147,133.0,v3,D01,stable ambulatory declined followup tolerating diet followup stable,0
+P1023,Kai Diallo,kai.diallo@example.invalid,2026-01-09 16:00:00,42,north,111,173.7,v3,D03,no acute distress stable afebrile tolerating diet no acute distress declined ambulatory,0
+P1075,Tam Sato,tam.sato@example.invalid,2025-08-21 16:00:00,54,north,97,267.3,v3,D02,ambulatory tolerating diet afebrile,0
+P1007,Quin Chen,quin.chen@example.invalid,2025-02-20 04:00:00,44,north,129,287.1,v3,D01,tolerating diet tolerating diet no acute distress ambulatory stable,0
+P1048,Dev Chen,dev.chen@example.invalid,2025-11-14 12:00:00,40,east,166,127.8,v3,D02,afebrile no acute distress stable followup afebrile declined declined,0
+P1043,Kai Chen,kai.chen@example.invalid,2025-05-01 17:00:00,24,north,167,205.3,v3,D01,followup no acute distress ambulatory followup declined followup stable no acute distress followup,0
+P1116,Esi Jansen,esi.jansen@example.invalid,2025-07-02 23:00:00,28,south,99,149.0,v3,D03,afebrile stable tolerating diet tolerating diet,0
+P1031,Tam Ege,tam.ege@example.invalid,2025-11-06 05:00:00,67,east,110,145.1,v3,D01,declined tolerating diet ambulatory ambulatory no acute distress tolerating diet,0
+P1015,Ivo Bui,ivo.bui@example.invalid,2025-12-07 12:00:00,29,south,,212.4,v3,D02,declined no acute distress declined ambulatory declined,0
+P1127,Rui Ege,rui.ege@example.invalid,2025-10-25 17:00:00,50,east,157,120.2,v3,D01,tolerating diet tolerating diet no acute distress ambulatory stable,0
+P1127,Mina Tran,mina.tran@example.invalid,2025-05-02 05:00:00,39,east,183,,v3,D01,stable followup declined stable afebrile,0
+P1063,Juno Ilves,juno.ilves@example.invalid,2025-08-25 18:00:00,86,west,149,216.6,v3,D02,followup declined declined ambulatory afebrile tolerating diet,0
+P1018,Ada Sato,ada.sato@example.invalid,2025-04-28 12:00:00,24,east,n/a,249.1,v3,D01,declined stable no acute distress stable afebrile afebrile no acute distress,0
+P1120,Ivo Gupta,ivo.gupta@example.invalid,2025-09-22 11:00:00,76,south,160,181.1,v3,D02,declined stable ambulatory,0
+P1125,Lior Jansen,lior.jansen@example.invalid,2025-06-15 13:00:00,44,west,111,209.6,v3,D02,afebrile stable no acute distress,0
+P1085,Hana Tran,hana.tran@example.invalid,2025-07-16 23:00:00,84,west,123,,v3,D03,declined no acute distress declined declined stable,0
+P1011,Ivo Tran,ivo.tran@example.invalid,2025-04-21 03:00:00,43,north,,127.9,v3,D02,declined no acute distress ambulatory no acute distress tolerating diet afebrile,0
+P1071,Bo Park,bo.park@example.invalid,2025-03-24 13:00:00,79,west,103,264.0,v3,D02,no acute distress ambulatory tolerating diet ambulatory stable stable,0
+P1023,Noor Ilves,noor.ilves@example.invalid,2025-06-05 03:00:00,90,west,165,135.2,v3,D03,stable stable followup tolerating diet stable afebrile tolerating diet,0
+P1088,Juno Nagy,juno.nagy@example.invalid,2025-03-17 08:00:00,78,east,161,173.8,v3,D02,declined tolerating diet afebrile declined followup afebrile declined ambulatory followup,0
+P1056,Pia Gupta,pia.gupta@example.invalid,2025-03-28 01:00:00,40,east,143,285.3,v3,D02,tolerating diet ambulatory stable,0
+P1029,Fen Kovac,fen.kovac@example.invalid,2026-01-05 06:00:00,38,south,96,214.7,v3,R30,stable stable ambulatory tolerating diet followup tolerating diet,1
+P1113,Bo Bui,bo.bui@example.invalid,2025-03-17 17:00:00,89,west,119,224.8,v3,R30,ambulatory no acute distress stable ambulatory afebrile ambulatory followup,1
+P1062,Juno Haas,juno.haas@example.invalid,2025-06-12 13:00:00,29,east,97,232.1,v3,D01,no acute distress declined ambulatory,0
+P1003,Sol Ege,sol.ege@example.invalid,2025-02-08 08:00:00,68,east,,188.5,v3,R30,stable tolerating diet ambulatory followup stable,1
+P1139,Dev Mbeki,dev.mbeki@example.invalid,2026-01-11 05:00:00,83,east,122,152.6,v3,D03,afebrile afebrile afebrile stable afebrile no acute distress,0
+P1032,Ivo Mbeki,ivo.mbeki@example.invalid,2025-03-03 03:00:00,66,east,107,216.7,v3,D01,ambulatory afebrile no acute distress afebrile stable ambulatory no acute distress,0
+P1028,Lior Chen,lior.chen@example.invalid,2025-03-01 00:00:00,43,east,104,228.7,v3,D02,stable declined tolerating diet afebrile followup declined no acute distress,0
+P1061,Kai Park,kai.park@example.invalid,2025-02-15 15:00:00,30,east,n/a,129.7,v3,D03,stable stable ambulatory,0
+P1071,Esi Oyelaran,esi.oyelaran@example.invalid,2025-10-11 05:00:00,58,west,140,,v3,D02,stable afebrile declined,0
+P1130,Cleo Tran,cleo.tran@example.invalid,2025-06-08 03:00:00,64,west,148,181.4,v3,D02,tolerating diet declined no acute distress tolerating diet,0
+P1127,Quin Ege,quin.ege@example.invalid,2025-03-08 09:00:00,66,north,106,213.4,v3,D03,declined afebrile tolerating diet afebrile stable ambulatory ambulatory,0
+P1058,Quin Nagy,quin.nagy@example.invalid,2025-04-30 19:00:00,77,north,162,173.0,v3,D02,declined no acute distress declined no acute distress tolerating diet,0
+P1093,Kai Rossi,kai.rossi@example.invalid,2025-12-17 14:00:00,40,north,171,165.1,v3,D01,declined tolerating diet afebrile ambulatory no acute distress stable no acute distress stable,0
+P1136,Tam Ferro,tam.ferro@example.invalid,2025-04-15 06:00:00,59,north,182,154.3,v3,D01,declined ambulatory followup followup ambulatory no acute distress,0
+P1016,Juno Nagy,juno.nagy@example.invalid,2025-06-15 23:00:00,91,west,156,154.1,v3,D01,no acute distress ambulatory ambulatory no acute distress,0
+P1017,Lior Alvarez,lior.alvarez@example.invalid,2025-10-28 03:00:00,27,north,149,287.3,v3,R30,declined afebrile declined no acute distress ambulatory ambulatory,1
+P1002,Pia Ilves,pia.ilves@example.invalid,2025-10-28 10:00:00,93,south,183,185.3,v3,D02,tolerating diet stable declined no acute distress no acute distress stable tolerating diet afebrile,0
+P1024,Hana Kovac,hana.kovac@example.invalid,2025-11-19 15:00:00,30,west,124,193.1,v3,D01,ambulatory declined no acute distress tolerating diet tolerating diet declined followup no acute distress stable,0
+P1044,Juno Rossi,juno.rossi@example.invalid,2025-03-23 22:00:00,48,east,153,146.1,v3,D03,followup ambulatory tolerating diet followup,0
+P1034,Quin Ege,quin.ege@example.invalid,2025-07-24 18:00:00,62,south,167,282.9,v3,D03,followup ambulatory ambulatory ambulatory afebrile declined declined followup,0
+P1022,Gio Park,gio.park@example.invalid,2025-02-04 18:00:00,47,north,138,240.4,v3,D03,stable no acute distress followup,0
+P1124,Juno Kovac,juno.kovac@example.invalid,2025-01-08 06:00:00,72,west,181,196.2,v3,D01,followup followup ambulatory ambulatory followup afebrile declined declined,0
+P1022,Rui Rossi,rui.rossi@example.invalid,2025-06-14 15:00:00,41,south,132,,v3,D02,tolerating diet afebrile followup no acute distress followup followup stable afebrile declined,0
+P1057,Lior Kovac,lior.kovac@example.invalid,2025-02-23 14:00:00,82,north,181,206.4,v3,D01,tolerating diet stable no acute distress ambulatory afebrile,0
+P1051,Ada Alvarez,ada.alvarez@example.invalid,2025-03-17 02:00:00,33,south,152,279.8,v3,D02,no acute distress followup stable declined no acute distress followup no acute distress stable,0
+P1087,Esi Quaye,esi.quaye@example.invalid,2025-04-19 23:00:00,90,west,131,199.4,v3,D02,followup tolerating diet stable stable declined declined,0
+P1112,Juno Haas,juno.haas@example.invalid,2025-07-04 05:00:00,73,south,147,208.0,v3,D02,followup followup no acute distress,0
+P1114,Fen Haas,fen.haas@example.invalid,2025-11-14 00:00:00,65,south,146,219.6,v3,D02,stable stable no acute distress,0
+P1104,Gio Gupta,gio.gupta@example.invalid,2025-06-02 05:00:00,42,west,123,144.4,v3,D03,afebrile tolerating diet declined tolerating diet declined tolerating diet followup,0
+P1058,Juno Diallo,juno.diallo@example.invalid,2025-03-22 15:00:00,71,west,142,206.5,v3,D01,declined ambulatory ambulatory followup afebrile,0
+P1117,Fen Jansen,fen.jansen@example.invalid,2025-03-01 15:00:00,53,north,180,262.0,v3,D02,ambulatory tolerating diet tolerating diet declined no acute distress tolerating diet declined followup afebrile,0
+P1109,Oz Kovac,oz.kovac@example.invalid,2025-09-08 16:00:00,35,west,110,197.6,v3,D01,stable stable no acute distress stable tolerating diet afebrile tolerating diet,0
+P1089,Fen Chen,fen.chen@example.invalid,2025-04-23 02:00:00,85,south,156,198.0,v3,D03,no acute distress stable followup followup afebrile ambulatory,0
+P1080,Noor Kovac,noor.kovac@example.invalid,2025-04-18 03:00:00,74,south,174,134.5,v3,D02,followup ambulatory declined ambulatory no acute distress,0
+P1047,Oz Chen,oz.chen@example.invalid,2025-11-22 00:00:00,54,north,133,245.4,v3,D03,afebrile ambulatory stable afebrile,0
+P1007,Tam Sato,tam.sato@example.invalid,2025-09-01 11:00:00,49,west,177,201.1,v3,D01,stable tolerating diet afebrile followup tolerating diet ambulatory stable followup,0
+P1034,Bo Nagy,bo.nagy@example.invalid,2025-11-04 04:00:00,26,west,176,257.4,v3,R30,afebrile declined tolerating diet tolerating diet tolerating diet no acute distress afebrile tolerating diet,1
+P1091,Ivo Bui,ivo.bui@example.invalid,2025-10-04 07:00:00,73,north,n/a,259.7,v3,D03,afebrile ambulatory stable afebrile ambulatory followup tolerating diet,0
+P1120,Hana Park,hana.park@example.invalid,2025-03-17 22:00:00,84,south,119,203.1,v3,D02,followup afebrile declined followup followup,0
+P1133,Pia Ferro,pia.ferro@example.invalid,2025-10-26 18:00:00,46,west,102,180.2,v3,D02,afebrile tolerating diet afebrile declined tolerating diet declined followup,0
+P1072,Rui Ferro,rui.ferro@example.invalid,2025-04-25 13:00:00,80,south,98,269.7,v3,D03,afebrile tolerating diet ambulatory ambulatory declined ambulatory afebrile ambulatory,0
+P1107,Ivo Mbeki,ivo.mbeki@example.invalid,2025-09-22 01:00:00,25,east,136,251.9,v3,D01,ambulatory no acute distress afebrile,0
+P1099,Bo Ferro,bo.ferro@example.invalid,2025-03-05 20:00:00,41,west,100,138.0,v3,D02,ambulatory tolerating diet stable no acute distress no acute distress tolerating diet,0
+P1007,Mina Kovac,mina.kovac@example.invalid,2025-07-29 18:00:00,92,west,130,120.7,v3,D01,no acute distress afebrile stable ambulatory afebrile declined followup,0
+P1081,Pia Ege,pia.ege@example.invalid,2025-11-08 19:00:00,61,west,175,244.1,v3,D02,afebrile followup no acute distress stable followup tolerating diet afebrile afebrile,0
+P1000,Fen Tran,fen.tran@example.invalid,2025-03-11 21:00:00,23,west,184,270.3,v3,D02,no acute distress ambulatory ambulatory,0
+P1015,Rui Lund,rui.lund@example.invalid,2025-02-11 14:00:00,21,west,152,,v3,D01,afebrile tolerating diet stable,0
+P1120,Ada Nagy,ada.nagy@example.invalid,2025-01-21 21:00:00,69,west,155,169.1,v3,D02,ambulatory stable declined declined ambulatory afebrile,0
+P1029,Quin Ilves,quin.ilves@example.invalid,2025-09-01 04:00:00,60,east,125,203.0,v3,D03,no acute distress tolerating diet stable no acute distress tolerating diet afebrile no acute distress,0
+P1023,Fen Tran,fen.tran@example.invalid,2025-12-07 11:00:00,76,north,164,283.4,v3,D01,followup no acute distress declined tolerating diet afebrile ambulatory,0
+P1125,Tam Mbeki,tam.mbeki@example.invalid,2025-04-22 09:00:00,85,west,118,135.4,v3,D02,no acute distress followup followup ambulatory stable no acute distress,0
+P1086,Pia Ilves,pia.ilves@example.invalid,2025-10-11 10:00:00,34,north,134,280.2,v3,D03,stable no acute distress followup no acute distress ambulatory tolerating diet followup no acute distress,0
+P1104,Oz Kovac,oz.kovac@example.invalid,2025-03-01 23:00:00,23,north,147,199.8,v3,D03,afebrile ambulatory followup stable followup declined ambulatory,0
+P1107,Dev Park,dev.park@example.invalid,2025-02-24 14:00:00,47,east,132,252.5,v3,D02,stable followup afebrile followup stable no acute distress tolerating diet stable,0
+P1001,Tam Ege,tam.ege@example.invalid,2025-01-29 06:00:00,46,east,148,166.2,v3,R30,declined afebrile followup,1
+P1068,Esi Ferro,esi.ferro@example.invalid,2025-10-07 16:00:00,48,south,112,168.7,v3,D03,declined ambulatory stable,0
+P1129,Ivo Oyelaran,ivo.oyelaran@example.invalid,2025-08-26 12:00:00,86,west,178,213.1,v3,R30,stable ambulatory stable stable stable ambulatory no acute distress,1
+P1124,Oz Ege,oz.ege@example.invalid,2025-06-27 04:00:00,57,east,164,220.0,v3,D03,followup afebrile followup stable,0
+P1125,Tam Lund,tam.lund@example.invalid,2025-01-12 03:00:00,47,west,148,205.4,v3,D03,afebrile followup ambulatory declined stable followup,0
+P1120,Tam Haas,tam.haas@example.invalid,2025-06-05 13:00:00,79,east,164,244.6,v3,D02,declined declined stable tolerating diet stable afebrile no acute distress no acute distress tolerating diet,0
+P1057,Bo Ege,bo.ege@example.invalid,2025-10-19 22:00:00,76,east,184,,v3,D01,ambulatory no acute distress no acute distress no acute distress declined tolerating diet,0
+P1035,Ada Oyelaran,ada.oyelaran@example.invalid,2025-02-26 15:00:00,57,north,103,281.0,v3,D01,afebrile declined afebrile afebrile stable tolerating diet followup stable stable,0
+P1122,Fen Park,fen.park@example.invalid,2025-08-03 07:00:00,56,south,158,,v3,D03,tolerating diet tolerating diet stable stable followup,0
+P1083,Kai Lund,kai.lund@example.invalid,2025-09-03 11:00:00,55,south,103,166.1,v3,D02,stable no acute distress declined followup followup followup no acute distress no acute distress,0
+P1041,Sol Quaye,sol.quaye@example.invalid,2025-01-08 18:00:00,53,east,113,284.6,v3,D02,afebrile tolerating diet no acute distress declined no acute distress ambulatory no acute distress followup ambulatory,0
+P1083,Hana Park,hana.park@example.invalid,2025-12-06 18:00:00,65,north,109,255.4,v3,R30,tolerating diet stable no acute distress,1
+P1033,Esi Chen,esi.chen@example.invalid,2025-04-14 15:00:00,29,south,167,228.5,v3,D01,ambulatory no acute distress followup followup,0
+P1107,Quin Gupta,quin.gupta@example.invalid,2025-11-05 23:00:00,39,east,135,163.2,v3,D03,ambulatory ambulatory followup no acute distress no acute distress no acute distress,0
+P1088,Juno Nagy,juno.nagy@example.invalid,2025-03-17 08:00:00,78,east,161,173.8,v3,D02,declined tolerating diet afebrile declined followup afebrile declined ambulatory followup,0
+P1019,Ivo Jansen,ivo.jansen@example.invalid,2025-07-13 18:00:00,58,west,176,134.5,v3,R30,declined afebrile declined afebrile declined stable tolerating diet tolerating diet,1
+P1033,Oz Ferro,oz.ferro@example.invalid,2025-08-20 04:00:00,34,south,162,120.2,v3,R30,ambulatory no acute distress ambulatory followup afebrile tolerating diet no acute distress stable,1
+P1022,Sol Haas,sol.haas@example.invalid,2025-02-19 16:00:00,47,east,135,213.3,v3,D03,afebrile no acute distress declined no acute distress,0
+P1081,Esi Haas,esi.haas@example.invalid,2025-02-09 02:00:00,92,south,148,151.7,v3,D03,no acute distress afebrile afebrile no acute distress afebrile declined declined afebrile,0
+P1126,Ivo Tran,ivo.tran@example.invalid,2025-04-17 10:00:00,63,west,125,145.4,v3,R30,ambulatory no acute distress tolerating diet,1
+P1069,Bo Quaye,bo.quaye@example.invalid,2025-01-06 20:00:00,82,east,176,,v3,D03,ambulatory no acute distress ambulatory followup,0
+P1023,Dev Alvarez,dev.alvarez@example.invalid,2025-05-26 07:00:00,51,south,101,147.7,v3,D01,no acute distress no acute distress no acute distress followup ambulatory,0
+P1001,Quin Alvarez,quin.alvarez@example.invalid,2026-01-13 04:00:00,88,north,147,,v3,D01,followup followup declined afebrile afebrile tolerating diet stable followup,0
+P1095,Sol Sato,sol.sato@example.invalid,2025-05-08 03:00:00,92,north,180,132.3,v3,D03,ambulatory stable no acute distress tolerating diet afebrile followup ambulatory,0
+P1067,Noor Diallo,noor.diallo@example.invalid,2025-08-05 19:00:00,23,north,155,187.8,v3,D03,stable stable afebrile afebrile no acute distress ambulatory tolerating diet,0
+P1032,Pia Bui,pia.bui@example.invalid,2025-06-08 15:00:00,38,north,180,215.7,v3,D01,followup tolerating diet afebrile no acute distress,0
+P1102,Ada Gupta,ada.gupta@example.invalid,2025-10-24 13:00:00,56,east,132,268.0,v3,D02,afebrile stable followup followup ambulatory,0
+P1102,Quin Ilves,quin.ilves@example.invalid,2025-07-20 04:00:00,38,east,165,206.5,v3,D02,no acute distress tolerating diet followup declined,0
+P1086,Cleo Mbeki,cleo.mbeki@example.invalid,2025-03-08 13:00:00,74,west,102,238.2,v3,D03,tolerating diet stable no acute distress no acute distress stable,0
+P1102,Lior Oyelaran,lior.oyelaran@example.invalid,2025-04-16 06:00:00,59,north,123,162.5,v3,D01,followup stable declined tolerating diet no acute distress tolerating diet no acute distress ambulatory,0
+P1130,Gio Ferro,gio.ferro@example.invalid,2025-01-29 11:00:00,87,east,144,148.6,v3,D02,ambulatory afebrile tolerating diet afebrile,0
+P1063,Fen Nagy,fen.nagy@example.invalid,2025-04-12 11:00:00,78,west,177,189.1,v3,D01,ambulatory afebrile tolerating diet declined afebrile afebrile,0
+P1031,Bo Quaye,bo.quaye@example.invalid,2025-06-11 03:00:00,74,east,131,224.3,v3,D01,no acute distress no acute distress followup stable ambulatory declined,0
+P1082,Esi Ferro,esi.ferro@example.invalid,2025-03-31 02:00:00,82,west,112,207.6,v3,D02,tolerating diet declined stable,0
+P1065,Juno Jansen,juno.jansen@example.invalid,2025-04-02 17:00:00,94,south,165,187.5,v3,D03,afebrile stable followup,0
+P1112,Sol Diallo,sol.diallo@example.invalid,2025-12-29 06:00:00,51,east,112,218.8,v3,D01,ambulatory tolerating diet declined stable declined afebrile,0
+P1138,Pia Ilves,pia.ilves@example.invalid,2025-02-25 03:00:00,54,north,157,255.4,v3,R30,declined followup ambulatory no acute distress declined declined stable no acute distress afebrile,1
+P1062,Esi Gupta,esi.gupta@example.invalid,2026-01-03 19:00:00,49,south,111,250.1,v3,D02,ambulatory tolerating diet declined ambulatory,0
+P1001,Mina Ferro,mina.ferro@example.invalid,2025-11-27 05:00:00,74,west,172,259.4,v3,D02,ambulatory afebrile afebrile afebrile,0
+P1041,Lior Oyelaran,lior.oyelaran@example.invalid,2025-08-04 03:00:00,41,south,130,194.2,v3,D01,followup afebrile declined followup afebrile declined afebrile declined tolerating diet,0
+P1020,Quin Sato,quin.sato@example.invalid,2025-02-07 18:00:00,39,east,114,192.0,v3,D01,tolerating diet afebrile stable declined,0
+P1037,Esi Ferro,esi.ferro@example.invalid,2025-12-12 03:00:00,81,east,182,255.9,v3,D01,stable followup tolerating diet stable ambulatory stable,0
+P1096,Noor Jansen,noor.jansen@example.invalid,2025-01-21 18:00:00,77,south,105,145.8,v3,D03,ambulatory ambulatory afebrile,0
+P1102,Quin Mbeki,quin.mbeki@example.invalid,2025-06-25 06:00:00,37,south,n/a,134.6,v3,D01,followup ambulatory declined followup stable,0
+P1130,Kai Oyelaran,kai.oyelaran@example.invalid,2025-01-12 04:00:00,40,south,97,143.8,v3,D02,no acute distress declined no acute distress followup stable followup no acute distress,0
+P1003,Rui Ferro,rui.ferro@example.invalid,2025-08-31 03:00:00,72,south,156,183.8,v3,R30,afebrile tolerating diet followup tolerating diet stable no acute distress,1
+P1008,Oz Kovac,oz.kovac@example.invalid,2025-02-09 19:00:00,72,west,158,160.5,v3,D02,tolerating diet afebrile followup followup no acute distress followup stable tolerating diet no acute distress,0
+P1031,Cleo Tran,cleo.tran@example.invalid,2025-10-30 04:00:00,48,south,102,151.2,v3,D01,ambulatory tolerating diet tolerating diet no acute distress tolerating diet tolerating diet declined,0
+P1104,Quin Rossi,quin.rossi@example.invalid,2025-06-01 01:00:00,54,north,170,226.5,v3,D01,followup afebrile tolerating diet stable afebrile afebrile followup stable,0
+P1008,Ivo Chen,ivo.chen@example.invalid,2025-10-21 14:00:00,78,south,152,168.9,v3,D01,no acute distress declined ambulatory afebrile followup,0
+P1085,Quin Jansen,quin.jansen@example.invalid,2025-01-29 22:00:00,86,west,168,154.7,v3,D03,tolerating diet followup tolerating diet ambulatory declined,0
+P1015,Kai Gupta,kai.gupta@example.invalid,2025-03-23 08:00:00,36,west,131,149.8,v3,R30,ambulatory stable no acute distress ambulatory ambulatory ambulatory declined afebrile ambulatory,1
+P1022,Bo Tran,bo.tran@example.invalid,2025-10-17 15:00:00,60,east,n/a,,v3,D01,afebrile declined no acute distress stable declined,0
+P1094,Ivo Alvarez,ivo.alvarez@example.invalid,2025-08-18 20:00:00,64,east,112,169.8,v3,D03,ambulatory afebrile no acute distress ambulatory,0
+P1029,Cleo Park,cleo.park@example.invalid,2026-01-09 01:00:00,30,west,106,287.9,v3,D03,afebrile no acute distress tolerating diet stable,0
+P1064,Pia Nagy,pia.nagy@example.invalid,2025-07-28 17:00:00,44,north,171,198.9,v3,D01,ambulatory stable afebrile followup no acute distress ambulatory tolerating diet afebrile ambulatory,0
+P1004,Mina Alvarez,mina.alvarez@example.invalid,2025-01-19 11:00:00,29,east,110,168.8,v3,D02,no acute distress no acute distress declined followup ambulatory,0
+P1017,Cleo Quaye,cleo.quaye@example.invalid,2025-07-01 21:00:00,92,west,134,,v3,D01,stable ambulatory followup afebrile stable,0
+P1098,Ada Tran,ada.tran@example.invalid,2025-08-05 21:00:00,71,north,122,139.2,v3,D02,ambulatory stable afebrile afebrile afebrile,0
+P1010,Gio Chen,gio.chen@example.invalid,2025-03-02 02:00:00,40,south,157,244.4,v3,D02,declined followup declined no acute distress no acute distress no acute distress tolerating diet tolerating diet tolerating diet,0
+P1107,Juno Bui,juno.bui@example.invalid,2025-08-20 06:00:00,37,north,167,178.8,v3,D02,afebrile followup no acute distress afebrile ambulatory,0
+P1007,Bo Rossi,bo.rossi@example.invalid,2026-01-02 11:00:00,26,west,114,134.6,v3,D02,declined afebrile stable,0
+P1018,Kai Haas,kai.haas@example.invalid,2025-12-07 06:00:00,92,north,164,,v3,D01,followup tolerating diet followup no acute distress tolerating diet,0
+P1135,Gio Lund,gio.lund@example.invalid,2025-12-04 04:00:00,76,north,172,188.1,v3,D03,no acute distress stable followup declined no acute distress afebrile followup afebrile,0
+P1068,Rui Ege,rui.ege@example.invalid,2025-03-29 11:00:00,50,east,100,186.6,v3,D02,ambulatory no acute distress no acute distress tolerating diet afebrile ambulatory tolerating diet,0
+P1129,Ada Alvarez,ada.alvarez@example.invalid,2025-05-20 19:00:00,25,west,150,258.5,v3,D01,no acute distress no acute distress afebrile tolerating diet followup,0
+P1035,Esi Ilves,esi.ilves@example.invalid,2025-10-04 20:00:00,53,west,133,155.5,v3,R30,afebrile tolerating diet no acute distress followup,1
+P1109,Fen Mbeki,fen.mbeki@example.invalid,2025-12-07 01:00:00,87,west,124,231.2,v3,D02,afebrile ambulatory followup ambulatory afebrile stable,0
+P1105,Juno Quaye,juno.quaye@example.invalid,2025-07-29 06:00:00,60,south,163,218.3,v3,R30,tolerating diet stable stable followup no acute distress ambulatory no acute distress afebrile declined,1
+P1076,Dev Ilves,dev.ilves@example.invalid,2025-05-09 23:00:00,84,west,n/a,124.7,v3,D03,tolerating diet followup stable declined,0
+P1033,Lior Diallo,lior.diallo@example.invalid,2025-01-20 02:00:00,74,south,140,228.4,v3,D01,ambulatory declined followup declined no acute distress followup tolerating diet no acute distress,0
+P1068,Quin Chen,quin.chen@example.invalid,2025-03-09 22:00:00,31,north,161,,v3,D03,tolerating diet declined afebrile declined ambulatory tolerating diet,0
+P1086,Gio Rossi,gio.rossi@example.invalid,2025-05-13 12:00:00,72,west,122,147.1,v3,D01,no acute distress followup declined afebrile,0
+P1089,Dev Haas,dev.haas@example.invalid,2025-05-05 15:00:00,75,west,130,182.9,v3,D01,followup stable stable afebrile ambulatory declined stable,0
+P1011,Mina Bui,mina.bui@example.invalid,2025-11-25 16:00:00,47,north,180,222.9,v3,D03,stable no acute distress afebrile stable declined followup,0
+P1114,Mina Chen,mina.chen@example.invalid,2025-08-07 13:00:00,48,east,113,250.2,v3,D02,followup tolerating diet declined stable stable followup,0
+P1123,Oz Mbeki,oz.mbeki@example.invalid,2025-04-14 16:00:00,77,west,176,246.5,v3,D02,tolerating diet tolerating diet declined tolerating diet no acute distress afebrile tolerating diet,0
+P1015,Esi Gupta,esi.gupta@example.invalid,2025-07-12 04:00:00,54,east,169,264.8,v3,D02,afebrile ambulatory stable ambulatory ambulatory afebrile declined,0
+P1003,Quin Nagy,quin.nagy@example.invalid,2025-04-02 19:00:00,45,east,129,203.6,v3,D01,tolerating diet ambulatory stable,0
+P1030,Tam Ilves,tam.ilves@example.invalid,2025-12-16 09:00:00,61,south,169,289.9,v3,D01,stable followup stable tolerating diet no acute distress,0
+P1069,Noor Sato,noor.sato@example.invalid,2025-05-01 16:00:00,57,east,174,153.5,v3,D01,tolerating diet declined afebrile,0
+P1104,Sol Sato,sol.sato@example.invalid,2025-03-07 04:00:00,73,south,121,194.5,v3,D01,tolerating diet followup followup followup,0
+P1049,Quin Chen,quin.chen@example.invalid,2025-04-26 17:00:00,86,south,121,288.9,v3,R30,stable no acute distress followup followup followup declined,1
+P1074,Noor Alvarez,noor.alvarez@example.invalid,2025-03-12 16:00:00,86,west,169,244.9,v3,D01,followup no acute distress ambulatory stable,0
+P1137,Bo Quaye,bo.quaye@example.invalid,2025-07-22 14:00:00,45,south,174,260.4,v3,D02,tolerating diet ambulatory stable declined declined ambulatory tolerating diet stable,0
+P1000,Mina Rossi,mina.rossi@example.invalid,2025-02-17 05:00:00,38,south,147,271.3,v3,R30,no acute distress tolerating diet afebrile followup tolerating diet ambulatory ambulatory,1
+P1067,Ada Bui,ada.bui@example.invalid,2025-01-24 14:00:00,65,north,125,229.5,v3,D02,declined afebrile tolerating diet followup,0
+P1109,Fen Bui,fen.bui@example.invalid,2025-07-08 04:00:00,76,north,118,245.3,v3,D01,followup no acute distress followup declined stable,0
+P1009,Gio Jansen,gio.jansen@example.invalid,2025-12-17 07:00:00,51,east,n/a,225.4,v3,D01,tolerating diet afebrile followup tolerating diet stable,0
+P1044,Mina Haas,mina.haas@example.invalid,2025-11-21 17:00:00,29,south,170,,v3,D03,stable tolerating diet declined,0
+P1020,Bo Quaye,bo.quaye@example.invalid,2025-03-25 18:00:00,51,west,154,167.5,v3,D02,declined declined ambulatory afebrile declined declined,0
+P1020,Rui Oyelaran,rui.oyelaran@example.invalid,2025-06-16 12:00:00,77,south,115,211.6,v3,D02,declined tolerating diet followup declined followup afebrile stable afebrile no acute distress,0
+P1101,Esi Chen,esi.chen@example.invalid,2025-09-02 12:00:00,87,west,157,280.7,v3,D01,stable stable afebrile declined stable stable tolerating diet,0
+P1058,Gio Ilves,gio.ilves@example.invalid,2025-04-05 16:00:00,56,west,140,216.3,v3,D01,ambulatory no acute distress afebrile declined tolerating diet followup declined,0
+P1125,Hana Bui,hana.bui@example.invalid,2025-04-23 14:00:00,42,north,157,177.1,v3,D03,tolerating diet no acute distress ambulatory tolerating diet afebrile followup ambulatory no acute distress ambulatory,0
+P1049,Cleo Ege,cleo.ege@example.invalid,2025-08-12 05:00:00,72,south,119,175.4,v3,D01,followup no acute distress tolerating diet ambulatory ambulatory stable followup,0
+P1070,Ivo Mbeki,ivo.mbeki@example.invalid,2025-08-10 19:00:00,50,north,132,242.2,v3,D02,stable declined no acute distress ambulatory afebrile no acute distress,0
+P1045,Ada Park,ada.park@example.invalid,2025-09-08 08:00:00,70,west,170,127.2,v3,D02,followup declined stable ambulatory tolerating diet stable afebrile,0
+P1132,Tam Quaye,tam.quaye@example.invalid,2025-11-19 00:00:00,90,west,170,173.1,v3,D02,no acute distress stable declined stable declined no acute distress declined,0
+P1016,Hana Ege,hana.ege@example.invalid,2025-12-12 23:00:00,25,south,182,141.2,v3,D03,ambulatory followup ambulatory tolerating diet ambulatory tolerating diet no acute distress,0
+P1068,Mina Nagy,mina.nagy@example.invalid,2025-04-19 16:00:00,32,north,165,177.5,v3,D01,no acute distress stable afebrile,0
+P1081,Cleo Rossi,cleo.rossi@example.invalid,2025-04-14 05:00:00,63,west,142,150.5,v3,D03,ambulatory stable declined tolerating diet,0
+P1025,Bo Sato,bo.sato@example.invalid,2025-01-19 10:00:00,90,north,109,218.1,v3,D02,tolerating diet tolerating diet afebrile stable followup afebrile,0
+P1063,Gio Chen,gio.chen@example.invalid,2025-05-11 18:00:00,31,south,137,250.2,v3,R30,declined afebrile afebrile followup declined declined tolerating diet,1
+P1090,Kai Quaye,kai.quaye@example.invalid,2025-06-06 04:00:00,23,north,155,,v3,D01,declined followup stable followup tolerating diet followup stable,0
+P1000,Noor Park,noor.park@example.invalid,2025-08-16 01:00:00,60,west,176,,v3,D01,afebrile ambulatory ambulatory tolerating diet no acute distress followup tolerating diet,0
+P1011,Sol Haas,sol.haas@example.invalid,2025-12-17 14:00:00,35,south,182,192.0,v3,D03,no acute distress no acute distress followup afebrile ambulatory,0
+P1010,Ivo Chen,ivo.chen@example.invalid,2025-01-23 13:00:00,35,north,141,269.7,v3,D02,ambulatory afebrile tolerating diet followup tolerating diet afebrile followup followup tolerating diet,0
+P1049,Hana Ege,hana.ege@example.invalid,2025-07-05 14:00:00,82,west,130,176.9,v3,D01,no acute distress followup tolerating diet declined afebrile no acute distress stable tolerating diet ambulatory,0
+P1011,Oz Tran,oz.tran@example.invalid,2025-11-17 03:00:00,48,west,143,257.7,v3,D01,afebrile ambulatory followup ambulatory no acute distress tolerating diet,0
+P1124,Hana Ege,hana.ege@example.invalid,2025-08-18 17:00:00,55,south,137,230.6,v3,D03,ambulatory afebrile afebrile stable ambulatory stable no acute distress followup,0
+P1130,Gio Ferro,gio.ferro@example.invalid,2025-01-29 11:00:00,87,east,144,148.6,v3,D02,ambulatory afebrile tolerating diet afebrile,0
+P1080,Tam Lund,tam.lund@example.invalid,2026-01-11 14:00:00,82,west,,161.7,v3,D03,tolerating diet followup tolerating diet declined followup stable ambulatory,0

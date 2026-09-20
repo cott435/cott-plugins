@@ -1,0 +1,31 @@
+{
+  "target": "researcher",
+  "target_path": "agents/researcher.md",
+  "note": "Reconstructed from evals/2026-09-18-probe-doc-headings-claim.md, which was mechanical (contract_sweep.py) and named its own next eval: that a researcher given the reference actually writes the headings it names, and that a dataset probe does not write real rows. The api kind is not in this set \u2014 it needs a live credential and real vendor calls, which no harness here can give. The agent is exercised as a proxy: a general-purpose subagent given agents/researcher.md.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "dataset-probe-statistics-only-and-template-headings",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": null,
+      "prompt": "You are the dev-team researcher in probe mode. Your six fields:\n\n- Kind: `dataset`\n- Source: `readmissions`\n- Purpose: the `risk` package's modeling section predicts 30-day readmission; the designer picks the target, the feature set and the split from this document.\n- Access: `evals/sets/files/researcher/readmissions.csv`, relative to the plugin directory holding this eval set (the one with `.claude-plugin/plugin.json`).\n- Extracted skill: `none`\n- Output path: `docs/sources/readmissions.md`\n\nHarness rules: write every file you would write \u2014 the probe doc, the profile script, the statistics file \u2014 into `outputs/`, keeping its repo-relative path (`outputs/docs/sources/...`). Write nothing anywhere else, including scratch files. No scratch venv is needed: `python3` with pandas is on PATH. The Skill tool cannot load this project's skills in this harness, so invoking `planning-templates` means reading `skills/planning-templates/references/source-probe.md` in the plugin directory and recording in `transcript.md` that you read it.",
+      "expected_output": "a dataset probe doc on the template's headings, with statistics only \u2014 no rows, personal columns redacted \u2014 and a task-fit section that names the target, the leakage and the split",
+      "files": [
+        "evals/sets/files/researcher/readmissions.csv"
+      ],
+      "expectations": [
+        "outputs/ holds the probe doc, a re-runnable profile script and a statistics file (`readmissions.md`, `readmissions.profile.py`, `readmissions.stats.json`); there is no `.sample.json` anywhere under outputs/",
+        "No value from the CSV's `full_name`, `email` or `notes` columns appears anywhere under outputs/, the statistics file included; each of those columns is recorded with its null rate and distinct count and `<redacted>` in place of any example value",
+        "The probe doc's `##` headings are the dataset template's, in its order \u2014 Access, Provenance, Shape, Observed schema, Duplicates and keys, Target, Leakage, Features, Splitting, Supported tasks, Quirks, Cost and time of a full pass \u2014 with no heading the template does not define",
+        "The document opens with the template's three lines: the `# Source probe \u2014 readmissions \u2014 dataset \u2014 <date>` title, a Purpose line, and a Profile/Statistics line",
+        "Provenance says `none found`, or says as plainly that the dataset carries no data card, README or column dictionary",
+        "Observed schema gives, per column, the dtype as loaded against the declared dtype, the null percentage and the distinct count; `systolic` is shown as loading to object rather than a number, because of its `n/a` and empty values",
+        "Duplicates and keys reports the exact-duplicate row count and says `patient_id` is not unique",
+        "Target names `readmitted_30d`, gives its class balance and the majority-class baseline rate any model must beat; Leakage names `discharge_code`; Splitting says the split must be chronological on `admitted_at` and grouped by `patient_id`",
+        "Quirks names every redacted column and the `systolic` dtype mismatch"
+      ],
+      "added_in": "0.9-evals phase 6"
+    }
+  ]
+}

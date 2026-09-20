@@ -6,3 +6,6 @@ site/docs/
 site/mkdocs.yml
 site/_site/
 .idea/
+
+# run-evals workspace — iterations, never committed
+evals/workspace/

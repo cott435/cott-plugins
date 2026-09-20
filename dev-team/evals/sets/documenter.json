@@ -1,0 +1,47 @@
+{
+  "target": "documenter",
+  "target_path": "agents/documenter.md",
+  "note": "Reconstructed from evals/2026-09-17-documenter-interface-heading-contract.md. That log's own cases were mechanical heading checks, now enforced by contracts.yml's `interface.md headings` claim through check-contracts; what it left open \u2014 and named as the run worth doing before the next release that touches documenter.md \u2014 was whether the heading contract changes what a documenter run actually produces. These two evals are that run. The agent is exercised as a proxy: a general-purpose subagent given agents/documenter.md.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "cli-commands-reach-the-package-readme",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": null,
+      "prompt": "You are the dev-team documenter, invoked by `/dev-team:finalize-project`.\n\nThe repo's shipped documents are the tree at `evals/sets/files/documenter/repo/`, relative to the plugin directory holding this eval set (the one with `.claude-plugin/plugin.json`). Treat that directory as the repo root and read it read-only.\n\nAssemble the package README for `data`, the docs-site API page for `data`, and the root README, and report everything still open.\n\nHarness rules: write every file you would write into `outputs/`, keeping its repo-relative path \u2014 `outputs/packages/data/README.md`, `outputs/docs/api/data.md`, `outputs/README.md`. Write nothing anywhere else.",
+      "expected_output": "the package README carries the data-daily command read from interface.md's CLI commands table, and Known gaps reports the real gaps",
+      "files": [
+        "evals/sets/files/documenter/repo/"
+      ],
+      "expectations": [
+        "outputs/packages/data/README.md exists and lists the `data-daily` command with its entry point `data.cli:daily` and at least one of its two arguments, matching interface.md's CLI commands table",
+        "No output file mentions a `Scripts` heading, and no Known gaps entry claims that `interface.md` is missing one",
+        "Known gaps names the `data/clean` section as having no README",
+        "Known gaps names D2 as an open decision; D1 is not reported as decided-but-unbuilt, since it carries an Applied line",
+        "The README's account of the daily pipeline's failure behavior matches interface.md's Pipelines wording \u2014 three retries on a vendor 429, then VendorUnavailable \u2014 rather than anything read out of the section's source"
+      ],
+      "added_in": "0.9-evals phase 6"
+    },
+    {
+      "id": 2,
+      "name": "missing-heading-becomes-known-gaps",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": null,
+      "prompt": "You are the dev-team documenter, invoked by `/dev-team:finalize-project`.\n\nThe repo's shipped documents are the tree at `evals/sets/files/documenter/repo/`, relative to the plugin directory holding this eval set (the one with `.claude-plugin/plugin.json`). Treat that directory as the repo root and read it read-only. One substitution: read `evals/sets/files/documenter/interface-missing-shapes.md` as `docs/packages/data/interface.md`, in place of the copy in the tree.\n\nAssemble the package README for `data`, the docs-site API page for `data`, and the root README, and report everything still open.\n\nHarness rules: write every file you would write into `outputs/`, keeping its repo-relative path \u2014 `outputs/packages/data/README.md`, `outputs/docs/api/data.md`, `outputs/README.md`. Write nothing anywhere else.",
+      "expected_output": "the absent Shapes provided heading becomes a Known gaps entry naming the package and the heading, with nothing substituted for it",
+      "files": [
+        "evals/sets/files/documenter/repo/",
+        "evals/sets/files/documenter/interface-missing-shapes.md"
+      ],
+      "expectations": [
+        "Known gaps holds an entry naming the package `data` and the heading `Shapes provided` as one the documenter expected and could not find",
+        "No output substitutes another heading's content for the package's shapes \u2014 in particular the Public names table is not presented as the shapes provided",
+        "The shapes are not inferred from source: `BAR_COLUMNS` from `clean/rules.py` appears nowhere as the package's provided shape",
+        "outputs/packages/data/README.md still lists the `data-daily` command with its entry point, so the missing heading cost only its own section"
+      ],
+      "added_in": "0.9-evals phase 6"
+    }
+  ]
+}

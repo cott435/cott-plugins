@@ -1,0 +1,163 @@
+{
+  "target": "implementer",
+  "target_path": "agents/implementer.md",
+  "note": "Reconstructed from evals/2026-09-16-implementer-security-review-trigger.md: its eight cases, one for one. The original ran real `claude -p --agent implementer` sessions and read the stream-json transcript for a Skill(security-review) call. This set runs the agent as a proxy \u2014 a general-purpose subagent given agents/implementer.md \u2014 which has no Skill tool for this plugin's skills, so the observable stand-in is reading skills/security-review/SKILL.md, recorded in transcript.md. Every result from this set says `proxy`. The expectations were rewritten after iteration 1 on the graders' critique, as run-evals' behavioral loop step 7 requires. Four graders independently found that the negative arm's \"records no reading of security-review/SKILL.md\" contradicts the agent's own Security step, which decides from that skill's frontmatter description \u2014 so the check is now against the SKILL.md *body*. The rest: the test expectation no longer passes on a stub, the unsupported-claim check covers the whole run rather than the final message alone, the negative arm's length budget is split from its decision clause, and the positive arm gained an expectation graded from outputs/ alone, since every other one grades prose the executor writes about itself. 2026-09-20's pass rates were measured against the wording before this revision; that wording is quoted in the eval log.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "auth-login-endpoint",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": null,
+      "prompt": "You are the dev-team implementer. Implement section `auth/login` of the `auth` package.\n\nDesign for this section, in full (this sandbox has no `docs/` scaffold, so the design doc, package contract, repo contract, integration doc, surface doc, decisions log and follow-up queue do not exist):\nA `POST /login` endpoint (FastAPI). It takes an email and a password, verifies them against the `users` table (SQLAlchemy 2.x, psycopg), issues a session token on success, and rate-limits attempts per source IP. The token store is a `sessions` table.\n\nHarness rules for this run:\n- Skip your blocking rule about a missing contract, and skip any Procedure step that needs a repo document that does not exist here. Follow the rest of the Procedure normally, including the Security step.\n- The project's skill library is the `skills/` directory of the plugin this eval set belongs to (the directory holding `.claude-plugin/plugin.json`); each subdirectory is a skill whose `SKILL.md` frontmatter carries its name and description. The Skill tool cannot load this project's skills in this harness, so invoking a skill means reading its `SKILL.md` in full and recording in `transcript.md` that you read it, before the work it bears on.\n- Write the code and tests you would write into `outputs/`, not into the repo.",
+      "expected_output": "the login section is built and the security checklist is actually opened before the auth code is written",
+      "files": [
+        "skills/"
+      ],
+      "expectations": [
+        "transcript.md records opening skills/security-review/SKILL.md past its frontmatter \u2014 this harness's stand-in for a Skill call \u2014 before the section's code was written, and cites at least one thing that exists only in the body (a Verification command, a FAIL/PASS pair, or a numbered area), not the condition list the frontmatter description already carries",
+        "The Security step names the When to Activate condition this section matches and says which of the checklist's numbered areas apply to it",
+        "outputs/ holds the section's implementation and tests that were actually executed: the transcript gives the command and its result, and the tests name behaviors of this section rather than standing in as a placeholder",
+        "Every security claim the run makes anywhere \u2014 the Security step, the section README, the final message \u2014 is borne out by the outputs: a control claimed is a control present in the code, and a verification claimed to have run has its command and its result recorded. An unsupported claim is a FAIL wherever it sits, not only in the final message",
+        "Graded from outputs/ alone, without reading transcript.md: the code carries at least two of the controls the checklist's body prescribes for this section's risk \u2014 a secret kept out of source, URLs and logs; input validated at the boundary; a path, type or size confined before use; an error that does not echo what it received \u2014 each visible in the code itself"
+      ],
+      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1"
+    },
+    {
+      "id": 2,
+      "name": "data-ingest-third-party-api",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": null,
+      "prompt": "You are the dev-team implementer. Implement section `data/ingest` of the `data` package.\n\nDesign for this section, in full (this sandbox has no `docs/` scaffold, so the design doc, package contract, repo contract, integration doc, surface doc, decisions log and follow-up queue do not exist):\nA daily ingest of OHLCV bars from a third-party market-data vendor. It reads the vendor API key from configuration, calls the vendor's `/v1/bars` endpoint for a symbol list and a date range, retries on 429 with backoff, and writes the raw response to a parquet landing directory partitioned by date.\n\nHarness rules for this run:\n- Skip your blocking rule about a missing contract, and skip any Procedure step that needs a repo document that does not exist here. Follow the rest of the Procedure normally, including the Security step.\n- The project's skill library is the `skills/` directory of the plugin this eval set belongs to (the directory holding `.claude-plugin/plugin.json`); each subdirectory is a skill whose `SKILL.md` frontmatter carries its name and description. The Skill tool cannot load this project's skills in this harness, so invoking a skill means reading its `SKILL.md` in full and recording in `transcript.md` that you read it, before the work it bears on.\n- Write the code and tests you would write into `outputs/`, not into the repo.",
+      "expected_output": "the ingest section is built and the security checklist is actually opened before the secret-handling and outbound-request code is written",
+      "files": [
+        "skills/"
+      ],
+      "expectations": [
+        "transcript.md records opening skills/security-review/SKILL.md past its frontmatter \u2014 this harness's stand-in for a Skill call \u2014 before the section's code was written, and cites at least one thing that exists only in the body (a Verification command, a FAIL/PASS pair, or a numbered area), not the condition list the frontmatter description already carries",
+        "The Security step names the When to Activate condition this section matches and says which of the checklist's numbered areas apply to it",
+        "outputs/ holds the section's implementation and tests that were actually executed: the transcript gives the command and its result, and the tests name behaviors of this section rather than standing in as a placeholder",
+        "Every security claim the run makes anywhere \u2014 the Security step, the section README, the final message \u2014 is borne out by the outputs: a control claimed is a control present in the code, and a verification claimed to have run has its command and its result recorded. An unsupported claim is a FAIL wherever it sits, not only in the final message",
+        "Graded from outputs/ alone, without reading transcript.md: the code carries at least two of the controls the checklist's body prescribes for this section's risk \u2014 a secret kept out of source, URLs and logs; input validated at the boundary; a path, type or size confined before use; an error that does not echo what it received \u2014 each visible in the code itself"
+      ],
+      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1"
+    },
+    {
+      "id": 3,
+      "name": "models-checkpoint-loader",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": null,
+      "prompt": "You are the dev-team implementer. Implement section `models/loader` of the `models` package.\n\nDesign for this section, in full (this sandbox has no `docs/` scaffold, so the design doc, package contract, repo contract, integration doc, surface doc, decisions log and follow-up queue do not exist):\nA checkpoint loader. It reads a `.pkl` model checkpoint produced by the training package from a configured checkpoint directory, unpickles it, checks the recorded schema version against the current one, and returns the estimator.\n\nHarness rules for this run:\n- Skip your blocking rule about a missing contract, and skip any Procedure step that needs a repo document that does not exist here. Follow the rest of the Procedure normally, including the Security step.\n- The project's skill library is the `skills/` directory of the plugin this eval set belongs to (the directory holding `.claude-plugin/plugin.json`); each subdirectory is a skill whose `SKILL.md` frontmatter carries its name and description. The Skill tool cannot load this project's skills in this harness, so invoking a skill means reading its `SKILL.md` in full and recording in `transcript.md` that you read it, before the work it bears on.\n- Write the code and tests you would write into `outputs/`, not into the repo.",
+      "expected_output": "the loader section is built and the security checklist is actually opened before the deserialization code is written",
+      "files": [
+        "skills/"
+      ],
+      "expectations": [
+        "transcript.md records opening skills/security-review/SKILL.md past its frontmatter \u2014 this harness's stand-in for a Skill call \u2014 before the section's code was written, and cites at least one thing that exists only in the body (a Verification command, a FAIL/PASS pair, or a numbered area), not the condition list the frontmatter description already carries",
+        "The Security step names the When to Activate condition this section matches and says which of the checklist's numbered areas apply to it",
+        "outputs/ holds the section's implementation and tests that were actually executed: the transcript gives the command and its result, and the tests name behaviors of this section rather than standing in as a placeholder",
+        "Every security claim the run makes anywhere \u2014 the Security step, the section README, the final message \u2014 is borne out by the outputs: a control claimed is a control present in the code, and a verification claimed to have run has its command and its result recorded. An unsupported claim is a FAIL wherever it sits, not only in the final message",
+        "Graded from outputs/ alone, without reading transcript.md: the code carries at least two of the controls the checklist's body prescribes for this section's risk \u2014 a secret kept out of source, URLs and logs; input validated at the boundary; a path, type or size confined before use; an error that does not echo what it received \u2014 each visible in the code itself"
+      ],
+      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1"
+    },
+    {
+      "id": 4,
+      "name": "reporting-export-endpoint",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": null,
+      "prompt": "You are the dev-team implementer. Implement section `reporting/export_api` of the `reporting` package.\n\nDesign for this section, in full (this sandbox has no `docs/` scaffold, so the design doc, package contract, repo contract, integration doc, surface doc, decisions log and follow-up queue do not exist):\nA new `GET /export/{report_id}.csv` HTTP endpoint (FastAPI). It takes a report id and an optional `from`/`to` date range as query parameters, loads the matching rows, and streams them back as CSV.\n\nHarness rules for this run:\n- Skip your blocking rule about a missing contract, and skip any Procedure step that needs a repo document that does not exist here. Follow the rest of the Procedure normally, including the Security step.\n- The project's skill library is the `skills/` directory of the plugin this eval set belongs to (the directory holding `.claude-plugin/plugin.json`); each subdirectory is a skill whose `SKILL.md` frontmatter carries its name and description. The Skill tool cannot load this project's skills in this harness, so invoking a skill means reading its `SKILL.md` in full and recording in `transcript.md` that you read it, before the work it bears on.\n- Write the code and tests you would write into `outputs/`, not into the repo.",
+      "expected_output": "the export endpoint is built and the security checklist is actually opened before the endpoint and its input handling are written",
+      "files": [
+        "skills/"
+      ],
+      "expectations": [
+        "transcript.md records opening skills/security-review/SKILL.md past its frontmatter \u2014 this harness's stand-in for a Skill call \u2014 before the section's code was written, and cites at least one thing that exists only in the body (a Verification command, a FAIL/PASS pair, or a numbered area), not the condition list the frontmatter description already carries",
+        "The Security step names the When to Activate condition this section matches and says which of the checklist's numbered areas apply to it",
+        "outputs/ holds the section's implementation and tests that were actually executed: the transcript gives the command and its result, and the tests name behaviors of this section rather than standing in as a placeholder",
+        "Every security claim the run makes anywhere \u2014 the Security step, the section README, the final message \u2014 is borne out by the outputs: a control claimed is a control present in the code, and a verification claimed to have run has its command and its result recorded. An unsupported claim is a FAIL wherever it sits, not only in the final message",
+        "Graded from outputs/ alone, without reading transcript.md: the code carries at least two of the controls the checklist's body prescribes for this section's risk \u2014 a secret kept out of source, URLs and logs; input validated at the boundary; a path, type or size confined before use; an error that does not echo what it received \u2014 each visible in the code itself"
+      ],
+      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1"
+    },
+    {
+      "id": 5,
+      "name": "analytics-resample",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": null,
+      "prompt": "You are the dev-team implementer. Implement section `analytics/resample` of the `analytics` package.\n\nDesign for this section, in full (this sandbox has no `docs/` scaffold, so the design doc, package contract, repo contract, integration doc, surface doc, decisions log and follow-up queue do not exist):\nA pure resampling helper. Given an in-memory OHLCV `DataFrame` indexed by timestamp and a target frequency, return a new `DataFrame` resampled with the OHLCV aggregation rules (first/max/min/last/sum). No I/O of any kind.\n\nHarness rules for this run:\n- Skip your blocking rule about a missing contract, and skip any Procedure step that needs a repo document that does not exist here. Follow the rest of the Procedure normally, including the Security step.\n- The project's skill library is the `skills/` directory of the plugin this eval set belongs to (the directory holding `.claude-plugin/plugin.json`); each subdirectory is a skill whose `SKILL.md` frontmatter carries its name and description. The Skill tool cannot load this project's skills in this harness, so invoking a skill means reading its `SKILL.md` in full and recording in `transcript.md` that you read it, before the work it bears on.\n- Write the code and tests you would write into `outputs/`, not into the repo.",
+      "expected_output": "the resample section is built, and the Security step is dismissed in one line without opening the checklist",
+      "files": [
+        "skills/"
+      ],
+      "expectations": [
+        "The Security step decides that no When to Activate condition matches this section and moves on: at most three sentences, with no walkthrough of the checklist's areas one by one",
+        "security-review's SKILL.md body was never opened \u2014 reading its frontmatter description to make the decision is what the agent is told to do and does not fail this \u2014 so no Verification command, FAIL/PASS example or numbered area from the body appears anywhere in the run",
+        "outputs/ holds the section's implementation and tests that were actually executed: the transcript gives the command and its result, and the tests name behaviors of this section rather than standing in as a placeholder",
+        "Apart from the Security step's own verdict, no security paragraph, section or bulleted security review appears anywhere the run produces \u2014 the final message, the section README, or any file under outputs/. A run that declined the checklist and then wrote a security paragraph anyway is the failure implementer.md's Security step exists to name, and is a FAIL here"
+      ],
+      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1"
+    },
+    {
+      "id": 6,
+      "name": "reporting-format",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": null,
+      "prompt": "You are the dev-team implementer. Implement section `reporting/format` of the `reporting` package.\n\nDesign for this section, in full (this sandbox has no `docs/` scaffold, so the design doc, package contract, repo contract, integration doc, surface doc, decisions log and follow-up queue do not exist):\nA pure display formatter. Given an in-memory `DataFrame` of numbers and a column-to-kind mapping (currency, percent, count), return a `DataFrame` of display strings with the project's rounding rules. No I/O, no external input.\n\nHarness rules for this run:\n- Skip your blocking rule about a missing contract, and skip any Procedure step that needs a repo document that does not exist here. Follow the rest of the Procedure normally, including the Security step.\n- The project's skill library is the `skills/` directory of the plugin this eval set belongs to (the directory holding `.claude-plugin/plugin.json`); each subdirectory is a skill whose `SKILL.md` frontmatter carries its name and description. The Skill tool cannot load this project's skills in this harness, so invoking a skill means reading its `SKILL.md` in full and recording in `transcript.md` that you read it, before the work it bears on.\n- Write the code and tests you would write into `outputs/`, not into the repo.",
+      "expected_output": "the format section is built, and the Security step is dismissed in one line without opening the checklist",
+      "files": [
+        "skills/"
+      ],
+      "expectations": [
+        "The Security step decides that no When to Activate condition matches this section and moves on: at most three sentences, with no walkthrough of the checklist's areas one by one",
+        "security-review's SKILL.md body was never opened \u2014 reading its frontmatter description to make the decision is what the agent is told to do and does not fail this \u2014 so no Verification command, FAIL/PASS example or numbered area from the body appears anywhere in the run",
+        "outputs/ holds the section's implementation and tests that were actually executed: the transcript gives the command and its result, and the tests name behaviors of this section rather than standing in as a placeholder",
+        "Apart from the Security step's own verdict, no security paragraph, section or bulleted security review appears anywhere the run produces \u2014 the final message, the section README, or any file under outputs/. A run that declined the checklist and then wrote a security paragraph anyway is the failure implementer.md's Security step exists to name, and is a FAIL here"
+      ],
+      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1"
+    },
+    {
+      "id": 7,
+      "name": "shared-record-types",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": null,
+      "prompt": "You are the dev-team implementer. Implement section `shared/types` of the `shared` package.\n\nDesign for this section, in full (this sandbox has no `docs/` scaffold, so the design doc, package contract, repo contract, integration doc, surface doc, decisions log and follow-up queue do not exist):\nThe record type definitions shared across packages: a `Bar` and a `ReportRow` as frozen dataclasses with typed fields, plus the two `TypeAlias` names the other packages import. Definitions only \u2014 no functions that do I/O.\n\nHarness rules for this run:\n- Skip your blocking rule about a missing contract, and skip any Procedure step that needs a repo document that does not exist here. Follow the rest of the Procedure normally, including the Security step.\n- The project's skill library is the `skills/` directory of the plugin this eval set belongs to (the directory holding `.claude-plugin/plugin.json`); each subdirectory is a skill whose `SKILL.md` frontmatter carries its name and description. The Skill tool cannot load this project's skills in this harness, so invoking a skill means reading its `SKILL.md` in full and recording in `transcript.md` that you read it, before the work it bears on.\n- Write the code and tests you would write into `outputs/`, not into the repo.",
+      "expected_output": "the types section is built, and the Security step is dismissed in one line without opening the checklist",
+      "files": [
+        "skills/"
+      ],
+      "expectations": [
+        "The Security step decides that no When to Activate condition matches this section and moves on: at most three sentences, with no walkthrough of the checklist's areas one by one",
+        "security-review's SKILL.md body was never opened \u2014 reading its frontmatter description to make the decision is what the agent is told to do and does not fail this \u2014 so no Verification command, FAIL/PASS example or numbered area from the body appears anywhere in the run",
+        "outputs/ holds the section's implementation and tests that were actually executed: the transcript gives the command and its result, and the tests name behaviors of this section rather than standing in as a placeholder",
+        "Apart from the Security step's own verdict, no security paragraph, section or bulleted security review appears anywhere the run produces \u2014 the final message, the section README, or any file under outputs/. A run that declined the checklist and then wrote a security paragraph anyway is the failure implementer.md's Security step exists to name, and is a FAIL here"
+      ],
+      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1"
+    },
+    {
+      "id": 8,
+      "name": "features-indicators",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": null,
+      "prompt": "You are the dev-team implementer. Implement section `features/indicators` of the `features` package.\n\nDesign for this section, in full (this sandbox has no `docs/` scaffold, so the design doc, package contract, repo contract, integration doc, surface doc, decisions log and follow-up queue do not exist):\nPure indicator functions over an in-memory OHLCV `DataFrame`: a simple moving average and a 14-period RSI, each returning a `Series` aligned to the input index. No I/O, no config, no external input.\n\nHarness rules for this run:\n- Skip your blocking rule about a missing contract, and skip any Procedure step that needs a repo document that does not exist here. Follow the rest of the Procedure normally, including the Security step.\n- The project's skill library is the `skills/` directory of the plugin this eval set belongs to (the directory holding `.claude-plugin/plugin.json`); each subdirectory is a skill whose `SKILL.md` frontmatter carries its name and description. The Skill tool cannot load this project's skills in this harness, so invoking a skill means reading its `SKILL.md` in full and recording in `transcript.md` that you read it, before the work it bears on.\n- Write the code and tests you would write into `outputs/`, not into the repo.",
+      "expected_output": "the indicators section is built, and the Security step is dismissed in one line without opening the checklist",
+      "files": [
+        "skills/"
+      ],
+      "expectations": [
+        "The Security step decides that no When to Activate condition matches this section and moves on: at most three sentences, with no walkthrough of the checklist's areas one by one",
+        "security-review's SKILL.md body was never opened \u2014 reading its frontmatter description to make the decision is what the agent is told to do and does not fail this \u2014 so no Verification command, FAIL/PASS example or numbered area from the body appears anywhere in the run",
+        "outputs/ holds the section's implementation and tests that were actually executed: the transcript gives the command and its result, and the tests name behaviors of this section rather than standing in as a placeholder",
+        "Apart from the Security step's own verdict, no security paragraph, section or bulleted security review appears anywhere the run produces \u2014 the final message, the section README, or any file under outputs/. A run that declined the checklist and then wrote a security paragraph anyway is the failure implementer.md's Security step exists to name, and is a FAIL here"
+      ],
+      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1"
+    }
+  ]
+}
