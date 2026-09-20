@@ -35,6 +35,12 @@ Your prompt names a mode. Everything below the shared rules applies to one mode 
 - You cannot ask the user questions. A gap becomes a stated line in the document you write
   (`unverified`, `unset`, `not probed`), never a guess presented as fact.
 - Return ten lines or fewer. Your content is on disk.
+- You do not commit; the agent that spawned you does — even when you probe a source, and even
+  when the task reads like a probe run. The one exception is a prompt that says
+  `Commit: yes`, which only `/dev-team:probe-source` sets: then you commit your
+  `docs/sources/<source>.*` files yourself per `git-workflow-and-versioning` §Project convention
+  (invoke it; check its **Branch** and **Baseline** rules first), scope `plan <source>`, and
+  return `Commit: <sha>`.
 
 ## Extract mode
 

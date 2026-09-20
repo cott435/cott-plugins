@@ -39,6 +39,72 @@ forbid:
     # one would have been exempted with it. /reload-plugins is Claude Code's own command.
     pattern: '(^|[\s"(\[`])/(?!dev-team:|reload-plugins)(?:[a-z][a-z0-9]*-[a-z0-9-]+|status)\b'
 
+  - name: no agent or skill stages everything
+    # §Project convention stages by explicit path, so a run never commits a file it did not
+    # write. Scoped with `files:` so the 0.5 design note, which quotes the pattern, is not a
+    # finding; the one exemption is the rule stating itself.
+    pattern: 'git add -A|git add \.|git commit -a\b'
+    files: ['agents/*.md', 'skills/**/*.md']
+    unless: ['Never `git add -A`']
+
+  - name: no forked run waits on a background notification
+    # A forked architect or curator never receives its backgrounded agents' completion
+    # notifications — they go to the conversation that forked it — so every spawn is
+    # run_in_background: false (each agent's Hard rules). Eval D run 2 ended on `echo waiting`
+    # with integration.md unwritten: evals/2026-09-18-d2-foreground-fanout.md.
+    pattern: 'background-task notification|completion notification is your cue|[Cc]ontinuing after backgrounded'
+    files: ['agents/*.md', 'skills/**/*.md']
+
+  - name: every forked skill names its agent with the plugin prefix
+    # A bare `agent: architect` does not resolve to the plugin agent: the fork silently runs as
+    # general-purpose, without the agent's prompt, and eval D's architect fork never saw its own
+    # Hard rules. Only `dev-team:<agent>` resolves, as for subagent_type in eval A3.
+    # Probed: evals/2026-09-18-d2-foreground-fanout.md.
+    pattern: '^agent: (?!dev-team:)'
+    files: ['skills/**/SKILL.md']
+
+  - name: the tester names the implementer's test tree only to forbid it
+    # Two vantage points, two trees: tests/unit/<section> is the implementer's, written from
+    # the code; tests/intent/<section> is the tester's, written from the spec. A tester prompt
+    # that tells it to read or write the unit tree collapses the two into one.
+    pattern: 'tests/unit/<section>'
+    files: ['agents/tester.md']
+    unless: ['never `tests/unit/`']
+
+  - name: the vendored constraints method never leaks its upstream file name
+    # The file is docs/constraints.md here; upstream writes CONSTRAINTS.md at the repo root. A
+    # reader told to open the upstream name opens nothing. `files:` keeps site/notes/ (the 0.5
+    # design set, which discusses the rename) out of scope; the one exemption is the vendored
+    # reference's Provenance line stating the rename.
+    pattern: 'CONSTRAINTS\.md'
+    files: ['agents/*.md', 'skills/**/*.md', 'README.md']
+    unless: ['upstream writes `CONSTRAINTS.md`']
+
+  - name: run-package spawns every agent by its plugin-prefixed name
+    # The driver runs in the main conversation and spawns with the Agent tool; a bare
+    # subagent_type does not resolve to the plugin agent (eval A3: only `dev-team:<agent>`
+    # does). Every spawn it names is namespaced.
+    pattern: 'subagent_type: "(?!dev-team:)'
+    files: ['skills/run-package/SKILL.md']
+
+  - name: no prompt sends a shell outside the repo to find a file
+    # eval K: an implementer that had already read a skill through ${CLAUDE_PLUGIN_ROOT} ran
+    # `find /` for it anyway and listed copies across the user's home directory. Nothing here
+    # may suggest that; the agents' Bash rules forbid it.
+    pattern: 'find\s+(/|~|\$HOME)'
+    unless: ['off limits']
+    near: 90
+    files: ['agents/*.md', 'skills/**/*.md']
+
+  - name: the architect spawns designers and researchers by their plugin-prefixed names
+    # Same platform fact, one layer down: a forked architect fanning out with a bare
+    # `designer` silently gets a general-purpose agent, which loads none of the role's
+    # prompt (eval K run 5). Its instructions name the agent, so they name it namespaced.
+    pattern: '\b(?<!dev-team:)(designer|researcher)`? per (section|source)'
+    near: 60
+    unless: ['dev-team:designer', 'dev-team:researcher']
+    files: ['agents/architect.md']
+
 # Every heading a reader parses is one the owner's template defines.
 headings:
   - name: interface.md headings its readers parse are ones the implementer writes
@@ -83,6 +149,123 @@ headings:
     readers:
       - file: agents/documenter.md
         cites: ['Entry points and interfaces']
+      - file: agents/tester.md
+        cites: ['Implementation notes']
+      # A README under `Sibling shipped:` outranks that sibling's design for the names a
+      # completion-run designer consumes (spine-first, note 07).
+      - file: agents/designer.md
+        cites: ['Entry points and interfaces']
+
+  - name: design headings the tester writes tests from are ones the designer's template defines
+    # The tester inventories its cases by design heading and cites them in every test's
+    # docstring; a renamed heading leaves it inventorying a section no design has. The Module
+    # plan is a bolded term inside item 3, not a numbered item, so the owner parser cannot see
+    # it; the tester cites item 3 by name, and the Module plan rides on that.
+    owner: agents/designer.md
+    owner_span: ['## Design document template', null]
+    readers:
+      - file: agents/tester.md
+        cites: ['Interfaces', 'Inputs and outputs', 'Workflow / pipeline',
+                'Error handling and logging', 'Tests', 'Data model / internal contracts']
+      # The plan review checks seams, tests, skills, deviations and open questions design by
+      # design. The Module plan it also reads rides on item 3, as for the tester.
+      - file: agents/reviewer.md
+        cites: ['Interfaces', 'Tests', 'Skills used', 'Contract deviations', 'Open questions']
+
+  - name: integration headings the plan review checks are ones planning-templates defines
+    # review-plan measures the architect's reconciliation by heading: a section missing from
+    # Dependency order, a mismatch Cross-section mismatches leaves unresolved, a deviation no
+    # resolution answers. A renamed heading turns each of those checks into a false CRITICAL.
+    # Item 0, **Spine**, is read by review-plan's blocker, the architect's run classification
+    # and status.py's `plan:` line; a renamed heading makes a spine-only plan look complete.
+    owner: skills/planning-templates/references/integration.md
+    owner_span: ['0. **Spine**', null]
+    readers:
+      - file: agents/reviewer.md
+        cites: ['Dependency order', 'Cross-section mismatches', 'Contract deviations',
+                'Repo contract deviations', 'Decisions needed from user']
+      - file: skills/review-plan/SKILL.md
+        cites: ['Spine']
+      - file: agents/architect.md
+        cites: ['Spine', 'Dependency order']
+      # The driver reads Dependency order for its section order and Spine for spine mode.
+      - file: skills/run-package/SKILL.md
+        cites: ['Dependency order', 'Spine']
+
+  - name: surface headings the plan review checks are ones planning-templates defines
+    owner: skills/planning-templates/references/surface.md
+    owner_span: ['1. **Public names**', null]
+    readers:
+      - file: agents/reviewer.md
+        cites: ['Public names', 'Pipelines', 'Tests']
+
+  - name: every agent that commits cites the one commit rule, by its rule names
+    # git-workflow-and-versioning §Project convention is the one copy of the branch, baseline,
+    # staging and message rules; agents cite it and never restate it. Each reader's span starts
+    # at its `§Project convention` citation, so an agent that stops citing it fails as a missing
+    # marker, and the bolded rule names inside the span must be ones the section numbers.
+    owner: skills/git-workflow-and-versioning/SKILL.md
+    owner_span: ['## Project convention', '## Core Principles']
+    readers:
+      - file: agents/implementer.md
+        span: ['§Project convention', 'never create or switch']
+      - file: agents/reviewer.md
+        span: ['§Project convention', 'rules; return']
+      - file: agents/architect.md
+        span: ['§Project convention', 'rules before writing']
+      - file: agents/curator.md
+        span: ['§Project convention', 'rules before writing']
+      - file: agents/documenter.md
+        span: ['§Project convention', 'rules before writing']
+      - file: agents/researcher.md
+        span: ['§Project convention', 'rules first']
+      - file: agents/tester.md
+        span: ['§Project convention', 'rules before writing']
+
+  - name: the reviewer ranks documents by the implementer's order of authority
+    # The reviewer measures a finding against the highest document that speaks to it, so its
+    # list must be the implementer's list — a reviewer ranking the design above the
+    # integration doc punishes a section for following an accepted resolution. The reader span
+    # covers the reviewer's numbered items only; the bolded names in it must be the
+    # implementer's numbered item names. Items that open with a backticked path are not caught
+    # by the bold-name reader; the full equality is eval E's mechanical half:
+    # evals/2026-09-18-e-order-of-authority-sync-design.md.
+    owner: agents/implementer.md
+    owner_span: ['## Order of authority', '## The decisions file']
+    readers:
+      - file: agents/reviewer.md
+        span: ['design line that a higher document overrides', 'read together with']
+
+  - name: As shipped is a heading sync-design writes before anyone reads it
+    # sync-design is the only writer of a design doc's As shipped sections; the reviewer
+    # treats a folded deviation as the spec, and plan-change starts from the latest one.
+    owner: skills/sync-design/SKILL.md
+    owner_span: ['## What you write', '## Commit and return']
+    readers:
+      - file: agents/reviewer.md
+        cites: ['As shipped']
+      - file: skills/plan-change/SKILL.md
+        cites: ['As shipped']
+      - file: agents/implementer.md
+        cites: ['As shipped']
+
+  - name: docs/constraints.md headings its readers run are ones the template defines
+    # set-constraints writes the file from its template; four readers act on it by heading —
+    # the reviewer runs Floor and Enforced, greps for Guarded and honours Exceptions; the
+    # implementer, status.py and CI run Floor and Enforced. A renamed heading turns each into
+    # a check that silently runs nothing. The template's numbered list under the fenced block
+    # is what the owner parser reads.
+    owner: skills/set-constraints/references/constraints-template.md
+    owner_span: ['## Floor', null]
+    readers:
+      - file: agents/reviewer.md
+        cites: ['Floor', 'Enforced', 'Guarded', 'Exceptions']
+      - file: agents/implementer.md
+        cites: ['Floor', 'Enforced']
+      - file: skills/status/SKILL.md
+        cites: ['Floor', 'Enforced']
+      - file: skills/workspace-scaffold/SKILL.md
+        cites: ['Floor', 'Enforced']
 
 # A list of names that goes stale when the directory it describes changes.
 names_listed:

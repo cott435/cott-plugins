@@ -4,7 +4,7 @@ description: Review an implemented section of a package against its design doc, 
 argument-hint: "<pkg>/<section> [plan-slug]"
 arguments: [section, plan]
 context: fork
-agent: reviewer
+agent: dev-team:reviewer
 background: false
 disable-model-invocation: true
 ---
@@ -20,6 +20,12 @@ Plan slug (empty for canonical work): **$plan**
 
 If `$section` reached you unsubstituted, parse the section and optional plan slug from
 `$ARGUMENTS` — first token and second token.
+
+**Invoked by run-package.** If your task prompt carries `Section:` and `Plan:` lines instead of
+substituted arguments — `/dev-team:run-package` spawns you that way — use those: the section
+from the first, the plan slug (usually empty) from the second, and the two, space-separated,
+as the argument in your commit trailer. The Guard block above does not fire: you have neither
+earlier turns nor `AskUserQuestion`.
 
 ## Resolve the identity
 
@@ -39,6 +45,7 @@ for the qualified name if there is more than one. If `$name` is `surface`, stop 
 | Integration | `docs/plans/$plan/integration.md` if a slug is set, else `docs/packages/$pkg/integration.md` |
 | Surface | `docs/packages/$pkg/surface.md` — which entry points should be `Public: yes` |
 | Decisions | `docs/decisions.md` |
+| Constraints | `docs/constraints.md` — axis 0: **Floor** and **Enforced** rows to run, **Guarded** items to grep the diff for, **Exceptions** |
 | Follow-ups | `docs/followups.md` — entries addressed to `$pkg/$name`: skip what is already listed, and append your CRITICAL findings here in step 4 |
 | Section README | the README at the section's path in the package contract's Sections table |
 | Dependency READMEs | the README of each section in `Depends on` for `$name` |
@@ -60,6 +67,7 @@ checked and why.
 3. Write your report to the path above.
 4. Append every CRITICAL finding to `docs/followups.md` addressed to `$pkg/$name`, so the next
    `/dev-team:implement-section $pkg/$name` picks them up without anything passing through chat.
-5. Return your summary.
+5. Commit per your **Commit** section — trailer `Dev-Team-Run: review-section $ARGUMENTS` —
+   then return your summary.
 
 Change nothing but your report and `docs/followups.md`.

@@ -12,6 +12,93 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [0.5.1] - 2026-09-20
+
+### Fixed
+- **A Guarded-constraint hit in `tests/intent/` now has an owner.** The reviewer addresses a
+  finding under `packages/<pkg>/tests/intent/<section>/` to the reserved target
+  `<pkg>/<section>/intent`; `/dev-team:test-section` clears that target first thing in
+  reconcile mode; `/dev-team:implement-section` skips it, since it never edits that tree;
+  `status.py` counts it in the section row as `<n> (<r> review, <i> intent)` and fails the
+  finalize gate on it; and `/dev-team:run-package` spawns the tester, not the implementer,
+  while one is open. Under 0.5.0 such a finding was addressed to the section, where only the
+  implementer would read it, and nobody could clear it.
+- **The tester no longer writes suppressions.** It reads `docs/constraints.md` §Guarded as
+  binding its own tree and writes the assertion the design supports instead — a `typing.cast`
+  rather than a `# type: ignore`. `pyproject-lint-config.toml` exempts `tests/intent/**` from
+  `B017` and `PT011`, so a design that leaves an exception type unstated needs no inline
+  comment; the rules still bind `src`. A repo scaffolded before this carries the old
+  `per-file-ignores` and needs the two codes added by hand.
+- **No agent sweeps the machine for a file.** Every agent with read-only Bash now states that
+  its shell stays inside the repo, with `${CLAUDE_PLUGIN_ROOT}` the one path outside it, read
+  there or through the Skill tool and never searched for; a `contracts.yml` claim fails on a
+  `find /` or `find ~` in any agent or skill body. In eval K an implementer that had already
+  read a skill at `${CLAUDE_PLUGIN_ROOT}` ran `find /` for it anyway.
+
+Eval: `evals/2026-09-20-n-intent-target-and-shell-scope.md`.
+
+
+## [0.5.0] - 2026-09-20
+
+Verification becomes a column beside every layer, not a floor under the last one: a tester
+writes tests from the design, the plan is reviewed before any code exists, the reviewer carries
+the order of authority, designs learn what shipped, every run commits, and a driver runs a
+package end to end. Design set: `site/notes/overhaul-0.5-*.md`.
+
+### Breaking
+1. **`/dev-team:plan-package` is spine-first by default** on packages with three or more
+   sections: the first run designs only the section the most others depend on. `--all`
+   restores 0.4 behavior. A 0.4 plan (every design present, `surface.md` present) is detected
+   as complete and is not re-planned.
+2. **`/dev-team:implement-section` refuses to run on `main`/`master` and refuses a dirty tree.**
+   Your hand edits to `docs/decisions.md`, `docs/brief.md` and `docs/constraints.md` are
+   exempt. A repo that was never committed needs `git init` and a branch.
+3. **`status.py` "reviewed since build" is commit-based**: the newest review's `Commit:` must be
+   the newest commit touching the section. A 0.4 review has no `Commit:` line and reads as
+   stale, so every section reviewed under 0.4 shows `·` until it is reviewed once under 0.5.
+4. **The reviewer grades a deviation recorded under README item 7 as WARNING at most**, unless
+   it breaks a contract, a decided `D<n>`, a shipped interface, or an intent test. A 0.4
+   CRITICAL for the same thing is now a WARNING.
+5. **An open review-sourced follow-up addressed to `<pkg>/plan` blocks
+   `/dev-team:implement-section`** for every section of `<pkg>`.
+
+### Added, by phase
+- Phase 1: three knowledge skills vendored from `addyosmani/agent-skills` (MIT) and adapted to
+  Python: `test-driven-development`, `debugging-and-error-recovery`,
+  `git-workflow-and-versioning`.
+- Phase 2: every forked run ends in one commit of exactly the files it wrote, with a
+  `Dev-Team-Run:` trailer. Reviews record `Commit:` and diff from the previous one. Skills
+  fork `agent: dev-team:<name>`: under the bare name every fork had run as general-purpose.
+- Phase 3: the reviewer carries the implementer's order of authority verbatim and splits
+  recorded from unrecorded deviations. New `/dev-team:sync-design` appends **As shipped** to
+  each design.
+- Phase 4: new `tester` agent (eight agents) and `/dev-team:test-section`. Intent tests are
+  written from the design before the build and reconciled after. The implementer runs them
+  and never edits them.
+- Phase 5: new `/dev-team:review-plan` (reviewer plan mode), the `<pkg>/plan` follow-up target,
+  the architect's re-plan of only the named sections, and `status.py --plan-gate`.
+- Phase 6: new `/dev-team:set-constraints` and `docs/constraints.md`. It comes first in both
+  authority lists and is the reviewer's axis 0. `status.py --gate` runs the constraint rows.
+- Phase 7: spine-first package planning. Integration item 0 is **Spine**, and designers accept
+  `Sibling shipped:`.
+- Phase 8: new `/dev-team:run-package`, a driver in your conversation over the manual
+  commands. It adds `status.py --run-gate` and a `Result:` first line on every agent return.
+- Phase 9: README, `site/flow.md` and the workflow pages rewritten for the above. The
+  end-to-end eval on `evals/fixtures/two-package/` is logged, and the four defects it found
+  are fixed: `status.py` measures plan freshness over the documents a plan review covers and
+  ignores `sync-design` commits; the reviewer's new **Verdict** rule makes any standing
+  CRITICAL `request changes`; the `workspace-scaffold` root template sets pytest's
+  `--import-mode=importlib`, without which a two-package repo fails collection at the root;
+  and the architect spawns `dev-team:designer` / `dev-team:researcher` by name, a bare name
+  having silently forked a general-purpose agent.
+
+### Fixed
+- The four defects the end-to-end eval found, each re-checked on the repo it built
+  (`39f29d3`): plan freshness after `sync-design`, a standing CRITICAL passing as `approve
+  with fixes`, root `pytest` colliding on two packages' `tests` trees, and the architect
+  spawning a bare `designer`. Evals `2026-09-19-k-end-to-end.md`,
+  `2026-09-19-l-fixed-cost-per-section.md`, `2026-09-20-m-k-defect-fixes.md`.
+
 
 ## [0.4.0] - 2026-09-18
 

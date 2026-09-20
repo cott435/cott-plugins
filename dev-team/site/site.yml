@@ -15,14 +15,19 @@ workflows_order:
 # Reading order for the workflow skills: the order you actually run them, not alphabetical.
 workflow_skills_order:
   - shape-brief
+  - set-constraints
   - extract-legacy
   - plan-repo
   - plan-package
+  - review-plan
+  - run-package           # drives test-section → … → sync-design for one package
   - probe-source
+  - test-section
   - implement-section
   - review-section
   - finalize-package
   - review-package
+  - sync-design
   - plan-change
   - sync-plan
   - finalize-project

@@ -2,7 +2,7 @@
 name: finalize-project
 description: Write the repo-level documentation from the shipped documents - a README per package from its interface.md and section READMEs, the docs-site API pages, and the root README from the repo contract and package READMEs - and report everything still open. Use once the packages you care about are finalized; safe to run early and often.
 context: fork
-agent: documenter
+agent: dev-team:documenter
 background: false
 disable-model-invocation: true
 ---
@@ -93,7 +93,8 @@ the fix.
 
 ## Return
 
-Paths of every README and API page written, whether any previous README was preserved, the
+First commit per your **Commit** section — trailer `Dev-Team-Run: finalize-project $ARGUMENTS`.
+Then return: paths of every README and API page written, whether any previous README was preserved, the
 docs build result if run, and the Known gaps list — unfinalized packages, missing section
 READMEs, unchecked follow-ups, open decision markers, decided-but-unapplied decisions, unsynced
 plans, provisional consumes — so the user sees what is outstanding without opening a file.

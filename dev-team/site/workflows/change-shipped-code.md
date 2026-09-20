@@ -24,6 +24,7 @@ Then implement with the slug, and fold the plan back when it ships:
 /dev-team:implement-section analysis/features add-vwap
 /dev-team:review-section data/clean add-vwap
 /dev-team:sync-plan add-vwap
+/dev-team:sync-design data
 ```
 
 **A change to a shipped package's public surface must go through `/dev-team:plan-change`.** If you run
@@ -36,6 +37,10 @@ describe pre-change behavior — and those stale files are what the next `/dev-t
 designers and what `/dev-team:plan-package` hands the next package as its upstream. It folds in only the
 sections it can verify shipped, records them in `docs/plans/synced.md`, recomputes consumers
 for any `interface.md` it changed, and files follow-ups for consumers the plan did not adapt.
+
+Then `/dev-team:sync-design <pkg>` for each package the change touched: it appends each design
+an **As shipped** row for any deviation the change's section READMEs record, so the next
+review and the next `/dev-team:plan-change` measure against what shipped.
 
 **Scope lives in the brief.** `/dev-team:plan-change` works from the contracts and never edits
 `docs/brief.md`. If the change adds or drops a capability, record that with

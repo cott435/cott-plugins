@@ -4,7 +4,7 @@ description: Fold a shipped change plan back into the canonical docs. Applies th
 argument-hint: "<plan-slug>"
 arguments: [plan]
 context: fork
-agent: architect
+agent: dev-team:architect
 background: false
 disable-model-invocation: true
 ---
@@ -105,7 +105,7 @@ its order of authority. Drift compounds per change; this is the step that stops 
     addressed to that section. Your return message dies with this fork; the follow-up queue is
     what the next `/dev-team:implement-section` actually reads.
 
-12. **Return**: canonical docs updated, sections folded, sections still pending and why,
+12. **Commit** per your **Commit** section — trailer `Dev-Team-Run: sync-plan $ARGUMENTS` — then **return**: canonical docs updated, sections folded, sections still pending and why,
     `interface.md` files changed and the consumers notified, decisions decided-but-not-applied,
     and follow-ups filed.
 

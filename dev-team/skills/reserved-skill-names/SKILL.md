@@ -17,14 +17,15 @@ the list does the same. Do not paste the names into another file.
 
 ## Workflow skills — the ones a person types
 
-`shape-brief` · `plan-repo` · `plan-package` · `plan-change` · `map-project` ·
-`implement-section` · `review-section` · `finalize-package` · `review-package` · `sync-plan` ·
-`finalize-project` · `extract-legacy` · `probe-source` · `status`
+`shape-brief` · `set-constraints` · `plan-repo` · `plan-package` · `review-plan` · `plan-change` · `map-project` ·
+`test-section` · `implement-section` · `review-section` · `finalize-package` · `review-package` · `sync-plan` ·
+`sync-design` · `run-package` · `finalize-project` · `extract-legacy` · `probe-source` · `status`
 
 ## Knowledge skills — preloaded, or invoked on their own triggers
 
 `project-structure` · `python-implementation` · `python-style-guide` · `security-review` ·
-`workspace-scaffold` · `planning-templates` · `reserved-skill-names`
+`workspace-scaffold` · `planning-templates` · `reserved-skill-names` ·
+`test-driven-development` · `debugging-and-error-recovery` · `git-workflow-and-versioning`
 
 ## What each reader does with it
 

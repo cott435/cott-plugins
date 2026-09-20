@@ -4,7 +4,7 @@ description: Review a finalized package - its public surface against surface.md,
 argument-hint: "<pkg>"
 arguments: [pkg]
 context: fork
-agent: reviewer
+agent: dev-team:reviewer
 background: false
 disable-model-invocation: true
 ---
@@ -18,6 +18,11 @@ Review package: **$pkg** — the surface `/dev-team:finalize-package` built, and
 > verify with `/agents`, and re-run.
 
 If `$pkg` reached you unsubstituted, take the first token of `$ARGUMENTS`.
+
+**Invoked by run-package.** If your task prompt carries a `Package:` line instead of a
+substituted argument — `/dev-team:run-package` spawns you that way — use it: the package from
+that line, and the same name as the argument in your commit trailer. The Guard block above
+does not fire: you have neither earlier turns nor `AskUserQuestion`.
 
 ## Why this exists
 
@@ -39,6 +44,7 @@ planned against `interface.md`.
 | Section READMEs | at each section's path from the Sections table |
 | Section reviews | `docs/reviews/<date>-<pkg>-<section>.md` for this package — which sections were ever reviewed |
 | Decisions | `docs/decisions.md` — entries scoped `$pkg`, `repo`, or any `$pkg/<section>` |
+| Constraints | `docs/constraints.md` — axis 0, over the surface code |
 | Follow-ups | `docs/followups.md` — entries addressed to `$pkg/*` |
 | Code | `packages/$pkg/src/$pkg/__init__.py`, `…/pipelines/`, `…/cli.py`, `packages/$pkg/pyproject.toml`, `docs/api/$pkg.md`, `mkdocs.yml`, the root `pyproject.toml` |
 | **Write your report to** | `docs/reviews/<today's date, YYYY-MM-DD>-<pkg>-package.md`, with `$pkg` in place of `<pkg>` |
@@ -53,8 +59,9 @@ planned against `interface.md`.
 5. Append every CRITICAL finding to `docs/followups.md` — addressed to `$pkg/surface` for
    surface findings and to `$pkg/<section>` for section findings — so `/dev-team:finalize-package $pkg`
    or `/dev-team:implement-section` picks them up.
-6. Return your summary. If the verdict is `request changes`, end with the command that fixes
-   the worst finding; otherwise end with `/dev-team:plan-package <next package>` or
-   `/dev-team:finalize-project`.
+6. Commit per your **Commit** section — trailer `Dev-Team-Run: review-package $ARGUMENTS` —
+   then return your summary. If the verdict is `request changes`, end with the command that fixes
+   the worst finding; otherwise end with `/dev-team:sync-design $pkg`, which folds the
+   sections' recorded deviations into their designs before the next package is planned.
 
 Change nothing but your report and `docs/followups.md`.

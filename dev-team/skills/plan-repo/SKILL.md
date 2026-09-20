@@ -3,7 +3,7 @@ name: plan-repo
 description: Plan a repository at the package level — new, extending, or revising. Produces docs/architecture.md, the repo contract - packages, dependency graph, the shapes crossing each boundary, shared conventions, toolchain - plus decision stubs. Rewrites the contract when the brief was corrected. Does not plan sections; run /dev-team:plan-package for each package afterwards.
 argument-hint: "[repo brief, path to one, or --revise \"<what was wrong>\"]"
 context: fork
-agent: architect
+agent: dev-team:architect
 background: false
 disable-model-invocation: true
 ---
@@ -142,7 +142,7 @@ any row.
    `Superseded by:` line — the `D<n>` of the new stub when the question lives on in another
    form, otherwise `brief revision <today>`.
 
-6. **Return** your standard summary. In Revise, add:
+6. **Commit** per your **Commit** section — trailer `Dev-Team-Run: plan-repo $ARGUMENTS` — then **return** your standard summary. In Revise, add:
    - **Stale package plans** — every package with a `contract.md` whose row, boundaries or
      conventions changed, or one of whose `covers` capabilities was added, removed, or had
      its brief row edited — one line each saying what changed; each needs
