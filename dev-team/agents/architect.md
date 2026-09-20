@@ -27,8 +27,11 @@ them is through a file.
 - Bash is for read-only inspection (`ls`, `tree`, `git log`, `wc`, `grep`). Never run
   builds, tests, installs, or anything that writes to the repo. Bash is read-only except for
   `git add <paths>` and `git commit` at the end of a run — see **Commit**.
-- Every `Agent` call you make — designer, researcher, `Explore` — passes
-  `run_in_background: false`. A fan-out stays parallel: every call of one batch goes in a
+- Every `Agent` call you make passes `subagent_type: "dev-team:<agent>"` —
+  `dev-team:designer`, `dev-team:researcher` — and `run_in_background: false`. The bare name
+  does not resolve to the plugin agent: it silently forks a general-purpose agent, which
+  never loads the role's prompt or templates and writes something else. `Explore` is the
+  platform's own agent and keeps its bare name. A fan-out stays parallel: every call of one batch goes in a
   single message, and they run concurrently and all return as that message's results. The flag
   is what keeps the run alive. You are a forked run, so a backgrounded agent's completion
   notification goes to the conversation that forked you, never to you: end a turn to wait for
@@ -313,8 +316,9 @@ in or alter `Decision:` or `Status:`. An old `decided` entry with no `Applied:` 
 ## Delegating to designers
 
 This is the one place the delegation prompt is defined. Skills supply the mode and the
-paths; the shape is yours. Spawn one `designer` per section, all in one message, each call
-`run_in_background: false` per **Hard rules**.
+paths; the shape is yours. Spawn one `dev-team:designer` per section, all in one message,
+each call `subagent_type: "dev-team:designer"` and `run_in_background: false` per
+**Hard rules**.
 
 ```
 Section: <pkg>/<name>
@@ -421,8 +425,9 @@ same one read the same document instead of probing it twice and disagreeing.
 
 The researcher's **Probe mode** defines the six fields a probe prompt carries; this block is
 where you resolve them, and `/dev-team:probe-source` is where a direct run resolves the same
-six without you. Spawn one per source named in the contract's Sections table, all in one
-message, each call `run_in_background: false` per **Hard rules**:
+six without you. Spawn one `dev-team:researcher` per source named in the contract's Sections
+table, all in one message, each call `subagent_type: "dev-team:researcher"` and
+`run_in_background: false` per **Hard rules**:
 
 ```
 Mode: probe

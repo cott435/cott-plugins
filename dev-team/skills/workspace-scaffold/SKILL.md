@@ -34,6 +34,11 @@ analysis = { workspace = true }
 [dependency-groups]
 dev = ["pytest", "pytest-mock", "ruff", "pylint", "import-linter", "mkdocs-material", "mkdocstrings[python]"]
 
+[tool.pytest.ini_options]
+# every package ships its own `tests` tree, so two of them collide on module name
+# (`tests.integration.test_cli`) as soon as a run collects more than one package.
+addopts = "--import-mode=importlib"
+
 # --- merge ${CLAUDE_PLUGIN_ROOT}/pyproject-lint-config.toml here: [tool.ruff*], [tool.pylint*] ---
 
 # --- import-linter: copy the block from docs/architecture.md § Dependency graph ---
@@ -48,6 +53,11 @@ this file for them.
 
 The root is itself a workspace member (uv requires it), so it needs a `[project]` table even
 though it holds no code. One lockfile, one virtual environment, shared by every package.
+
+The `addopts` line is not optional once a second package exists: under pytest's default
+`prepend` import mode a bare `uv run pytest` from the root fails collection with
+`ModuleNotFoundError: No module named 'tests.<...>'`, while each package still passes on its
+own — so the failure shows up only in CI or a full-repo run.
 
 ## 2. Package `pyproject.toml`
 

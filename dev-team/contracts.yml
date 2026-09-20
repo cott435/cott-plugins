@@ -87,6 +87,15 @@ forbid:
     pattern: 'subagent_type: "(?!dev-team:)'
     files: ['skills/run-package/SKILL.md']
 
+  - name: the architect spawns designers and researchers by their plugin-prefixed names
+    # Same platform fact, one layer down: a forked architect fanning out with a bare
+    # `designer` silently gets a general-purpose agent, which loads none of the role's
+    # prompt (eval K run 5). Its instructions name the agent, so they name it namespaced.
+    pattern: '\b(?<!dev-team:)(designer|researcher)`? per (section|source)'
+    near: 60
+    unless: ['dev-team:designer', 'dev-team:researcher']
+    files: ['agents/architect.md']
+
 # Every heading a reader parses is one the owner's template defines.
 headings:
   - name: interface.md headings its readers parse are ones the implementer writes

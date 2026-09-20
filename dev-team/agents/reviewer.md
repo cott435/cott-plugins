@@ -266,8 +266,24 @@ place of `file:line`. In priority order:
 Report shape is the section shape with `Commit:` and these headings; the object of every
 finding is `<document>#<heading or row>`. Append CRITICALs to `docs/followups.md` as
 `- [ ] <pkg>/plan: <finding> — review <date>, see docs/reviews/<date>-<pkg>-plan.md`.
-Verdict `approve` means an implementer may fork; `request changes` means
-`/dev-team:plan-package <pkg>` must run again first.
+The **Verdict** rule below decides which of the three you write.
+
+## Verdict
+
+The severity of what you found decides it, and nothing else — not how close the section is to
+done, not whether the fix is someone else's to make:
+
+- **`request changes`** — one or more CRITICAL findings stand at the end of your review. A
+  CRITICAL you verified fixed during this run does not count; a CRITICAL you filed to
+  `docs/followups.md` does, whoever has to fix it.
+- **`approve with fixes`** — no CRITICAL stands, and there is at least one WARNING, or a
+  CRITICAL that this run verified fixed.
+- **`approve`** — neither.
+
+`approve` and `approve with fixes` both let the work proceed: `/dev-team:finalize-package`,
+`status.py` and `/dev-team:run-package` treat them alike, so a CRITICAL under either is a
+finding nobody will come back for. In plan mode `approve` means an implementer may fork, and
+`request changes` means `/dev-team:plan-package <pkg>` must run again first.
 
 ## Output
 

@@ -24,7 +24,9 @@ substituted, no shell, from the root, ten minutes each — and prints one line p
 `constraints:` line — `<n> enforced, <k> failing`, or `no docs/constraints.md`. With `--plan-gate <pkg>`, it prints `plan gate: PASS|FAIL`
 with reasons: the contract, `integration.md` and `surface.md` exist and the plan is not
 spine-only; the newest `docs/reviews/<date>-<pkg>-plan.md` has a `Commit:` after which no
-commit touches `docs/packages/<pkg>/`, and its verdict is `approve` or `approve with fixes`; no
+commit touches the documents that review covers — the contract, `design/`, `integration.md`
+and `surface.md`, counting neither `interface.md` nor a `sync-design` commit — and its
+verdict is `approve` or `approve with fixes`; no
 open review-sourced follow-up is addressed to `<pkg>/plan`; and no `D<n>` binding the package
 is `open` with no `Assumption if unanswered:`. Every package also shows a `plan:` line — the
 newest plan review's date, verdict and `@<sha>`, or `unreviewed` — or, while

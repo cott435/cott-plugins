@@ -80,11 +80,24 @@ def uncommitted(*paths: Path) -> bool:
     return bool(git("status", "--porcelain", "--", *map(str, paths)))
 
 
-def changed_since(sha: str, *paths: Path) -> bool:
-    """True when a commit after sha touches any of paths, or sha is not in this history."""
+def changed_since(sha: str, *paths: Path, ignore_runs: tuple[str, ...] = ()) -> bool:
+    """True when a commit after sha touches any of paths, or sha is not in this history.
+
+    A commit whose `Dev-Team-Run:` trailer names a run in ignore_runs does not count. That is
+    how a plan stays reviewed across `/dev-team:sync-design`, which appends **As shipped** to
+    every design of a package the plan review already passed: the designs it edits are what
+    shipped, not a new plan to review. A commit that touches paths *and* other work is not
+    exempt — the trailer is one run's own files.
+    """
     if git("merge-base", "--is-ancestor", sha, "HEAD") is None:
         return True
-    return bool(git("log", "--format=%H", f"{sha}..HEAD", "--", *map(str, paths)))
+    log = git("log", "--format=%H%x1f%B%x1e", f"{sha}..HEAD", "--", *map(str, paths)) or ""
+    for entry in (e for e in log.split("\x1e") if e.strip()):
+        head, _, body = entry.strip().partition("\x1f")
+        run = re.search(r"^Dev-Team-Run:\s*(\S+)", body, re.M)
+        if not (run and run.group(1) in ignore_runs):
+            return bool(head)
+    return False
 
 
 def latest_review(stem: str) -> tuple[dt.date | None, str, str | None]:
@@ -109,18 +122,19 @@ def latest_review(stem: str) -> tuple[dt.date | None, str, str | None]:
     return best[0], (v.group(1).strip() if v else "?"), (c.group(1) if c else None)
 
 
-def freshness(stem: str, *paths: Path) -> tuple[str, str]:
+def freshness(stem: str, *paths: Path, ignore_runs: tuple[str, ...] = ()) -> tuple[str, str]:
     """Review state of the code at paths → (state, column text).
 
     state is `reviewed` when the newest review has a Commit: line and no commit since it
     touches paths; `uncommitted` when paths have changes git does not hold; else `stale`.
     A review with no Commit: line is stale by definition — there is no mtime fallback.
+    ignore_runs names `Dev-Team-Run:` runs whose commits do not make a review stale.
     """
     rdate, verdict, rsha = latest_review(stem)
     tail = f"{rdate or '—'} {verdict} @{rsha[:7] if rsha else '—'}".replace("  ", " ")
     if uncommitted(*paths):
         return "uncommitted", "uncommitted"
-    if rsha and last_commit(*paths) and not changed_since(rsha, *paths):
+    if rsha and last_commit(*paths) and not changed_since(rsha, *paths, ignore_runs=ignore_runs):
         return "reviewed", f"✓ {tail}"
     return "stale", f"· {tail}"
 
@@ -216,7 +230,7 @@ def plan_gate(pkg: str) -> list[str]:
         return [f"{pkg}: plan incomplete, missing {', '.join(missing)}"]
     fails = []
     _, verdict, _ = latest_review(f"{pkg}-plan")
-    state, _ = freshness(f"{pkg}-plan", pdocs)
+    state, _ = freshness(f"{pkg}-plan", *plan_paths(pdocs), ignore_runs=PLAN_EXEMPT_RUNS)
     if state != "reviewed":
         fails.append(f"{pkg}: plan not reviewed since last change")
     elif verdict.lower() not in ("approve", "approve with fixes"):
@@ -232,6 +246,16 @@ def plan_gate(pkg: str) -> list[str]:
 # git-workflow-and-versioning §Project convention, Baseline: the files the user edits between runs,
 # and agent memory, which agents write and nobody stages but the user.
 BASELINE_EXEMPT = ("docs/decisions.md", "docs/brief.md", "docs/constraints.md")
+
+# A plan review covers the plan: the package contract, every design, integration.md and
+# surface.md. interface.md is what shipped, so finalize-package writing it leaves the plan
+# review current, and sync-design appending **As shipped** to those designs does too.
+PLAN_EXEMPT_RUNS = ("sync-design",)
+
+
+def plan_paths(pdocs: Path) -> tuple[Path, ...]:
+    """The documents a plan review covers, under docs/packages/<pkg>/."""
+    return (pdocs / "contract.md", pdocs / "integration.md", pdocs / "surface.md", pdocs / "design")
 
 
 def run_gate(pkg: str) -> tuple[str | None, list[str]]:
@@ -353,7 +377,7 @@ def package_report(pkg: str, pkg_path: Path) -> tuple[list[str], list[str]]:
     if not have["surface"]:
         fails.append(f"{pkg}: no surface.md")
     pdate, pverdict, psha = latest_review(f"{pkg}-plan")
-    pstate, _ = freshness(f"{pkg}-plan", pdocs)
+    pstate, _ = freshness(f"{pkg}-plan", *plan_paths(pdocs), ignore_runs=PLAN_EXEMPT_RUNS)
     ptail = f"{pdate} {pverdict} @{psha[:7] if psha else '—'}"
     if spine_only(pdocs):
         lines.append(f"  plan: spine only ({spine(pdocs)}) — build it, then re-run plan-package")

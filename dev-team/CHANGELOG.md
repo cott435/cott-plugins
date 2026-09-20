@@ -58,9 +58,13 @@ package end to end. Design set: `site/notes/overhaul-0.5-*.md`.
 - Phase 8: new `/dev-team:run-package`, a driver in your conversation over the manual
   commands. It adds `status.py --run-gate` and a `Result:` first line on every agent return.
 - Phase 9: README, `site/flow.md` and the workflow pages rewritten for the above. The
-  end-to-end eval on `evals/fixtures/two-package/` is logged. It found four defects that are
-  still open: the plan reads stale after `sync-design`, a CRITICAL passes under `approve with
-  fixes`, root `pytest` collides across packages, and the architect spawns bare `designer`.
+  end-to-end eval on `evals/fixtures/two-package/` is logged, and the four defects it found
+  are fixed: `status.py` measures plan freshness over the documents a plan review covers and
+  ignores `sync-design` commits; the reviewer's new **Verdict** rule makes any standing
+  CRITICAL `request changes`; the `workspace-scaffold` root template sets pytest's
+  `--import-mode=importlib`, without which a two-package repo fails collection at the root;
+  and the architect spawns `dev-team:designer` / `dev-team:researcher` by name, a bare name
+  having silently forked a general-purpose agent.
 
 
 ## [0.4.0] - 2026-09-18

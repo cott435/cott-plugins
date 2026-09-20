@@ -132,12 +132,12 @@ the site builds; the branch has ten phase commits and is ready for the bump prop
 - **K has three extra runs.** `review-plan analysis` returned `request changes`, so
   `plan-package analysis` and `review-plan analysis` ran again before the note's
   `run-package analysis`. This is the documented answer to a plan CRITICAL.
-- **K's pass line is not met, and phase 9 does not fix it.** Four checks fail on plugin
-  defects (eval K §Verdict): plan-freshness after `sync-design`, a CRITICAL under
-  `approve with fixes`, the root `pytest` collision between two `tests` packages, and bare
-  `designer` in `architect.md`. This phase's commit contents are docs and the eval, and
-  each fix needs its own eval, so they are left for a fix pass before the bump. The bump
-  proposal says so.
+- **K's pass line is not met by the first phase-9 commit, and a second one fixes it.**
+  Four checks failed on plugin defects (eval K §Verdict): plan-freshness after
+  `sync-design`, a CRITICAL under `approve with fixes`, the root `pytest` collision between
+  two `tests` packages, and bare `designer` in `architect.md`. The note has phase 9 writing
+  docs and logging K, so the fixes are a second commit on this phase, with their own eval
+  (M) re-checking each on the repo K built. K itself is not re-run end to end.
 - **L measures context size, not per-turn input.** The note: "input tokens at first model
   turn … and total tokens". The stream reports `usage.total_tokens` per task as a context
   size, first after one tool use. L records that value and its end-of-task value, and

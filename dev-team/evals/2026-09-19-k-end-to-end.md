@@ -109,4 +109,5 @@ defect, and none is fixed in this phase:
    spawn instructions, and `contracts.yml` should forbid the bare names there, as it does for
    the driver.
 
-Eval L's numbers come from these runs.
+All four were fixed in the phase-9 fix pass and re-checked on the repo this eval built —
+[eval M](2026-09-20-m-k-defect-fixes.md). Eval L's numbers come from these runs.
