@@ -12,7 +12,7 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
-## [Unreleased]
+## [0.5.1] - 2026-09-20
 
 ### Fixed
 - **A Guarded-constraint hit in `tests/intent/` now has an owner.** The reviewer addresses a
