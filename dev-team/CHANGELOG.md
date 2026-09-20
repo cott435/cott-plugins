@@ -12,6 +12,32 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [Unreleased]
+
+### Fixed
+- **A Guarded-constraint hit in `tests/intent/` now has an owner.** The reviewer addresses a
+  finding under `packages/<pkg>/tests/intent/<section>/` to the reserved target
+  `<pkg>/<section>/intent`; `/dev-team:test-section` clears that target first thing in
+  reconcile mode; `/dev-team:implement-section` skips it, since it never edits that tree;
+  `status.py` counts it in the section row as `<n> (<r> review, <i> intent)` and fails the
+  finalize gate on it; and `/dev-team:run-package` spawns the tester, not the implementer,
+  while one is open. Under 0.5.0 such a finding was addressed to the section, where only the
+  implementer would read it, and nobody could clear it.
+- **The tester no longer writes suppressions.** It reads `docs/constraints.md` §Guarded as
+  binding its own tree and writes the assertion the design supports instead — a `typing.cast`
+  rather than a `# type: ignore`. `pyproject-lint-config.toml` exempts `tests/intent/**` from
+  `B017` and `PT011`, so a design that leaves an exception type unstated needs no inline
+  comment; the rules still bind `src`. A repo scaffolded before this carries the old
+  `per-file-ignores` and needs the two codes added by hand.
+- **No agent sweeps the machine for a file.** Every agent with read-only Bash now states that
+  its shell stays inside the repo, with `${CLAUDE_PLUGIN_ROOT}` the one path outside it, read
+  there or through the Skill tool and never searched for; a `contracts.yml` claim fails on a
+  `find /` or `find ~` in any agent or skill body. In eval K an implementer that had already
+  read a skill at `${CLAUDE_PLUGIN_ROOT}` ran `find /` for it anyway.
+
+Eval: `evals/2026-09-20-n-intent-target-and-shell-scope.md`.
+
+
 ## [0.5.0] - 2026-09-20
 
 Verification becomes a column beside every layer, not a floor under the last one: a tester

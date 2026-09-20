@@ -42,15 +42,29 @@ one in the package contract's Sections table.
   `tests/intent/<section>` (`uv run pytest tests/intent/<section> -q` in a uv workspace), `git`
   per the commit rule, the Toolchain's formatter and linter pointed at your tree (below), and
   read-only inspection of paths you may read. No installs, and no other writes to the repo by
-  shell.
+  shell. Every path a command names is under the repo root, with one exception:
+  `${CLAUDE_PLUGIN_ROOT}`, where this plugin's own files are, read at that path or through the
+  Skill tool, never searched for.
+  `find /` and `find ~` are off limits whatever you are looking for.
 - **Your tree passes the repo's lint and format rows.** Before every commit, run the
   Toolchain's formatter and then its linter with fixes on `tests/intent/<section>/` only
   (`uv run ruff format tests/intent/<section>` and `uv run ruff check --fix
   tests/intent/<section>`), and fix by hand what remains. Nobody else may edit your tree, so a
   lint failure left in it fails the repo's **Floor** for every later section. Formatting is
   the one change reconcile mode may make outside the tests it folds.
+- **No suppression in your tree.** `docs/constraints.md` §Guarded grades a new `# noqa`,
+  `# type: ignore`, `# pragma: no cover`, `skip` or non-`D<n>` `xfail` as CRITICAL wherever it
+  appears, and yours is the one tree nobody else may edit — so a suppression you write is a
+  finding only you can clear. Write the assertion the design supports instead: the narrowest
+  exception type the design names, `typing.cast(Any, …)` where a frozen value must be poked at
+  to prove it is frozen, a fake built to a shipped signature rather than an ignored type. The
+  repo's lint config already exempts `tests/intent/**` from the broad-exception rules
+  (`B017`, `PT011`), so a design that leaves an exception type unstated needs no comment from
+  you. If a check still fires and the honest test cannot avoid it, leave the test as the
+  documents support it and say so in your return — a `docs/constraints.md` **Exceptions** row
+  is the user's call through `/dev-team:set-constraints`, never yours.
 - **Never weaken a test to make it pass.** A failing intent test is either folded (reconcile
-  step 2, following a recorded deviation) or filed (reconcile step 4). Loosening an assertion,
+  step 3, following a recorded deviation) or filed (reconcile step 5). Loosening an assertion,
   adding a `skip`, or widening an `xfail` for any other reason is lowering the bar, and the
   reviewer checks for it.
 
@@ -67,7 +81,7 @@ Your prompt names the paths; this is what each is for.
 | `docs/sources/<source>.md` + `<source>.sample.json` / `<source>.stats.json` | the fixture for any parser or loader; a sample is copied to `tests/fixtures/<source>.sample.json` if not already there; a dataset's rows come from the path the probe doc names |
 | Sibling READMEs (**Entry points and interfaces**) and upstream `interface.md` | the real signatures of what the section consumes, for fixtures and fakes — never a plan-time document where a shipped one exists |
 | The integration doc | cross-section resolutions that override the design: a resolution that changes a §5 row is what you assert, not the design's row |
-| `docs/constraints.md`, when it exists | the **Enforced** coverage row only: the intent suite is sized to contribute to that floor beside the implementer's unit tests, not to reach it alone — never pad it with cases the documents do not support |
+| `docs/constraints.md`, when it exists | the **Enforced** coverage row: the intent suite is sized to contribute to that floor beside the implementer's unit tests, not to reach it alone — never pad it with cases the documents do not support. And **Guarded**, which binds your tree like any other: see **No suppression in your tree** |
 | The section `README.md`, **reconcile mode only** | item 7 **Implementation notes**: the recorded deviations |
 
 ## Return sentinel
@@ -118,7 +132,13 @@ section README does not (a re-run before the section is built regenerates the tr
 Precondition: the section README exists (the section is built).
 
 1. **Baseline and branch** per the commit rule above.
-2. **Fold recorded deviations.** Read README item 7 **Implementation notes**. For every
+2. **Clear findings addressed to your tree.** Read `docs/followups.md` for open items
+   addressed to `<pkg>/<section>/intent` — the reviewer files anything it finds under
+   `tests/intent/<section>/` there, because nobody else may edit it. Fix each in your tests,
+   by the rules above: never by weakening an assertion, and never with a suppression. Mark
+   each `[x]` with the date. An item you cannot clear without contradicting the documents
+   stays open, and your return says which and why.
+3. **Fold recorded deviations.** Read README item 7 **Implementation notes**. For every
    recorded deviation, find the intent tests whose docstring cites the design item it changes
    and edit **only those**: the new signature, the new module (if the Module plan changed),
    the new behavior — asserting what the README says shipped, and appending `(deviation:
@@ -126,8 +146,8 @@ Precondition: the section README exists (the section is built).
    is left failing and your return says why — the reviewer raises it as CRITICAL anyway. Every
    other file under `tests/intent/<section>/` stays as it was but for the formatter and
    linter fixes of the rule above.
-3. **Run** the suite.
-4. **File what still fails.** For every test still failing, append to `docs/followups.md`,
+4. **Run** the suite.
+5. **File what still fails.** For every test still failing, append to `docs/followups.md`,
    skipping one already listed:
 
    ```
@@ -136,11 +156,12 @@ Precondition: the section README exists (the section is built).
 
    These are what the next `/dev-team:implement-section` picks up in its step 6. Never fix a
    failure by weakening the test.
-5. **Commit** the tests you edited and `docs/followups.md` if you appended to it. Message:
+6. **Commit** the tests you edited and `docs/followups.md` if you appended to or ticked it. Message:
    `<pkg>/<section>: reconcile <k> intent tests with deviations` — also when k is 0 and
    follow-ups were filed. With nothing folded and nothing filed, there is nothing to commit;
    say so.
-6. **Return** (≤ 20 lines): the **Return sentinel**, then `Mode: reconcile`; tests folded, each with the
+7. **Return** (≤ 20 lines): the **Return sentinel**, then `Mode: reconcile`; findings cleared
+   from `<pkg>/<section>/intent`; tests folded, each with the
    deviation it followed; tests still failing and follow-ups filed; pass/fail counts; `Commit:
    <sha>` or `Commit: none`; next command `/dev-team:implement-section <pkg>/<section>` when
    follow-ups were filed, else `/dev-team:review-section <pkg>/<section>`.

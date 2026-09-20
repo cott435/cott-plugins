@@ -83,21 +83,26 @@ exits 1 on a failing gate; that is the answer, not an error.
 
 3. **Each section, in order.** Keep a count of implementer runs per section. Skip a section
    whose `status.py $pkg` row is reviewed (`✓`) with verdict `approve` or `approve with
-   fixes`, shows `(0 review)` in its open follow-ups column — other follow-ups do not count —
-   and has an intent column that is `—` or `<n>/<n>`. For every other section:
+   fixes`, shows `(0 review, 0 intent)` in its open follow-ups column — other follow-ups do
+   not count — and has an intent column that is `—` or `<n>/<n>`. For every other section:
    1. If the section's intent column reads `—` — no `tests/intent/<section>/` yet — spawn
       the tester (`test-section`; it runs intent mode). Check this for every section, before
       its first implementer spawn; never go straight to the build.
-   2. Spawn the implementer (`implement-section`). Implementer run 1.
-   3. Spawn the tester (`test-section`; it runs reconcile mode now that the README exists).
-   4. If the section's intent column now shows fewer passing than total, the tester filed
+   2. If the row shows a non-zero `intent` count — findings in `tests/intent/<section>/`,
+      which only the tester may edit — spawn the tester (`test-section`; reconcile mode)
+      before anything else. Still non-zero after that pass → **stop**: the tester has said
+      why in its return, and it is a document question, not a build one.
+   3. Spawn the implementer (`implement-section`). Implementer run 1.
+   4. Spawn the tester (`test-section`; it runs reconcile mode now that the README exists).
+   5. If the section's intent column now shows fewer passing than total, the tester filed
       follow-ups: spawn the implementer again, then the tester again.
-   5. Spawn the reviewer (`review-section`).
-   6. On `Verdict: request changes`, while the section has had fewer than three implementer
-      runs: implementer, tester, reviewer again. Still `request changes` with three runs
-      spent → **stop**.
-   7. Any `Result: blocked` or `Result: stopped`, at any spawn → **stop**.
-   8. After every spawn, run `status.py $pkg` and print the section's row — nothing else of
+   6. Spawn the reviewer (`review-section`).
+   7. On `Verdict: request changes`, while the section has had fewer than three implementer
+      runs: implementer, tester, reviewer again — the tester first when the row's `intent`
+      count is non-zero, since those findings are the implementer's to leave alone. Still
+      `request changes` with three runs spent → **stop**.
+   8. Any `Result: blocked` or `Result: stopped`, at any spawn → **stop**.
+   9. After every spawn, run `status.py $pkg` and print the section's row — nothing else of
       the output. That row, not the agent's return, is the progress report.
 
 4. **Spine mode, after the spine.** Spawn the architect (`plan-package`) — a completion run.

@@ -74,6 +74,12 @@ no installs. The one exception is the **Commit** step below: `git add` of your r
 `docs/followups.md`, then `git commit`. In plan mode there is no code to run; Bash is `git` and
 read-only inspection only.
 
+Your shell stays inside the repo: every path a command names is under the repo root, and
+the one exception is `${CLAUDE_PLUGIN_ROOT}`, where this plugin's own files are. A plugin
+file is read at that path or through the Skill tool, never searched for.
+`find /` and `find ~` are off limits whatever you are looking for, and the user's disk
+is not yours to list.
+
 ## The decisions ledger
 
 `docs/decisions.md` entries are `## D<n> — <question>` headings with `Scope:` (`repo`, a
@@ -322,7 +328,10 @@ or `/dev-team:finalize-package` picks it up without the user relaying anything:
 ```
 
 In a package review, address surface findings to `<pkg>/surface` and section findings to the
-section; in a plan review, every finding to `<pkg>/plan`. Append only: never remove or reorder existing lines, and skip anything already listed.
+section; in a plan review, every finding to `<pkg>/plan`. A finding whose file is under
+`packages/<pkg>/tests/intent/<section>/` goes to `<pkg>/<section>/intent` in any mode: the
+implementer may not edit that tree, so a finding addressed to the section is one nobody can
+clear. `/dev-team:test-section` picks that target up in reconcile mode. Append only: never remove or reorder existing lines, and skip anything already listed.
 
 ## Commit
 

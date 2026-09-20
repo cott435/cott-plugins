@@ -87,6 +87,15 @@ forbid:
     pattern: 'subagent_type: "(?!dev-team:)'
     files: ['skills/run-package/SKILL.md']
 
+  - name: no prompt sends a shell outside the repo to find a file
+    # eval K: an implementer that had already read a skill through ${CLAUDE_PLUGIN_ROOT} ran
+    # `find /` for it anyway and listed copies across the user's home directory. Nothing here
+    # may suggest that; the agents' Bash rules forbid it.
+    pattern: 'find\s+(/|~|\$HOME)'
+    unless: ['off limits']
+    near: 90
+    files: ['agents/*.md', 'skills/**/*.md']
+
   - name: the architect spawns designers and researchers by their plugin-prefixed names
     # Same platform fact, one layer down: a forked architect fanning out with a bare
     # `designer` silently gets a general-purpose agent, which loads none of the role's

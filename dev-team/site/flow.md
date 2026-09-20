@@ -161,7 +161,7 @@ upstream package's `interface.md` — wins over every plan-time document about t
 | `docs/constraints.md` | canonical — the quality bar: Floor, Enforced, Guarded rows, each a command | set-constraints, you | reviewer (all modes, axis 0), implementer, tester, `status.py --gate` |
 | `docs/architecture.md` | **repo contract** | plan-repo; map-project, sync-plan | everyone |
 | `docs/decisions.md` | ledger | architect stubs · you · implementer `Applied:` | every agent |
-| `docs/followups.md` | queue; reserved targets `<pkg>/surface` and `<pkg>/plan`; entries ending `— tester <date>` are failing intent tests | implementer, reviewer, review-plan, tester (reconcile), sync-plan | implementer (step 6; blocks on an open `<pkg>/plan`), architect on a re-plan, documenter, `status.py` |
+| `docs/followups.md` | queue; reserved targets `<pkg>/surface`, `<pkg>/plan` and `<pkg>/<section>/intent`; entries ending `— tester <date>` are failing intent tests | implementer, reviewer, review-plan, tester (reconcile), sync-plan | implementer (step 6; blocks on an open `<pkg>/plan`, skips `/intent`), tester (reconcile, clears `/intent`), architect on a re-plan, documenter, `status.py` |
 | `docs/assessment.md` | survey | map-project, plan-repo (extend, revise) | re-runs |
 | `docs/api/<pkg>.md` | site | finalize-package; finalize-project fills gaps | mkdocs |
 | `docs/packages/<pkg>/assessment.md` | survey | plan-package | designers |
@@ -170,7 +170,7 @@ upstream package's `interface.md` — wins over every plan-time document about t
 | `docs/packages/<pkg>/integration.md` | plan-time; item 0 **Spine** (`Status: spine only` or `complete`) | architect; sync-plan | plan-package run 2, run-package, implementer, reviewer, finalize-package, `status.py` |
 | `docs/packages/<pkg>/surface.md` | plan-time | architect at unify; sync-plan; sync-design (As shipped) | finalize-package, review-package, implementer |
 | `docs/packages/<pkg>/interface.md` | **shipped** | finalize-package; sync-plan | plan-package and every consumer |
-| `packages/<pkg>/tests/intent/<section>/` | shipped tests — written from the design, never from the code | tester only | implementer (runs, never edits), reviewer, `status.py` intent column |
+| `packages/<pkg>/tests/intent/<section>/` | shipped tests — written from the design, never from the code; a finding here is addressed to `<pkg>/<section>/intent` | tester only | implementer (runs, never edits), reviewer, `status.py` intent column |
 | `packages/<pkg>/src/<pkg>/<section>/README.md` | **shipped** | implementer | dependents, finalize-package, reviewer, documenter |
 | `docs/reviews/<date>-<pkg>-<section>.md` | report; second line `Commit: <sha>` | review-section | implementer; the next review (diffs from `Commit:`); `status.py` and finalize-package (reviewed = `Commit:` is the newest commit touching the section) |
 | `docs/reviews/<date>-<pkg>-package.md` | report | review-package | finalize-package on a re-run |

@@ -21,6 +21,11 @@ you silently correct.
 - Write only the documentation files your skill names. Never touch source, config, or tests.
 - Bash is read-only: `ls`, `find`, `grep`, `wc`, `git log`, and the strict docs build if the
   skill asks for it — except `git add <paths>` and `git commit` at the end — see **Commit**.
+- Your shell stays inside the repo: every path a command names is under the repo root, and
+  the one exception is `${CLAUDE_PLUGIN_ROOT}`, where this plugin's own files are. A plugin
+  file is read at that path or through the Skill tool, never searched for.
+  `find /` and `find ~` are off limits whatever you are looking for, and the user's disk
+  is not yours to list.
 - You cannot ask the user questions. A missing input becomes a **Known gaps** entry, never a
   guess. A confidently wrong README is worse than one that says what it does not know.
 

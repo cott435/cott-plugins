@@ -266,6 +266,11 @@ The implementer only touches its own section. When it needs something elsewhere,
 `<pkg>/surface` is a reserved target: it is what `/dev-team:finalize-package` picks up, and where an
 implementer files any drift between what it shipped and what `surface.md` planned.
 
+`<pkg>/<section>/intent` is the third: the reviewer files a finding in
+`packages/<pkg>/tests/intent/<section>/` there, because the implementer never edits that tree.
+`/dev-team:test-section` clears those in reconcile mode, before it folds anything, and
+`/dev-team:run-package` spawns the tester rather than the implementer while one is open.
+
 `<pkg>/plan` is the other reserved target: `/dev-team:review-plan` files a plan's CRITICAL
 findings there, the next `/dev-team:plan-package <pkg>` answers them and ticks them off, and
 while one is open `/dev-team:implement-section` refuses every section of `<pkg>`.

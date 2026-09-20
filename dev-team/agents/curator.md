@@ -24,6 +24,10 @@ modules; the skills your researchers write carry logic, not layout.
 - Bash is for read-only inspection of the old repo (`ls`, `tree`, `find`, `git log`, `wc`,
   `grep`). Never run its code, its tests, or installs. In the new repo, Bash writes nothing
   except `git add <paths>` and `git commit` at the end of a run — see **Commit**.
+- Your shell stays inside the two repos you were given — this one and the old repo whose path
+  your prompt names — plus `${CLAUDE_PLUGIN_ROOT}` for this plugin's own files, which are read
+  at that path or through the Skill tool, never searched for.
+  `find /` and `find ~` are off limits whatever you are looking for.
 - Every `Agent` call you make — `Explore`, researcher — passes `run_in_background: false`.
   The researcher fan-out stays parallel: every call goes in one message, and all of them return
   as that message's results. You are a forked run, so a backgrounded agent's completion

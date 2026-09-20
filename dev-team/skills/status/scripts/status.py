@@ -384,7 +384,7 @@ def package_report(pkg: str, pkg_path: Path) -> tuple[list[str], list[str]]:
     else:
         lines.append("  plan: " + ("unreviewed" if not pdate else f"reviewed {ptail}" if pstate == "reviewed" else f"{pstate} (last review {ptail})"))
     rows = table_rows((pdocs / "contract.md").read_text(), ("section", "path"))
-    lines.append("  section              design  built  intent   reviewed-since-build             open followups  markers")
+    lines.append("  section              design  built  intent   reviewed-since-build             open followups          markers")
     all_built = True
     for row in rows:
         sec = col(row, "section")
@@ -398,9 +398,10 @@ def package_report(pkg: str, pkg_path: Path) -> tuple[list[str], list[str]]:
         tests = pkg_path / "tests"
         state, rev_txt = freshness(f"{pkg}-{sec}", spath, tests / "unit" / sec, tests / "intent" / sec)
         fu, crit = open_followups(f"{pkg}/{sec}")
+        ifu, _ = open_followups(f"{pkg}/{sec}/intent")
         mk = markers(spath)
         itxt = intent(pkg_path, sec)
-        lines.append(f"  {sec:<20} {'✓' if design else '·':^6} {'✓' if built else '·':^6} {itxt:^7}  {rev_txt:<32} {fu:>3} ({crit} review)  {mk:>5}")
+        lines.append(f"  {sec:<20} {'✓' if design else '·':^6} {'✓' if built else '·':^6} {itxt:^7}  {rev_txt:<32} {fu + ifu:>3} ({crit} review, {ifu} intent)  {mk:>5}")
         if not built:
             fails.append(f"{pkg}/{sec}: no README (unbuilt)")
         elif state == "uncommitted":
@@ -409,6 +410,8 @@ def package_report(pkg: str, pkg_path: Path) -> tuple[list[str], list[str]]:
             fails.append(f"{pkg}/{sec}: not reviewed since last build")
         if crit:
             fails.append(f"{pkg}/{sec}: {crit} open review-sourced follow-up(s)")
+        if ifu:
+            fails.append(f"{pkg}/{sec}: {ifu} open follow-up(s) in tests/intent — run /dev-team:test-section {pkg}/{sec}")
     sfu, _ = open_followups(f"{pkg}/surface")
     src = pkg_path / "src" / pkg
     surface_paths = [src / n for n in ("__init__.py", "pipelines", "pipelines.py", "cli.py", "cli")]

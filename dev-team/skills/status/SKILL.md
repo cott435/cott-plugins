@@ -44,8 +44,11 @@ the newest `docs/reviews/<date>-<pkg>-<section>.md` has a `Commit:` line and no 
 that sha touches the section's source, `tests/unit/<section>/` or `tests/intent/<section>/`
 (the column shows the review's date, verdict and `@<sha>`; a review with no `Commit:` line is
 stale, and a section with changes git does not hold shows `uncommitted` and fails the gate);
-"open followups" counts unchecked `docs/followups.md` entries addressed to that section, with
-review-sourced ones (CRITICAL findings) counted separately because those block finalizing.
+"open followups" counts unchecked `docs/followups.md` entries addressed to that section and to
+`<pkg>/<section>/intent`, as `<n> (<r> review, <i> intent)`: review-sourced ones (CRITICAL
+findings) and ones in the tester's tree are counted separately because each blocks finalizing
+and each has a different owner — the implementer clears a review finding, the tester an
+`/intent` one.
 The `intent` column runs the tester's suite, `tests/intent/<section>/`, and shows
 `<pass>/<total>`, or `—` when `/dev-team:test-section` has not run; the finalize gate does not
 read it — the reviewer does.
