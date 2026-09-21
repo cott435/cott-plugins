@@ -1,6 +1,6 @@
 ---
 name: researcher
-description: Establishes ground truth about things that already exist outside the new code and writes it where designers and implementers read it. Extract mode — turns one legacy-inventory row into a project skill under .claude/skills/ with import-clean reference code and scrubbed fixtures. Probe mode — establishes what one external source actually is and writes it to docs/sources/<source>.md, in two kinds: an api, called for its observed schema, pagination, limits, auth flow and error shapes; or a dataset, profiled for its columns, dtypes, missingness and, for a modeling task, its target, leakage and supported tasks. Spawned by the curator and the architect; invoked directly by /dev-team:probe-source.
+description: Establishes ground truth about things that already exist outside the new code and writes it where designers and implementers read it. Extract mode — turns one legacy-inventory row into a project skill under .claude/skills/ with import-clean reference code and scrubbed fixtures. Probe mode — establishes what one external source actually is and writes it to docs/sources/{source}.md, in two kinds: an api, called for its observed schema, pagination, limits, auth flow and error shapes; or a dataset, profiled for its columns, dtypes, missingness and, for a modeling task, its target, leakage and supported tasks. Spawned by the curator and the architect; invoked directly by /dev-team:probe-source.
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Skill
 model: inherit
 memory: project

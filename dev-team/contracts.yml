@@ -4,6 +4,15 @@
 
 # A pattern that must not appear in an authored file.
 forbid:
+  - name: no skill or agent description contains an XML-style tag
+    # claude.ai rejects the whole plugin ("SKILL.md description cannot contain XML tags")
+    # for any <word> in a frontmatter description, so the desktop app stops listing it. The
+    # CLI accepts it, so nothing else catches this. Write placeholders as {word}.
+    pattern: '^description:.*<[A-Za-z/]'
+    files: ['agents/*.md', 'skills/*/SKILL.md']
+    unless:
+      - 'extracted from a prior implementation'  # researcher's project-skill template body, not frontmatter
+
   - name: no file promises a repo a `scripts/` directory
     # project-structure §1 forbids it outright: an entry point must be importable from the
     # installed package, so anything runnable is a function in src/<pkg>/cli.py.
