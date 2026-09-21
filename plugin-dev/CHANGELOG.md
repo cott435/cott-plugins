@@ -6,6 +6,22 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [0.9.3] - 2026-09-21
+
+### Fixed
+- **The desktop app lists plugin-dev again** (91dcf5c). claude.ai, which the desktop app
+  syncs marketplaces through, rejected the plugin twice where the CLI accepted it: "Zip must
+  contain exactly one plugin.json. Found 2." for the `run-phase` eval fixture's manifest, then
+  "SKILL.md description cannot contain XML tags" for `run-evals`. The fixture's manifest now
+  ships as `evals/fixtures/toy-plugin/.claude-plugin/plugin.json.fixture`, renamed back in the
+  eval's temp copy by `evals/sets/files/run-phase/review-approve.md`; `run-evals`'
+  description drops `<skill>`, `<agent>` and `<target>`.
+
+### Added
+- **A contract forbidding a tag in any skill or agent description** (91dcf5c), so
+  `check-contracts` catches the second rejection before claude.ai does:
+  `evals/2026-09-21-description-xml-tag-contract.md`.
+
 ## [0.9.2] - 2026-09-21
 
 ### Fixed
