@@ -102,6 +102,7 @@ def plugin_name(bundle: Path) -> str:
 
 # --------------------------------------------------------------------------- rendering
 
+
 def fm_table(fm: dict[str, str]) -> str:
     """Render frontmatter as a two-column table so it is visible in the site."""
     if not fm:
@@ -111,9 +112,138 @@ def fm_table(fm: dict[str, str]) -> str:
     return f"| frontmatter | value |\n|---|---|\n{rows}\n\n"
 
 
+MARKER = re.compile(r"^( *)([-*+]|\d{1,9}[.)])( +)(?=\S)")
+QUOTE = re.compile(r"^( *)> ?")
+FENCE = re.compile(r"^( *)(```+|~~~+)")
+
+
+def normalize_lists(body: str) -> str:
+    """Re-indent list content to a uniform 2-space nesting step.
+
+    Files here nest list content at whatever their marker happens to be wide
+    ("- " gives 2, "1. " gives 3), which GitHub reads fine but Python-Markdown
+    reads as one fixed width: with the width set for bullets, an ordered item's
+    3-space continuation keeps a stray space and swallows every item after it.
+    Rewriting the generated page — never the source — puts every level at the
+    one width the site is configured for.
+    """
+    body = quoted_blocks(body)
+    out: list[str] = []
+    stack: list[dict] = []          # one entry per open list item, outermost first
+    fence: dict | None = None       # open code fence: its marker and indent shift
+    fence_shift = 0
+    prev_blank = True
+    blank_inside = False
+
+    for line in body.split("\n"):
+        stripped = line.strip()
+
+        if fence is not None:
+            if stripped.startswith(fence["marker"]) and set(stripped) <= set(fence["marker"][0]):
+                fence = None
+            out.append(shift(line, fence_shift) if line.strip() else line)
+            continue
+
+        if not stripped:
+            out.append("")
+            prev_blank = True
+            blank_inside = bool(stack)
+            continue
+
+        indent = len(line) - len(line.lstrip(" "))
+        m = MARKER.match(line)
+
+        # A heading at column 0 closes any open list.
+        if indent == 0 and stripped.startswith("#"):
+            stack.clear()
+            out.append(line)
+            prev_blank = False
+            continue
+
+        if m:
+            # A marker pressed straight up against a paragraph — the lead-in above a
+            # list, or the next item after an item's second paragraph — reads as more of
+            # that paragraph here, though GitHub starts a list. Separate them. Wrapped
+            # lines inside an item are left alone, so its siblings stay one list.
+            if not prev_blank and (not stack or blank_inside):
+                out.append("")
+            # Belongs inside the innermost item it is indented at least 2 past.
+            while stack and indent < stack[-1]["marker"] + 2:
+                stack.pop()
+            depth = len(stack)
+            marker_out = depth * 2
+            content_src = indent + len(m.group(2)) + len(m.group(3))
+            stack.append({"marker": indent, "content_src": content_src,
+                          "content_out": marker_out + 2})
+            new = " " * marker_out + line.strip()
+            out.append(new)
+            fence_shift = 0
+            prev_blank = False
+            blank_inside = False
+            continue
+
+        # Not a marker: continuation, nested block, or plain text after the list.
+        if stack and not prev_blank and indent < stack[-1]["marker"] + 2:
+            # Lazy continuation of the current item.
+            owner = stack[-1]
+            shift_by = owner["content_out"] - indent
+        else:
+            while stack and indent < stack[-1]["marker"] + 2:
+                stack.pop()
+            if stack:
+                owner = stack[-1]
+                extra = max(0, indent - owner["content_src"])
+                shift_by = owner["content_out"] + extra - indent
+            else:
+                shift_by = 0
+
+        f = FENCE.match(line)
+        if f:
+            fence = {"marker": f.group(2)}
+            fence_shift = shift_by
+
+        out.append(shift(line, shift_by))
+        prev_blank = False
+
+    return "\n".join(out)
+
+
+def quoted_blocks(body: str) -> str:
+    """Normalize the lists inside each blockquote, on the quote's own content."""
+    lines = body.split("\n")
+    out: list[str] = []
+    i = 0
+    while i < len(lines):
+        if not QUOTE.match(lines[i]):
+            out.append(lines[i])
+            i += 1
+            continue
+        j = i
+        while j < len(lines) and QUOTE.match(lines[j]):
+            j += 1
+        indent = QUOTE.match(lines[i]).group(1)
+        inner = normalize_lists("\n".join(QUOTE.sub("", l) for l in lines[i:j]))
+        out += [f"{indent}>{' ' + l if l else ''}" for l in inner.split("\n")]
+        i = j
+    return "\n".join(out)
+
+
+def shift(line: str, by: int) -> str:
+    if by == 0:
+        return line
+    if by > 0:
+        return " " * by + line
+    return line[min(by * -1, len(line) - len(line.lstrip(" "))):]
+
+
 def demote(body: str) -> str:
     """Shift markdown headings down one level so the page title stays the H1."""
     return re.sub(r"^(#{1,5}) ", lambda m: "#" * (len(m.group(1)) + 1) + " ", body, flags=re.M)
+
+
+def render(body: str) -> str:
+    """Every authored page passes through here on its way into site/docs/."""
+    return normalize_lists(demote(body))
 
 
 def write_page(docs: Path, rel: str, title: str, fm: dict[str, str],
@@ -121,7 +251,7 @@ def write_page(docs: Path, rel: str, title: str, fm: dict[str, str],
     out = docs / rel
     out.parent.mkdir(parents=True, exist_ok=True)
     head = f"# {title}\n\n*Source: `{source}`*\n\n{fm_table(fm)}"
-    out.write_text(head + demote(body))
+    out.write_text(head + render(body))
 
 
 def ordered(names, preferred: list[str]):
@@ -186,13 +316,13 @@ def main() -> None:
         # pages sit beside index.md under workflows/.
         readme = readme.replace("](site/workflows/", "](workflows/")
         (docs / "index.md").write_text(
-            f"# {title}\n\n*Source: `README.md`*\n\n" + demote(readme))
+            f"# {title}\n\n*Source: `README.md`*\n\n" + render(readme))
     else:
         (docs / "index.md").write_text(f"# {title}\n\nNo README.md found in the bundle.\n")
 
     flow = site / "flow.md"
     if flow.exists():
-        shutil.copy(flow, docs / "flow.md")
+        (docs / "flow.md").write_text(normalize_lists(flow.read_text()))
 
     css = site / "extra.css"
     shutil.copy(css if css.exists() else DEFAULTS / "extra.css", docs / "extra.css")
@@ -205,7 +335,7 @@ def main() -> None:
         files = {p.stem: p for p in wf_dir.glob("*.md")}
         for stem in ordered(files, cfg.get("workflows_order") or []):
             p = files[stem]
-            shutil.copy(p, docs / "workflows" / p.name)
+            (docs / "workflows" / p.name).write_text(normalize_lists(p.read_text()))
             h1 = next((l for l in p.read_text().splitlines() if l.startswith("# ")), f"# {stem}")
             workflows.append((h1[2:].strip(), f"workflows/{p.name}"))
 
@@ -280,7 +410,7 @@ def main() -> None:
     notes_dir = site / "notes"
     if notes_dir.exists():
         for n in sorted(notes_dir.glob("*.md")):
-            shutil.copy(n, docs / f"note-{n.name}")
+            (docs / f"note-{n.name}").write_text(normalize_lists(n.read_text()))
             notes.append((n.stem.replace("-", " "), f"note-{n.name}"))
 
     # Evals, if given
