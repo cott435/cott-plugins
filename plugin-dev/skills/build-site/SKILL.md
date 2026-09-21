@@ -60,6 +60,15 @@ Authored, and committed:
   kit's defaults in `scripts/defaults/` are used with the plugin's name substituted in, so a
   new plugin gets a working site with no config at all.
 
+## Lists are re-indented on the way in
+
+Every page is normalized before it is written: list content — continuation paragraphs, sub-
+lists, fenced blocks, blockquoted lists — is re-indented to one nesting width, and a marker
+pressed straight against a paragraph gets a blank line above it. Sources stay written the
+way GitHub reads them (nest at whatever the marker is wide), and the site stops dropping
+half a numbered list into a paragraph. Nothing but whitespace changes, and it happens in
+`site/docs/` only — never in the skill or agent file.
+
 ## The nav
 
 Fixed shape, and a section with nothing in it is omitted rather than left empty:
