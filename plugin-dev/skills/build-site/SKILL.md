@@ -33,7 +33,7 @@ cd site && mkdocs serve      # http://127.0.0.1:8000
 ```
 
 `mkdocs`, `mkdocs-material` and `pymdown-extensions` must be installed once per machine:
-`pip install mkdocs mkdocs-material pymdown-extensions mdx_truly_sane_lists`.
+`pip install mkdocs mkdocs-material pymdown-extensions`.
 
 Report what the script printed — the page and section counts are the useful part, because a
 count that drops after an edit means a skill or agent stopped being discovered.
@@ -63,11 +63,17 @@ Authored, and committed:
 ## Lists are re-indented on the way in
 
 Every page is normalized before it is written: list content — continuation paragraphs, sub-
-lists, fenced blocks, blockquoted lists — is re-indented to one nesting width, and a marker
-pressed straight against a paragraph gets a blank line above it. Sources stay written the
-way GitHub reads them (nest at whatever the marker is wide), and the site stops dropping
-half a numbered list into a paragraph. Nothing but whitespace changes, and it happens in
-`site/docs/` only — never in the skill or agent file.
+lists, fenced blocks, blockquoted lists — is re-indented to the 4 spaces Python-Markdown
+reads nesting at, and a marker pressed straight against a paragraph gets a blank line above
+it. Sources stay written the way GitHub reads them (nest at whatever the marker is wide),
+and the site stops dropping half a numbered list into a paragraph. Nothing but whitespace
+changes, and it happens in `site/docs/` only — never in the skill or agent file.
+
+That is what lets the site render with stock `sane_lists` rather than a third-party list
+extension, which is the part that fixes numbering: `sane_lists` honors a list's starting
+number, so a list written `0.`, or one that resumes after an aside the author wrote as a
+plain paragraph (`2b.`), counts the way it does on GitHub instead of restarting at 1. Every
+list in `dev-team` and `plugin-dev` is checked against a CommonMark render of its source.
 
 ## The nav
 
