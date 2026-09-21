@@ -6,6 +6,19 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [0.9.1] - 2026-09-21
+
+### Fixed
+- **`build_site.py`: list indentation is normalized on the way into `site/docs/`** (e900d88).
+  Python-Markdown reads list nesting at one fixed width; the sources here nest at whatever
+  the marker is wide, which is what GitHub does. An ordered item's 3-space continuation kept
+  a stray space and swallowed every item below it — `plan-phases` §Compose the workflows lost
+  items 3–7 into a paragraph. Each page is now re-indented to one width, a marker pressed
+  straight against a paragraph gets a blank line above it, and lists inside blockquotes are
+  normalized too. Sources are untouched. Checked against a CommonMark render of every page in
+  both bundles: `evals/2026-09-21-build-site-list-normalization.md`.
+
+
 ## [0.9.0] - 2026-09-20
 
 Evals become a thing the kit does, rather than a thing each chat improvises. `run-evals` is
