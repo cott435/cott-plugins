@@ -37,11 +37,11 @@ markdown_extensions:
   - tables
   # Python-Markdown reads list nesting at one fixed width; the files here nest at
   # whatever their marker is wide, which is what GitHub does. build_site.py settles
-  # that on the way in — it re-indents every generated page to the 2-space width set
-  # below, so the sources stay written for GitHub and nobody edits indentation here.
-  - mdx_truly_sane_lists:
-      nested_indent: 2
-      truly_sane: true
+  # that on the way in — it re-indents every generated page to the 4 spaces this
+  # renderer expects, so the sources stay written for GitHub and nobody edits
+  # indentation here. sane_lists is what honors a list's starting number, so a list
+  # written `0.`, or resumed after an aside, counts the way its author wrote it.
+  - sane_lists
   - toc:
       permalink: true
       toc_depth: 3

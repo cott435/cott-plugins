@@ -115,17 +115,18 @@ def fm_table(fm: dict[str, str]) -> str:
 MARKER = re.compile(r"^( *)([-*+]|\d{1,9}[.)])( +)(?=\S)")
 QUOTE = re.compile(r"^( *)> ?")
 FENCE = re.compile(r"^( *)(```+|~~~+)")
+INDENT = 4               # Python-Markdown's tab_length: the width it reads nesting at
 
 
 def normalize_lists(body: str) -> str:
-    """Re-indent list content to a uniform 2-space nesting step.
+    """Re-indent list content to Python-Markdown's own 4-space nesting step.
 
     Files here nest list content at whatever their marker happens to be wide
     ("- " gives 2, "1. " gives 3), which GitHub reads fine but Python-Markdown
-    reads as one fixed width: with the width set for bullets, an ordered item's
-    3-space continuation keeps a stray space and swallows every item after it.
-    Rewriting the generated page — never the source — puts every level at the
-    one width the site is configured for.
+    reads as one fixed width: an ordered item's 3-space continuation keeps a
+    stray space and swallows every item after it. Rewriting the generated page
+    — never the source — puts every level at the width the renderer expects,
+    which is what lets the site read them with stock `sane_lists`.
     """
     body = quoted_blocks(body)
     out: list[str] = []
@@ -171,10 +172,10 @@ def normalize_lists(body: str) -> str:
             while stack and indent < stack[-1]["marker"] + 2:
                 stack.pop()
             depth = len(stack)
-            marker_out = depth * 2
+            marker_out = depth * INDENT
             content_src = indent + len(m.group(2)) + len(m.group(3))
             stack.append({"marker": indent, "content_src": content_src,
-                          "content_out": marker_out + 2})
+                          "content_out": marker_out + INDENT})
             new = " " * marker_out + line.strip()
             out.append(new)
             fence_shift = 0
