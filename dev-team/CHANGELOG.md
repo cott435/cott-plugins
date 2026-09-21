@@ -12,6 +12,18 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [0.5.2] - 2026-09-21
+
+### Fixed
+- **No tags in descriptions claude.ai would reject** (91dcf5c). claude.ai, which the desktop
+  app syncs marketplaces through, rejects a plugin with any `<word>` in a skill or agent
+  description; `probe-source` and `researcher` each named `docs/sources/<source>.md` there,
+  now `{source}`.
+
+### Added
+- **A contract forbidding a tag in any skill or agent description** (91dcf5c). The
+  `researcher`'s project-skill template, a `description:` line inside its body, is exempted.
+
 ## [0.5.1] - 2026-09-20
 
 ### Fixed
