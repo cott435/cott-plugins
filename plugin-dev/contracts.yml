@@ -2,6 +2,13 @@
 # `check-contracts`. One entry per claim that is true only because two files agree.
 
 forbid:
+  - name: no skill or agent description contains an XML-style tag
+    # claude.ai rejects the whole plugin ("SKILL.md description cannot contain XML tags")
+    # for any <word> in a frontmatter description, so the desktop app stops listing it. The
+    # CLI accepts it, so nothing else catches this. Write placeholders as {word}.
+    pattern: '^description:.*<[A-Za-z/]'
+    files: ['agents/*.md', 'skills/*/SKILL.md']
+
   - name: no unprefixed plugin command is typeable
     # Plugin skills are namespaced /plugin-dev:<name>; a bare /<name> is a command nobody
     # can run. Any slash-initial hyphenated token that is not already prefixed with

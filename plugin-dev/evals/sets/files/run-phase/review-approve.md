@@ -1,6 +1,8 @@
 # Setup (the executor does this before anything else)
-Copy evals/fixtures/toy-plugin/ to a fresh temporary directory OUTSIDE the repo, `git init`
-it, commit everything as "fixture", create and check out branch `toy-0.2`, and run the
+Copy evals/fixtures/toy-plugin/ to a fresh temporary directory OUTSIDE the repo, rename the
+copy's .claude-plugin/plugin.json.fixture to plugin.json (the fixture ships it under that name:
+claude.ai rejects a plugin whose folder holds a second plugin.json), `git init` it, commit
+everything as "fixture", create and check out branch `toy-0.2`, and run the
 target from inside that copy's root (the directory holding .claude-plugin/plugin.json).
 All git commands the target runs happen in that copy. This is the one exception to "write
 nothing": the temp copy is not the repo. Copy its final `git log --stat` and the progress
