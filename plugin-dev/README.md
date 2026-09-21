@@ -155,7 +155,8 @@ python3 ~/dev/cott-plugins/plugin-dev/scripts/build_site.py   # from any plugin 
 cd site && mkdocs serve
 ```
 
-Requires `pip install mkdocs mkdocs-material pymdown-extensions` once per machine. The nav is
+Requires `pip install mkdocs mkdocs-material pymdown-extensions mdx_truly_sane_lists` once per
+machine. The nav is
 generated from what the script finds, so a new agent, skill, command, rule or `references/`
 file appears without editing any config:
 

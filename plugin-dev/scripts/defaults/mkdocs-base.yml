@@ -35,6 +35,14 @@ theme:
 markdown_extensions:
   - admonition
   - tables
+  # Every skill and note here nests list content (a continuation paragraph, a fenced
+  # block, a sub-list) at 2 spaces, matching GitHub's own renderer. Python-Markdown's
+  # stock list processor expects 4-space nesting and otherwise breaks the item out of
+  # the list — mdx_truly_sane_lists fixes that at the 2-space width these files use,
+  # instead of everyone's list indentation being rewritten to suit one renderer.
+  - mdx_truly_sane_lists:
+      nested_indent: 2
+      truly_sane: true
   - toc:
       permalink: true
       toc_depth: 3

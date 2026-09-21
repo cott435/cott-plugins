@@ -33,7 +33,7 @@ cd site && mkdocs serve      # http://127.0.0.1:8000
 ```
 
 `mkdocs`, `mkdocs-material` and `pymdown-extensions` must be installed once per machine:
-`pip install mkdocs mkdocs-material pymdown-extensions`.
+`pip install mkdocs mkdocs-material pymdown-extensions mdx_truly_sane_lists`.
 
 Report what the script printed — the page and section counts are the useful part, because a
 count that drops after an edit means a skill or agent stopped being discovered.
