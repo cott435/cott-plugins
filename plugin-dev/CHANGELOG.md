@@ -6,6 +6,28 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [0.9.2] - 2026-09-21
+
+### Fixed
+- **Ordered lists on the site count the way their author wrote them** (e5f186f).
+  `mdx_truly_sane_lists` discards a list's starting number. A list resumed after an aside
+  markdown cannot express as a marker — `plan-repo`'s `2b.` — restarted at 1, so its Steps
+  read 1, 2, 1, 2, 3, 4, and `plan-package` repeated a 1; a list written from `0.` — the
+  `implementer`'s Procedure, whose own prose says "step 0 below" — renumbered to 1, putting
+  all fourteen steps one off from every reference to them. Both predate 0.9.1, which fixed
+  list *structure* and not counting. 64 of 64 pages across both bundles now render every
+  list exactly as GitHub does, up from 58:
+  `evals/2026-09-21-build-site-list-numbering.md`.
+
+### Changed
+- **The site renders with stock `sane_lists`; `mdx_truly_sane_lists` is dropped** (e5f186f).
+  That extension was only there to read the 2-space nesting these files use, which
+  `build_site.py` now normalizes away — it re-indents each generated page to
+  Python-Markdown's own 4 spaces instead of 2. One fewer third-party dependency to install.
+  A plugin that pins its own `site/mkdocs-base.yml` to `nested_indent: 2` would need the
+  same swap; none does today.
+
+
 ## [0.9.1] - 2026-09-21
 
 ### Fixed
