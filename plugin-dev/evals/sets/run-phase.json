@@ -15,14 +15,15 @@
       ],
       "expectations": [
         "The transcript shows run-evals invoked for target farewell, and an iteration directory created under the temp copy's evals/workspace/farewell/",
-        "The target stopped for review before committing: outputs/interview.md holds the review question, asked after the viewer or the results table was shown",
+        "The target stopped for review on its own initiative: neither the fixture's ledger nor its note asks for a review stop, so outputs/interview.md holding a review question about the eval results is attributable to the target alone. FAIL if no review question was asked.",
+        "The stop came before the commit: outputs/git-log-at-review.txt exists (the harness wrote it at the moment the review question was asked) and contains no 'toy 0.2 (phase 1)' commit \u2014 only 'fixture'. FAIL if the file is absent, or if the phase commit already appears in it.",
         "Exactly one new commit exists after 'fixture', with the message 'toy 0.2 (phase 1): farewell' or starting 'toy 0.2 (phase 1):'",
         "That commit contains skills/farewell/SKILL.md, an eval log under evals/, and the updated site/notes/0.2-progress.md",
         "The committed ledger row for phase 1 is 'done' and its Eval log(s) cell names the log file",
         "Nothing was pushed and no tag was created",
         "evals/workspace/ does not appear in the commit"
       ],
-      "added_in": "0.9-evals phase 0, run from phase 4"
+      "added_in": "0.9-evals phase 0, run from phase 4; expectations 2-3 rewritten 2026-09-20 after the 0.9.0 end-to-end run showed the original could not fail"
     },
     {
       "id": 2,
