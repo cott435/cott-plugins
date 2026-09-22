@@ -53,12 +53,13 @@ flowchart TD
   B1 --> R1["/dev-team:run-package data (spine mode)"]
   subgraph spine["what run-package drives on a spine plan"]
     direction TB
-    SP["test-section → implement-section → test-section<br/>→ review-section data/ingest"]
+    SP["test-section → implement-section → test-section<br/>→ review-section data/ingest → sync-design data"]
     SP --> B2["plan-package data (run 2)<br/>→ the other designs, against the spine's README; integration.md; surface.md"]
     B2 --> RP["review-plan data<br/>→ reviews/date-data-plan.md, followups data/plan"]
   end
   R1 --> SP
-  RP -. "request changes: /dev-team:plan-package data re-plans the named sections" .-> B2
+  RP -. "request changes, converging: /dev-team:plan-package data re-plans the named sections and every section a cross-cutting fact reaches" .-> B2
+  RP -. "request changes, not converging (round 2 unfixed, or round 3): one more round, or review-plan --defer → findings move to their sections, plan approved with fixes" .-> DEC
   RP --> DEC["you: docs/decisions.md"]
   DEC --> R2["/dev-team:run-package data (full mode)"]
   subgraph full["what run-package drives on a reviewed plan"]
@@ -118,10 +119,12 @@ sequenceDiagram
   Drv->>Tst: test-section data/ingest (reconcile)
   Drv->>Rev: review-section data/ingest
   Rev-->>Drv: Result · verdict (report + followups on disk)
+  Drv->>Arch: sync-design data (ingest's design gains As shipped)
   Drv->>Arch: plan-package data (completion run)
   Arch->>Des: … Sibling shipped: ingest/README.md
   Drv->>Rev: review-plan data
-  Drv-->>You: summary · next — answer decisions
+  Rev-->>Drv: Result · Verdict · Loop: converging | stopped
+  Drv-->>You: summary · next — answer decisions, or the two-command choice when the loop stopped
   You->>Drv: /dev-team:run-package data
   Note over Drv,Rev: per section: tester → implementer → tester → reviewer
   Drv->>Impl: finalize-package data

@@ -57,6 +57,13 @@ directory — before writing.
    contract's Boundaries — and what each change is. Specific enough that someone with no
    memory of this run could apply it.
 
+9. **Propagation** *(re-plans only)* — one entry per cross-cutting fact a plan review's
+   finding corrected: the fact as it now stands, the contract heading or row that carries
+   it, and every section whose design was re-delegated for it — the review's `touches:`
+   list plus what the architect's grep added. `/dev-team:review-plan` checks each listed
+   design's **Revision** heading cites the fact, and counts the fact as one unfixed finding
+   while any design still assumes the old one. Omit on a first plan.
+
 **On a mapping or adoption run** the content is different in kind: **Contract deviations**
 become places the code contradicts its own stated conventions; **Cross-section mismatches**
 become real inconsistencies between existing sections; **Dependency order** is the order

@@ -124,11 +124,15 @@ spine-only or passes the plan gate. On this spine-only plan it:
 
 1. builds `ingest` — `test-section` (intent tests, red), `implement-section`, `test-section`
    again (reconcile), `review-section`, rebuilding on `request changes` up to three times;
-2. re-runs `plan-package data`, which designs `clean` and `storage` with `Sibling shipped:`
+2. runs `sync-design data`, so `ingest`'s design gains an **As shipped** table of what the
+   build changed — the design went through every implementer pass untouched, and without
+   this the plan review would check the next two designs' seams against a spine that no
+   longer exists;
+3. re-runs `plan-package data`, which designs `clean` and `storage` with `Sibling shipped:`
    naming `ingest`'s README — so the two designs that consume `ingest` are written against
    what it actually returns, not what its design projected — then rewrites `integration.md`
    with `Status: complete` and writes `surface.md`;
-3. runs `review-plan data`, and **stops** so you can answer decisions before the rest is built.
+4. runs `review-plan data`, and **stops** so you can answer decisions before the rest is built.
 
 `review-plan` forks the reviewer in plan mode. Someone who wrote none of it checks the
 contract, every design, `integration.md` and `surface.md` against each other and against the
@@ -136,10 +140,23 @@ repo contract, the ledger, the upstream `interface.md` files and the probe docs:
 name has a provider with the same signature, every open question became a `D<n>`, every
 deviation is resolved, every public name has a consumer. It writes
 `docs/reviews/<date>-data-plan.md` and files each CRITICAL to `docs/followups.md` as
-`data/plan: …`. On `request changes`, run `/dev-team:plan-package data`: it re-delegates only
-the sections a finding names and ticks the findings. Then run `/dev-team:review-plan data`
-again. While a `data/plan` finding is open, `/dev-team:implement-section` refuses every section
-of `data`.
+`data/plan: …`. On `request changes`, run `/dev-team:plan-package data`: it re-delegates the
+sections a finding names — and, for a finding whose cause is one fact several designs assume
+(the review writes that one once, with a `touches:` list), every section the fact reaches,
+recorded under `integration.md`'s **Propagation** heading — and ticks the findings. Then run
+`/dev-team:review-plan data` again. While a `data/plan` finding is open,
+`/dev-team:implement-section` refuses every section of `data`.
+
+That pair would loop forever, so the review counts. Each plan report carries `Round: <n>`,
+the consecutive `request changes` reviews since the last approving one, and from round 2
+`Convergence: <k> prior unfixed, <m> new`, where a fact still assumed by a section the last
+re-plan did not reach is one *unfixed* finding, not a new one. On round 2 with a prior finding
+unfixed or as many new findings as before, and on round 3 regardless, the review stops the loop
+and offers two commands: `/dev-team:plan-package data` once more, or
+`/dev-team:review-plan data --defer`, which moves the standing findings to the sections they
+concern, approves the plan with fixes, and lets the build start — each finding is then a review
+follow-up the implementer of that section must clear before `finalize-package`, where a wrong
+session date is a failing intent test rather than a disagreement between two documents.
 
 ### Build the rest
 
@@ -173,6 +190,7 @@ hard section or to watch one step at a time:
 /dev-team:implement-section data/ingest   # runs them first; done when they pass
 /dev-team:test-section data/ingest        # reconcile: fold recorded deviations, file the rest
 /dev-team:review-section data/ingest
+/dev-team:sync-design data                # ingest's design learns what shipped
 /dev-team:plan-package data               # completion run
 /dev-team:review-plan data
    (answer decisions)

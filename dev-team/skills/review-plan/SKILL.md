@@ -1,8 +1,8 @@
 ---
 name: review-plan
-description: Review a package's complete plan — contract, every section design, integration.md, surface.md — against the repo contract, the decisions ledger, the shipped interfaces it consumes, the probe docs, and docs/constraints.md, before any section is implemented. Writes docs/reviews/date-pkg-plan.md and files CRITICAL findings to followups addressed to pkg/plan, which the next plan-package run picks up.
-argument-hint: "<pkg>"
-arguments: [pkg]
+description: Review a package's complete plan — contract, every section design, integration.md, surface.md — against the repo contract, the decisions ledger, the shipped interfaces it consumes, the probe docs, and docs/constraints.md, before any section is implemented. Writes docs/reviews/date-pkg-plan.md and files CRITICAL findings to followups addressed to pkg/plan, which the next plan-package run picks up. Numbers the plan-and-review rounds and stops the loop when it is not converging; --defer re-addresses the standing findings to their sections so the build can start.
+argument-hint: "<pkg> [--defer]"
+arguments: [pkg, flags]
 context: fork
 agent: dev-team:reviewer
 background: false
@@ -18,7 +18,13 @@ implementer forks against them.
 > Code started. Stop, tell the user to run `/reload-plugins` (or restart Claude Code),
 > verify with `/agents`, and re-run.
 
-If `$pkg` reached you unsubstituted, take the first token of `$ARGUMENTS`.
+The command was typed with these arguments: **`$ARGUMENTS`**. The first word is the package;
+if `$pkg` reached you unsubstituted, take it from there. `--defer` after it makes this a
+**deferral run** — your **Rounds and convergence** section's `--defer`: no review, the open
+`$pkg/plan` findings re-addressed to their sections, an `approve with fixes` report. It is
+what the user types after a plan review stopped the loop; on a package whose newest plan
+review approves, or with no open `$pkg/plan` finding, return `Result: blocked` saying there
+is nothing to defer.
 
 **Invoked by run-package.** If your task prompt carries a `Package:` line instead of a
 substituted argument — `/dev-team:run-package` spawns you that way — use it: the package from
@@ -64,14 +70,27 @@ check.
 
 ## Steps
 
-1. Read every document above that exists. There is no code to read.
-2. Work your **Plan review checklist** in priority order.
-3. Write your report to the path above.
+1. Read every document above that exists. There is no code to read. Run
+   `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py $pkg --plan-rounds` from
+   the repo root: this review is round `n + 1`.
+2. Work your **Plan review checklist** in priority order. From round 2 on, classify the
+   previous report's CRITICALs first, per your **Rounds and convergence** section — a fact
+   the last re-plan corrected in some sections and not others is one unfixed finding, not a
+   new one per section.
+3. Write your report to the path above, with its `Round:` line and, from round 2 on, its
+   `Convergence:` line.
 4. Append every CRITICAL finding to `docs/followups.md` addressed to `$pkg/plan`, so the next
    `/dev-team:plan-package $pkg` run picks them up without anything passing through chat.
 5. Commit per your **Commit** section — scope `review $pkg/plan`, trailer
    `Dev-Team-Run: review-plan $ARGUMENTS` — then return your summary, ending with the next
-   command: `/dev-team:plan-package $pkg` on `request changes`, otherwise
+   command: on `request changes`, `/dev-team:plan-package $pkg` while **Rounds and
+   convergence** says the loop is converging, else that section's not-converging block, which
+   offers `/dev-team:plan-package $pkg` and `/dev-team:review-plan $pkg --defer` and leaves the
+   choice to the user; otherwise
    `/dev-team:test-section $pkg/<first section in the integration doc's Dependency order>`.
+
+On a deferral run, steps 1–4 are replaced by the `--defer` procedure in **Rounds and
+convergence**; step 5 commits the report and `docs/followups.md` with the trailer
+`Dev-Team-Run: review-plan $ARGUMENTS` and ends with the `test-section` command.
 
 Change nothing but your report and `docs/followups.md`.

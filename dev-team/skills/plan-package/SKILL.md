@@ -98,8 +98,11 @@ invent its own shapes and conventions, and the next package will invent them dif
    **full** before anything else is looked at. Otherwise: **full** (two sections or fewer), **spine**,
    **completion**, **too early**, or **re-run**. On a spine run, choose the spine now — or take
    `--spine` — and keep the count for the **Spine** heading. On **too early**, return that
-   section's message and stop here: write nothing, commit nothing. A re-plan for step-3b
-   findings on a complete plan is a **re-run**; an adoption run (below) is always **full**.
+   section's message and stop here: write nothing, commit nothing. On **completion**, apply
+   that section's stale-spine rule before anything else: a built section whose design has no
+   **As shipped** citing its last commit is synced now, in this run, before a designer is
+   briefed against it. A re-plan for step-3b findings on a complete plan is a **re-run**; an
+   adoption run (below) is always **full**.
 
 4b. **Probe.** For every entry in every section's `source` column, spawn one `researcher` in
    probe mode per your **Probing** section, all in parallel, in one message — `Kind:` and
@@ -127,7 +130,9 @@ invent its own shapes and conventions, and the next package will invent them dif
    - `Existing design: none` · `Assessment:` the package assessment if you wrote one
    - `Review findings: none` — on a re-plan, a section a step-3b finding names gets
      `Existing design:` its design path and `Review findings:` the plan review's path; a
-     section no finding names is not re-delegated
+     section no finding names is not re-delegated — unless a cross-cutting finding's
+     propagation list names it (**Plan findings**), in which case it is, with
+     `Propagate: <fact> — <sections>` beside the two
    - `Skills to invoke:` that section's project skills
    - `Write your design to: docs/packages/$pkg/design/<section>.md`
    - `Constraints:` what the section must not import — including every sibling section it
@@ -163,15 +168,17 @@ invent its own shapes and conventions, and the next package will invent them dif
 9. **Commit** per your **Commit** section — trailer `Dev-Team-Run: plan-package $ARGUMENTS`,
    staging `docs/followups.md` too on a re-plan, after ticking each step-3b entry
    `[x] <date>` — then **return** your standard summary — implementation order, provisional
-   upstreams named, and on a re-plan the plan review you answered — ending with the next
-   command: `/dev-team:review-plan $pkg`. A spine run ends instead with the spine's four
-   commands and then this one again:
+   upstreams named, on a re-plan the plan review you answered and the sections each
+   cross-cutting finding was propagated to, and on a completion run the built sections you
+   synced — ending with the next command: `/dev-team:review-plan $pkg`. A spine run ends
+   instead with the spine's five commands and then this one again:
 
    ```
    /dev-team:test-section $pkg/<spine>
    /dev-team:implement-section $pkg/<spine>
    /dev-team:test-section $pkg/<spine>
    /dev-team:review-section $pkg/<spine>
+   /dev-team:sync-design $pkg
    /dev-team:plan-package $pkg
    ```
 

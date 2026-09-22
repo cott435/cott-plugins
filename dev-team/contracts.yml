@@ -114,6 +114,17 @@ forbid:
     unless: ['dev-team:designer', 'dev-team:researcher']
     files: ['agents/architect.md']
 
+  - name: the plan loop's exit is never bypassed by a bare next command
+    # review-plan once ended every `request changes` with plan-package, and plan-package ended
+    # with review-plan, with nothing counting rounds: six consecutive plan reviews on one
+    # package, each clearing the last and adding two. The reviewer's Rounds and convergence
+    # section is the exit; a sentence in either file that names plan-package as *the* next
+    # command on `request changes` without mentioning the loop bypasses it.
+    pattern: 'on `request changes`, `/dev-team:plan-package'
+    near: 200
+    unless: ['Rounds and', 'converging', 'not converging', 'stop']
+    files: ['agents/reviewer.md', 'skills/review-plan/SKILL.md', 'skills/run-package/SKILL.md']
+
 # Every heading a reader parses is one the owner's template defines.
 headings:
   - name: interface.md headings its readers parse are ones the implementer writes
@@ -164,6 +175,10 @@ headings:
       # completion-run designer consumes (spine-first, note 07).
       - file: agents/designer.md
         cites: ['Entry points and interfaces']
+      # The plan review's seam check reads a built sibling's README, not its stale design §5,
+      # and the section review reads item 7's recorded deviations.
+      - file: agents/reviewer.md
+        cites: ['Entry points and interfaces', 'Implementation notes']
 
   - name: design headings the tester writes tests from are ones the designer's template defines
     # The tester inventories its cases by design heading and cites them in every test's
@@ -190,13 +205,15 @@ headings:
     owner: skills/planning-templates/references/integration.md
     owner_span: ['0. **Spine**', null]
     readers:
+      # Propagation is the re-plan's blast radius; the reviewer counts a fact unfixed while
+      # any design it lists still assumes the old one.
       - file: agents/reviewer.md
         cites: ['Dependency order', 'Cross-section mismatches', 'Contract deviations',
-                'Repo contract deviations', 'Decisions needed from user']
+                'Repo contract deviations', 'Decisions needed from user', 'Propagation']
       - file: skills/review-plan/SKILL.md
         cites: ['Spine']
       - file: agents/architect.md
-        cites: ['Spine', 'Dependency order']
+        cites: ['Spine', 'Dependency order', 'Propagation']
       # The driver reads Dependency order for its section order and Spine for spine mode.
       - file: skills/run-package/SKILL.md
         cites: ['Dependency order', 'Spine']
@@ -247,7 +264,10 @@ headings:
 
   - name: As shipped is a heading sync-design writes before anyone reads it
     # sync-design is the only writer of a design doc's As shipped sections; the reviewer
-    # treats a folded deviation as the spec, and plan-change starts from the latest one.
+    # treats a folded deviation as the spec, and plan-change starts from the latest one. The
+    # architect's completion run checks a built section's design for it and, when stale,
+    # performs sync-design's step 1 itself — the one time another run writes the heading, by
+    # reading the skill file rather than restating it.
     owner: skills/sync-design/SKILL.md
     owner_span: ['## What you write', '## Commit and return']
     readers:
@@ -256,6 +276,10 @@ headings:
       - file: skills/plan-change/SKILL.md
         cites: ['As shipped']
       - file: agents/implementer.md
+        cites: ['As shipped']
+      - file: agents/architect.md
+        cites: ['As shipped']
+      - file: skills/plan-package/SKILL.md
         cites: ['As shipped']
 
   - name: docs/constraints.md headings its readers run are ones the template defines

@@ -102,7 +102,17 @@ beside an existing design when `/dev-team:review-plan` found something wrong wit
 path is given, read the findings that cite your section and address each one in the revised
 design, revising in place; list what you changed under a final heading **Revision** — one line
 per finding: the finding, then the heading you changed and how — so the reviewer can check the
-finding against it. Findings that cite other sections are not yours.
+finding against it. Findings that cite other sections are not yours — unless a
+`Propagate:` line says otherwise.
+
+**Propagate** — given beside **Review findings** on a re-plan when the finding that reaches
+you is a cross-cutting fact: `Propagate: <fact> — <sections>`. The contract already carries
+the corrected fact; the review may not cite your section by name, and the `Propagate:` line
+is why you were re-delegated. Find every place your design assumed the old fact — a
+calendar, an error set, a shape, a field — and bring each in line with the corrected
+contract, not only the line the review quoted; list each change under **Revision** with
+the fact it propagates. A design that fixes the quoted line and keeps the old fact two
+headings down is the next review's finding.
 
 ## Modes
 
@@ -182,7 +192,8 @@ line.
     designed against, so an unanswered question does not stop the implementer. Provisional
     upstream names go here too.
 
-On a revision (**Review findings** given), a final heading **Revision** follows item 11.
+On a revision (**Review findings** or **Propagate** given), a final heading **Revision**
+follows item 11.
 
 Target 100–250 lines. Prefer tables and signatures over paragraphs.
 

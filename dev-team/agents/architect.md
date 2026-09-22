@@ -136,9 +136,24 @@ row>`, names:
   that is wrong on its own is not a disagreement — patched over, it stays wrong for the
   tester, who reads the design, and for every later `plan-change` that starts from it.
 
-Sections with no finding are not re-delegated. When every finding has been addressed, tick
-each `- [ ] <pkg>/plan:` entry `[x] <date>` in place. Your return names the plan review you
-answered and says `/dev-team:review-plan <pkg>` is the next command.
+Before answering findings one at a time, sort them. A finding is **local** when one
+document answers it. It is **cross-cutting** when its cause is one fact that more than one
+design assumes — a contract row, a shared convention, a shape, a calendar, an error set —
+and the reviewer writes such a finding once with a `touches:` list. That list is a starting
+point, not the blast radius: grep every design, `integration.md` and `surface.md` for the
+fact's terms (the old exchange calendar's name, the error code, the field) and take the
+union. Then, for each cross-cutting finding, in this order: correct the contract first, so
+every designer reads the corrected fact; write the fact and the full section list under the
+integration doc's **Propagation** heading; and re-delegate **every** section in that list in
+the same fan-out, each with `Existing design:`, `Review findings:` and
+`Propagate: <fact> — <sections>`, whether or not the review named that section. A finding
+that recurs in a new section each round is one unfinished propagation, not a series of
+separate defects, and the reviewer counts it as unfixed until no design carries the old fact.
+
+Sections no local finding names and no propagation list reaches are not re-delegated. When
+every finding has been addressed, tick each `- [ ] <pkg>/plan:` entry `[x] <date>` in
+place. Your return names the plan review you answered, each cross-cutting fact with the
+sections it was propagated to, and says `/dev-team:review-plan <pkg>` is the next command.
 
 ## Project skills
 
@@ -334,6 +349,7 @@ Source probes: <docs/sources/<source>.md, …> | none
 Sibling shipped: <<section path from the Sections table>/README.md, …> | none
 Existing design (if any): <path or "none">
 Review findings: <docs/reviews/<date>-<pkg>-plan.md> | none
+Propagate: <fact> — <sections> | none
 Assessment (change and document modes): <path or "none">
 Skills to invoke: <comma-separated project skills for this section, or "none">
 Write your design to: <path>
@@ -353,6 +369,11 @@ describes the section, not the run.
 
 `Review findings:` is a plan review's report, passed only on a re-plan (**Plan findings**) to a
 section a finding names, always beside `Existing design:`; `none` otherwise.
+
+`Propagate:` is a re-plan's cross-cutting fact and the sections it reaches, passed beside
+`Review findings:` to every section on that list — the ones the review named and the ones
+your grep found. The designer brings every place its design assumed the old fact in line
+with the corrected contract, not only the line the review quoted. `none` otherwise.
 
 `Upstream interfaces:` lists the shipped surface of every package this one depends on. When a
 dependency has no `interface.md` yet, pass its `contract.md` marked `provisional:` — the
@@ -399,7 +420,7 @@ heading, never recomputed, so a `--spine` choice sticks across runs.
 |---|---|---|
 | `--all` given, `N ≤ 2`, or an adoption run (every section already has code) | **full** | probe; design every section not in `D`; unify; surface. **Spine** reads `Status: complete`, `Section: —` |
 | `D = ∅` | **spine** | probe every source; choose the spine; delegate **only** the spine; write `integration.md` with **Spine** `Status: spine only`, **Dependency order** for all `N` sections, and every other heading for the one design; write **no** `surface.md`; commit and return |
-| spine ∈ `D`, spine ∈ `B`, `D ≠` all | **completion** | delegate every section not in `D`, each with `Sibling shipped:` naming the README of every section in `B`; unify — rewrite `integration.md` with **Spine** `Status: complete`; write `surface.md`; commit and return |
+| spine ∈ `D`, spine ∈ `B`, `D ≠` all | **completion** | first the stale-spine rule below; then delegate every section not in `D`, each with `Sibling shipped:` naming the README of every section in `B`; unify — rewrite `integration.md` with **Spine** `Status: complete`; write `surface.md`; commit and return |
 | spine ∈ `D`, spine ∉ `B` | **too early** | write nothing and commit nothing; return the message below |
 | `D` = all | **re-run** | no designers unless a `<pkg>/plan` finding names one (**Plan findings**); unify from disk. This covers a 0.4 plan, which has every design and no **Spine** heading |
 
@@ -413,9 +434,23 @@ Spine <s> is designed and not built. Run /dev-team:test-section <pkg>/<s>,
 or pass --all to design the remaining sections now against the plan-time design.
 ```
 
-A spine run's return lists the same four commands for the spine and ends with
-`/dev-team:plan-package <pkg>`, not `/dev-team:review-plan` — a spine-only plan has no
-`surface.md`, and `review-plan` refuses it. `status.py` shows `plan: spine only (<s>)`, and
+**Stale spine.** A section's design is stale the moment the section ships: the spine's went
+through every implementer pass unchanged, and what it now says the spine raises and holds
+is what the plan-time designer guessed. On a completion run, before any designer is
+spawned, check every section in `B`: its design's latest **As shipped** heading must cite
+that section's last commit
+(`git log -1 --format=%h -- <section path> <tests/unit/<section>> <tests/intent/<section>>`).
+For each one that does not, carry out **What you write** step 1 of
+`${CLAUDE_PLUGIN_ROOT}/skills/sync-design/SKILL.md` — read it with the Read tool — for that
+section, now, in this run; the design docs you append to are staged with this run's
+commit, and your return lists them under the sections you synced. `/dev-team:run-package`
+spawns `sync-design` before this run, so under the driver there is normally nothing to
+sync; the check is for the manual path, where the command between the spine's review and
+this run is the one most easily skipped.
+
+A spine run's return lists the same commands for the spine — the four, then
+`/dev-team:sync-design <pkg>` — and ends with `/dev-team:plan-package <pkg>`, not
+`/dev-team:review-plan` — a spine-only plan has no `surface.md`, and `review-plan` refuses it. `status.py` shows `plan: spine only (<s>)`, and
 `/dev-team:run-package` branches on the same line. The interview rule, probing and decision
 stubs run identically in a spine run and a completion run.
 

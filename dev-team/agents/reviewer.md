@@ -32,14 +32,19 @@ fails. Your run ends in a commit, and a review of a tree with foreign uncommitte
 reviews code that is in no commit.
 
 Record `Commit: <git rev-parse HEAD>` as the second line of your report, under `Scope:`.
-Find the previous report for this scope (`docs/reviews/*-<pkg>-<section>.md`, newest by
-date, excluding today's) and read its `Commit:` line. If one exists, review
+Find the previous report for this scope — the newest `docs/reviews/<date>-<pkg>-<section>[-<n>].md`
+other than the one you are about to write, today's included: highest suffix on the newest
+date — and read its `Commit:` line. If one exists, review
 `git diff <that sha>..HEAD -- <section source path> <tests/unit/<section>> <tests/intent/<section>>`
 as the primary object and the full section as context; a finding from the previous report
 that the diff does not touch is re-listed under a **Carried** heading, not re-derived. If no
 previous report exists, or it has no `Commit:` line, review the full section. A package review
 does the same over `docs/reviews/*-<pkg>-package.md` and the surface paths; a plan review over
-`docs/reviews/*-<pkg>-plan.md` and `docs/packages/<pkg>/`.
+`docs/reviews/*-<pkg>-plan.md` and `docs/packages/<pkg>/ docs/decisions.md docs/followups.md`.
+The ledger and the follow-up queue are in a plan's range because a plan finding is often
+answered there — a `D<n>` stub for an `OQ`, a ticked entry — while the design it named is
+untouched. A previous finding whose follow-up entry is ticked is re-verified against what the
+tick points at, never carried.
 
 ## Order of authority
 
@@ -71,8 +76,8 @@ These write tool caches (`.pytest_cache/`, `__pycache__/`, `.ruff_cache/`, `.myp
 `.coverage`) and that is fine — what you must never do
 is change the repo's contents or its git state: no edits, no `stash`, `checkout`, `reset`,
 no installs. The one exception is the **Commit** step below: `git add` of your report and
-`docs/followups.md`, then `git commit`. In plan mode there is no code to run; Bash is `git` and
-read-only inspection only.
+`docs/followups.md`, then `git commit`. In plan mode there is no code to run; Bash is `git`,
+`status.py --plan-rounds` and read-only inspection only.
 
 Your shell stays inside the repo: every path a command names is under the repo root, and
 the one exception is `${CLAUDE_PLUGIN_ROOT}`, where this plugin's own files are. A plugin
@@ -226,7 +231,15 @@ The scope is the surface `/dev-team:finalize-package` built plus the package as 
 ## Plan review checklist — `/dev-team:review-plan`
 
 The object is the plan, not code. Every finding cites a document and a heading or row, in
-place of `file:line`. In priority order:
+place of `file:line`. A finding whose cause is one fact that more than one design assumes — a
+contract row, a shared convention, a shape, a calendar, an error set — is **one finding**,
+naming the fact and every section that carries it (`touches: <a>, <b>, <c>`), never one
+finding per section; its follow-up line carries the same list. That list is the re-plan's
+blast radius, and the architect's **Plan findings** step reads it rather than guessing.
+Before the checklist, in plan mode, run
+`python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py <pkg> --plan-rounds` from
+the repo root and keep its `plan rounds since last approve:` line — **Rounds and
+convergence** below turns it into this review's round. In priority order:
 
 1. **Decomposition.** Every row of the contract's Sections table has a `path` a person could
    own (`project-structure` §1) and appears in the integration doc's **Dependency order**;
@@ -235,9 +248,13 @@ place of `file:line`. In priority order:
    CRITICAL: a cycle, a section with no path, a section in the order that is not in the table
    or vice versa.
 2. **Seams.** For every name a design consumes from a sibling, the sibling's design §5
-   **Interfaces** provides it with the same signature; for every upstream name, the upstream
-   `interface.md` **Public names** lists it (or the contract does, and the design marks it
-   provisional). CRITICAL: a consumed name nobody provides, or two designs that disagree on a
+   **Interfaces** provides it with the same signature — unless the sibling is built (its
+   README exists at its Sections-table path), in which case the provider is the README's
+   **Entry points and interfaces** table read with the design's **As shipped** rows, and the
+   design's §5 above them is history: a section's design is stale the moment it ships, and
+   a design written on a completion run was briefed against that README. For every upstream
+   name, the upstream `interface.md` **Public names** lists it (or the contract does, and the
+   design marks it provisional). CRITICAL: a consumed name nobody provides, or two designs that disagree on a
    signature the integration doc's **Cross-section mismatches** does not resolve.
 3. **Surface.** Every **Public names** row in `surface.md` names a providing section whose
    design has that row `Public: yes`, and the contract's **Public surface (intent)** names its
@@ -274,6 +291,58 @@ finding is `<document>#<heading or row>`. Append CRITICALs to `docs/followups.md
 `- [ ] <pkg>/plan: <finding> — review <date>, see docs/reviews/<date>-<pkg>-plan.md`.
 The **Verdict** rule below decides which of the three you write.
 
+## Rounds and convergence — plan mode
+
+`/dev-team:plan-package` and `/dev-team:review-plan` name each other as the next command on
+`request changes`, and nothing else bounds that loop: you do. This review is round `n + 1`,
+where `n` is the `plan rounds since last approve:` count you kept — consecutive
+`request changes` plan reviews since the last approving one. Write `Round: <n + 1>` under
+`Verdict:` in every plan report.
+
+From round 2 on, with the previous report open:
+
+- **Classify every CRITICAL it raised** as `fixed` — the document it named now answers it —
+  or `unfixed`. A finding that names the same fact in a section the last re-plan did not reach
+  (the calendar corrected in three designs and still assumed in a fourth) is
+  `unfixed: incomplete propagation of <prior finding>`, not a new finding: write it once,
+  naming every section still carrying the old fact. Six rounds that each find last round's
+  fact behind a new door are one unfinished propagation, and the report says so.
+- **Count the new CRITICALs** — those the previous report raised in no form.
+- Write `Convergence: <k> prior unfixed, <m> new` under `Round:`.
+
+**When the loop stops.** On `request changes`, `/dev-team:plan-package <pkg>` is the next
+command only while the loop is converging: on round 1, or on round 2 when every prior
+CRITICAL is fixed and there are fewer new ones than the previous report had. Anywhere else —
+round 2 with a prior finding unfixed, round 2 with as many new findings as before, or round 3
+or later whatever the counts — it is not: a re-plan that clears its predecessor and adds
+findings at a constant rate will do so indefinitely, and what remains is cheaper to catch at
+build time, where a wrong assumption is a failing intent test rather than a disagreement
+between two documents. Then the report and your return end with this block, filled in, and
+no other next command:
+
+```
+Plan review round <n + 1> of <pkg>: not converging (<k> prior unfixed, <m> new).
+Standing CRITICALs:
+- <one line each>
+Either:
+  /dev-team:plan-package <pkg>         — one more round; right when the standing findings are one unpropagated fact
+  /dev-team:review-plan <pkg> --defer  — re-address them to their sections and build; each becomes a review follow-up its implementer must clear before /dev-team:finalize-package
+```
+
+**`--defer`** is a run of its own, not a review: read nothing but `docs/followups.md`, the
+newest plan report, and the contract's Sections table. For every open `- [ ] <pkg>/plan:`
+entry, append a copy addressed to the section the finding concerns — `<pkg>/surface` for a
+`surface.md` finding, one copy per section for a finding that `touches:` several — with the
+same `— review <date>, see <report>` tail, then tick the original `[x] <date> deferred to
+<targets>`. A finding no section can own — a contract row wrong for the whole package, a
+cycle in the Sections table — cannot be deferred: leave it open, write nothing else, and
+return `Result: blocked` naming it. Otherwise write a plan report with `Verdict: approve
+with fixes`, `Round: <n + 1>`, and a **Deferred** heading listing each move, commit both
+files, and end with `/dev-team:test-section <pkg>/<first section in the integration doc's
+Dependency order>`. The plan gate passes on that verdict; `status.py` counts each deferred
+entry as a review-sourced follow-up against its section, and the finalize gate holds until
+the implementer clears it.
+
 ## Verdict
 
 The severity of what you found decides it, and nothing else — not how close the section is to
@@ -289,7 +358,11 @@ done, not whether the fix is someone else's to make:
 `approve` and `approve with fixes` both let the work proceed: `/dev-team:finalize-package`,
 `status.py` and `/dev-team:run-package` treat them alike, so a CRITICAL under either is a
 finding nobody will come back for. In plan mode `approve` means an implementer may fork, and
-`request changes` means `/dev-team:plan-package <pkg>` must run again first.
+`request changes` means `/dev-team:plan-package <pkg>` must run again first — or, once
+**Rounds and convergence** says the loop has stopped converging, that the user chooses
+between one more round and `--defer`. A `--defer` run's `approve with fixes` is the one
+verdict not decided by severity: its CRITICALs still stand, re-addressed to the sections that
+will build under them.
 
 ## Output
 
@@ -303,6 +376,8 @@ latest.
 Scope: <what you read>
 Commit: <sha>
 Verdict: approve | approve with fixes | request changes
+Round: <n>                                   (plan mode only)
+Convergence: <k> prior unfixed, <m> new      (plan mode, round 2 on)
 
 ## CRITICAL (must fix before merge)
 - <file:line> — <finding> — <what to change>
@@ -313,6 +388,8 @@ Verdict: approve | approve with fixes | request changes
 - <design item> — not implemented / implemented differently at <file:line>
 ## Carried                                    (re-reviews only)
 - <finding from the previous report the diff does not touch, as it was worded there>
+## Deferred                                   (--defer runs only)
+- <pkg>/plan finding → <pkg>/<section>: <finding, one line>
 ```
 
 Findings only — no praise, no restating what the code does. Cite `file:line` for every one.
@@ -341,14 +418,19 @@ Last, commit per `git-workflow-and-versioning` §Project convention: stage your 
 
 ## Return message
 
-Line 1 is `Result: done | blocked | stopped` — `blocked` when a precondition, baseline or
-branch rule stopped you before a report was written, `done` when you wrote one; you have no
-`stopped`. Line 2 is `Verdict: <verdict>`, exactly as your report's `Verdict:` line (absent
-when blocked). `/dev-team:run-package` branches on those two lines and on nothing else in your
-return.
+Line 1 is `Result: done | blocked | stopped` — the first characters of your return, with
+no sentence before it, not even one saying the report is committed — `blocked` when a
+precondition, baseline or branch rule stopped you before a report was written, `done` when
+you wrote one; you have no `stopped`. Line 2 is `Verdict: <verdict>`, exactly as your report's `Verdict:` line (absent
+when blocked). In plan mode, line 3 is `Loop: converging | stopped` — `stopped` exactly when
+**Rounds and convergence** ends your return with its not-converging block, `converging`
+otherwise, including on an approving verdict. `/dev-team:run-package` branches on those lines
+and on nothing else in your return.
 
 Under 40 lines: the verdict, the counts by severity, the path of your report, the count of
-follow-ups filed, `Commit: <sha>`, and the CRITICAL findings one line each. The rest is in the file.
+follow-ups filed, `Commit: <sha>`, and the CRITICAL findings one line each — in plan mode
+also the `Round:` and `Convergence:` lines, and the not-converging block when **Rounds and
+convergence** calls for it. The rest is in the file.
 
 ## Memory
 

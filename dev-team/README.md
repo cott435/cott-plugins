@@ -120,13 +120,16 @@ quality bar not written down                → /dev-team:set-constraints (any t
 new repo, nothing exists yet                → /dev-team:plan-repo, then per package: /dev-team:plan-package <pkg>
                                               (designs the spine only, on three or more sections);
                                               build the spine — test-section, implement-section,
-                                              test-section, review-section; /dev-team:plan-package <pkg>
-                                              again for the rest (--all plans everything in one run)
+                                              test-section, review-section, sync-design;
+                                              /dev-team:plan-package <pkg> again for the rest
+                                              (--all plans everything in one run)
 existing repo, no docs/ yet                 → /dev-team:map-project (repo level), then /dev-team:plan-package <pkg> per package (document mode)
 existing repo, docs/ already there          → /dev-team:plan-change
 docs/ exist but have drifted from the code  → /dev-team:map-project (re-map), then /dev-team:plan-package <pkg> as needed
 adding a package to a planned repo          → /dev-team:plan-repo "<what to add>", then /dev-team:plan-package <pkg>
-a package is planned; plan reviewed?        → /dev-team:review-plan <pkg> (request changes → /dev-team:plan-package <pkg>, then again)
+a package is planned; plan reviewed?        → /dev-team:review-plan <pkg> (request changes → /dev-team:plan-package <pkg>, then again;
+                                              the review numbers the rounds and stops the loop when it is not converging —
+                                              then /dev-team:review-plan <pkg> --defer moves the findings to their sections and you build)
 plan reviewed, decisions answered           → /dev-team:run-package <pkg> (or each command by hand; spine-only plan: builds the spine)
 repo contract came out wrong                → /dev-team:shape-brief to correct the brief, then /dev-team:plan-repo
                                               (or /dev-team:plan-repo --revise "<what was wrong>")
@@ -155,7 +158,8 @@ package, reviews it (once more on `request changes`), and runs `sync-design`. Be
 prints the section's `status.py` row, and it ends with a six-line summary whose `next:` is the
 command you would type from where it left off.
 
-On a spine-only plan it builds the spine, re-runs `plan-package` to complete the plan, runs
+On a spine-only plan it builds the spine, runs `sync-design` so the spine's design says what
+shipped before anyone is briefed against it, re-runs `plan-package` to complete the plan, runs
 `review-plan`, and stops so you can answer decisions before the rest is built.
 
 It stops, with the agent's first lines, on: a failing run gate; any agent returning `blocked`
@@ -273,7 +277,19 @@ implementer files any drift between what it shipped and what `surface.md` planne
 
 `<pkg>/plan` is the other reserved target: `/dev-team:review-plan` files a plan's CRITICAL
 findings there, the next `/dev-team:plan-package <pkg>` answers them and ticks them off, and
-while one is open `/dev-team:implement-section` refuses every section of `<pkg>`.
+while one is open `/dev-team:implement-section` refuses every section of `<pkg>`. That pair is
+a loop, and the reviewer is its exit: each plan report carries `Round: <n>` (consecutive
+`request changes` reviews since the last approving one, from `status.py --plan-rounds`) and,
+from round 2, `Convergence: <k> prior unfixed, <m> new`. A re-plan that clears its
+predecessor and adds findings at the same rate is not converging, and from round 3 no re-plan
+is: the review then stops the loop and offers two commands — one more `plan-package`, or
+`/dev-team:review-plan <pkg> --defer`, which re-addresses the standing findings to the sections
+they concern and approves the plan with fixes, so the build starts and each finding is cleared
+by the implementer it now belongs to, where a wrong assumption is a failing intent test rather
+than a disagreement between two documents. A fact that recurs in a new section each round —
+the reviewer files such a finding once, with a `touches:` list — is one unfinished
+propagation, and the re-plan re-delegates every section the fact reaches, not only the ones
+the review named.
 
 `/dev-team:test-section` feeds it too. After a build, the tester files every intent test still
 failing as `- [ ] <pkg>/<section>: intent test <file>::<name> fails — … — tester <date>`; the next
@@ -291,8 +307,8 @@ Review per section, as you go. A review after finalize would cover every section
 return, and the surface would already re-export whatever a CRITICAL finding is about.
 
 **Fixing a CRITICAL is a re-run, not a new plan.** A plan finding: run
-`/dev-team:plan-package <pkg>` again — it re-delegates only the sections a finding names — then
-`/dev-team:review-plan <pkg>`. A section finding: run
+`/dev-team:plan-package <pkg>` again — it re-delegates the sections a finding names, plus every
+section a cross-cutting finding's fact reaches — then `/dev-team:review-plan <pkg>`. A section finding: run
 `/dev-team:implement-section <pkg>/<section>` again — its step 6 picks up follow-ups addressed to it and
 the latest review, fixes them, ticks them off. A surface finding from `/dev-team:review-package`: run
 `/dev-team:finalize-package <pkg>` again, then `/dev-team:review-package <pkg>`. `/dev-team:plan-change` is needed only
@@ -445,7 +461,9 @@ you ── /dev-team:plan-package data ────▶ architect ──▶ docs/
                                 architect ──▶ integration.md, surface.md, decision stubs
 
 you ── /dev-team:review-plan data ───────────────▶ reviewer ──▶ docs/reviews/<date>-data-plan.md, followups `data/plan: …`
-                                          (request changes → /dev-team:plan-package data re-delegates only the named sections)
+                                          (request changes → /dev-team:plan-package data re-delegates the named sections
+                                           and every section a cross-cutting fact reaches; the review numbers the rounds
+                                           and stops the loop when it is not converging: one more round, or --defer)
 you ── docs/decisions.md (answers)
 
 you ── /dev-team:run-package data ─ (your conversation) spawns the section runs below, in order, then finalize, review, sync-design
