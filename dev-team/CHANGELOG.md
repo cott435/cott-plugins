@@ -12,6 +12,60 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [0.6.0] - 2026-09-22
+
+Every review-and-fix loop gets an exit, and the two things that kept one package looping —
+a cross-cutting fact patched two sections at a time, and a spine design nobody synced — are
+fixed at their source.
+
+### Added
+- **Round counting for every loop** (7d7fcce, 47414b9). `status.py --rounds <pkg> |
+  <pkg>/<section> | <pkg>/surface` derives consecutive `request changes` reviews since the
+  last approving one from `docs/reviews/`; section rows and the `surface:` line carry
+  ` r<n>`; a `request changes` plan-gate line carries the round. The reviewer runs it first
+  in every mode and writes `Round:` and, from round 2, `Convergence: <k> prior unfixed,
+  <m> new` — a fact still assumed by a section, module or function the last fix did not reach
+  is one *unfixed* finding, not a new one.
+- **A stop rule and `--defer`** (7d7fcce, 47414b9). On `request changes`, the fixing
+  command is next only while the loop converges: round 1, or round 2 with every prior
+  CRITICAL fixed. Otherwise the review ends with a two-command choice — one more round, or
+  `/dev-team:review-plan|review-section|review-package <scope> --defer`, which re-addresses a
+  plan's standing findings to their sections as review follow-ups, or re-files a section's or
+  surface's as `— noted` follow-ups the finalize gate does not count. A break or a failing
+  check cannot be deferred. The reviewer's return opens with a fixed three-line template,
+  `Result:` / `Verdict:` / `Loop: converging | stopped`, and `/dev-team:run-package` branches
+  on the third line instead of a counter of its own, which reset on every re-run.
+- **Propagation on a re-plan** (7d7fcce). The reviewer files a cross-cutting finding once
+  with a `touches:` list; the architect greps every design for the fact, records the union
+  under `integration.md`'s new **Propagation** heading, and re-delegates every section on it
+  with a `Propagate: <fact> — <sections>` line the designer reads.
+- **A closed CRITICAL list** (47414b9). A break, a failing check, a wrong result on the main
+  path, a security finding, the silence rules and bar-lowered. A docstring, a function's
+  shape, a name, a soft-limit overrun are WARNING however sure the reviewer is. On a
+  re-review, a wrong-result or security finding outside the diff is WARNING plus a `— noted`
+  follow-up, so the set of blockers shrinks every round.
+- A `contracts.yml` claim forbidding a bare "on `request changes`, `<fixing command>`"
+  sentence in the reviewer and the three review skills (7d7fcce, 47414b9).
+
+### Changed
+- **The spine is synced before the completion plan** (7d7fcce). `run-package` spawns
+  `sync-design` between the spine's review and the completion `plan-package`; the spine run's
+  command list gains `/dev-team:sync-design <pkg>`; the architect's completion run checks each
+  built section's design for an **As shipped** citing its last commit and performs
+  `sync-design`'s step 1 itself otherwise. The plan review's seam check reads a built
+  sibling's README and As shipped rows, not its stale design §5.
+
+### Fixed
+- **A same-day re-review compared against nothing** (7d7fcce). The previous report was
+  "newest by date, excluding today's"; it is now the immediately preceding one, today's
+  included, highest suffix on the newest date.
+- **A plan finding answered in the ledger read as carried** (7d7fcce). A plan review's diff
+  range now includes `docs/decisions.md` and `docs/followups.md`, and a finding whose
+  follow-up is ticked is re-verified, never carried.
+
+Evals: `evals/2026-09-22-o-plan-loop-exit.md`, `evals/2026-09-22-p-section-loop-exit.md`.
+
+
 ## [0.5.2] - 2026-09-21
 
 ### Fixed
