@@ -1,7 +1,7 @@
 ---
 name: review-section
-description: Review an implemented section of a package against its design doc, the contracts, and the shipped documents it consumes. Writes findings to docs/reviews/date-pkg-section.md and files critical ones into docs/followups.md so the next implement-section run picks them up.
-argument-hint: "<pkg>/<section> [plan-slug]"
+description: Review an implemented section of a package against its design doc, the contracts, and the shipped documents it consumes. Writes findings to docs/reviews/date-pkg-section.md and files critical ones into docs/followups.md so the next implement-section run picks them up. Numbers the build-and-review rounds and stops the loop when it is not converging; --defer re-files the standing findings as ordinary follow-ups so the package can finalize.
+argument-hint: "<pkg>/<section> [plan-slug] [--defer]"
 arguments: [section, plan]
 context: fork
 agent: dev-team:reviewer
@@ -19,7 +19,12 @@ Plan slug (empty for canonical work): **$plan**
 > verify with `/agents`, and re-run.
 
 If `$section` reached you unsubstituted, parse the section and optional plan slug from
-`$ARGUMENTS` — first token and second token.
+`$ARGUMENTS` — first token and second token. A `--defer` token anywhere after the section
+makes this a **deferral run** — your **Rounds and convergence** section's `--defer`, section
+form: no review, the open review-sourced `$pkg/$name` findings re-filed as `— noted` entries,
+an `approve with fixes` report. It is what the user types after a section review stopped the
+loop; on a section whose newest review approves, or with no open review-sourced finding,
+return `Result: blocked` saying there is nothing to defer.
 
 **Invoked by run-package.** If your task prompt carries `Section:` and `Plan:` lines instead of
 substituted arguments — `/dev-team:run-package` spawns you that way — use those: the section
@@ -59,15 +64,29 @@ checked and why.
 
 ## Steps
 
-1. Read the documents above, then the section's code and tests.
-2. Work your **section review checklist** in priority order. Spec conformance first, including
-   the seams: the point of this system is that the code matches the documents, and a section
-   that works but diverges is the failure mode that only surfaces when another section — or
-   another package — trusts the contract.
-3. Write your report to the path above.
+1. Read the documents above, then the section's code and tests. Run
+   `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --rounds $pkg/$name` from
+   the repo root: this review is round `n + 1`.
+2. Work your **section review checklist** in priority order, grading by your **Severity**
+   list. Spec conformance first, including the seams: the point of this system is that the
+   code matches the documents, and a section that works but diverges is the failure mode that
+   only surfaces when another section — or another package — trusts the contract. From round
+   2 on, classify the previous report's CRITICALs first, per your **Rounds and convergence**
+   section.
+3. Write your report to the path above, with its `Round:` line and, from round 2 on, its
+   `Convergence:` line.
 4. Append every CRITICAL finding to `docs/followups.md` addressed to `$pkg/$name`, so the next
    `/dev-team:implement-section $pkg/$name` picks them up without anything passing through chat.
 5. Commit per your **Commit** section — trailer `Dev-Team-Run: review-section $ARGUMENTS` —
-   then return your summary.
+   then return your summary, ending with the next command: on `request changes`,
+   `/dev-team:implement-section $section` while **Rounds and convergence** says the loop is
+   converging, else that section's not-converging block, which offers that command and
+   `/dev-team:review-section $section --defer` and leaves the choice to the user; otherwise the
+   next section in the integration doc's Dependency order, or `/dev-team:finalize-package $pkg`
+   after the last.
+
+On a deferral run, steps 1–4 are replaced by the `--defer` procedure in **Rounds and
+convergence**; step 5 commits the report and `docs/followups.md` with the trailer
+`Dev-Team-Run: review-section $ARGUMENTS` and ends with the approving next command.
 
 Change nothing but your report and `docs/followups.md`.

@@ -21,10 +21,10 @@ does the run the manual command would fork, reading the same skill file.
 - Edit a file, answer a decision, or write to `docs/`.
 - Run a git command that writes. The only git you run is `git rev-parse --short HEAD`, at the
   start and at the end, and `git rev-list --count <start>..HEAD` for the summary.
-- Read an agent's return past its first two lines — three for a plan review. Every agent you
+- Read an agent's return past its first two lines — three for the reviewer. Every agent you
   spawn begins its return with `Result: done | blocked | stopped`; the reviewer's second line
-  is `Verdict: <verdict>`, and after `review-plan` its third is `Loop: converging | stopped`.
-  Those lines and `status.py` are all you branch on. Do not open the files the agents wrote
+  is `Verdict: <verdict>` and its third `Loop: converging | stopped`. Those lines and
+  `status.py` are all you branch on. Do not open the files the agents wrote
   to check their work — the reviewer does that.
 - Spawn anything in the background. Every Agent call is `run_in_background: false`; the next
   step needs the last one's commit.
@@ -83,7 +83,7 @@ exits 1 on a failing gate; that is the answer, not an error.
    only part of that file you read. In `spine` mode, the order is the single section its
    **Spine** item names.
 
-3. **Each section, in order.** Keep a count of implementer runs per section. Skip a section
+3. **Each section, in order.** Skip a section
    whose `status.py $pkg` row is reviewed (`✓`) with verdict `approve` or `approve with
    fixes`, shows `(0 review, 0 intent)` in its open follow-ups column — other follow-ups do
    not count — and has an intent column that is `—` or `<n>/<n>`. For every other section:
@@ -99,10 +99,17 @@ exits 1 on a failing gate; that is the answer, not an error.
    5. If the section's intent column now shows fewer passing than total, the tester filed
       follow-ups: spawn the implementer again, then the tester again.
    6. Spawn the reviewer (`review-section`).
-   7. On `Verdict: request changes`, while the section has had fewer than three implementer
-      runs: implementer, tester, reviewer again — the tester first when the row's `intent`
-      count is non-zero, since those findings are the implementer's to leave alone. Still
-      `request changes` with three runs spent → **stop**.
+   7. On `Verdict: request changes` with `Loop: converging`: implementer, tester, reviewer
+      again — the tester first when the row's `intent` count is non-zero, since those
+      findings are the implementer's to leave alone. On `Loop: stopped` → **stop**: the
+      reviewer counted the rounds from `docs/reviews/` (so a re-run of this command does not
+      start the count over, as it once did) and found the loop not converging; the
+      `stopped because` is `section review round <n>: not converging; the standing findings
+      are in the newest docs/reviews/<date>-<pkg>-<section>[-<k>].md`, with `<n>` from
+      `status.py --rounds <pkg>/<section>`, and `next` is the user's choice, both commands on
+      one line: `/dev-team:implement-section <pkg>/<section>` (one more round) or
+      `/dev-team:review-section <pkg>/<section> --defer` (re-file the findings as ordinary
+      follow-ups and move on).
    8. Any `Result: blocked` or `Result: stopped`, at any spawn → **stop**.
    9. After every spawn, run `status.py $pkg` and print the section's row — nothing else of
       the output. That row, not the agent's return, is the progress report.
@@ -122,7 +129,7 @@ exits 1 on a failing gate; that is the answer, not an error.
 
    On `Verdict: request changes` with `Loop: stopped`, the `stopped because` is instead
    `plan review round <n>: not converging; the standing findings are in the newest
-   docs/reviews/<date>-$pkg-plan[-<k>].md`, with `<n>` from `status.py $pkg --plan-rounds`,
+   docs/reviews/<date>-$pkg-plan[-<k>].md`, with `<n>` from `status.py --rounds $pkg`,
    and `next` is the user's choice, both commands on one line:
    `/dev-team:plan-package $pkg` (one more round) or `/dev-team:review-plan $pkg --defer`
    (build with the findings as section follow-ups).
@@ -130,7 +137,10 @@ exits 1 on a failing gate; that is the answer, not an error.
 5. **Full mode, after the last section.** Skip 5.1–5.2 when the `surface:` line of
    `status.py $pkg` shows the package review `✓` with `approve` or `approve with fixes`.
    1. Spawn the implementer (`finalize-package`), then the reviewer (`review-package`).
-   2. On `Verdict: request changes`, once more each. Still `request changes` → **stop**.
+   2. On `Verdict: request changes` with `Loop: converging`, once more each. On
+      `Loop: stopped` → **stop**, as in step 3.7 with `package review round <n>`,
+      `status.py --rounds $pkg/surface`, and the choice `/dev-team:finalize-package $pkg` or
+      `/dev-team:review-package $pkg --defer`.
    3. Spawn the architect (`sync-design`).
 
 6. **Summary** — always your last message, whether you finished or stopped, as this block
@@ -150,7 +160,7 @@ exits 1 on a failing gate; that is the answer, not an error.
    The run counts are per agent role as listed; count an architect run under none of them.
    `built` and `reviewed` come from a final `status.py $pkg`; `commits` from the start commit,
    `git rev-parse --short HEAD` and `git rev-list --count`. `<step>` names the section and
-   the spawn, e.g. `data/clean review-section (implementer run 3)`.
+   the spawn, e.g. `data/clean review-section (round 3)`.
 
 ## `next` — what the manual loop would type from here
 
@@ -159,12 +169,14 @@ exits 1 on a failing gate; that is the answer, not an error.
 | run gate: branch, dirty tree | the gate's own fix, then `/dev-team:run-package $pkg` |
 | run gate: missing contract or integration, plan incomplete, not reviewed, `request changes`, open plan finding | `/dev-team:plan-package $pkg` — or `/dev-team:review-plan $pkg` when the only reason is *not reviewed since last change*; on a `request changes` gate line that reads `not converging`, the same two-command choice as step 4 |
 | run gate: an open `D<n>` with no assumption | answer it in `docs/decisions.md`, then `/dev-team:run-package $pkg` |
-| a section, blocked or out of implementer runs | `/dev-team:implement-section $pkg/<section>` |
+| a section, blocked | `/dev-team:implement-section $pkg/<section>` |
+| a section whose review stopped the loop | `/dev-team:implement-section $pkg/<section>` or `/dev-team:review-section $pkg/<section> --defer`, both, as the user's choice |
 | architect `stopped` (decisions or access) | its own continue action: `/dev-team:plan-package $pkg` |
 | spine mode, plan completed and reviewed | `/dev-team:plan-package $pkg` on `request changes` with `Loop: converging`; the two-command choice on `Loop: stopped`; else `/dev-team:run-package $pkg` |
 | spine mode, completion ran but the review did not | `/dev-team:review-plan $pkg` |
 | spine mode, `sync-design` blocked | its blocker's own fix, then `/dev-team:run-package $pkg` |
-| `finalize-package` blocked, or the package review still `request changes` | `/dev-team:finalize-package $pkg` |
+| `finalize-package` blocked, or the package review `request changes` and converging | `/dev-team:finalize-package $pkg` |
+| the package review stopped the loop | `/dev-team:finalize-package $pkg` or `/dev-team:review-package $pkg --defer`, both, as the user's choice |
 | done | `/dev-team:plan-package <p>` for the first package in `docs/architecture.md`'s Packages table with no `docs/packages/<p>/contract.md`, or `/dev-team:finalize-project` when every package has one |
 
 `next` is always one command you resolved yourself, with every name filled in and no angle

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Print where every package and section stands, derived from docs/ and the code.
 
-Usage:  python3 status.py [pkg] [--gate] [--plan-gate <pkg>] [--run-gate] [--plan-rounds]
+Usage:  python3 status.py [pkg] [--gate] [--plan-gate <pkg>] [--run-gate] [--rounds <target>]
 
 Nothing here is written down by anyone; it is all derived: a package is planned when its
 contract exists, built when every section has a README, shipped when interface.md exists. A
@@ -12,9 +12,10 @@ intent column is the tester's suite, run: `<pass>/<total>`, or `—` with no tes
 `--gate` exits 1 when the named package fails /dev-team:finalize-package's preconditions.
 `--plan-gate <pkg>` exits 1 unless the package's plan is complete, reviewed by
 /dev-team:review-plan since its last change, approved, and carries no open plan finding and no
-open decision without an assumption; it also prints the plan's round count — consecutive
-`request changes` plan reviews since the last approving one — which /dev-team:review-plan and
-/dev-team:run-package read to stop a plan-and-review loop that is not converging. `<pkg> --run-gate` exits 1 unless /dev-team:run-package may
+open decision without an assumption; it also prints the plan's round count.
+`--rounds <pkg> | <pkg>/<section> | <pkg>/surface` prints only that scope's round count —
+consecutive `request changes` reviews since the last approving one — which the reviewer and
+/dev-team:run-package read to stop a review-and-fix loop that is not converging. `<pkg> --run-gate` exits 1 unless /dev-team:run-package may
 start on pkg: a feature branch, a clean tree (git-workflow-and-versioning's Baseline
 exemptions), contract.md and integration.md present, and either a spine-only plan (mode: spine)
 or a plan that passes --plan-gate (mode: full) — or, once interface.md exists, mode: full with no
@@ -135,15 +136,17 @@ def review_reports(stem: str) -> list[tuple[dt.date, int, Path]]:
     return sorted(out, key=lambda t: t[:2])
 
 
-def plan_rounds(pkg: str) -> int:
-    """Consecutive `request changes` plan reviews since the last approving one, newest first.
+def rounds(stem: str) -> int:
+    """Consecutive `request changes` reviews of one scope since the last approving one.
 
-    Nothing writes this down: it is the count of reports the current plan-and-review loop has
-    produced. 0 when the newest plan review approves, or there is none. /dev-team:review-plan
-    numbers its report from it (`Round: <n+1>`) and stops the loop at the cap it states.
+    stem is the report stem: `<pkg>-plan`, `<pkg>-<section>` or `<pkg>-package`. Nothing writes
+    this down: it is the count of reports the current review-and-fix loop has produced, 0 when
+    the newest review approves or there is none. The reviewer numbers its report from it
+    (`Round: <n+1>`) and stops the loop at the cap its Rounds and convergence section states;
+    /dev-team:run-package reads it in place of a counter of its own, which reset on re-run.
     """
     n = 0
-    for _, _, f in reversed(review_reports(f"{pkg}-plan")):
+    for _, _, f in reversed(review_reports(stem)):
         v = re.search(r"^Verdict:\s*(.+)$", f.read_text(), re.M)
         if v and v.group(1).strip().lower() in ("approve", "approve with fixes"):
             break
@@ -263,10 +266,10 @@ def plan_gate(pkg: str) -> list[str]:
     if state != "reviewed":
         fails.append(f"{pkg}: plan not reviewed since last change")
     elif verdict.lower() not in ("approve", "approve with fixes"):
-        rounds = plan_rounds(pkg)
+        pr = rounds(f"{pkg}-plan")
         # Round 3 or later is the reviewer's unconditional stop; the round-2 convergence test is
         # its own, in the report. The gate only says which command table row applies.
-        tail = f" (round {rounds}; not converging — see the report's stop block)" if rounds >= 3 else f" (round {rounds})"
+        tail = f" (round {pr}; not converging — see the report's stop block)" if pr >= 3 else f" (round {pr})"
         fails.append(f"{pkg}: plan review verdict is {verdict}{tail}")
     _, crit = open_followups(f"{pkg}/plan")
     if crit:
@@ -415,9 +418,9 @@ def package_report(pkg: str, pkg_path: Path) -> tuple[list[str], list[str]]:
     if spine_only(pdocs):
         lines.append(f"  plan: spine only ({spine(pdocs)}) — build it, then re-run plan-package")
     else:
-        rounds = plan_rounds(pkg)
+        pr = rounds(f"{pkg}-plan")
         lines.append("  plan: " + ("unreviewed" if not pdate else f"reviewed {ptail}" if pstate == "reviewed" else f"{pstate} (last review {ptail})")
-                     + (f"; {rounds} request-changes round(s) since last approve" if rounds else ""))
+                     + (f"; {pr} request-changes round(s) since last approve" if pr else ""))
     rows = table_rows((pdocs / "contract.md").read_text(), ("section", "path"))
     lines.append("  section              design  built  intent   reviewed-since-build             open followups          markers")
     all_built = True
@@ -432,6 +435,8 @@ def package_report(pkg: str, pkg_path: Path) -> tuple[list[str], list[str]]:
         all_built &= built
         tests = pkg_path / "tests"
         state, rev_txt = freshness(f"{pkg}-{sec}", spath, tests / "unit" / sec, tests / "intent" / sec)
+        if (r := rounds(f"{pkg}-{sec}")):
+            rev_txt += f" r{r}"
         fu, crit = open_followups(f"{pkg}/{sec}")
         ifu, _ = open_followups(f"{pkg}/{sec}/intent")
         mk = markers(spath)
@@ -451,6 +456,8 @@ def package_report(pkg: str, pkg_path: Path) -> tuple[list[str], list[str]]:
     src = pkg_path / "src" / pkg
     surface_paths = [src / n for n in ("__init__.py", "pipelines", "pipelines.py", "cli.py", "cli")]
     _, prev = freshness(f"{pkg}-package", *surface_paths)
+    if (r := rounds(f"{pkg}-package")):
+        prev += f" r{r}"
     lines.append(f"  surface: open followups {sfu}; package review {prev}")
     if (DOCS / "constraints.md").exists() and not src.exists():
         lines.append(f"  constraints: {len(constraints_rows(pkg))} enforced, not run (no code)")
@@ -496,13 +503,18 @@ def main() -> int:
             return 2
         plan_pkg = argv.pop(i + 1)
     args = [a for a in argv if not a.startswith("--")]
-    if "--plan-rounds" in argv:
-        # The reviewer's one question in plan mode; no package report, so no test or
-        # constraint command runs.
-        if not args:
-            print("--plan-rounds needs a package name: status.py <pkg> --plan-rounds")
+    if "--rounds" in argv:
+        # The reviewer's one question before a review; no package report, so no test or
+        # constraint command runs. <pkg> is the plan, <pkg>/<section> a section, <pkg>/surface
+        # the package review.
+        i = argv.index("--rounds")
+        target = argv[i + 1] if i + 1 < len(argv) and not argv[i + 1].startswith("--") else None
+        if not target:
+            print("--rounds needs a target: status.py --rounds <pkg> | <pkg>/<section> | <pkg>/surface")
             return 2
-        print(f"plan rounds since last approve: {plan_rounds(args[0])}")
+        pkg, _, sec = target.partition("/")
+        stem = f"{pkg}-plan" if not sec else f"{pkg}-package" if sec == "surface" else f"{pkg}-{sec}"
+        print(f"rounds since last approve: {rounds(stem)}")
         return 0
     gate = "--gate" in argv
     run = "--run-gate" in argv
@@ -530,7 +542,7 @@ def main() -> int:
         print("\nplan gate:", "PASS" if not pfails else "FAIL")
         for f in pfails:
             print("  -", f)
-        print(f"plan rounds since last approve: {plan_rounds(plan_pkg)}")
+        print(f"plan rounds since last approve: {rounds(f'{plan_pkg}-plan')}")
         code |= 1 if pfails else 0
     if run:
         mode, rfails = run_gate(only)

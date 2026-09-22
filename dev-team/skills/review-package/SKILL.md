@@ -1,8 +1,8 @@
 ---
 name: review-package
-description: Review a finalized package - its public surface against surface.md, plus the package-level checks nothing else runs - import contracts pass, __all__ and interface.md and the section READMEs agree, every repo-contract shape the package provides is realized, pipelines run. Writes docs/reviews/date-pkg-package.md and files critical findings into docs/followups.md. Run after /dev-team:finalize-package and before planning the next package against this one.
-argument-hint: "<pkg>"
-arguments: [pkg]
+description: Review a finalized package - its public surface against surface.md, plus the package-level checks nothing else runs - import contracts pass, __all__ and interface.md and the section READMEs agree, every repo-contract shape the package provides is realized, pipelines run. Writes docs/reviews/date-pkg-package.md and files critical findings into docs/followups.md. Run after /dev-team:finalize-package and before planning the next package against this one. Numbers the finalize-and-review rounds and stops the loop when it is not converging; --defer re-files the standing findings as ordinary follow-ups.
+argument-hint: "<pkg> [--defer]"
+arguments: [pkg, flags]
 context: fork
 agent: dev-team:reviewer
 background: false
@@ -17,7 +17,13 @@ Review package: **$pkg** — the surface `/dev-team:finalize-package` built, and
 > Code started. Stop, tell the user to run `/reload-plugins` (or restart Claude Code),
 > verify with `/agents`, and re-run.
 
-If `$pkg` reached you unsubstituted, take the first token of `$ARGUMENTS`.
+The command was typed with these arguments: **`$ARGUMENTS`**. The first word is the package;
+if `$pkg` reached you unsubstituted, take it from there. `--defer` after it makes this a
+**deferral run** — your **Rounds and convergence** section's `--defer`, package form: no
+review, the open review-sourced `$pkg/surface` and `$pkg/<section>` findings re-filed as
+`— noted` entries, an `approve with fixes` report. It is what the user types after a package
+review stopped the loop; on a package whose newest review approves, or with no open
+review-sourced finding, return `Result: blocked` saying there is nothing to defer.
 
 **Invoked by run-package.** If your task prompt carries a `Package:` line instead of a
 substituted argument — `/dev-team:run-package` spawns you that way — use it: the package from
@@ -51,17 +57,29 @@ planned against `interface.md`.
 
 ## Steps
 
-1. Read the documents above, then the surface code and tests.
+1. Read the documents above, then the surface code and tests. Run
+   `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --rounds $pkg/surface` from
+   the repo root: this review is round `n + 1`.
 2. Run, from the repo root with the Toolchain's commands: the package test suite,
    `lint-imports`, and the strict docs build if one is configured. Record results.
-3. Work your **package review checklist** in order.
-4. Write your report to the path above.
+3. Work your **package review checklist** in order, grading by your **Severity** list. From
+   round 2 on, classify the previous report's CRITICALs first, per your **Rounds and
+   convergence** section.
+4. Write your report to the path above, with its `Round:` line and, from round 2 on, its
+   `Convergence:` line.
 5. Append every CRITICAL finding to `docs/followups.md` — addressed to `$pkg/surface` for
    surface findings and to `$pkg/<section>` for section findings — so `/dev-team:finalize-package $pkg`
    or `/dev-team:implement-section` picks them up.
 6. Commit per your **Commit** section — trailer `Dev-Team-Run: review-package $ARGUMENTS` —
-   then return your summary. If the verdict is `request changes`, end with the command that fixes
-   the worst finding; otherwise end with `/dev-team:sync-design $pkg`, which folds the
-   sections' recorded deviations into their designs before the next package is planned.
+   then return your summary. If the verdict is `request changes`, end with the command that
+   fixes the worst finding while **Rounds and convergence** says the loop is converging, else
+   that section's not-converging block, which offers that command and
+   `/dev-team:review-package $pkg --defer` and leaves the choice to the user; otherwise end
+   with `/dev-team:sync-design $pkg`, which folds the sections' recorded deviations into their
+   designs before the next package is planned.
+
+On a deferral run, steps 1–5 are replaced by the `--defer` procedure in **Rounds and
+convergence**; step 6 commits the report and `docs/followups.md` with the trailer
+`Dev-Team-Run: review-package $ARGUMENTS` and ends with `/dev-team:sync-design $pkg`.
 
 Change nothing but your report and `docs/followups.md`.

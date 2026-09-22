@@ -1,7 +1,7 @@
 ---
 name: status
 description: Print the checklist of where every package and section stands - planned, built, reviewed since its last build, open follow-ups, decision markers - derived from docs/ and the code, never from a status file. Use before /dev-team:finalize-package, before planning the next package, or whenever you have lost track of what is done.
-argument-hint: "[pkg] [--gate] [--plan-gate <pkg>] [--run-gate] [--plan-rounds]"
+argument-hint: "[pkg] [--gate] [--plan-gate <pkg>] [--run-gate] [--rounds <target>]"
 disable-model-invocation: true
 ---
 
@@ -32,8 +32,11 @@ is `open` with no `Assumption if unanswered:`. It ends with `plan rounds since l
 <n>` — consecutive `request changes` plan reviews since the last approving one, the count
 `/dev-team:review-plan` numbers its rounds from and stops the plan-and-review loop on; a
 `request changes` gate line carries the round, and `not converging` from round 3. With
-`<pkg> --plan-rounds`, only that line is printed — no package report, so no test or
-constraint command runs. Every package also shows a `plan:` line — the
+`--rounds <pkg>`, `--rounds <pkg>/<section>` or `--rounds <pkg>/surface`, only that scope's
+`rounds since last approve: <n>` line is printed — no package report, so no test or
+constraint command runs; every reviewer run asks it first, and `/dev-team:run-package` reads
+it in place of a counter of its own. A section row's reviewed column and the `surface:` line
+carry ` r<n>` while their count is non-zero. Every package also shows a `plan:` line — the
 newest plan review's date, verdict and `@<sha>`, or `unreviewed`, with the round count
 appended while it is non-zero — or, while
 `integration.md`'s **Spine** heading reads `spine only`, `plan: spine only (<section>) — build it,
