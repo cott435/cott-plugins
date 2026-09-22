@@ -21,8 +21,9 @@ does the run the manual command would fork, reading the same skill file.
 - Edit a file, answer a decision, or write to `docs/`.
 - Run a git command that writes. The only git you run is `git rev-parse --short HEAD`, at the
   start and at the end, and `git rev-list --count <start>..HEAD` for the summary.
-- Read an agent's return past its first two lines. Every agent you spawn begins its return
-  with `Result: done | blocked | stopped`; the reviewer's second line is `Verdict: <verdict>`.
+- Read an agent's return past its first two lines — three for a plan review. Every agent you
+  spawn begins its return with `Result: done | blocked | stopped`; the reviewer's second line
+  is `Verdict: <verdict>`, and after `review-plan` its third is `Loop: converging | stopped`.
   Those lines and `status.py` are all you branch on. Do not open the files the agents wrote
   to check their work — the reviewer does that.
 - Spawn anything in the background. Every Agent call is `run_in_background: false`; the next
@@ -57,6 +58,7 @@ that command runs this step through you.
 | intent tests, reconcile | `test-section` | `dev-team:tester` | Section |
 | build a section | `implement-section` | `dev-team:implementer` | Section |
 | review a section | `review-section` | `dev-team:reviewer` | Section |
+| sync the spine's design before completing the plan | `sync-design` | `dev-team:architect` | Package |
 | complete a spine-only plan | `plan-package` | `dev-team:architect` | Package |
 | review the plan | `review-plan` | `dev-team:reviewer` | Package |
 | build the surface | `finalize-package` | `dev-team:implementer` | Package |
@@ -105,14 +107,25 @@ exits 1 on a failing gate; that is the answer, not an error.
    9. After every spawn, run `status.py $pkg` and print the section's row — nothing else of
       the output. That row, not the agent's return, is the progress report.
 
-4. **Spine mode, after the spine.** Spawn the architect (`plan-package`) — a completion run.
-   `Result: stopped` (decisions or access) → **stop** with its first lines. Then spawn the
-   reviewer (`review-plan`). Then **stop**, always; the summary's `stopped because` is:
+4. **Spine mode, after the spine.** Spawn the architect (`sync-design`) first: it folds the
+   spine's recorded deviations into its design as **As shipped**, so the completion run
+   briefs the remaining designers — and the plan review checks their seams — against what
+   shipped rather than the spine's plan-time design. `Result: blocked` → **stop**. Then
+   spawn the architect (`plan-package`) — a completion run. `Result: stopped` (decisions or
+   access) → **stop** with its first lines. Then spawn the reviewer (`review-plan`). Then
+   **stop**, always; the summary's `stopped because` is:
 
    ```
    plan complete and reviewed: <verdict>; answer any decisions in docs/decisions.md, then
    re-run /dev-team:run-package $pkg.
    ```
+
+   On `Verdict: request changes` with `Loop: stopped`, the `stopped because` is instead
+   `plan review round <n>: not converging; the standing findings are in the newest
+   docs/reviews/<date>-$pkg-plan[-<k>].md`, with `<n>` from `status.py $pkg --plan-rounds`,
+   and `next` is the user's choice, both commands on one line:
+   `/dev-team:plan-package $pkg` (one more round) or `/dev-team:review-plan $pkg --defer`
+   (build with the findings as section follow-ups).
 
 5. **Full mode, after the last section.** Skip 5.1–5.2 when the `surface:` line of
    `status.py $pkg` shows the package review `✓` with `approve` or `approve with fixes`.
@@ -144,12 +157,13 @@ exits 1 on a failing gate; that is the answer, not an error.
 | Where it stopped | `next` |
 |---|---|
 | run gate: branch, dirty tree | the gate's own fix, then `/dev-team:run-package $pkg` |
-| run gate: missing contract or integration, plan incomplete, not reviewed, `request changes`, open plan finding | `/dev-team:plan-package $pkg` — or `/dev-team:review-plan $pkg` when the only reason is *not reviewed since last change* |
+| run gate: missing contract or integration, plan incomplete, not reviewed, `request changes`, open plan finding | `/dev-team:plan-package $pkg` — or `/dev-team:review-plan $pkg` when the only reason is *not reviewed since last change*; on a `request changes` gate line that reads `not converging`, the same two-command choice as step 4 |
 | run gate: an open `D<n>` with no assumption | answer it in `docs/decisions.md`, then `/dev-team:run-package $pkg` |
 | a section, blocked or out of implementer runs | `/dev-team:implement-section $pkg/<section>` |
 | architect `stopped` (decisions or access) | its own continue action: `/dev-team:plan-package $pkg` |
-| spine mode, plan completed and reviewed | `/dev-team:plan-package $pkg` on `request changes`, else `/dev-team:run-package $pkg` |
+| spine mode, plan completed and reviewed | `/dev-team:plan-package $pkg` on `request changes` with `Loop: converging`; the two-command choice on `Loop: stopped`; else `/dev-team:run-package $pkg` |
 | spine mode, completion ran but the review did not | `/dev-team:review-plan $pkg` |
+| spine mode, `sync-design` blocked | its blocker's own fix, then `/dev-team:run-package $pkg` |
 | `finalize-package` blocked, or the package review still `request changes` | `/dev-team:finalize-package $pkg` |
 | done | `/dev-team:plan-package <p>` for the first package in `docs/architecture.md`'s Packages table with no `docs/packages/<p>/contract.md`, or `/dev-team:finalize-project` when every package has one |
 
