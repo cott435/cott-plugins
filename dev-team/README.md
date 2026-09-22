@@ -153,8 +153,10 @@ per section in the integration doc's dependency order — skipping any already r
 `approve` or `approve with fixes`, no open review follow-ups and no failing intent test — it
 writes the intent tests if there are none, builds the section, reconciles the tests, builds
 again if the reconcile filed follow-ups, and reviews. On `request changes` it builds, reconciles
-and reviews again, up to three builds per section. After the last section it finalizes the
-package, reviews it (once more on `request changes`), and runs `sync-design`. Between spawns it
+and reviews again while the reviewer says the loop is converging — the reviewer counts the
+rounds from `docs/reviews/`, so re-running the driver does not start the count over. After
+the last section it finalizes the package, reviews it (again while converging), and runs
+`sync-design`. Between spawns it
 prints the section's `status.py` row, and it ends with a six-line summary whose `next:` is the
 command you would type from where it left off.
 
@@ -163,9 +165,11 @@ shipped before anyone is briefed against it, re-runs `plan-package` to complete 
 `review-plan`, and stops so you can answer decisions before the rest is built.
 
 It stops, with the agent's first lines, on: a failing run gate; any agent returning `blocked`
-(a blocking rule) or `stopped` (the architect's decisions or access stop); a section still at
-`request changes` after three builds; a package review still at `request changes` after a
-second finalize. It never edits a file, never answers a decision, and never commits — each
+(a blocking rule) or `stopped` (the architect's decisions or access stop); a section or
+package review that stopped its loop as not converging — round 2 with a prior
+finding unfixed, or round 3 — where `next:` is the user's choice between one more round and
+the review's `--defer`. Three rounds is the budget, two when the fix did not take. It never
+edits a file, never answers a decision, and never commits — each
 agent commits its own run, exactly as by hand. Every command it drives still works on its own.
 
 ## Workflows
@@ -279,10 +283,10 @@ implementer files any drift between what it shipped and what `surface.md` planne
 findings there, the next `/dev-team:plan-package <pkg>` answers them and ticks them off, and
 while one is open `/dev-team:implement-section` refuses every section of `<pkg>`. That pair is
 a loop, and the reviewer is its exit: each plan report carries `Round: <n>` (consecutive
-`request changes` reviews since the last approving one, from `status.py --plan-rounds`) and,
-from round 2, `Convergence: <k> prior unfixed, <m> new`. A re-plan that clears its
-predecessor and adds findings at the same rate is not converging, and from round 3 no re-plan
-is: the review then stops the loop and offers two commands — one more `plan-package`, or
+`request changes` reviews since the last approving one, from `status.py --rounds`) and,
+from round 2, `Convergence: <k> prior unfixed, <m> new`. A re-plan that leaves its own
+finding standing did not take, and from round 3 no re-plan is converging whatever it found:
+the review then stops the loop and offers two commands — one more `plan-package`, or
 `/dev-team:review-plan <pkg> --defer`, which re-addresses the standing findings to the sections
 they concern and approves the plan with fixes, so the build starts and each finding is cleared
 by the implementer it now belongs to, where a wrong assumption is a failing intent test rather
@@ -290,6 +294,17 @@ than a disagreement between two documents. A fact that recurs in a new section e
 the reviewer files such a finding once, with a `touches:` list — is one unfinished
 propagation, and the re-plan re-delegates every section the fact reaches, not only the ones
 the review named.
+
+The section and package loops have the same exit, with `implement-section` and
+`finalize-package` as the fixing commands and `review-section` / `review-package --defer` as
+the other choice, which re-files the standing findings as `— noted` follow-ups: same owner,
+same text, no longer counted by the finalize gate. Two things keep those loops short in the
+first place. CRITICAL is a closed list — a contract, decision or shipped-interface break, a
+failing test or tool, a wrong result, a security finding, an unrecorded deviation — and a
+docstring, a function's shape or a name is a WARNING however the reviewer feels about it. And
+on a re-review, a judgment finding outside the diff is a WARNING filed as ordinary work: the
+set of things that can block shrinks every round, so a new blocker on round 2 has to be in
+the code round 1 changed.
 
 `/dev-team:test-section` feeds it too. After a build, the tester files every intent test still
 failing as `- [ ] <pkg>/<section>: intent test <file>::<name> fails — … — tester <date>`; the next

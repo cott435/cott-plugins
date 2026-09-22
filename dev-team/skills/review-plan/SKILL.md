@@ -71,7 +71,7 @@ check.
 ## Steps
 
 1. Read every document above that exists. There is no code to read. Run
-   `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py $pkg --plan-rounds` from
+   `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --rounds $pkg` from
    the repo root: this review is round `n + 1`.
 2. Work your **Plan review checklist** in priority order. From round 2 on, classify the
    previous report's CRITICALs first, per your **Rounds and convergence** section — a fact

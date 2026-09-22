@@ -77,7 +77,7 @@ These write tool caches (`.pytest_cache/`, `__pycache__/`, `.ruff_cache/`, `.myp
 is change the repo's contents or its git state: no edits, no `stash`, `checkout`, `reset`,
 no installs. The one exception is the **Commit** step below: `git add` of your report and
 `docs/followups.md`, then `git commit`. In plan mode there is no code to run; Bash is `git`,
-`status.py --plan-rounds` and read-only inspection only.
+`status.py --rounds` and read-only inspection only.
 
 Your shell stays inside the repo: every path a command names is under the repo root, and
 the one exception is `${CLAUDE_PLUGIN_ROOT}`, where this plugin's own files are. A plugin
@@ -114,6 +114,38 @@ never add an **Exceptions** row; only `/dev-team:set-constraints` and the user d
 
 Constraint findings go in the report and to `docs/followups.md` like any other CRITICAL; they
 are not a separate verdict.
+
+## Severity — what may be CRITICAL
+
+A single CRITICAL turns the verdict to `request changes` and buys another build, another
+review and another round of a fresh reviewer's judgment. So CRITICAL is a closed list, the
+same in section and package mode, and nothing outside it is CRITICAL however sure you are:
+
+1. A **break** — the code contradicts a contract (repo, package, delta), a `decided` `D<n>`
+   in scope, or a name or signature a consumer takes from a shipped document (a sibling
+   README, an upstream `interface.md`, a probe doc's observed schema, a prescribed split).
+2. A **failing check** — an intent or unit test, the Toolchain's one-package test command,
+   `lint-imports`, the strict docs build, or an axis-0 **Floor** / **Enforced** row.
+3. A **wrong result** on the main path — a computation, a filter, a parser or a split that
+   yields the wrong answer while every test passes.
+4. A **security** finding from the `security-review` checklist.
+5. The **silence rules** of item 1 below — an unrecorded or unreasoned deviation, an intent
+   test edited outside the tester, a `TODO(decision)` marker for a decided entry — and axis
+   0's **bar lowered**.
+
+Everything else is WARNING or SUGGESTION: a docstring, a cross-reference's syntax, a function's
+shape, a name, a file past a soft limit, a hard-limit overrun no **Enforced** row measures, a
+README row out of date, a test that checks implementation detail. Those are real, they go in
+the report, and the implementer's next run picks a WARNING up from there; they do not block.
+
+**On a re-review** — a previous report exists — a finding of kinds 3 or 4 that lies outside
+the review diff was there last round and not raised then. Report it as WARNING, and append it
+to `docs/followups.md` as `- [ ] <pkg>/<section>: <finding> — noted <date>, see <report>` —
+no `review <date>` tail, so the finalize gate does not count it — and the implementer's next
+run picks it up as ordinary work. Kinds 1, 2 and 5 keep their severity wherever they lie:
+they are measured against a document or a command, not judged. The point is that the set of
+things that can block shrinks every round: a new blocking finding on round 2 has to be in the
+code the last round changed.
 
 ## Section review checklist, in priority order
 
@@ -237,8 +269,8 @@ naming the fact and every section that carries it (`touches: <a>, <b>, <c>`), ne
 finding per section; its follow-up line carries the same list. That list is the re-plan's
 blast radius, and the architect's **Plan findings** step reads it rather than guessing.
 Before the checklist, in plan mode, run
-`python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py <pkg> --plan-rounds` from
-the repo root and keep its `plan rounds since last approve:` line — **Rounds and
+`python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --rounds <pkg>` from
+the repo root and keep its `rounds since last approve:` line — **Rounds and
 convergence** below turns it into this review's round. In priority order:
 
 1. **Decomposition.** Every row of the contract's Sections table has a `path` a person could
@@ -291,57 +323,81 @@ finding is `<document>#<heading or row>`. Append CRITICALs to `docs/followups.md
 `- [ ] <pkg>/plan: <finding> — review <date>, see docs/reviews/<date>-<pkg>-plan.md`.
 The **Verdict** rule below decides which of the three you write.
 
-## Rounds and convergence — plan mode
+## Rounds and convergence
 
-`/dev-team:plan-package` and `/dev-team:review-plan` name each other as the next command on
-`request changes`, and nothing else bounds that loop: you do. This review is round `n + 1`,
-where `n` is the `plan rounds since last approve:` count you kept — consecutive
-`request changes` plan reviews since the last approving one. Write `Round: <n + 1>` under
-`Verdict:` in every plan report.
+Every review here is one half of a loop — `plan-package` and `review-plan`,
+`implement-section` and `review-section`, `finalize-package` and `review-package` — whose
+halves name each other as the next command on `request changes`, and nothing else bounds
+those loops: you do. Before the checklist, in every mode, run
+`python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --rounds <target>` from the
+repo root — `<pkg>` for a plan, `<pkg>/<section>` for a section, `<pkg>/surface` for a
+package review — and keep its `rounds since last approve:` line, `n`: consecutive
+`request changes` reviews of this scope since the last approving one, derived from
+`docs/reviews/`, so it survives a re-run of `/dev-team:run-package`, which once counted builds
+in its own conversation and started over each time. This review is round `n + 1`; write
+`Round: <n + 1>` under `Verdict:` in every report.
 
 From round 2 on, with the previous report open:
 
-- **Classify every CRITICAL it raised** as `fixed` — the document it named now answers it —
-  or `unfixed`. A finding that names the same fact in a section the last re-plan did not reach
-  (the calendar corrected in three designs and still assumed in a fourth) is
+- **Classify every CRITICAL it raised** as `fixed` — the document or code it named now
+  answers it — or `unfixed`. A finding that names the same fact in a section, module or
+  function the last fix did not reach (the calendar corrected in three designs and still
+  assumed in a fourth; the error code fixed in the parser and still raised by the loader) is
   `unfixed: incomplete propagation of <prior finding>`, not a new finding: write it once,
-  naming every section still carrying the old fact. Six rounds that each find last round's
+  naming every place still carrying the old fact. Six rounds that each find last round's
   fact behind a new door are one unfinished propagation, and the report says so.
 - **Count the new CRITICALs** — those the previous report raised in no form.
 - Write `Convergence: <k> prior unfixed, <m> new` under `Round:`.
 
-**When the loop stops.** On `request changes`, `/dev-team:plan-package <pkg>` is the next
-command only while the loop is converging: on round 1, or on round 2 when every prior
-CRITICAL is fixed and there are fewer new ones than the previous report had. Anywhere else —
-round 2 with a prior finding unfixed, round 2 with as many new findings as before, or round 3
-or later whatever the counts — it is not: a re-plan that clears its predecessor and adds
-findings at a constant rate will do so indefinitely, and what remains is cheaper to catch at
-build time, where a wrong assumption is a failing intent test rather than a disagreement
-between two documents. Then the report and your return end with this block, filled in, and
-no other next command:
+**When the loop stops.** On `request changes`, the fixing command — `/dev-team:plan-package
+<pkg>`, `/dev-team:implement-section <pkg>/<section>` or `/dev-team:finalize-package <pkg>` — is
+the next command only while the loop is converging: on round 1, or on round 2 when every
+prior CRITICAL is fixed. Anywhere else — round 2 with a prior finding unfixed, or round 3 or
+later whatever the counts — it is not: three rounds is the budget, and two when the fix did
+not take, because a fix that leaves its own finding standing will leave it standing again,
+and a fix that clears its predecessor and adds findings at a constant rate will do so
+indefinitely. For a plan, what remains is cheaper to
+catch at build time, where a wrong assumption is a failing intent test rather than a
+disagreement between two documents; for a section or a surface, what remains after three
+builds is either one thing the fixing agent cannot see — and the user can — or judgment the
+next review would re-roll. Then the report and your return end with this block, filled in,
+and no other next command:
 
 ```
-Plan review round <n + 1> of <pkg>: not converging (<k> prior unfixed, <m> new).
+<Plan | Section | Package> review round <n + 1> of <scope>: not converging (<k> prior unfixed, <m> new).
 Standing CRITICALs:
 - <one line each>
 Either:
-  /dev-team:plan-package <pkg>         — one more round; right when the standing findings are one unpropagated fact
-  /dev-team:review-plan <pkg> --defer  — re-address them to their sections and build; each becomes a review follow-up its implementer must clear before /dev-team:finalize-package
+  <fixing command>                       — one more round; right when the standing findings are one thing (an unpropagated fact, one wrong seam)
+  <this review's command> --defer       — re-address them and proceed: a plan's to their sections as review follow-ups, a section's or surface's as ordinary follow-ups
 ```
 
 **`--defer`** is a run of its own, not a review: read nothing but `docs/followups.md`, the
-newest plan report, and the contract's Sections table. For every open `- [ ] <pkg>/plan:`
-entry, append a copy addressed to the section the finding concerns — `<pkg>/surface` for a
-`surface.md` finding, one copy per section for a finding that `touches:` several — with the
-same `— review <date>, see <report>` tail, then tick the original `[x] <date> deferred to
-<targets>`. A finding no section can own — a contract row wrong for the whole package, a
-cycle in the Sections table — cannot be deferred: leave it open, write nothing else, and
-return `Result: blocked` naming it. Otherwise write a plan report with `Verdict: approve
-with fixes`, `Round: <n + 1>`, and a **Deferred** heading listing each move, commit both
-files, and end with `/dev-team:test-section <pkg>/<first section in the integration doc's
-Dependency order>`. The plan gate passes on that verdict; `status.py` counts each deferred
-entry as a review-sourced follow-up against its section, and the finalize gate holds until
-the implementer clears it.
+newest report for this scope, and — for a plan — the contract's Sections table. For every
+open review-sourced entry addressed to this scope, write where it goes, then tick the original
+`[x] <date> deferred to <target>`:
+
+- **Plan** (`<pkg>/plan` entries): append a copy addressed to the section the finding
+  concerns — `<pkg>/surface` for a `surface.md` finding, one copy per section for a finding
+  that `touches:` several — with the same `— review <date>, see <report>` tail. A finding no
+  section can own — a contract row wrong for the whole package, a cycle in the Sections table
+  — cannot be deferred: leave it open, write nothing else, and return `Result: blocked`
+  naming it. The next command is `/dev-team:test-section <pkg>/<first section in the
+  integration doc's Dependency order>`.
+- **Section** (`<pkg>/<section>` entries) and **package** (`<pkg>/surface` and
+  `<pkg>/<section>` entries): append a copy to the same target with the tail
+  `— noted <date>, see <report>` in place of `— review <date>, …`. Same owner, same text, no
+  longer counted by the finalize gate: the next `implement-section` or `finalize-package` run
+  still picks it up as ordinary work. A kind-1 or kind-2 finding — a break or a failing check
+  — cannot be deferred: it is measured, and a surface that re-exports it ships it. Leave it
+  open, write nothing else, and return `Result: blocked` naming it. The next command is the
+  one an approving review of this scope would give.
+
+Then write a report with `Verdict: approve with fixes`, `Round: <n + 1>`, and a **Deferred**
+heading listing each move, commit both files, and end with that next command. The gate
+concerned passes on that verdict; `status.py` counts a plan's deferred entries as
+review-sourced follow-ups against their sections, and the finalize gate holds until the
+implementer clears them.
 
 ## Verdict
 
@@ -360,9 +416,10 @@ done, not whether the fix is someone else's to make:
 finding nobody will come back for. In plan mode `approve` means an implementer may fork, and
 `request changes` means `/dev-team:plan-package <pkg>` must run again first — or, once
 **Rounds and convergence** says the loop has stopped converging, that the user chooses
-between one more round and `--defer`. A `--defer` run's `approve with fixes` is the one
-verdict not decided by severity: its CRITICALs still stand, re-addressed to the sections that
-will build under them.
+between one more round and `--defer`; the section and package loops stop the same way. A
+`--defer` run's `approve with fixes` is the one verdict not decided by severity: its
+CRITICALs still stand, re-addressed to the sections that will build under them or re-filed as
+ordinary follow-ups.
 
 ## Output
 
@@ -376,8 +433,8 @@ latest.
 Scope: <what you read>
 Commit: <sha>
 Verdict: approve | approve with fixes | request changes
-Round: <n>                                   (plan mode only)
-Convergence: <k> prior unfixed, <m> new      (plan mode, round 2 on)
+Round: <n>
+Convergence: <k> prior unfixed, <m> new      (round 2 on)
 
 ## CRITICAL (must fix before merge)
 - <file:line> — <finding> — <what to change>
@@ -389,7 +446,7 @@ Convergence: <k> prior unfixed, <m> new      (plan mode, round 2 on)
 ## Carried                                    (re-reviews only)
 - <finding from the previous report the diff does not touch, as it was worded there>
 ## Deferred                                   (--defer runs only)
-- <pkg>/plan finding → <pkg>/<section>: <finding, one line>
+- <pkg>/plan finding → <pkg>/<section>: <finding, one line>      (or <pkg>/<section> → noted)
 ```
 
 Findings only — no praise, no restating what the code does. Cite `file:line` for every one.
@@ -418,18 +475,26 @@ Last, commit per `git-workflow-and-versioning` §Project convention: stage your 
 
 ## Return message
 
-Line 1 is `Result: done | blocked | stopped` — the first characters of your return, with
-no sentence before it, not even one saying the report is committed — `blocked` when a
-precondition, baseline or branch rule stopped you before a report was written, `done` when
-you wrote one; you have no `stopped`. Line 2 is `Verdict: <verdict>`, exactly as your report's `Verdict:` line (absent
-when blocked). In plan mode, line 3 is `Loop: converging | stopped` — `stopped` exactly when
-**Rounds and convergence** ends your return with its not-converging block, `converging`
-otherwise, including on an approving verdict. `/dev-team:run-package` branches on those lines
-and on nothing else in your return.
+The first three lines are fixed, in this order and with nothing before them — not a
+sentence saying the report is committed, not a blank line:
+
+```
+Result: done | blocked | stopped
+Verdict: approve | approve with fixes | request changes
+Loop: converging | stopped
+```
+
+`Result:` is `blocked` when a precondition, baseline or branch rule stopped you before a
+report was written, `done` when you wrote one; you have no `stopped`. `Verdict:` is exactly
+your report's `Verdict:` line. `Loop:` is `stopped` exactly when **Rounds and convergence**
+ends your return with its not-converging block, `converging` otherwise — including on an
+approving verdict and on a `--defer` run; it is never omitted, and `Round:` comes after it,
+not in its place. When blocked, lines 2 and 3 are absent. `/dev-team:run-package` branches on
+those three lines and on nothing else in your return.
 
 Under 40 lines: the verdict, the counts by severity, the path of your report, the count of
-follow-ups filed, `Commit: <sha>`, and the CRITICAL findings one line each — in plan mode
-also the `Round:` and `Convergence:` lines, and the not-converging block when **Rounds and
+follow-ups filed, `Commit: <sha>`, and the CRITICAL findings one line each — also the
+`Round:` and `Convergence:` lines, and the not-converging block when **Rounds and
 convergence** calls for it. The rest is in the file.
 
 ## Memory

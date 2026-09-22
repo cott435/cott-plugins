@@ -120,10 +120,13 @@ forbid:
     # package, each clearing the last and adding two. The reviewer's Rounds and convergence
     # section is the exit; a sentence in either file that names plan-package as *the* next
     # command on `request changes` without mentioning the loop bypasses it.
-    pattern: 'on `request changes`, `/dev-team:plan-package'
+    # The section and package loops have the same exit, so the same claim covers their
+    # fixing commands and their review skills.
+    pattern: 'on `request changes`, `/dev-team:(plan-package|implement-section|finalize-package)'
     near: 200
     unless: ['Rounds and', 'converging', 'not converging', 'stop']
-    files: ['agents/reviewer.md', 'skills/review-plan/SKILL.md', 'skills/run-package/SKILL.md']
+    files: ['agents/reviewer.md', 'skills/review-plan/SKILL.md', 'skills/review-section/SKILL.md',
+            'skills/review-package/SKILL.md', 'skills/run-package/SKILL.md']
 
 # Every heading a reader parses is one the owner's template defines.
 headings:

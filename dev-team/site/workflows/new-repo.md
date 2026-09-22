@@ -123,7 +123,9 @@ feature branch, a clean tree (your three hand-edited files excepted), and a plan
 spine-only or passes the plan gate. On this spine-only plan it:
 
 1. builds `ingest` — `test-section` (intent tests, red), `implement-section`, `test-section`
-   again (reconcile), `review-section`, rebuilding on `request changes` up to three times;
+   again (reconcile), `review-section`, rebuilding on `request changes` while the review
+   says the loop is converging (it counts rounds from `docs/reviews/`, and stops on round 2
+   with a prior finding unfixed, or on round 3);
 2. runs `sync-design data`, so `ingest`'s design gains an **As shipped** table of what the
    build changed — the design went through every implementer pass untouched, and without
    this the plan review would check the next two designs' seams against a spine that no
@@ -151,7 +153,7 @@ That pair would loop forever, so the review counts. Each plan report carries `Ro
 the consecutive `request changes` reviews since the last approving one, and from round 2
 `Convergence: <k> prior unfixed, <m> new`, where a fact still assumed by a section the last
 re-plan did not reach is one *unfixed* finding, not a new one. On round 2 with a prior finding
-unfixed or as many new findings as before, and on round 3 regardless, the review stops the loop
+unfixed, and on round 3 regardless, the review stops the loop
 and offers two commands: `/dev-team:plan-package data` once more, or
 `/dev-team:review-plan data --defer`, which moves the standing findings to the sections they
 concern, approves the plan with fixes, and lets the build start — each finding is then a review
@@ -175,8 +177,8 @@ command you would type from where it stopped. Here that is `/dev-team:plan-packa
 
 It stops, with the agent's first lines, on a failing run gate; on any agent returning `blocked`
 (a blocking rule) or `stopped` (the architect's decisions or access stop); on a section still at
-`request changes` after three builds; and on a package review still at `request changes` after
-a second finalize. It never edits a file, never answers a decision, and never commits. Each
+or package review that stopped its loop — then `next:` is the user's choice between one more
+round and that review's `--defer`, which re-files the standing findings as ordinary follow-ups. It never edits a file, never answers a decision, and never commits. Each
 agent commits its own run, exactly as by hand. After fixing what stopped it, run it again: it
 resumes from the first section not yet done.
 

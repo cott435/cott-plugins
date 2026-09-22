@@ -68,7 +68,7 @@ flowchart TD
     T1 --> C["implement-section data/clean<br/>→ code, tests, section README, commit"]
     C --> T2["test-section data/clean (reconcile)"]
     T2 --> D["review-section data/clean<br/>→ reviews/, followups"]
-    D -. "request changes (up to 3 builds)" .-> C
+    D -. "request changes, converging: build again; not converging (round 2 unfixed, or round 3): one more round, or review-section --defer" .-> C
     D -->|next section| T1
     D --> E["finalize-package data<br/>→ __init__.py, pipelines/, cli.py, interface.md"]
     E --> F["review-package data<br/>→ package gate"]
