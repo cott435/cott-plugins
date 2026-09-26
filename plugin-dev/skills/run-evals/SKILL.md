@@ -37,16 +37,16 @@ a plan runs them once, before anything depends on them.
 
 ```json
 {
-  "target": "plan-phases",
-  "target_path": "skills/plan-phases/SKILL.md",
+  "target": "design-plugin",
+  "target_path": "skills/design-plugin/SKILL.md",
   "evals": [
     {
       "id": 1,
       "name": "trading-research-three-jobs",
       "kind": "behavioral",
       "baseline": "previous",
-      "harness": "evals/sets/files/plan-phases/trading.md",
-      "prompt": "/plugin-dev:plan-phases --new trading-agents a plugin for stock research agents",
+      "harness": "evals/sets/files/design-plugin/trading.md",
+      "prompt": "/plugin-dev:design-plugin --new trading-agents a plugin for stock research agents",
       "expected_output": "one sentence a reviewer can hold the output against",
       "files": [],
       "expectations": ["an observable statement about outputs/ or transcript.md"],

@@ -1,17 +1,22 @@
 # A large change, in phases
 
 A change that touches several agents or skills, or needs evals that would not fit in the
-chat that makes the edits. The design is written once, up front, by a chat that reads
-everything; the phases are done by chats that each read three files.
+chat that makes the edits. The design is worked out once, in discussion, by a chat that reads
+everything. The phases are planned by a second chat that reads only the design, and done by
+chats that each read four files.
 
 ```mermaid
 flowchart TD
-  P["/plugin-dev:plan-phases slug<br/>(inside the plugin, one chat)"] --> I["read · interview in rounds"]
+  D["/plugin-dev:design-plugin slug<br/>(inside the plugin, chat 0)"] --> I["read · interview in rounds · compose into loops"]
   I -->|gaps remain| I
-  I --> A["proposal: flow chart, new / changed / suggested marked<br/>components · decisions · phases"]
-  A -->|changes| A
-  A -->|your yes| Z["phase 0 commit on branch plugin-slug:<br/>site/notes/slug-00-overview.md · slug-NN-*.md · slug-progress.md"]
-  Z --> R["/plugin-dev:run-phase slug<br/>(fresh chat; reads overview → ledger → one note)"]
+  I --> K["charts: one per changed workflow + system chart<br/>new / changed / suggested marked"]
+  K -->|changes| K
+  K -->|your yes| W["writeup"]
+  W -->|changes| W
+  W -->|your yes| G["design commit on branch plugin-slug:<br/>site/notes/slug-design.md"]
+  G --> P["/plugin-dev:plan-phases slug<br/>(fresh chat; reads the design only)"]
+  P -->|your yes to the split| Z["phase 0 commit:<br/>slug-00-overview.md · slug-NN-*.md · eval sets · slug-progress.md"]
+  Z --> R["/plugin-dev:run-phase slug<br/>(fresh chat; reads design → overview → ledger → one note)"]
   R --> E["edits · plugin's own rules · check-contracts · build-site"]
   E --> X["run-evals on the note's Evals table<br/>(sets in evals/sets/, graded against the baseline)"]
   X --> Y["your review of the viewer"]
@@ -20,38 +25,50 @@ flowchart TD
   C -->|last phase| B["end-to-end rerun of every set · README · flow.md · workflows/ · CHANGELOG<br/>bump proposed in chat"]
   B --> V["bump-version, on your yes"]
   classDef stop stroke:#8a2f4a,stroke-width:2px;
-  class A,B,Y stop;
+  class K,W,P,B,Y stop;
 ```
 
-## Chat 0 — `plan-phases <slug>`
+## Chat 0 — `design-plugin <slug>`
 
-Run inside the plugin's directory. It reads every file the change touches — heading names
-and rules are quoted from the files, not remembered — and checks the platform facts the
-design depends on against the docs; a fact the docs do not settle becomes a phase-0 eval
-rather than an assumption. It interviews you in rounds of two to four questions — what is
-wrong today, scope, what must not break, the decisions that are yours — each with a
-recommendation first and each round built on the last answers. Then it publishes a
-proposal as an Artifact page and links it in chat: the change restated, a rendered flow chart
-grouped by layer with new, changed and suggested components marked, a components table, what
-each output must say, the cost of each job, the decisions, the phase outline, the
-non-goals. It waits for your yes, re-showing the whole proposal after any change, and
-nothing is written before it. Then it writes:
+Run inside the plugin's directory. It reads every file the change touches (heading names and
+rules are quoted from the files, not remembered) and checks the platform facts the design
+depends on against the docs. A fact the docs do not settle is written into the design as an
+assumption, and becomes a phase-0 eval. It interviews you in rounds of two to four questions
+(what is wrong today, scope, what must not break, the decisions that are yours), each with a
+recommendation first and each round built on the last answers, and composes the changed
+workflows into loops as it goes.
+
+Then two gates. First, an Artifact page of charts: one per workflow the change touches, plus a
+system chart showing where the loops meet, with new, changed and suggested components marked
+and the components table below. Second, the writeup: the charts plus what every output must
+say, the cost of each workflow, the decisions, the platform facts, the build order, what must
+not break, and the non-goals. Each gate waits for your yes, and a requested change means
+discussion and a republished page. Nothing is written before the second yes. Then it creates
+the branch `<plugin>-<slug>` and commits `site/notes/<slug>-design.md`.
+
+## Chat 1 — `plan-phases <slug>`
+
+A fresh chat, reading the design and the files it names, and none of the discussion. It first
+looks for decisions the design did not take, asks about them in one round, and writes the
+answers into the design; if an answer would change a chart, it stops and says the design needs
+reopening. Then it shows the phase split as a table and waits for your yes. Then it writes:
 
 | File | Holds |
 |---|---|
-| `site/notes/<slug>-00-overview.md` | why; decisions taken; what changes; the contents tree with `+`/`~`; the flow after; the files other files parse; the phases table with dependencies; breaking changes; non-goals |
+| `site/notes/<slug>-00-overview.md` | what changes; the contents tree with `+`/`~`; the files other files parse; the phases table with dependencies; breaking changes |
 | `site/notes/<slug>-NN-<name>.md` | one per phase: purpose, decisions, files, the exact spec (frontmatter, headings, contract entries), steps, evals with pass conditions, done-when |
 | `site/notes/<slug>-progress.md` | the ledger: one row per phase — status, commit, eval logs, notes for the next chat |
+| `evals/sets/<target>.json` | one per behavioral target, written by one writer subagent each, in parallel, and checked before the commit |
 
-on a branch `<plugin>-<slug>`, committed as phase 0. The split obeys four rules: every
-phase is mergeable on its own; every phase fits one chat; foundations first; every phase
-has an eval. The last phase is always the end-to-end eval, the docs and the bump proposal.
+and commits them as phase 0. The split obeys four rules: every phase is mergeable on its own;
+every phase fits one chat; foundations first; every phase has an eval. The last phase is
+always the end-to-end eval, the docs and the bump proposal.
 
-## Chats 1…N — `run-phase <slug>`
+## Chats 2…N — `run-phase <slug>`
 
 Each chat opens with that line and nothing else. The skill confirms the branch and a clean
-tree, reads the overview, the ledger and the first note whose row is not `done`, and does
-exactly that note: its edits, the plugin's own rules for added or removed files,
+tree, reads the design, the overview, the ledger and the first note whose row is not
+`done`, and does exactly that note: its edits, the plugin's own rules for added or removed files,
 `check-contracts`, `build-site`, then the note's **Evals** table — one row per eval, each
 naming its kind, its target, the baseline to compare against, which evals of that target's
 set in `evals/sets/` it runs, and the pass bar. Each row goes through `run-evals`, which
@@ -63,7 +80,7 @@ run up before any result is reported. Then one commit and the ledger row, then i
 What the ledger row carries forward is everything the next chat cannot get from its own
 note: a platform fact the eval resolved, a heading that turned out to be named differently,
 a thing noticed but out of scope. Where the note could not be followed as written, the
-chat appends a **Deviations** section to it in the same commit, so the design set stays a
+chat appends a **Deviations** section to it in the same commit, so the notes stay a
 true record rather than an intention.
 
 A chat that runs out of context marks its row `in progress` with the uncommitted paths

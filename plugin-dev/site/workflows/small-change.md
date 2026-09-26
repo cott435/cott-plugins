@@ -27,10 +27,10 @@ for when this one would not fit.
 
 ## When it is not small
 
-Any of these means `plan-phases` instead: more than one agent changes; a heading another
+Any of these means `design-plugin`, then `plan-phases`, instead: more than one agent changes; a heading another
 file parses moves; a new agent or a new workflow skill; `status`-style tooling changes
 alongside the prompts that read it; or the evals you would need do not fit in the chat
-that makes the edit. The cost of planning is one chat; the cost of not planning is a
+that makes the edit. The cost of planning is two chats; the cost of not planning is a
 second half done by a model that has forgotten the first.
 
 ## Where things go

@@ -1,6 +1,6 @@
 ---
 name: run-phase
-description: Do the next unfinished phase of a plan written by plan-phases - a change to a plugin or a new plugin being built up - read the overview, the progress ledger and that phase's note, make exactly its edits, run the plugin's checks and the phase's evals, log them, commit once, update the ledger, and stop. Use only inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), one phase per Claude Code chat, typed by the user.
+description: Do the next unfinished phase of a plan written by plan-phases - a change to a plugin or a new plugin being built up - read the design, the overview, the progress ledger and that phase's note, make exactly its edits, run the plugin's checks and the phase's evals, log them, commit once, update the ledger, and stop. Use only inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), one phase per Claude Code chat, typed by the user.
 argument-hint: "[slug]"
 disable-model-invocation: true
 ---
@@ -8,7 +8,7 @@ disable-model-invocation: true
 # Running one phase
 
 A phase is one chat's worth of work, specified in a note a previous chat wrote. This chat
-reads three files, does what the note says, proves it with the note's evals, commits once,
+reads four files, does what the note says, proves it with the note's evals, commits once,
 records where things stand, and stops — the next chat starts from the ledger, not from a
 summary of this one.
 
@@ -26,16 +26,21 @@ summary of this one.
 
 ## Read, in this order, and nothing else up front
 
-1. `site/notes/<slug>-00-overview.md` — the whole change, the phases table, the breaking
-   changes.
-2. `site/notes/<slug>-progress.md` — the first row whose status is not `done` is this
+1. `site/notes/<slug>-design.md` — the why: the workflows and their charts, the decisions,
+   the non-goals, as approved. Plans written before `design-plugin` existed have none; their
+   overview carries it.
+2. `site/notes/<slug>-00-overview.md` — what the design turns into: the contents tree, the
+   files other files parse, the phases table, the breaking changes.
+3. `site/notes/<slug>-progress.md` — the first row whose status is not `done` is this
    chat's phase. `in progress` means a previous chat stopped mid-way: read its Notes cell
    and `git status`, and finish rather than restart.
-3. That phase's note, `site/notes/<slug>-NN-<name>.md`.
+4. That phase's note, `site/notes/<slug>-NN-<name>.md`.
 
 The note names every plugin file to open; open those as the steps reach them. Do not read
-the other phase notes, the evals of other phases, or any earlier conversation — the
-overview carries what they concluded, and a later phase's note is not this chat's job.
+the other phase notes, the evals of other phases, or any earlier conversation — the design
+and the overview carry what they concluded, and a later phase's note is not this chat's job.
+A phase never edits the design: where the note and the design disagree, the note is what
+was planned, and the disagreement is a Deviation.
 
 ## Do the phase
 

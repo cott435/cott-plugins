@@ -1,5 +1,5 @@
 # Seed
-/plugin-dev:plan-phases --new paper-desk a plugin to help me keep up with ML research
+/plugin-dev:design-plugin --new paper-desk a plugin to help me keep up with ML research
 
 # User's answers (use these whenever the skill would ask; for anything not covered, pick the option you marked Recommended)
 - Who/purpose: me, an ML engineer. Today I skim arXiv and forget most of what I read.

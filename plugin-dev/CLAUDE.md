@@ -28,9 +28,14 @@ care when editing it:
   Before committing one, rebuild at least `dev-team` and diff the output — its site is
   the reference the builder was verified against.
 - **`run-evals` is shared.** Its `references/eval-kinds.md` is the one list of eval kinds;
-  `plan-phases` writes notes against it and `run-phase` runs them through it. A kind added
-  or renamed there is a change to all three, and `check-contracts`' eval-kinds claim fails
-  until they agree. Eval sets under `evals/sets/` are committed; `evals/workspace/` never is.
+  `plan-phases` and its eval writers write notes and sets against it, and `run-phase` runs
+  them through it. A kind added or renamed there is a change to all three, and
+  `check-contracts`' eval-kinds claim fails until they agree. Eval sets under `evals/sets/`
+  are committed; `evals/workspace/` never is.
+- **`design-plugin` owns the design's section list** ("3. The writeup" in its `SKILL.md`), and
+  `plan-phases` reads the design by those names. Renaming a section is a change to both, and
+  `check-contracts` fails until they agree. `templates/phases/design.md` mirrors the list; keep
+  its headings in the same order.
 - **`scripts/contract_sweep.py` is shared too**, and a checker that cannot fail is worse than
   none. A change to it gets both runs before it is committed: the real bundle, which must
   still pass, and a copy with a deliberate defect per check kind, which must still fail —

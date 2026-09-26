@@ -4,29 +4,16 @@ Branch: `<plugin>-<slug>`. Release at the end: `<x.y.z>` — proposed to `bump-v
 the last phase (a change: a bump; a new plugin: tagging `0.1.0` as scaffolded). Nothing
 here bumps or tags anything. Date: <date>.
 
-This is the index of the design set. Each numbered note after this one is one phase, done
+This is the index of the phase notes. Each numbered note after this one is one phase, done
 in the order listed under **Phases**, one chat and one commit each, by
 `/plugin-dev:run-phase <slug>`. Nothing in a later phase is required by an earlier one, so
 the branch is mergeable at any phase boundary.
 
+The why, the workflows and their charts, the decisions and the non-goals are in
+`<slug>-design.md`, approved before this was written. This note does not repeat them; it says
+what the design turns into, file by file and phase by phase.
+
 <!-- Lines marked (change) or (new) apply to that mode; delete the other. -->
-
-## Why
-
-<(change) What is wrong or missing today, in the plugin's own terms, and what the change
-makes true. Cite the review, eval, or incident that motivated it.>
-
-<(new) What the plugin is for, who types its commands, and what exists today instead —
-a manual procedure, a loose folder of prompts, nothing. One paragraph.>
-
-## Decisions taken
-
-Every decision the interview settled, as approved in the proposal. Origin is *asked* (the
-user answered a question) or *suggested* (plan-phases proposed it and the user accepted).
-
-| Decision | Chosen | Alternatives | Why | Origin |
-|---|---|---|---|---|
-| <one the user answered> | | | | asked |
 
 ## What changes, at a glance
 <!-- (new): retitle "What the plugin is, at a glance" -->
@@ -55,14 +42,6 @@ the plugin as it will be after the last phase.>
 └── …
 ```
 
-## The flow
-
-<The mermaid flow chart the user approved in the proposal, as shown — every typed command
-→ skill → agent → file written → next reader; accepted suggestions no longer dashed,
-rejected ones deleted. Below it, the numbered sequence of commands a user types, with what
-each reads and writes. Mark the steps that can stop. (new) This is the plugin's
-`site/flow.md` in draft; the last phase makes it that file.>
-
 ## Files other files parse
 
 | Path or heading | Written by | Read by | Status |
@@ -80,20 +59,15 @@ every phase that touches an agent or skill: the plugin's own rules, `check-contr
 
 | Phase | Note | Commit contents | Depends on |
 |---|---|---|---|
-| 0 | 00 | this design set; platform-fact evals <IDs> <(new) ; the scaffold and marketplace row> | — |
+| 0 | 00 | the phase notes, the eval sets and this ledger; platform-fact evals <IDs> from the design's assumed facts | design |
 | 1 | 01 | <(new) the smallest working plugin: one agent or one skill, its README, `CLAUDE.md`, `contracts.yml` with one claim> | 0 |
 | N | 0N | end-to-end eval; README, `site/flow.md`, `site/workflows/`, `CHANGELOG.md`; release proposed in chat | all |
 
 <Which phases may pair in one chat, and which must not.>
 
 ## Breaking changes to list in `CHANGELOG.md`
+
+<!-- From the design's **What must not break**; listed here so the last phase finds them. -->
 <!-- (new): delete; a first release has none. -->
 
 1. <behavior a user of the plugin will notice, and what to do about it>
-
-## Non-goals
-
-<What this deliberately does not do, and why, so a later chat does not add it.>
-
-<Each suggestion the user declined in the proposal: one line — what was suggested, that it
-was considered and declined.>

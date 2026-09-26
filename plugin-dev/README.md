@@ -20,7 +20,7 @@ rather than a copy. Installing this plugin is what makes the protocol apply.
 
 ## The skills
 
-Eight skills, in three groups by how they start. The table is the one list of them: a
+Nine skills, in three groups by how they start. The table is the one list of them: a
 `contracts.yml` claim fails when a directory under `skills/` has no row here.
 
 | Skill | Starts | What it does |
@@ -30,7 +30,8 @@ Eight skills, in three groups by how they start. The table is the one list of th
 | `check-contracts` | on its own, beside `build-site` and before any bump | Runs the cross-file claims in a bundle's `contracts.yml`: a heading one file parses and another owns, a pattern no file may contain, a list of names that goes stale. A `FAIL` names the `file:line`. |
 | `run-evals` | on its own, whenever a phase or change calls for evals | Runs one skill's or agent's evals from its committed set in `evals/sets/`: mechanical checks, a load check, behavioral runs against a baseline graded assertion by assertion with skill-creator's grader, benchmark and viewer. Stops for your review, then records the result with `log-eval`. |
 | `new-plugin` | on its own, when a plugin is started | Scaffolds a plugin subdirectory from `templates/` and adds its row to the marketplace. |
-| `plan-phases` | when you type it | Expands a change too big for one chat — or a new plugin — from an idea into an approved design: interviews you in rounds, composes your jobs into shared layers (per-unit readers fanned out in parallel, a status per entity, a peer comparison, thin commands on top), publishes the proposal as a page with the flow chart rendered (its own suggestions marked) and waits for your yes. Then splits it into phases: a branch, an overview note, one note per phase, a progress ledger, all under `site/notes/`. Each phase is sized for one chat and carries its own evals. Commits the design set as phase 0. |
+| `design-plugin` | when you type it | Turns an idea for a new plugin, or a change too big for one chat, into an approved design through discussion. Interviews you in rounds and composes the jobs into loops: each loop's unit of work, what makes that unit's output trustworthy, where every input it needs comes from (you, a file, or another cheaper loop), and the files where loops meet. Shows one flow chart per workflow plus a system chart for your approval, then the full writeup for your approval, and commits it as `site/notes/<slug>-design.md` on a new branch. |
+| `plan-phases` | when you type it, in a fresh chat | Splits the approved design into phases from the design file alone, without the discussion behind it. Asks about any decision the design did not take, shows the split for your yes, then writes an overview, one note per phase with its own evals table, and a progress ledger under `site/notes/`, and has one writer subagent per target write the eval sets in parallel. Commits all of it as phase 0. |
 | `run-phase` | when you type it, once per chat | Does the next unfinished phase: reads the overview, the ledger and that one note; makes exactly its edits; runs the plugin's rules, `check-contracts`, `build-site` and the phase's evals; logs them; commits once; updates the ledger; stops. |
 | `bump-version` | only on your yes | Decides patch/minor/major from what changed, bumps `plugin.json` and the marketplace row, writes the CHANGELOG line, tags, pushes. Proposes itself in chat and waits. |
 
@@ -42,7 +43,7 @@ Eight skills, in three groups by how they start. The table is the one list of th
 | `scripts/contract_sweep.py` | The contracts checker. Shared, so a change to it gets a positive and a negative run before it is committed (this plugin's `CLAUDE.md`). |
 | `scripts/defaults/` | `mkdocs-base.yml` and `extra.css` used when a plugin doesn't override them. |
 | `templates/` | The files a new plugin subdirectory starts with. |
-| `templates/phases/` | The overview, phase-note and ledger shapes `plan-phases` writes. |
+| `templates/phases/` | The design shape `design-plugin` writes, and the overview, phase-note and ledger shapes `plan-phases` writes. |
 | `site/workflows/` | The three workflows below, one page each, rendered on the reading site. |
 
 ## Workflows
@@ -50,19 +51,19 @@ Eight skills, in three groups by how they start. The table is the one list of th
 Three ways work reaches a plugin. Each is a page under `site/workflows/`; the summaries
 here say which skills run, in what order, and which of them wait for you.
 
-**[A new plugin](site/workflows/new-plugin.md).** From the repo root,
-`/plugin-dev:plan-phases --new <name>`: it reads the closest existing plugin for
-conventions, interviews you in rounds about what the plugin is for, composes the jobs into
-shared layers, publishes the proposal as a page with a rendered flow chart of every agent and
-command (its suggested additions marked), and waits for your yes. Only then does it invoke
-`new-plugin` for the scaffold and marketplace row and write the design set — phase 1 is the
-smallest bundle that loads, every later phase adds to it, and every phase's evals go into
-`evals/sets/` in the same phase-0 commit. Then one chat per phase:
-`/plugin-dev:run-phase 0.1` from `<name>/`, each running that phase's evals through
-`run-evals` against those sets. The last phase proposes tagging `0.1.0`; `bump-version` does
-it on your yes. A plugin that will only ever be one or two skills skips the phases:
-`new-plugin`, write them, `build-site`, `check-contracts`, `run-evals` on whatever is
-behavioral, propose the tag.
+**[A new plugin](site/workflows/new-plugin.md).** Three kinds of chat. First, from the
+repo root, `/plugin-dev:design-plugin --new <name>`: it reads the closest existing plugin for
+conventions, interviews you in rounds, and composes the jobs into loops. Then it shows one flow
+chart per workflow plus a system chart and waits for your yes, then shows the writeup and waits
+again. Only then does it create the branch, invoke `new-plugin` for the scaffold and
+marketplace row, and commit `site/notes/0.1-design.md`. Second, in a fresh chat,
+`/plugin-dev:plan-phases 0.1` from `<name>/`: from the design alone, it splits the work into
+phases (phase 1 is the smallest bundle that loads), shows the split for your yes, and commits
+the notes, the ledger and every phase's eval sets as phase 0. Third, one chat per phase:
+`/plugin-dev:run-phase 0.1`, each running that phase's evals through `run-evals`. The last
+phase proposes tagging `0.1.0`; `bump-version` does it on your yes. A plugin that will only
+ever be one or two skills skips all this: `new-plugin`, write them, `build-site`,
+`check-contracts`, `run-evals` on whatever is behavioral, propose the tag.
 
 **[A small change](site/workflows/small-change.md).** One agent or skill, one chat. Edit;
 the plugin's own rules (`CLAUDE.md`); `check-contracts`; `build-site`; if the edit changes
@@ -71,14 +72,14 @@ to the set first — logged with `log-eval` before results are reported; one com
 looks bump-worthy, `bump-version` says so and waits.
 
 **[A large change, in phases](site/workflows/phased-change.md).** Inside the plugin,
-`/plugin-dev:plan-phases <slug>`: it researches what the change touches, interviews you in
-rounds, publishes the proposal as a page with the changed flow chart rendered (new, changed
-and suggested components marked) and waits for your yes; then it writes the branch, the
-overview, one note per phase and the ledger, and commits phase 0 — with every behavioral
-eval's prompts and expectations written into `evals/sets/`. Then one fresh chat per phase,
-each opened with nothing but `/plugin-dev:run-phase <slug>`, which runs that phase's evals
-through `run-evals` and stops for your review of the viewer before it commits, until the
-ledger's last row is `done` and the last phase has proposed the bump.
+`/plugin-dev:design-plugin <slug>`: it reads what the change touches, interviews you in rounds,
+shows the changed workflows as charts (new, changed and suggested components marked) and then
+the writeup, each waiting for your yes, and commits the design on a new branch. Then, in a fresh
+chat, `/plugin-dev:plan-phases <slug>` splits the design into phases, with every behavioral
+eval's prompts and expectations written into `evals/sets/`, and commits phase 0. Then one fresh
+chat per phase, each opened with nothing but `/plugin-dev:run-phase <slug>`, which runs that
+phase's evals through `run-evals` and stops for your review of the viewer before it commits,
+until the ledger's last row is `done` and the last phase has proposed the bump.
 
 What is the same in all three: every eval is a file before it is a sentence in chat; evals
 run through `run-evals` from committed sets in `evals/sets/`; the site is rebuilt after

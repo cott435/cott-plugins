@@ -1,11 +1,11 @@
 # NN — <name>
 
 Phase NN. <One paragraph: what this phase adds or changes, and the gap it closes. Written
-for a chat that has read only the overview, the ledger, and this note.>
+for a chat that has read only the design, the overview, the ledger, and this note.>
 
 ## Decisions
 
-<Anything settled here rather than in the overview: a name, a default, a placement. Each
+<Anything settled here rather than in the design: a name, a default, a placement. Each
 with its reason. "None" if none.>
 
 ## Files

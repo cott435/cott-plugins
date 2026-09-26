@@ -1,5 +1,5 @@
 # Seed
-/plugin-dev:plan-phases --new trading-agents a plugin for stock research agents
+/plugin-dev:design-plugin --new trading-agents a plugin for stock research agents
 
 # User's answers (use these whenever the skill would ask; for anything not covered, pick the option you marked Recommended)
 - Who/purpose: personal use only, just me. Today I read filings and news by hand and keep notes in a doc.

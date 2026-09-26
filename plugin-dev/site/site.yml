@@ -9,5 +9,6 @@ workflows_order:
 
 # Workflow skills in the order you run them; the automatic three follow alphabetically.
 workflow_skills_order:
+  - design-plugin
   - plan-phases
   - run-phase

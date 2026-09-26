@@ -46,3 +46,14 @@ headings:
         cites: ['mechanical', 'load', 'behavioral', 'trigger', 'platform-fact']
       - file: skills/plan-phases/SKILL.md
         cites: ['mechanical', 'load', 'behavioral', 'trigger', 'platform-fact']
+
+  - name: plan-phases names only design sections design-plugin writes
+    # design-plugin's "3. The writeup" is the one list of the design's sections; plan-phases
+    # reads the design by those names.
+    owner: skills/design-plugin/SKILL.md
+    owner_span: ['## 3. The writeup', '## 4. Commit the design']
+    readers:
+      - file: skills/plan-phases/SKILL.md
+        cites: ['Components', 'How they fit together', 'Decisions taken', 'Build order',
+                'What must not break']
+

@@ -1,5 +1,5 @@
 # Seed
-/plugin-dev:plan-phases --new support-insights a plugin that helps our support lead make sense of tickets
+/plugin-dev:design-plugin --new support-insights a plugin that helps our support lead make sense of tickets
 
 # User's answers (use these whenever the skill would ask; for anything not covered, pick the option you marked Recommended)
 - Who/purpose: our support lead, one person. Today she reads tickets in Zendesk and writes a weekly summary by hand.
