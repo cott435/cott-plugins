@@ -6,6 +6,34 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [0.11.0] - 2026-09-26
+
+### Added
+- **`site/flow.md`** (73013a4): the site's orientation page. It covers which file is the truth
+  for each question and which wins when two disagree, how facts flow from the docs through
+  `plugin-anatomy`, the chat-by-chat loop, the hand-offs, and every point where you are asked.
+- **`owner_form: markdown` for `check-contracts`' `headings` claims** (85df293): a document
+  template's own `##` headings can own a section list, with fenced code skipped.
+
+### Changed
+- **The design template is the one list of the design's sections** (85df293).
+  `design-plugin` no longer repeats them; the contract `plan-phases` is checked against now
+  reads `templates/phases/design.md`.
+- **`run-evals` runs trigger evals before behavioral ones** (3f3acfb), because `run_loop` may
+  rewrite the `description:` a behavioral run reads.
+- **A new plugin's `CLAUDE.md` points to the repo root's** for the shared protocol instead of
+  restating it (3f3acfb). `build-site` says a change needing a rebuild also updates the
+  authored pages it affects.
+- **The README and the three workflow pages follow `design-plugin` and `plugin-anatomy`**
+  (cd56a94). The README's workflow-skill rule now includes `disable-model-invocation: true`,
+  and the phased-change page's worked example points to plugin-dev's own `0.9-evals` notes.
+
+### Fixed
+- **Phase 0 can be completed when the design assumes no platform facts** (85df293).
+  `plan-phases` now writes its row `done` in that case, and `in progress` with the evals listed
+  otherwise; `run-phase` treats that in-progress row as its work, not an interrupted chat.
+  Before, nothing marked a fact-free phase 0 done.
+
 ## [0.10.0] - 2026-09-26
 
 ### Added
