@@ -60,6 +60,8 @@ Authored, and committed:
   kit's defaults in `scripts/defaults/` are used with the plugin's name substituted in, so a
   new plugin gets a working site with no config at all.
 
+Any change requiring a rebuild that touches what is written in any of the above authored file requires an edit to that file to update it.
+
 ## Lists are re-indented on the way in
 
 Every page is normalized before it is written: list content — continuation paragraphs, sub-

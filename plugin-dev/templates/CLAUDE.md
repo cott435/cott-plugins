@@ -1,30 +1,21 @@
 # CLAUDE.md
 
-Instructions for working on this repo — the `<name>` plugin source itself (its agents,
-skills, and site), not a repo the plugin is used against.
+Instructions for working on this subdirectory — the `<name>` plugin's own source (its
+agents, skills, and site) — not a repo the plugin is used to plan or build. The general
+protocol (versioning, eval logging, contract checks, the site builder) is the repo root
+`CLAUDE.md`; this file holds only what's specific to this plugin.
 
-## Shared protocol
+## The shared protocol is in the parent, and it is not optional
 
-Versioning, eval logging and the reading site are not defined here. They come from the
-`plugin-dev` plugin, which is installed from the `cott-plugins` marketplace and applies to
-every plugin repo:
-
-- **`bump-version`** — when to bump patch/minor/major, and the bump + CHANGELOG + tag +
-  marketplace procedure. Run it in the same commit as the change that triggered the bump.
-- **`log-eval`** — every test run against this plugin's own skills or agents gets a dated
-  file under `evals/` with the commit and model it was tested against, plus a row in
-  `evals/README.md`. Every time, including a clean pass.
-- **`build-site`** — rebuilds `site/docs/` and `site/mkdocs.yml` from the bundle. Re-run
-  after editing any agent or skill.
-- **`plan-phases`** / **`run-phase`** — a change too big for one chat is split into phases
-  under `site/notes/`, one chat and one commit each, with a progress ledger between chats.
-
-If `plugin-dev` is not installed, install it (`/plugin install plugin-dev@cott-plugins`)
-rather than reinventing the protocol here.
+The repo root `CLAUDE.md` carries the rules this plugin is maintained by — when `build-site`,
+`log-eval`, `check-contracts` and `bump-version` run, and which of them ask first. A session
+that mounts only this folder cannot read it, and will edit skills without ever rebuilding the
+site or proposing a version bump. So: if `../CLAUDE.md` cannot be read, say so and ask for
+`cott-plugins` to be connected before making changes here.
 
 ## Repo-specific
 
 `VERSIONING.md` holds this plugin's own versioning decisions — currently its per-agent
-`model:` choices. Anything true of every plugin belongs in `plugin-dev`, not here.
+`model:` choices. The policy itself is `plugin-dev`'s `bump-version`.
 
 <!-- Add anything specific to this plugin's source below. -->

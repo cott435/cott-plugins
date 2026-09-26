@@ -51,7 +51,7 @@ clobbering another chat's uncommitted work or checking out from under it.
 Always do branch-specific work in its own `git worktree`, not the main checkout — even if the
 app's own worktree/isolation toggle for that session isn't checked. Before starting
 branch-specific changes: create (or reuse) a worktree for that branch in a sibling directory
-(`git worktree add ../cott-plugins-<branch> <branch>`), do the work there, commit there, and
+(`git worktree add ../cott-plugins-worktrees/<plugin_name>_<branch_name>`), do the work there, commit there, and
 when the branch is ready, merge it into the correct target branch (`main` unless told
 otherwise) rather than leaving it stranded in the worktree. Remove the worktree
 (`git worktree remove`) once its branch is merged and no longer needed.

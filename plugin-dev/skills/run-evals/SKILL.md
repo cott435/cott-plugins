@@ -26,9 +26,12 @@ it as a regression check. A test run only in a chat is a test nobody can repeat.
 Five kinds, each defined with its method in `references/eval-kinds.md`: `mechanical`,
 `load`, `behavioral`, `trigger`, `platform-fact`.
 
-Within one run the order is mechanical, then load, then behavioral, then trigger. A failing
+Within one run the order is mechanical, then load, then trigger, then behavioral. A failing
 mechanical check stops the run: a bundle that does not pass its own checks makes behavioral
-results meaningless, so fix it first. `platform-fact` evals are not part of a target's run;
+results meaningless, so fix it first. Trigger comes before behavioral because the two do not
+depend on each other except in one direction: `run_loop` may rewrite the target's
+`description:`, and behavioral runs read the working-tree file, so a description applied
+after the behavioral run leaves its results graded against a file that no longer exists. `platform-fact` evals are not part of a target's run;
 a plan runs them once, before anything depends on them.
 
 ## The set
