@@ -6,6 +6,48 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [0.10.0] - 2026-09-26
+
+### Added
+- **`design-plugin`**, split out of `plan-phases` (bdd8340). It owns the whole design
+  discussion: interview rounds, composing jobs into loops (each loop's unit of work, what
+  strengthens it, where every input comes from, the files where loops meet), one flow chart
+  per workflow plus a system chart for approval, then a writeup for approval. It commits the
+  approved design as `site/notes/<slug>-design.md` on a new branch. The composing method and
+  the chart and page rules live in its `references/`.
+- **`plugin-anatomy`**, the source of truth for plugin components (c4c1404). It has a routing
+  guide for which component a responsibility belongs in (skill, agent, hook, MCP server,
+  script, config) and one reference each for skills, agents, composition, hooks, MCP, the
+  manifest, the rarer components and edge cases. Every fact is marked `[docs]`,
+  `[proven: …]` or `[unconfirmed]`, read against the docs for Claude Code 2.1.270.
+- **A `frontmatter` check kind in `check-contracts`** (c4c1404). It reads its allowed and
+  ignored-in-plugins key lists from `plugin-anatomy`, and fails on a misspelled key or a key
+  plugin agents ignore (`hooks`, `mcpServers`, `permissionMode`, `initialPrompt`) at its
+  `file:line`. plugin-dev declares it for its own skills.
+- **`templates/phases/design.md`**, and `plan-phases`' eval-writer prompt: one subagent per
+  target writes that target's eval set, all in parallel.
+- **Eval sets**: `design-plugin.json` (three domain evals moved from `plan-phases`, a
+  research-scientist two-loop eval, a through-writeup eval), `plan-phases.json` rewritten (from
+  a fixture design; a planted gap it must ask about), and `plugin-anatomy.json` plus its
+  trigger set. Only the mechanical and load checks have been run:
+  `evals/2026-09-26-design-plugin-split-mechanical.md`,
+  `evals/2026-09-26-plugin-anatomy-and-frontmatter-check.md`.
+
+### Changed
+- **`plan-phases` starts from the design file, in a fresh chat** (bdd8340). It no longer
+  interviews or proposes. It reads the design alone, asks about any decision the design did
+  not take, shows the phase split for approval, writes the notes and ledger, and fans out the
+  eval writers. **`plan-phases --new` is gone:** start a new plugin with
+  `/plugin-dev:design-plugin --new <name>`, then run `/plugin-dev:plan-phases 0.1` in a new
+  chat.
+- **`run-phase` reads the design first**, reads a component's `plugin-anatomy` reference
+  before writing it, and writes proven platform facts back to it. Plans written before this
+  release have no design file; their overview still carries the why.
+- **The overview template is slimmed** to what the design turns into (contents tree, parsed
+  files, phases, breaking changes). The why, decisions, flow and non-goals live in the design.
+- `new-plugin`, `bump-version`, `run-evals`' eval kinds, the README and the workflow pages
+  follow the new flow and point to `plugin-anatomy`.
+
 ## [0.9.3] - 2026-09-21
 
 ### Fixed
