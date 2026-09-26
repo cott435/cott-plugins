@@ -57,3 +57,8 @@ headings:
         cites: ['Components', 'How they fit together', 'Decisions taken', 'Build order',
                 'What must not break']
 
+frontmatter:
+  - name: every skill's frontmatter uses only documented skill fields
+    # The allowed keys are plugin-anatomy's references/skills.md block, read by the checker.
+    kind: skill
+    files: 'skills/*/SKILL.md'

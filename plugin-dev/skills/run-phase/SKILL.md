@@ -55,6 +55,16 @@ Follow the note's **Steps** in order. Whatever the note says, these always apply
   set that rots. Correct the expectation, say so in the eval log, and rerun only if the
   rewrite changes a verdict. This covers the expectations, not the target's behavior: a
   change to what the phase *builds* is still out of scope.
+- **Read the component's reference first.** Before creating or changing an agent, skill,
+  hook, MCP server or manifest field, read its file in
+  `${CLAUDE_PLUGIN_ROOT}/skills/plugin-anatomy/references/`. Where the note's frontmatter uses
+  a key that reference does not document, or one plugins ignore, that is a Deviation, not a
+  silent fix.
+- **Write proven facts back.** A `platform-fact` row's result goes into `plugin-anatomy`: the
+  fact's status becomes `[proven: <log>]`, or the fact is corrected and cites the log. When
+  the plan is for plugin-dev itself, that edit is part of this phase. For any other plugin it
+  is a different plugin's file, so it is a *noticed: write back to plugin-anatomy* line in the
+  ledger, done afterwards as a small change to plugin-dev.
 - **The plugin's own rules.** Its `CLAUDE.md` — a three-file rule, a naming list, a site
   order file — applies to every file the phase adds or removes, in the same commit.
 - **Checks before evals.** If the plugin has `contracts.yml`, `check-contracts` passes. If

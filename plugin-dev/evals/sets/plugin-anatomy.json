@@ -1,0 +1,157 @@
+{
+  "target": "plugin-anatomy",
+  "target_path": "skills/plugin-anatomy/SKILL.md",
+  "evals": [
+    {
+      "id": 1,
+      "name": "agent-frontmatter-hook-ignored",
+      "kind": "behavioral",
+      "baseline": "none",
+      "prompt": "I'm in my plugin research-desk/ (it has .claude-plugin/plugin.json). My reviewer agent must never write outside docs/reviews/. I'm going to add this to agents/reviewer.md's frontmatter:\n\nhooks:\n  PreToolUse:\n    - matcher: \"Write|Edit\"\n      hooks:\n        - type: command\n          command: ./scripts/only-reviews.sh\n\nGood plan? Write the change you recommend.",
+      "expected_output": "Says a plugin agent's hooks field is ignored, and moves the guard to the plugin's hooks/hooks.json as a PreToolUse hook scoped to the reviewer and exiting 2 to block",
+      "files": [],
+      "expectations": [
+        "The final message says the hooks field in a plugin agent's frontmatter is ignored (or unsupported) for plugin agents",
+        "The recommended change puts the hook in the plugin's hooks/hooks.json (or the manifest's hooks key), not in agents/reviewer.md",
+        "The hook is a PreToolUse hook matching Write and Edit",
+        "The hook script limits itself to the reviewer, using agent_type from the hook input or an equivalent check, so other agents and the main session are unaffected",
+        "The script blocks by exiting with code 2, and the answer says a crash or other nonzero exit would let the write through",
+        "The command path uses ${CLAUDE_PLUGIN_ROOT}, not a relative ./scripts path"
+      ],
+      "added_in": "plugin-anatomy step (design-plugin branch)"
+    },
+    {
+      "id": 2,
+      "name": "agent-cannot-ask",
+      "kind": "behavioral",
+      "baseline": "none",
+      "prompt": "In my plugin trading-desk/ the analyst agent sometimes can't tell which fiscal year the user means. I'll add AskUserQuestion to its tools list in agents/analyst.md so it can just ask. Make that edit.",
+      "expected_output": "Explains subagents never get AskUserQuestion, and restructures: the agent returns the open question in its output and the workflow skill that spawned it asks the user",
+      "files": [],
+      "expectations": [
+        "The final message says subagents cannot use AskUserQuestion even when it is listed in tools",
+        "It does not present adding AskUserQuestion to the agent's tools as a working fix",
+        "It proposes the agent return the unresolved question in its output (or stop with it) and the workflow skill in the main thread ask the user and re-run or continue the agent",
+        "It names the workflow skill (or main thread) as the place user decisions live"
+      ],
+      "added_in": "plugin-anatomy step (design-plugin branch)"
+    },
+    {
+      "id": 3,
+      "name": "state-in-plugin-root",
+      "kind": "behavioral",
+      "baseline": "none",
+      "prompt": "My plugin paper-desk/ has a script that downloads PDFs. I'm caching them in ${CLAUDE_PLUGIN_ROOT}/cache/ so they're next to the code. The skill runs `python3 $CLAUDE_PLUGIN_ROOT/scripts/fetch.py` from Bash. Anything wrong?",
+      "expected_output": "Flags both: the plugin root changes on update so the cache belongs in ${CLAUDE_PLUGIN_DATA}; and the variable is not in Bash's environment, so it must be written as ${CLAUDE_PLUGIN_ROOT} in the skill body for substitution",
+      "files": [],
+      "expectations": [
+        "The final message says ${CLAUDE_PLUGIN_ROOT} changes or is replaced when the plugin updates, so a cache there is lost",
+        "It recommends ${CLAUDE_PLUGIN_DATA} (or a project directory) for the cache",
+        "It says CLAUDE_PLUGIN_ROOT is not set in the environment of Bash commands the model runs",
+        "It recommends writing ${CLAUDE_PLUGIN_ROOT} in the skill's Markdown body, where Claude Code substitutes it when the skill loads"
+      ],
+      "added_in": "plugin-anatomy step (design-plugin branch)"
+    },
+    {
+      "id": 4,
+      "name": "preload-cost-fanout",
+      "kind": "behavioral",
+      "baseline": "none",
+      "prompt": "In my plugin lit-review/, the paper-reader agent runs once per paper, about 40 at a time. I'm preloading six skills into it with skills: (citation-style, claim-extraction, stats-checklist, figure-reading, retraction-check, writing-style). Is that fine?",
+      "expected_output": "Explains skills: injects full content into every instance, so six skills × 40 instances multiplies context; preload only what every run needs and invoke the rest on demand via the Skill tool; batches the 40-wide fan-out",
+      "files": [],
+      "expectations": [
+        "The final message says the skills field preloads each skill's full content into the agent at startup",
+        "It says that cost is paid once per instance, so it multiplies across the ~40 parallel readers",
+        "It recommends preloading only the skills every run needs and invoking situational ones on demand, which requires Skill in the agent's tools",
+        "It classifies at least one of the six as situational (for example retraction-check or stats-checklist) with a reason",
+        "It raises the concurrency limit on parallel subagents and suggests batching, marking the exact default as unconfirmed or citing it with its source"
+      ],
+      "added_in": "plugin-anatomy step (design-plugin branch)"
+    },
+    {
+      "id": 5,
+      "name": "example-tags-in-agent-description",
+      "kind": "platform-fact",
+      "baseline": "none",
+      "prompt": "Does claude.ai (and so the desktop app's marketplace sync) reject a plugin whose agents/*.md description contains an <example> block, the way it rejects XML-style tags in a SKILL.md description?",
+      "expected_output": "Assumed: yes, rejected like a skill description. Method: a scratch marketplace on a branch with one plugin whose only agent's description has <example>…</example>; sync in the desktop app; record whether the plugin lists or errors. Write the result back to plugin-anatomy references/agents.md (The description) and, if accepted, relax contracts.yml's XML-tag forbid for agents/*.md",
+      "files": [],
+      "expectations": [
+        "The desktop app's plugin list or error for the scratch plugin is recorded verbatim",
+        "The result is written back to plugin-anatomy's references/agents.md with the log as its source"
+      ],
+      "added_in": "plugin-anatomy step (design-plugin branch)"
+    },
+    {
+      "id": 6,
+      "name": "subagent-concurrency-default",
+      "kind": "platform-fact",
+      "baseline": "none",
+      "prompt": "What is the default number of subagents that run at once, and what happens to the rest of a fan-out wider than that?",
+      "expected_output": "Assumed: 20 run concurrently and the rest queue rather than fail. Method: one message spawning 25 trivial general-purpose agents that each record their start and end time to a file; compare overlap. Write back to references/agents.md and edge-cases.md",
+      "files": [],
+      "expectations": [
+        "The start and end times of all 25 agents are recorded",
+        "The observed maximum concurrency and whether excess agents queued or failed are stated, and written back to plugin-anatomy"
+      ],
+      "added_in": "plugin-anatomy step (design-plugin branch)"
+    },
+    {
+      "id": 7,
+      "name": "skill-name-collision",
+      "kind": "platform-fact",
+      "baseline": "none",
+      "prompt": "When a project skill in .claude/skills/<name>/ has the same name as a plugin skill, which one does the model invoke, and which does a typed /<name> run?",
+      "expected_output": "Assumed: the plugin skill stays reachable only as /<plugin>:<name>, and the project skill owns the bare name. Method: a scratch project with a project skill and a --plugin-dir plugin sharing a name, each writing a different marker file; invoke by bare name, by prefixed name, and by a matching request. Write back to references/skills.md and edge-cases.md",
+      "files": [],
+      "expectations": [
+        "Each of the three invocations is recorded with which marker file was written",
+        "The result is written back to plugin-anatomy with the log as its source"
+      ],
+      "added_in": "plugin-anatomy step (design-plugin branch)"
+    },
+    {
+      "id": 8,
+      "name": "symlink-survives-install",
+      "kind": "platform-fact",
+      "baseline": "none",
+      "prompt": "Does a symlink inside a plugin directory survive installing the plugin from a marketplace into the plugin cache?",
+      "expected_output": "Assumed: no; do not rely on it. Method: a scratch marketplace plugin whose skill reads a file through a symlink; install it, invoke the skill, and inspect the cached copy. Write back to references/manifest.md",
+      "files": [],
+      "expectations": [
+        "The cached plugin directory is listed, showing whether the symlink is a link, a copied file, or missing",
+        "The skill's result is recorded, and the fact is written back to plugin-anatomy"
+      ],
+      "added_in": "plugin-anatomy step (design-plugin branch)"
+    },
+    {
+      "id": 9,
+      "name": "validate-checks-mcp-json",
+      "kind": "platform-fact",
+      "baseline": "none",
+      "prompt": "Does `claude plugin validate` in Claude Code 2.1.270 report a malformed .mcp.json (a server with neither command nor url)?",
+      "expected_output": "Assumed: not at this version; it is caught at load. Method: a scratch plugin with a broken .mcp.json; run claude plugin validate, then load it with --plugin-dir and check /mcp. Write back to references/mcp.md",
+      "files": [],
+      "expectations": [
+        "The validate output and exit code are recorded verbatim",
+        "What the loaded session shows for the broken server is recorded, and the fact is written back to plugin-anatomy"
+      ],
+      "added_in": "plugin-anatomy step (design-plugin branch)"
+    },
+    {
+      "id": 10,
+      "name": "mcp-output-cap",
+      "kind": "platform-fact",
+      "baseline": "none",
+      "prompt": "What happens when a plugin MCP tool returns more than the default output cap (reported as 25,000 tokens)?",
+      "expected_output": "Assumed: the output is truncated or refused with a message, at 25,000 tokens by default. Method: a scratch stdio MCP server in a --plugin-dir plugin with one tool returning ~30k tokens of text; call it. Write back to references/mcp.md",
+      "files": [],
+      "expectations": [
+        "What the model received from the tool call is recorded (truncated, refused, or whole)",
+        "The observed cap is written back to plugin-anatomy with the log as its source"
+      ],
+      "added_in": "plugin-anatomy step (design-plugin branch)"
+    }
+  ]
+}

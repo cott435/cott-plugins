@@ -50,6 +50,11 @@ A question a file could have answered wastes a round, so reading comes first.
   `disable-model-invocation: true`, knowledge skills preloaded by role, nothing stated in two
   files.
 
+Then read `plugin-anatomy`'s `SKILL.md`, the routing guide for which component a
+responsibility belongs in. Open one of its component references only when the design is about
+to use that component, and `references/composition.md` before deciding what goes in an agent
+and what in a skill.
+
 ## 1. Explore
 
 The request this skill is typed with is a seed, not a spec. "A plugin for X" names a domain,
@@ -70,16 +75,18 @@ leads to the same design.
 | 1 | Purpose and users: who types the commands, what they have today instead, what one good outcome looks like | What is wrong today: the review, eval or incident behind it, and what must be true after |
 | 2 | The workflows: every job, its trigger and deliverable; the source material a practitioner reads one piece at a time, and what a careful reading of one piece looks like | Scope: which agents and skills are in, which are explicitly out |
 | 3 | Data, integrations, secrets: sources, APIs, credentials, volumes, where files live | What must not break: headings other files parse, commands users already type, defaults |
-| 4 | Boundaries and risk: what it must never do, what needs a human yes, non-goals | Decisions: vendor vs. depend, a default that changes behavior, a name |
+| 4 | Boundaries and risk: what it must never do (and whether "never" means a hook or an instruction), what needs a human yes, non-goals | Decisions: vendor vs. depend, a default that changes behavior, a name |
 
 After theme 2, compose. `references/composing.md` is the method: find each workflow's unit of
 work, make it strong, trace every input the unit needs back to the user, to a file, or to
 another loop, and connect the loops at files. Read it in full before composing; the charts draw
 exactly what it produces.
 
-**Platform facts.** Verify every Claude Code behavior the design depends on (a frontmatter
-field, a substitution, a spawn form) against the Claude Code docs. A fact the docs do not
-settle is not assumed. It is written into the design as an assumption, with the answer you
+**Platform facts.** Check every Claude Code behavior the design depends on (a frontmatter
+field, a substitution, a spawn form, what a hook can block) against `plugin-anatomy` first: a
+fact marked `[docs]` or `[proven]` there is cited by its reference file. A fact it marks
+`[unconfirmed]`, or does not have, is checked against the Claude Code docs. A fact neither
+settles is not assumed. It is written into the design as an assumption, with the answer you
 expect, and becomes a phase-0 eval that `plan-phases` schedules before anything depends on it.
 
 **The exploration is done** when composing's checklist ("Before the charts are drawn") holds
@@ -128,9 +135,10 @@ and not written down is lost. Its sections, in this order:
    assumes.
 7. **Decisions taken**: every decision from the discussion, as Decision · Chosen · Alternatives ·
    Why · Origin (*asked*, or *suggested* and accepted).
-8. **Platform facts**: every fact the design depends on, each either *verified* (with the doc
-   it was checked against) or *assumed* (with the expected answer). An assumed fact becomes a
-   phase-0 eval.
+8. **Platform facts**: every fact the design depends on, each either *verified* (with the
+   `plugin-anatomy` reference or doc it was checked against) or *assumed* (with the expected
+   answer). An assumed fact becomes a phase-0 eval, and its result is written back to
+   `plugin-anatomy`.
 9. **Build order**: which components depend on which, and the smallest slice that works end to
    end. This is not the phases; `plan-phases` splits those from it.
 10. **What must not break**: change mode only. Headings other files parse, commands users

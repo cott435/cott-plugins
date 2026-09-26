@@ -6,7 +6,7 @@ template, others parse it by heading; one skill forbids something another still 
 Nothing fails when those drift — the agent just reads for a heading that is never written.
 This runner checks the claims a bundle declares in its own `contracts.yml`.
 
-Three kinds of claim, all of them about file contents, so all of them decidable without
+Four kinds of claim, all of them about file contents, so all of them decidable without
 running a model:
 
   forbid        a pattern that must not appear (a rule one file states and another breaks),
@@ -14,6 +14,8 @@ running a model:
   headings      every heading a reader parses is one the owner's template defines
   names_listed  every directory under <dirs> has its name in <file> (a list that goes stale),
                 narrowed by <where> on frontmatter and read in one of three <form>s
+  frontmatter   every frontmatter key in <files> is one plugin-anatomy documents for <kind>
+                (skill or agent), and none is a key plugins ignore
 
 Usage:  python3 contract_sweep.py [bundle] [--quiet]
 Exits 1 if any case fails, 0 if all pass, 2 if the bundle has no contracts.yml.
@@ -168,7 +170,60 @@ def check_names_listed(bundle: Path, spec: dict) -> tuple[bool, str]:
     return not detail, "; ".join(detail) or f"{scope}, all listed"
 
 
-CHECKS = {"forbid": check_forbid, "headings": check_headings, "names_listed": check_names_listed}
+# The allowed frontmatter keys are read from plugin-dev's own plugin-anatomy references, not
+# restated here: the reference is the source of truth, and this checker enforces it. The path
+# is relative to this script, so a bundle checked with an installed plugin-dev reads the
+# installed references.
+ANATOMY = Path(__file__).resolve().parent.parent / "skills" / "plugin-anatomy" / "references"
+KEY_SOURCES = {"skill": "skills.md", "agent": "agents.md"}
+
+
+def documented_keys(kind: str) -> tuple[set[str], set[str]]:
+    """(allowed, ignored_in_plugins) from the `frontmatter-keys: <kind>` block in plugin-anatomy."""
+    import yaml
+    if kind not in KEY_SOURCES:
+        raise LookupError(f"unknown frontmatter kind {kind!r}; known: {', '.join(KEY_SOURCES)}")
+    source = ANATOMY / KEY_SOURCES[kind]
+    m = re.search(rf"<!-- frontmatter-keys: {kind} -->\s*```yaml\n(.*?)```", source.read_text(), re.S)
+    if not m:
+        raise LookupError(f"{source}: no `frontmatter-keys: {kind}` block")
+    block = yaml.safe_load(m.group(1)) or {}
+    return set(block.get("allowed") or []), set(block.get("ignored_in_plugins") or [])
+
+
+def check_frontmatter(bundle: Path, spec: dict) -> tuple[bool, str]:
+    """Every top-level frontmatter key in `files` is documented for `kind` and honored in plugins.
+
+    A misspelled key (`allowed_tools`) and a key plugins ignore (`hooks` on a plugin agent) fail
+    the same way at run time: silently. Both are caught here, at the key's file:line.
+    """
+    allowed, ignored = documented_keys(spec["kind"])
+    files = spec["files"] if isinstance(spec["files"], list) else [spec["files"]]
+    bad, checked = [], 0
+    for p in authored(bundle, files):
+        rel = p.relative_to(bundle)
+        text = p.read_text(errors="ignore")
+        end = text.find("\n---", 3)
+        if not text.startswith("---\n") or end < 0:
+            bad.append(f"{rel}: no frontmatter")
+            continue
+        checked += 1
+        for n, line in enumerate(text[4:end].splitlines(), 2):
+            m = re.match(r"([A-Za-z_][\w-]*)\s*:", line)
+            if not m:
+                continue
+            key = m.group(1)
+            if key in ignored:
+                bad.append(f"{rel}:{n} `{key}` is ignored for plugin {spec['kind']}s")
+            elif key not in allowed:
+                bad.append(f"{rel}:{n} `{key}` is not a documented {spec['kind']} field")
+    if not checked and not bad:
+        return False, f"`files: {spec['files']}` matched no file"
+    return not bad, "; ".join(bad) or f"{checked} files, every key documented"
+
+
+CHECKS = {"forbid": check_forbid, "headings": check_headings, "names_listed": check_names_listed,
+          "frontmatter": check_frontmatter}
 
 
 def main() -> int:

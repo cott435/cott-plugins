@@ -44,6 +44,17 @@ An agent is run by giving a general-purpose subagent its prompt file as instruct
 `tools:` list and `skills:` preloads are not reproduced, so a behavioral result about what
 the agent does with its tools says "proxy" in the log.
 
+## Per component
+
+What a mechanical or load row checks depends on the component it is about. Each of
+`plugin-anatomy`'s component references (`skills.md`, `agents.md`, `hooks.md`, `mcp.md`,
+`manifest.md`) ends with a **How to test it** table: the checks for that kind, and which kind
+of eval each is. A phase that adds a hook or an MCP server takes its load row from there, since
+`claude -p` listing skills and agents shows neither.
+
+A `platform-fact` result is written back to `plugin-anatomy` (the fact's status becomes
+`[proven: <log>]`, or the fact is corrected), so the next design finds it settled.
+
 ## Harness rules
 
 Every executor, with-target or baseline, runs under these; they override the target where

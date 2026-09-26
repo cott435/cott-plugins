@@ -41,6 +41,10 @@ by the user and never pushes.
   from the files, not from the design's paraphrase of them.
 - `${CLAUDE_PLUGIN_ROOT}/skills/run-evals/references/eval-kinds.md`, the one list of eval
   kinds: `mechanical`, `load`, `behavioral`, `trigger`, `platform-fact`.
+- `${CLAUDE_PLUGIN_ROOT}/skills/plugin-anatomy/references/`: the file for each component kind
+  the design's **Components** table uses (`skills.md`, `agents.md`, `hooks.md`, `mcp.md`,
+  `manifest.md`, `other.md`), and `edge-cases.md`. These are where frontmatter fields, file
+  shapes and each kind's tests come from; the design's paraphrase is not.
 - **change:** the existing set `evals/sets/<target>.json` of every target the design changes.
 
 Do not read other plans' notes or any earlier conversation. If the user pastes part of the
@@ -99,9 +103,16 @@ smallest end-to-end slice is phase 1.
     own row.
   - The pass bar can be checked without judgment (default: every expectation passes and the
     target's pass rate ≥ the baseline's).
+- **Each component's own tests.** A phase that adds or changes a component takes its
+  mechanical and load rows from the **How to test it** table in that component's
+  `plugin-anatomy` reference: a hook gets its script piped recorded events and a `/hooks`
+  check, an MCP server a `/mcp` check, not only a listing of skills and agents.
 - **Every phase touching an agent or skill** runs the plugin's own rules, `check-contracts`
   (once a `contracts.yml` exists; in **new** mode, phase 1 creates it with the first claim the
-  README makes about the bundle), and `build-site`, then its Evals table through `run-evals`.
+  README makes about the bundle and a `frontmatter` claim for each of `skills/*/SKILL.md` and
+  `agents/*.md` it ships), and `build-site`, then its Evals table through `run-evals`.
+- **Every platform-fact row** says, in its pass bar, where its result is written back in
+  `plugin-anatomy`.
 
 ## Show the split, then wait
 
@@ -136,7 +147,9 @@ Its sections, in order:
 - **`## Decisions`**: anything settled here rather than in the design, each with its reason.
 - **`## Files`**: a Path · Change table, one row per file the phase touches.
 - **`## Specification`**: the exact content. Frontmatter, heading names, rules,
-  `contracts.yml` entries, and any prompt another model will be given, verbatim.
+  `contracts.yml` entries, and any prompt another model will be given, verbatim. Frontmatter
+  uses only the keys in the component's `plugin-anatomy` reference, and the note names that
+  reference beside each new component.
 - **`## Steps`**: ordered so the bundle is consistent after each one.
 - **`## Evals`**: the table described under **Rules for the split**.
 - **`## Done when`**: conditions checkable without judgment.

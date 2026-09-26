@@ -91,12 +91,23 @@ are the chart captions and, later, the writeup's **Workflows** section.
    core design, not a suggestion. Leave it out only when the thing judged genuinely has no peer
    or baseline, and say so in the design.
 
-10. **Say what each output must say.** For every file a reader depends on, name its sections
+10. **Route each piece to a component.** Loops, units, evaluators and orchestrators are
+    roles; now decide what each one *is*. Use the routing questions in `plugin-anatomy`'s
+    `SKILL.md`, in order. They settle, among others: anything that must happen whatever the
+    model decides is a hook, not an instruction; a pure count, filter or fetch is a script;
+    an external system with auth is an MCP server; anything that needs the user stays in a
+    workflow skill in the main thread, because agents and forked skills cannot ask; a method
+    run many times is an agent; knowledge two agents share is a skill. Decide for each agent
+    which skills it preloads and which it invokes on demand, per `plugin-anatomy`'s
+    `references/composition.md`. Every "must never" from the interview is either a hook or
+    an instruction, and the design says which and why.
+
+11. **Say what each output must say.** For every file a reader depends on, name its sections
     and the domain rules that make it trustworthy: what it must cite, what it must never claim,
     and when it goes stale. Structure without those rules produces well-organized files nobody
     can rely on.
 
-11. **Walk it as the practitioner would.** Go through each workflow as the domain's
+12. **Walk it as the practitioner would.** Go through each workflow as the domain's
     professional and name what they would insist on that no component does: a check before
     anything irreversible, a critic for a synthesis. Each one becomes a **suggestion**, named
     with one line of why. A suggestion attaches to the design and never carries it: no
@@ -105,7 +116,7 @@ are the chart captions and, later, the writeup's **Workflows** section.
 
 ## Shapes that recur
 
-These come up often. Use one because steps 2 to 9 derived it, never because it is on the list.
+These come up often. Use one because steps 2 to 10 derived it, never because it is on the list.
 
 - **Fan-out.** One agent instance per unit, in parallel, each writing one file.
 - **Survey, select, go deep.** A cheap pass over every candidate writes an index; an
@@ -126,6 +137,9 @@ These come up often. Use one because steps 2 to 9 derived it, never because it i
 - Every fan-out states what it fans out over and how many instances; its arithmetic adds up
   (batch size × batches covers the units).
 - Every judgment names its baseline.
+- Every component has a kind (agent, workflow skill, forked skill, knowledge skill, hook, MCP
+  server, script, config), every user decision sits in the main thread, and no agent is given
+  a field plugin agents ignore (`plugin-anatomy`'s `references/edge-cases.md`).
 - With every suggestion removed, the core still works end to end.
 - The depth is the same everywhere it is described: a source is not "read in full" in one
   place and "skimmed" in another.

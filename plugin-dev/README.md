@@ -20,7 +20,7 @@ rather than a copy. Installing this plugin is what makes the protocol apply.
 
 ## The skills
 
-Nine skills, in three groups by how they start. The table is the one list of them: a
+Ten skills, in three groups by how they start. The table is the one list of them: a
 `contracts.yml` claim fails when a directory under `skills/` has no row here.
 
 | Skill | Starts | What it does |
@@ -29,6 +29,7 @@ Nine skills, in three groups by how they start. The table is the one list of the
 | `build-site` | on its own, after any agent or skill edit | Rebuilds `site/docs/` and `site/mkdocs.yml` from the bundle. |
 | `check-contracts` | on its own, beside `build-site` and before any bump | Runs the cross-file claims in a bundle's `contracts.yml`: a heading one file parses and another owns, a pattern no file may contain, a list of names that goes stale. A `FAIL` names the `file:line`. |
 | `run-evals` | on its own, whenever a phase or change calls for evals | Runs one skill's or agent's evals from its committed set in `evals/sets/`: mechanical checks, a load check, behavioral runs against a baseline graded assertion by assertion with skill-creator's grader, benchmark and viewer. Stops for your review, then records the result with `log-eval`. |
+| `plugin-anatomy` | on its own, when a plugin's components are designed, written or reviewed | The source of truth for plugin components: which one a responsibility belongs in (skill, agent, hook, MCP server, script, config), how skills and agents combine, every documented frontmatter field, and the edge cases that fail silently. Each fact is marked documented, proven by an eval, or unconfirmed. `design-plugin`, `plan-phases` and `run-phase` read it, and the frontmatter check in `check-contracts` enforces its key lists. |
 | `new-plugin` | on its own, when a plugin is started | Scaffolds a plugin subdirectory from `templates/` and adds its row to the marketplace. |
 | `design-plugin` | when you type it | Turns an idea for a new plugin, or a change too big for one chat, into an approved design through discussion. Interviews you in rounds and composes the jobs into loops: each loop's unit of work, what makes that unit's output trustworthy, where every input it needs comes from (you, a file, or another cheaper loop), and the files where loops meet. Shows one flow chart per workflow plus a system chart for your approval, then the full writeup for your approval, and commits it as `site/notes/<slug>-design.md` on a new branch. |
 | `plan-phases` | when you type it, in a fresh chat | Splits the approved design into phases from the design file alone, without the discussion behind it. Asks about any decision the design did not take, shows the split for your yes, then writes an overview, one note per phase with its own evals table, and a progress ledger under `site/notes/`, and has one writer subagent per target write the eval sets in parallel. Commits all of it as phase 0. |
@@ -81,7 +82,9 @@ chat per phase, each opened with nothing but `/plugin-dev:run-phase <slug>`, whi
 phase's evals through `run-evals` and stops for your review of the viewer before it commits,
 until the ledger's last row is `done` and the last phase has proposed the bump.
 
-What is the same in all three: every eval is a file before it is a sentence in chat; evals
+What is the same in all three: which component a responsibility belongs in, and every
+platform fact a design relies on, come from `plugin-anatomy`, and a fact proven by an eval is
+written back to it; every eval is a file before it is a sentence in chat; evals
 run through `run-evals` from committed sets in `evals/sets/`; the site is rebuilt after
 every agent or skill edit; contracts are checked before every commit that touches one; and
 nothing is bumped, tagged or pushed without a yes.

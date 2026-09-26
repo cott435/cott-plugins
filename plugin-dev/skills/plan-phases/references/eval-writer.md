@@ -21,7 +21,10 @@ said, and the writer reports it instead of inventing it.
 > 3. `<plugin-dev>/skills/run-evals/references/eval-kinds.md`, for what a behavioral eval is.
 > 4. `<plugin-dev>/skills/run-evals/SKILL.md`, sections **The set** and **The behavioral
 >    loop**: the set's JSON shape, and the executor prompt your evals will be run with.
-> 5. `<existing set path, or "none">`: for a changed target, keep every eval in it, and
+> 5. `<plugin-dev>/skills/plugin-anatomy/references/<the target's component file>`, its
+>    **How to test it** section: what can be observed about this kind of component, and
+>    what a general-purpose executor cannot reproduce (an agent's `tools:` and `skills:`).
+> 6. `<existing set path, or "none">`: for a changed target, keep every eval in it, and
 >    append yours after the highest existing ID.
 >
 > Write `<plugin dir>/evals/sets/<target>.json` containing exactly the eval IDs above. For

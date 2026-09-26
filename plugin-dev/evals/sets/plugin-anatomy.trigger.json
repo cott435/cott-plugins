@@ -1,0 +1,82 @@
+[
+  {
+    "query": "In my plugin dev-team/, should the reviewer's rule 'never write outside docs/reviews' be a hook or just a line in agents/reviewer.md?",
+    "should_trigger": true
+  },
+  {
+    "query": "I'm writing agents/curator.md for my plugin \u2014 which frontmatter fields does a plugin agent actually honor? I want permissionMode: plan on it",
+    "should_trigger": true
+  },
+  {
+    "query": "cott-plugins/trading-desk: is fetching SEC filings better as an MCP server, a script, or just WebFetch inside the reader agent?",
+    "should_trigger": true
+  },
+  {
+    "query": "in my plugin's skills/deploy/SKILL.md can I use hooks: in the frontmatter, and how long do they stay active?",
+    "should_trigger": true
+  },
+  {
+    "query": "for the plugin I'm building in paper-desk/, what's the right split between the reader agent file and the claim-extraction skill it uses?",
+    "should_trigger": true
+  },
+  {
+    "query": "my plugin's .mcp.json server is called db \u2014 what's the exact tool name I put in my agent's tools: list?",
+    "should_trigger": true
+  },
+  {
+    "query": "I want my plugin to store a cache of downloaded PDFs between updates \u2014 where should it go, plugin root or somewhere else?",
+    "should_trigger": true
+  },
+  {
+    "query": "is it ok to preload five skills into an agent in my plugin that fans out 30 wide?",
+    "should_trigger": true
+  },
+  {
+    "query": "reviewing plugin.json for my new plugin: does setting \"agents\": [\"./agents/extra\"] replace or add to the agents/ folder?",
+    "should_trigger": true
+  },
+  {
+    "query": "my plugin's hook script crashed and the write still went through \u2014 why didn't it block?",
+    "should_trigger": true
+  },
+  {
+    "query": "set up a pre-commit hook in my django repo that runs black before every commit",
+    "should_trigger": false
+  },
+  {
+    "query": "add a GitHub Actions workflow that runs pytest on every push for my flask app",
+    "should_trigger": false
+  },
+  {
+    "query": "which fields does a Kubernetes Deployment manifest need for a rolling update?",
+    "should_trigger": false
+  },
+  {
+    "query": "configure the Postgres MCP server in my ~/.claude.json so I can query my local db",
+    "should_trigger": false
+  },
+  {
+    "query": "in dev-team/, run the contract sweep and tell me which file:line fails",
+    "should_trigger": false
+  },
+  {
+    "query": "scaffold a new plugin called paper-desk in the marketplace with its manifest and README",
+    "should_trigger": false
+  },
+  {
+    "query": "bump plugin-dev to 0.10.0 and write the changelog line",
+    "should_trigger": false
+  },
+  {
+    "query": "rebuild the reading site for dev-team after my agent edits",
+    "should_trigger": false
+  },
+  {
+    "query": "what's the difference between a React hook and a custom hook in my Next.js app?",
+    "should_trigger": false
+  },
+  {
+    "query": "write a webpack plugin that injects the build hash into index.html",
+    "should_trigger": false
+  }
+]

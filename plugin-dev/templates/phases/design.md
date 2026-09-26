@@ -48,7 +48,7 @@ flowchart TB
 
 | Name | Kind | Role | Reads | Writes | Used by | Origin |
 |---|---|---|---|---|---|---|
-| | agent / workflow skill / knowledge skill / script | | | | | asked / composed / suggested: why |
+| | agent / workflow skill / forked skill / knowledge skill / hook / MCP server / script / config | | | | | asked / composed / suggested: why |
 
 ## Outputs
 
@@ -75,7 +75,7 @@ flowchart TB
 
 | Fact | Status | Source or expected answer |
 |---|---|---|
-| | verified / assumed | <the doc checked, or the answer expected; an assumed fact becomes a phase-0 eval> |
+| | verified / assumed | <the plugin-anatomy reference or doc checked, or the answer expected; an assumed fact becomes a phase-0 eval> |
 
 ## Build order
 

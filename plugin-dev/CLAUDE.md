@@ -36,6 +36,12 @@ care when editing it:
   `plan-phases` reads the design by those names. Renaming a section is a change to both, and
   `check-contracts` fails until they agree. `templates/phases/design.md` mirrors the list; keep
   its headings in the same order.
+- **`plugin-anatomy` is the source of truth for platform facts.** A fact about how a plugin
+  component behaves is stated there once, with its source and its status (`[docs]`,
+  `[proven: …]`, `[unconfirmed]`), and cited from everywhere else. When the docs or an eval
+  change a fact, fix it there. Its `frontmatter-keys` blocks are read by `contract_sweep.py`'s
+  `frontmatter` check, so a key added to or removed from them changes what every plugin's
+  sweep accepts.
 - **`scripts/contract_sweep.py` is shared too**, and a checker that cannot fail is worse than
   none. A change to it gets both runs before it is committed: the real bundle, which must
   still pass, and a copy with a deliberate defect per check kind, which must still fail —

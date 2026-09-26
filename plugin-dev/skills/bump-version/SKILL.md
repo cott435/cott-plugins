@@ -46,6 +46,19 @@ The test for major is not "how big was the edit" but "does something that alread
 against this plugin now break." A one-word rename of a file path is major. A rewritten
 500-line agent prompt that still reads and writes the same files is minor.
 
+Components other than agents and skills have their own contracts, per `plugin-anatomy`'s
+references:
+
+- **A new hook** is at least minor even when it adds no command: it changes behavior in every
+  session the plugin is enabled in. A hook that now blocks something it used to allow is
+  major.
+- **A renamed MCP server or tool** is major: its tools' full names
+  (`mcp__plugin_<plugin>_<server>__<tool>`) are what agents' `tools` lists, hook matchers and
+  users' permission rules name.
+- **A new required `userConfig` field**, or a `userConfig` feature that needs a newer Claude
+  Code (such as `options`), is major for users on the older setup: the plugin prompts again,
+  or stops loading.
+
 ## The procedure (only after a yes)
 
 1. `git status` and `git diff` — decide the level from what actually changed, not from the

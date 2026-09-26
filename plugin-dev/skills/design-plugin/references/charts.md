@@ -28,6 +28,9 @@ limit:
   per instance. A report nobody else reads can be the command's edge label.
 - Knowledge skills and scripts go in the components table, not the chart. An agent's preloaded
   skills can be a second line in its label.
+- A hook is drawn only where it guards something: a small node on the edge it gates, labelled
+  with its event (`PreToolUse`). An MCP server is a source node the agents that use it read
+  from, drawn once.
 - Keep edge labels to a word or two, because long labels widen a chart more than anything else.
 - Use the same node ID and label for a component in every chart it appears in, so the reader
   can match them across charts.
@@ -42,7 +45,7 @@ table.
 ## The components table
 
 This table goes on the page below the charts, with these columns: Name · Kind (agent, workflow
-skill, knowledge skill, script) · Role · Reads · Writes · Used by (the workflows that depend on
+skill, forked skill, knowledge skill, hook, MCP server, script, config) · Role · Reads · Writes · Used by (the workflows that depend on
 it) · Origin. Origin is one of:
 
 - *asked*: an answer names it;

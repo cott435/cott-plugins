@@ -54,7 +54,7 @@ Report the result, and when a check fails or a new claim is added, record the ru
 
 ## Declaring claims — `contracts.yml` at the bundle root
 
-Absent, nothing is checked and the script says so. Three kinds:
+Absent, nothing is checked and the script says so. Four kinds:
 
 ```yaml
 forbid:                 # a pattern that must not appear in an authored file
@@ -83,6 +83,11 @@ names_listed:           # every directory under `dirs` has its name in `file`
     span: ['## Workflow skills', '## What each reader does with it']
     where: {disable-model-invocation: true}   # optional: only dirs whose SKILL.md frontmatter matches
     form: code                                # optional: how the list cites a name — below
+
+frontmatter:            # every frontmatter key is one the platform documents, and honors here
+  - name: every agent uses only fields plugin agents honor
+    kind: agent                    # agent or skill
+    files: 'agents/*.md'           # a glob or a list; a glob matching nothing is a FAIL
 ```
 
 `form` is how the target list writes a name, because a list is checked where it lives rather
@@ -103,6 +108,13 @@ pass: a typo in `where` would otherwise turn the claim off.
 The owner template is **parsed, not restated**: `owner_span` slices the owner file and every
 `N. **Name** —` line in that slice is a defined heading. Rename one and the check follows it,
 which is the point — a checker carrying its own copy of the list is one more thing to go stale.
+
+`frontmatter` reads its key lists from `plugin-anatomy`'s references — the
+`frontmatter-keys` blocks in `references/skills.md` and `references/agents.md` — rather than
+carrying its own copy. A misspelled key (`allowed_tools`) fails as undocumented, and a key
+plugin agents ignore (`hooks`, `mcpServers`, `permissionMode`, `initialPrompt`) fails as
+ignored: both look fine and do nothing at run time. When the platform adds a field, the fix is
+in the reference, with its source, and the check follows.
 
 Three things to know about writing claims:
 

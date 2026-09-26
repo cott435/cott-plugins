@@ -15,7 +15,8 @@ or remote to set up — that is the whole appeal of the bundled layout.
 - The plugin's name (kebab-case; it becomes the directory name and the `/<name>:` command
   prefix)
 - One line on what it does
-- Whether it has agents, commands, or only skills
+- Which components it has: skills, agents, hooks, MCP servers. `plugin-anatomy`'s routing
+  guide says which a responsibility belongs in; commands are legacy and new plugins use skills
 
 ## Scaffold
 
@@ -32,6 +33,11 @@ cp "${CLAUDE_PLUGIN_ROOT}/templates/site/site.yml"    <name>/site/site.yml
 cp "${CLAUDE_PLUGIN_ROOT}/templates/README.md"        <name>/README.md
 touch <name>/site/notes/.gitkeep
 ```
+
+Remove `agents/` if the plugin has no agents yet; a component folder exists only for a
+component the plugin ships. Hooks go in `<name>/hooks/hooks.json` and MCP servers in
+`<name>/.mcp.json`, each in the shape its `plugin-anatomy` reference gives, when the first one
+is added, not in the scaffold.
 
 Then replace every `<name>` / `<description>` placeholder in the copied files, and write
 `<name>/.claude-plugin/plugin.json`:
