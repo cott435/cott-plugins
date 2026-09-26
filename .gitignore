@@ -4,3 +4,6 @@
 
 # Cowork writes delivered outputs here
 Claude outputs/
+
+# Obsidian vault settings
+.obsidian/
