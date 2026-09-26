@@ -435,10 +435,10 @@ Four skills are not in the §1 role table because they are not steps of the loop
 ```mermaid
 flowchart TD
     START(["Architect run"]) --> LVL{"Which contract?"}
-    LVL -->|"/plan-repo"| REPO["docs/architecture.md"]
-    LVL -->|"/plan-package pkg"| PKG["docs/packages/pkg/contract.md"]
-    LVL -->|"/map-repo"| MAP["Phase 1: Explore lists packages<br/>Phase 2: one architect per package (parallel)<br/>Phase 3: repo architect writes architecture.md"]
-    LVL -->|"/sync-plan pkg"| SYNC["Apply approved deviations<br/>+ pending change files,<br/>verified against code"]
+    LVL -->|"/dev-team:plan-repo"| REPO["docs/architecture.md"]
+    LVL -->|"/dev-team:plan-package pkg"| PKG["docs/packages/pkg/contract.md"]
+    LVL -->|"/dev-team:map-repo"| MAP["Phase 1: Explore lists packages<br/>Phase 2: one architect per package (parallel)<br/>Phase 3: repo architect writes architecture.md"]
+    LVL -->|"/dev-team:sync-plan pkg"| SYNC["Apply approved deviations<br/>+ pending change files,<br/>verified against code"]
 
     REPO --> VERB{"Contract exists?"}
     PKG --> VERB
@@ -472,7 +472,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    START(["/run-package pkg<br/>(main thread driver)"]) --> STATE["Derive state from disk<br/>(status script, every iteration)"]
+    START(["/dev-team:run-package pkg<br/>(main thread driver)"]) --> STATE["Derive state from disk<br/>(status script, every iteration)"]
     STATE --> READY{"Sections whose in-package<br/>deps are all DONE?"}
     READY -->|"all DONE"| CLOSE["Package close<br/>sync-plan<br/>(the surface was the last section)"]
     READY -->|"none ready,<br/>some BLOCKED"| SUMMARY
