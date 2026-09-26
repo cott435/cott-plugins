@@ -9,7 +9,7 @@ Status values: `todo` · `in progress` (uncommitted paths listed under Notes) ·
 
 | Phase | Note | Status | Commit | Eval log(s) | Notes for the next chat |
 |---|---|---|---|---|---|
-| 0 | 00 | in progress | (phase 0) | | <platform-fact evals still to run, if any, from the design's assumed facts> |
+| 0 | 00 | <done; or in progress when the design assumed facts> | (phase 0) | | <the platform-fact evals still to run, from the design's assumed facts; or "none: phase 0 is plan-phases' commit"> |
 | 1 | 01 | todo | | | |
 | N | 0N | todo | | | Ends with the bump proposal in chat; `bump-version` runs only on a yes |
 

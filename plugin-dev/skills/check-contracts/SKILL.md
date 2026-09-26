@@ -106,7 +106,9 @@ which skills count never has to exist. A key that matches nothing is a `FAIL`, n
 pass: a typo in `where` would otherwise turn the claim off.
 
 The owner template is **parsed, not restated**: `owner_span` slices the owner file and every
-`N. **Name** —` line in that slice is a defined heading. Rename one and the check follows it,
+`N. **Name** —` line in that slice is a defined heading. When the owner is a document template
+whose own `##` headings are the sections, set `owner_form: markdown` and those headings are the
+defined names instead (fenced code blocks are skipped). Rename one and the check follows it,
 which is the point — a checker carrying its own copy of the list is one more thing to go stale.
 
 `frontmatter` reads its key lists from `plugin-anatomy`'s references — the

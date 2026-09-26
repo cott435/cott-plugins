@@ -32,10 +32,9 @@ care when editing it:
   them through it. A kind added or renamed there is a change to all three, and
   `check-contracts`' eval-kinds claim fails until they agree. Eval sets under `evals/sets/`
   are committed; `evals/workspace/` never is.
-- **`design-plugin` owns the design's section list** ("3. The writeup" in its `SKILL.md`), and
-  `plan-phases` reads the design by those names. Renaming a section is a change to both, and
-  `check-contracts` fails until they agree. `templates/phases/design.md` mirrors the list; keep
-  its headings in the same order.
+- **`templates/phases/design.md` is the one list of the design's sections**, as its `##`
+  headings. `design-plugin` writes from it and `plan-phases` reads the design by those names.
+  Renaming a section is a change to both, and `check-contracts` fails until they agree.
 - **`plugin-anatomy` is the source of truth for platform facts.** A fact about how a plugin
   component behaves is stated there once, with its source and its status (`[docs]`,
   `[proven: …]`, `[unconfirmed]`), and cited from everywhere else. When the docs or an eval

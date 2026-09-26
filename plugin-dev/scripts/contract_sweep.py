@@ -11,7 +11,8 @@ running a model:
 
   forbid        a pattern that must not appear (a rule one file states and another breaks),
                 its exemptions scoped to the whole line or, with <near>, to each match
-  headings      every heading a reader parses is one the owner's template defines
+  headings      every heading a reader parses is one the owner's template defines, read from
+                its numbered **bold** items or, with <owner_form: markdown>, its `##` headings
   names_listed  every directory under <dirs> has its name in <file> (a list that goes stale),
                 narrowed by <where> on frontmatter and read in one of three <form>s
   frontmatter   every frontmatter key in <files> is one plugin-anatomy documents for <kind>
@@ -97,12 +98,25 @@ def check_forbid(bundle: Path, spec: dict) -> tuple[bool, str]:
     return not hits, ", ".join(hits) or "0 matches"
 
 
+def markdown_headings(block: str) -> set[str]:
+    """Level-2 Markdown headings: `## Build order` -> {Build order}. Fenced code is skipped."""
+    block = re.sub(r"(?ms)^```.*?^```", "", block)
+    return {" ".join(m.group(1).split()) for m in re.finditer(r"^## (.+?)\s*$", block, re.M)}
+
+
 def check_headings(bundle: Path, spec: dict) -> tuple[bool, str]:
-    """Every heading a reader names is one the owner's template defines."""
+    """Every heading a reader names is one the owner's template defines.
+
+    The owner is a numbered **bold** list by default, or with `owner_form: markdown` a file
+    whose own `##` headings are the template, such as a document template.
+    """
     owner = bundle / spec["owner"]
-    owned = template_items(span(owner.read_text(), spec.get("owner_span"), spec["owner"]))
+    block = span(owner.read_text(), spec.get("owner_span"), spec["owner"])
+    markdown = spec.get("owner_form") == "markdown"
+    owned = markdown_headings(block) if markdown else template_items(block)
     if not owned:
-        return False, f"{spec['owner']}: no numbered template items found in the owner span"
+        kind = "`##` headings" if markdown else "numbered template items"
+        return False, f"{spec['owner']}: no {kind} found in the owner span"
     bad, counted = [], 0
     for reader in spec["readers"]:
         path = bundle / reader["file"]

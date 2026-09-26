@@ -33,7 +33,9 @@ summary of this one.
    files other files parse, the phases table, the breaking changes.
 3. `site/notes/<slug>-progress.md` — the first row whose status is not `done` is this
    chat's phase. `in progress` means a previous chat stopped mid-way: read its Notes cell
-   and `git status`, and finish rather than restart.
+   and `git status`, and finish rather than restart. Phase 0 is the exception: `plan-phases`
+   leaves it `in progress` on purpose when it has platform-fact evals, listed in its Notes
+   cell. Running those evals is this chat's phase; the overview is its note.
 4. That phase's note, `site/notes/<slug>-NN-<name>.md`.
 
 The note names every plugin file to open; open those as the steps reach them. Do not read

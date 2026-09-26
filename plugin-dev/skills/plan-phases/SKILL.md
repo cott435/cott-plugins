@@ -88,6 +88,9 @@ smallest end-to-end slice is phase 1.
   additions to one, and nothing in the core depends on them.
 - **Phase 0 is this skill's commit**: the notes, the eval sets and the ledger, plus the
   design's *assumed* platform facts as platform-fact evals, which `run-phase` runs first.
+  When the design assumes no facts, this commit is the whole of phase 0, and its ledger row is
+  written `done`. When it assumes any, the row is `in progress` with the evals listed under
+  Notes, and the first `run-phase` chat runs them and marks it `done`.
 - **The last phase is always** the end-to-end eval, the docs (`README.md`, `site/flow.md`,
   `site/workflows/`, `CHANGELOG.md`'s unreleased section), and the release *proposal*: a bump
   at the level **What must not break** implies, or, for a new plugin, tagging `0.1.0` as
@@ -197,8 +200,9 @@ appropriate" is a decision not taken: take it, or ask it as a gap.
    reopening.
 3. Split, per **Rules for the split**, and get the split approved, per **Show the split, then
    wait**. Nothing below runs before that.
-4. Write the overview, then one note per phase, then the ledger with phase 0 `in progress` and
-   every other row `todo`.
+4. Write the overview, then one note per phase, then the ledger: phase 0 `done` when there are
+   no platform-fact evals, otherwise `in progress` with their IDs under Notes; every other row
+   `todo`.
 5. Write the eval sets through the writers and check them, per **The evals**.
 6. If the plugin has a `contracts.yml`, run `check-contracts`. `site/notes/` is in its scope,
    so a note that quotes a forbidden pattern must scope the pattern with `files:` or be
@@ -210,5 +214,5 @@ appropriate" is a decision not taken: take it, or ask it as a gap.
 
    > Branch `<plugin>-<slug>`. Run `/plugin-dev:run-phase <slug>` from `<plugin>/`.
 
-   And say how many phases there are, which may pair in one chat, and that phase 0's
-   platform-fact evals (if any) are the first thing `run-phase` will do.
+   And say how many phases there are, which may pair in one chat, and whether the next chat
+   starts with phase 0's platform-fact evals or, with none, with phase 1.

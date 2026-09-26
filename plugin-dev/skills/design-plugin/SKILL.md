@@ -119,32 +119,10 @@ dashed styling; rejected ones are deleted and remembered for **Non-goals**.
 ## 3. The writeup, then wait
 
 Draft the writeup from `${CLAUDE_PLUGIN_ROOT}/templates/phases/design.md` in the session
-scratchpad. It is for a reader who was not in this conversation: `plan-phases` reads it to
-write every phase note and eval, and `run-phase` reads it for the why. Anything decided here
-and not written down is lost. Its sections, in this order:
-
-1. **The idea**: the restated idea, as approved.
-2. **Workflows**: per workflow, its approved chart, trigger and deliverable, its unit, what
-   strengthens the unit, and an Input · Supplied by table covering every input.
-3. **How they fit together**: the system chart, and a File · Written by · Read by · Fields read ·
-   Stale when table covering every file two loops meet at.
-4. **Components**: the approved components table.
-5. **Outputs**: for every file a reader depends on, its sections, what it cites, what it must
-   never claim, and when it goes stale.
-6. **Cost**: per workflow, what a cold run reads, what a warm run reads, and the horizon each
-   assumes.
-7. **Decisions taken**: every decision from the discussion, as Decision · Chosen · Alternatives ·
-   Why · Origin (*asked*, or *suggested* and accepted).
-8. **Platform facts**: every fact the design depends on, each either *verified* (with the
-   `plugin-anatomy` reference or doc it was checked against) or *assumed* (with the expected
-   answer). An assumed fact becomes a phase-0 eval, and its result is written back to
-   `plugin-anatomy`.
-9. **Build order**: which components depend on which, and the smallest slice that works end to
-   end. This is not the phases; `plan-phases` splits those from it.
-10. **What must not break**: change mode only. Headings other files parse, commands users
-    already type, defaults, and every breaking change a user will notice. In new mode, delete
-    the section.
-11. **Non-goals**: what this deliberately does not do, and each declined suggestion as one line.
+scratchpad. The template is the one list of its sections, in order, and each section's
+placeholder says what it holds; keep every heading. The writeup is for a reader who was not in
+this conversation: `plan-phases` reads it to write every phase note and eval, and `run-phase`
+reads it for the why. Anything decided here and not written down is lost.
 
 Write every section or delete it with a line saying why. A sentence that starts "consider" or
 "if appropriate" is a decision not taken: take it, or ask it.

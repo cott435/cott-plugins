@@ -47,11 +47,11 @@ headings:
       - file: skills/plan-phases/SKILL.md
         cites: ['mechanical', 'load', 'behavioral', 'trigger', 'platform-fact']
 
-  - name: plan-phases names only design sections design-plugin writes
-    # design-plugin's "3. The writeup" is the one list of the design's sections; plan-phases
-    # reads the design by those names.
-    owner: skills/design-plugin/SKILL.md
-    owner_span: ['## 3. The writeup', '## 4. Commit the design']
+  - name: plan-phases names only design sections the design template defines
+    # templates/phases/design.md is the one list of the design's sections (its `##`
+    # headings); design-plugin writes from it and plan-phases reads the design by those names.
+    owner: templates/phases/design.md
+    owner_form: markdown
     readers:
       - file: skills/plan-phases/SKILL.md
         cites: ['Components', 'How they fit together', 'Decisions taken', 'Build order',
