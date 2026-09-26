@@ -12,9 +12,12 @@ From the repo root:
 1. `new-plugin` — the directory from `templates/`, `plugin.json` at `0.1.0`, the row in the
    root `marketplace.json`. It runs on its own when you say you are starting a plugin.
 2. Write the skills. Each is a `SKILL.md` with a description that says *when*, and a body
-   that says *how* — nothing the description already says.
+   that says *how* — nothing the description already says. `plugin-anatomy`'s routing guide
+   says whether a piece is a skill at all or belongs in a hook, a script or an MCP server,
+   and `references/skills.md` has the frontmatter fields and layout.
 3. `build-site`, then `check-contracts` once the plugin has a `contracts.yml` (the first
-   claim is usually "the README names every skill").
+   claims are usually "the README names every skill" and a `frontmatter` claim over
+   `skills/*/SKILL.md`).
 4. An eval for anything behavioral — does the description trigger, does the skill do what
    it says on a real case. `run-evals` runs both kinds from `evals/sets/<skill>.json` and
    `evals/sets/<skill>.trigger.json`, and logs the result with `log-eval` before you report
@@ -52,7 +55,12 @@ each workflow it finds the unit a practitioner handles one at a time, which gets
 fanned out in parallel. It asks what makes that unit's output trustworthy (usually an evaluator
 in its own context). Then it traces every input the unit needs back to you, to a file, or to
 another loop, often a cheaper, wider one that feeds the deep one. Loops meet at files, and
-workflows that need the same thing share the loop that makes it.
+workflows that need the same thing share the loop that makes it. Then each piece is routed to
+a component with `plugin-anatomy`: a "must never" becomes a hook or an instruction, with the
+reason; a pure fetch or count becomes a script; anything that needs you stays in a workflow
+skill, since agents cannot ask. Every platform fact the design leans on is checked against
+`plugin-anatomy` first and the docs second, and one neither settles is written down as an
+assumption for phase 0 to prove.
 
 It shows the result in two gates. First the charts: an Artifact page with one flow chart per
 workflow, captioned with its unit, what strengthens it and where its inputs come from, plus a
@@ -65,18 +73,23 @@ scaffold, commits `site/notes/0.1-design.md`, and prints the line the next chat 
 
 **Chat 1 — `plan-phases 0.1`.** A fresh chat, on purpose: it reads the design and nothing of
 the discussion, so anything the design failed to decide surfaces as a question instead of
-being filled from memory. The answers go into the design's decisions. It shows the split into
-phases as a table and waits for your yes. Then it writes
+being filled from memory. The answers go into the design's decisions. Frontmatter and each
+component's tests come from `plugin-anatomy`'s references, not the design's paraphrase. It
+shows the split into phases as a table and waits for your yes. Then it writes
 `site/notes/0.1-00-overview.md`, one note per phase each with its own **Evals** table, and
 `0.1-progress.md`, and spawns one writer per behavioral target, in parallel, to write
 `evals/sets/<target>.json`. It checks each set, then commits all of it as phase 0.
 
-**Chats 2…N — `run-phase 0.1`.** Each reads three files — the overview, the ledger, the
-next note — and does that phase only. Phase 1 is deliberately the smallest thing that is a
-working plugin: one agent or one skill, a README that describes only what exists, the
-plugin's `CLAUDE.md`, and a `contracts.yml` with its first claim. Every later phase adds to
-a bundle that already registers (`/reload-plugins`, `/agents`) and builds — that load check
-is one of the phase's evals, not an afterthought. A phase ends with its evals run through
+**Chats 2…N — `run-phase 0.1`.** Each reads four files — the design, the overview, the
+ledger, the next note — and does that phase only, reading a component's `plugin-anatomy`
+reference before it writes one. Phase 0's platform-fact evals run first, and each result is
+written back to `plugin-anatomy` so the next design finds it settled. Phase 1 is deliberately
+the smallest thing that is a working plugin: the one loop and the thinnest workflow that uses
+it, a README that describes only what exists, the plugin's `CLAUDE.md`, and a
+`contracts.yml` with its first claim and `frontmatter` claims for its skills and agents.
+Every later phase adds to a bundle that already registers and builds. The load check for
+each new component comes from its reference (`/agents` for an agent, `/hooks` for a hook,
+`/mcp` for a server) and is one of the phase's evals, not an afterthought. A phase ends with its evals run through
 `run-evals` from the sets phase 0 wrote and logged, one commit, and the ledger row filled;
 the chat stops there.
 

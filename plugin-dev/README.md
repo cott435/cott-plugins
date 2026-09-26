@@ -1,8 +1,10 @@
 # plugin-dev
 
-The shared kit every other plugin is built with: how a plugin is versioned, how a test run
-against it is recorded, and how its reading site is generated. One copy, installed as a
-plugin, instead of the same three conventions drifting apart across repos.
+The shared kit every other plugin is built with. It covers how a plugin is designed and
+planned in phases, which component each piece of it should be, how it is tested and how a
+test run is recorded, how its cross-file claims are checked, how its reading site is
+generated, and how it is versioned. One copy, installed as a plugin, instead of the same
+conventions drifting apart across repos.
 
 ## Why this is a plugin and not a folder
 
@@ -27,13 +29,13 @@ Ten skills, in three groups by how they start. The table is the one list of them
 |---|---|---|
 | `log-eval` | on its own, every test run | Records a test against a plugin's own skills or agents as a dated file under `evals/` with the commit and model it ran against, plus an index row. A clean pass exactly like a failure. |
 | `build-site` | on its own, after any agent or skill edit | Rebuilds `site/docs/` and `site/mkdocs.yml` from the bundle. |
-| `check-contracts` | on its own, beside `build-site` and before any bump | Runs the cross-file claims in a bundle's `contracts.yml`: a heading one file parses and another owns, a pattern no file may contain, a list of names that goes stale. A `FAIL` names the `file:line`. |
+| `check-contracts` | on its own, beside `build-site` and before any bump | Runs the cross-file claims in a bundle's `contracts.yml`: a heading one file parses and another owns, a pattern no file may contain, a list of names that goes stale, and frontmatter keys the platform does not document or ignores in plugins (checked against `plugin-anatomy`). A `FAIL` names the `file:line`. |
 | `run-evals` | on its own, whenever a phase or change calls for evals | Runs one skill's or agent's evals from its committed set in `evals/sets/`: mechanical checks, a load check, behavioral runs against a baseline graded assertion by assertion with skill-creator's grader, benchmark and viewer. Stops for your review, then records the result with `log-eval`. |
 | `plugin-anatomy` | on its own, when a plugin's components are designed, written or reviewed | The source of truth for plugin components: which one a responsibility belongs in (skill, agent, hook, MCP server, script, config), how skills and agents combine, every documented frontmatter field, and the edge cases that fail silently. Each fact is marked documented, proven by an eval, or unconfirmed. `design-plugin`, `plan-phases` and `run-phase` read it, and the frontmatter check in `check-contracts` enforces its key lists. |
 | `new-plugin` | on its own, when a plugin is started | Scaffolds a plugin subdirectory from `templates/` and adds its row to the marketplace. |
 | `design-plugin` | when you type it | Turns an idea for a new plugin, or a change too big for one chat, into an approved design through discussion. Interviews you in rounds and composes the jobs into loops: each loop's unit of work, what makes that unit's output trustworthy, where every input it needs comes from (you, a file, or another cheaper loop), and the files where loops meet. Shows one flow chart per workflow plus a system chart for your approval, then the full writeup for your approval, and commits it as `site/notes/<slug>-design.md` on a new branch. |
 | `plan-phases` | when you type it, in a fresh chat | Splits the approved design into phases from the design file alone, without the discussion behind it. Asks about any decision the design did not take, shows the split for your yes, then writes an overview, one note per phase with its own evals table, and a progress ledger under `site/notes/`, and has one writer subagent per target write the eval sets in parallel. Commits all of it as phase 0. |
-| `run-phase` | when you type it, once per chat | Does the next unfinished phase: reads the overview, the ledger and that one note; makes exactly its edits; runs the plugin's rules, `check-contracts`, `build-site` and the phase's evals; logs them; commits once; updates the ledger; stops. |
+| `run-phase` | when you type it, once per chat | Does the next unfinished phase: reads the design, the overview, the ledger and that one note; reads each component's `plugin-anatomy` reference before writing it; makes exactly the note's edits; runs the plugin's rules, `check-contracts`, `build-site` and the phase's evals; logs them and writes any proven platform fact back to `plugin-anatomy`; commits once; updates the ledger; stops. |
 | `bump-version` | only on your yes | Decides patch/minor/major from what changed, bumps `plugin.json` and the marketplace row, writes the CHANGELOG line, tags, pushes. Proposes itself in chat and waits. |
 
 ## The rest of the bundle
@@ -41,11 +43,13 @@ Ten skills, in three groups by how they start. The table is the one list of them
 | Path | What it is |
 |---|---|
 | `scripts/build_site.py` | The site builder. Fully generic — everything is discovered from the bundle. |
-| `scripts/contract_sweep.py` | The contracts checker. Shared, so a change to it gets a positive and a negative run before it is committed (this plugin's `CLAUDE.md`). |
+| `scripts/contract_sweep.py` | The contracts checker. Its `frontmatter` check reads the allowed keys from `plugin-anatomy`'s references rather than its own copy. Shared, so a change to it gets a positive and a negative run before it is committed (this plugin's `CLAUDE.md`). |
 | `scripts/defaults/` | `mkdocs-base.yml` and `extra.css` used when a plugin doesn't override them. |
 | `templates/` | The files a new plugin subdirectory starts with. |
 | `templates/phases/` | The design shape `design-plugin` writes, and the overview, phase-note and ledger shapes `plan-phases` writes. |
 | `site/workflows/` | The three workflows below, one page each, rendered on the reading site. |
+| `evals/sets/` | Every skill's committed eval set, and trigger set for the model-invoked ones, that `run-evals` runs. |
+| `evals/fixtures/` | What those sets run against: a toy plugin for `run-phase`, a written design for `plan-phases`. |
 
 ## Workflows
 
@@ -66,8 +70,8 @@ phase proposes tagging `0.1.0`; `bump-version` does it on your yes. A plugin tha
 ever be one or two skills skips all this: `new-plugin`, write them, `build-site`,
 `check-contracts`, `run-evals` on whatever is behavioral, propose the tag.
 
-**[A small change](site/workflows/small-change.md).** One agent or skill, one chat. Edit;
-the plugin's own rules (`CLAUDE.md`); `check-contracts`; `build-site`; if the edit changes
+**[A small change](site/workflows/small-change.md).** One agent or skill, one chat. Read
+the component's `plugin-anatomy` reference; edit; the plugin's own rules (`CLAUDE.md`); `check-contracts`; `build-site`; if the edit changes
 what an agent *does*, `run-evals` on the target's set in `evals/sets/` — the new case added
 to the set first — logged with `log-eval` before results are reported; one commit. If it
 looks bump-worthy, `bump-version` says so and waits.
@@ -168,7 +172,8 @@ file appears without editing any config:
     Workflow skills -> Knowledge skills -> Rules and config -> Notes -> Evals
 
 A section with nothing in it is omitted. A skill is a **workflow skill** when its frontmatter
-says `context: fork` and a **knowledge skill** otherwise. `site/docs/` and `site/mkdocs.yml`
+says `context: fork` or `disable-model-invocation: true`, and a **knowledge skill** otherwise.
+A skill's `references/` pages follow the skill that owns them. `site/docs/` and `site/mkdocs.yml`
 are generated and gitignored in every plugin repo; `site/site.yml`, `site/flow.md`,
 `site/workflows/` and `site/notes/` are authored and committed. Every key in `site.yml` is
 optional — a plugin with no site config at all still builds.

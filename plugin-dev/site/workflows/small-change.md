@@ -5,11 +5,16 @@ for when this one would not fit.
 
 ## The sequence
 
-1. **Edit** the agent or skill. If the plugin's `CLAUDE.md` has a rule about added or
-   removed files — `dev-team`'s three-file rule, say — it applies in the same commit.
-2. **`check-contracts`**, if the plugin has a `contracts.yml`. A `FAIL` names the
-   `file:line`; fix the file, not the claim — unless the claim is what changed, in which
-   case `contracts.yml` is edited in the same commit and the eval below says so.
+1. **Edit** the agent or skill, after reading its file in `plugin-anatomy`'s references
+   (`skills.md`, `agents.md`, `hooks.md`, `mcp.md`, `manifest.md`) for the fields and
+   behavior you are relying on. A fact you need that the reference marks `[unconfirmed]`
+   gets a `platform-fact` eval before the edit depends on it. If the plugin's `CLAUDE.md` has
+   a rule about added or removed files — `dev-team`'s three-file rule, say — it applies in
+   the same commit.
+2. **`check-contracts`**, if the plugin has a `contracts.yml`. Its `frontmatter` claims
+   catch a misspelled key or one plugins ignore. A `FAIL` names the `file:line`; fix the
+   file, not the claim — unless the claim is what changed, in which case `contracts.yml` is
+   edited in the same commit and the eval below says so.
 3. **`build-site`.** The nav is generated from the bundle, so a renamed or added file
    appears without config; a broken page is a broken prompt.
 4. **An eval, if the edit changes what an agent does.** A reworded instruction, a new
@@ -27,10 +32,11 @@ for when this one would not fit.
 
 ## When it is not small
 
-Any of these means `design-plugin`, then `plan-phases`, instead: more than one agent changes; a heading another
-file parses moves; a new agent or a new workflow skill; `status`-style tooling changes
-alongside the prompts that read it; or the evals you would need do not fit in the chat
-that makes the edit. The cost of planning is two chats; the cost of not planning is a
+Any of these means `design-plugin`, then `plan-phases`, instead: more than one agent
+changes; a heading another file parses moves; a new agent, a new workflow skill, a new hook
+or a new MCP server (each changes what every session with the plugin enabled does, per
+`plugin-anatomy`); `status`-style tooling changes alongside the prompts that read it; or the
+evals you would need do not fit in the chat that makes the edit. The cost of planning is two chats; the cost of not planning is a
 second half done by a model that has forgotten the first.
 
 ## Where things go
@@ -41,3 +47,4 @@ second half done by a model that has forgotten the first.
 | A design note worth keeping | `site/notes/<name>.md` — rendered under Notes |
 | A decision about this plugin's versioning or models | `VERSIONING.md` |
 | The release line | `CHANGELOG.md`, written by `bump-version` |
+| A platform fact an eval proved or corrected | the fact's entry in `plugin-dev/skills/plugin-anatomy/references/`, citing the log |

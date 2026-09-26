@@ -31,12 +31,14 @@ flowchart TD
 ## Chat 0 — `design-plugin <slug>`
 
 Run inside the plugin's directory. It reads every file the change touches (heading names and
-rules are quoted from the files, not remembered) and checks the platform facts the design
-depends on against the docs. A fact the docs do not settle is written into the design as an
-assumption, and becomes a phase-0 eval. It interviews you in rounds of two to four questions
+rules are quoted from the files, not remembered) and `plugin-anatomy`'s routing guide. It
+checks the platform facts the design depends on against `plugin-anatomy` first and the docs
+second. A fact neither settles is written into the design as an assumption, and becomes a
+phase-0 eval. It interviews you in rounds of two to four questions
 (what is wrong today, scope, what must not break, the decisions that are yours), each with a
 recommendation first and each round built on the last answers, and composes the changed
-workflows into loops as it goes.
+workflows into loops as it goes, routing each piece to a component: skill, agent, hook, MCP
+server, script or config.
 
 Then two gates. First, an Artifact page of charts: one per workflow the change touches, plus a
 system chart showing where the loops meet, with new, changed and suggested components marked
@@ -48,7 +50,8 @@ the branch `<plugin>-<slug>` and commits `site/notes/<slug>-design.md`.
 
 ## Chat 1 — `plan-phases <slug>`
 
-A fresh chat, reading the design and the files it names, and none of the discussion. It first
+A fresh chat, reading the design, the files it names and the `plugin-anatomy` reference for
+each kind of component it touches, and none of the discussion. It first
 looks for decisions the design did not take, asks about them in one round, and writes the
 answers into the design; if an answer would change a chart, it stops and says the design needs
 reopening. Then it shows the phase split as a table and waits for your yes. Then it writes:
@@ -68,7 +71,8 @@ always the end-to-end eval, the docs and the bump proposal.
 
 Each chat opens with that line and nothing else. The skill confirms the branch and a clean
 tree, reads the design, the overview, the ledger and the first note whose row is not
-`done`, and does exactly that note: its edits, the plugin's own rules for added or removed files,
+`done`, and does exactly that note: its edits (each component's `plugin-anatomy` reference
+read first), the plugin's own rules for added or removed files,
 `check-contracts`, `build-site`, then the note's **Evals** table — one row per eval, each
 naming its kind, its target, the baseline to compare against, which evals of that target's
 set in `evals/sets/` it runs, and the pass bar. Each row goes through `run-evals`, which
@@ -76,6 +80,10 @@ runs the target's set against the baseline, grades every expectation, and **stop
 behavioral row until you have looked at the viewer; a missed bar is fixed and rerun once,
 and a bar still missed becomes a Deviation rather than a quiet pass. `log-eval` writes each
 run up before any result is reported. Then one commit and the ledger row, then it stops.
+
+A platform fact an eval settles is written back to `plugin-anatomy`: in the phase itself
+when the plan is for plugin-dev, and as a *noticed* line in the ledger, done afterwards as a
+small plugin-dev change, when it is for another plugin.
 
 What the ledger row carries forward is everything the next chat cannot get from its own
 note: a platform fact the eval resolved, a heading that turned out to be named differently,
@@ -95,6 +103,9 @@ phase, each with its evals beside it.
 
 ## The reference run
 
-`dev-team`'s `0.5-overhaul` is the first change planned and run this way; its notes are
-under `dev-team/site/notes/overhaul-0.5-*.md` and are the worked example of what a design
-set looks like when the bar is "nothing left for the next chat to guess".
+`dev-team`'s `0.5-overhaul` is the first change planned and run in phases; its notes are
+under `dev-team/site/notes/overhaul-0.5-*.md` and are the worked example of what phase notes
+look like when the bar is "nothing left for the next chat to guess". It predates
+`design-plugin`, so it has no design file and its overview carries the why. For the shape of a
+design file, `evals/fixtures/trading-agents/site/notes/0.1-design.md` is a complete one,
+written as a test fixture.
