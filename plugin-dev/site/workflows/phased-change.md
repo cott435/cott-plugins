@@ -103,9 +103,9 @@ phase, each with its evals beside it.
 
 ## The reference run
 
-`dev-team`'s `0.5-overhaul` is the first change planned and run in phases; its notes are
-under `dev-team/site/notes/overhaul-0.5-*.md` and are the worked example of what phase notes
-look like when the bar is "nothing left for the next chat to guess". It predates
-`design-plugin`, so it has no design file and its overview carries the why. For the shape of a
-design file, `evals/fixtures/trading-agents/site/notes/0.1-design.md` is a complete one,
-written as a test fixture.
+plugin-dev's own `0.9-evals` plan, under `site/notes/0.9-evals-*.md`, is a complete set of
+phase notes and a ledger as `run-phase` ran them, Deviations included: the worked example of
+what phase notes look like when the bar is "nothing left for the next chat to guess". It
+predates `design-plugin`, so it has no design file and its overview carries the why. For the
+shape of a design file, `evals/fixtures/trading-agents/site/notes/0.1-design.md` is a complete
+one, written as a test fixture.

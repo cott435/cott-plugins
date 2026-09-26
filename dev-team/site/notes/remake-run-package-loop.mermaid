@@ -1,0 +1,42 @@
+flowchart TD
+    START(["/run-package pkg<br/>(main thread driver)"]) --> STATE["Derive state from disk<br/>(status script, every iteration)"]
+    STATE --> READY{"Sections whose in-package<br/>deps are all DONE?"}
+    READY -->|"all DONE"| CLOSE["Package close<br/>finalize-package → review-package<br/>→ sync-plan"]
+    READY -->|"none ready,<br/>some BLOCKED"| SUMMARY
+    READY -->|"ready set"| FAN["Run each ready section's loop<br/>(design/test parallel,<br/>implement sequential)"]
+
+    subgraph LOOP["Per-section loop"]
+        D["DESIGN<br/>designer: probe api sources,<br/>write design"]
+        T["TEST<br/>tester: intent tests from<br/>design + contracts; all red"]
+        I["IMPLEMENT<br/>implementer: code, unit tests,<br/>README; hooks lint + test"]
+        R["REVIEW<br/>round 1: two focused reviewers<br/>round 2+: one, diff-scoped"]
+        D -->|"done"| T
+        T -->|"done"| I
+        T -->|"design-gap"| D
+        I -->|"done"| R
+        R -->|"request changes,<br/>converging, round < cap"| I
+        R -->|"approve"| DONE(["DONE"])
+        R -->|"not converging<br/>or cap hit"| BLK(["BLOCKED"])
+        D -->|"stopped (decision)"| BLK
+        I -->|"blocked"| BLK
+        D -->|"spec-change"| SC
+        I -->|"spec-change"| SC
+        R -->|"spec-change"| SC
+        SC{"Spec-change<br/>level?"} -->|"design"| D
+        SC -->|"contract"| ARCH["plan-package edits<br/>the contract"]
+        ARCH --> D
+        ARCH -->|"needs user"| BLK
+    end
+
+    FAN --> D
+    DONE --> STATE
+    BLK --> ASK{"User present?"}
+    ASK -->|"yes"| Q["Ask; record answer in<br/>decisions.md; retry the step"]
+    Q --> STATE
+    ASK -->|"no"| STATE
+    CLOSE --> SUMMARY(["Summary + exact next command"])
+
+    classDef stop fill:#fde2e1,stroke:#c0392b,color:#000
+    classDef ok fill:#e1f0e5,stroke:#2e7d32,color:#000
+    class BLK stop
+    class DONE ok

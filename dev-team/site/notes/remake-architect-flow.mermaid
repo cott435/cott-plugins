@@ -1,0 +1,33 @@
+flowchart TD
+    START(["Architect run"]) --> LVL{"Which contract?"}
+    LVL -->|"/plan-repo"| REPO["docs/architecture.md"]
+    LVL -->|"/plan-package pkg"| PKG["docs/packages/pkg/contract.md"]
+    LVL -->|"/map-repo"| MAP["Phase 1: Explore lists packages<br/>Phase 2: one architect per package (parallel)<br/>Phase 3: repo architect writes architecture.md"]
+    LVL -->|"/sync-plan pkg"| SYNC["Apply approved deviations<br/>+ pending change files,<br/>verified against code"]
+
+    REPO --> VERB{"Contract exists?"}
+    PKG --> VERB
+    VERB -->|"no"| WRITE["WRITE<br/>repo: from brief (+ dataset probes)<br/>package: from architecture.md + brief rows"]
+    VERB -->|"yes"| LIST["EDIT: change list from<br/>brief diff + argument"]
+
+    WRITE --> GATE{"Interview gate:<br/>unasked question that<br/>changes a boundary?"}
+    LIST --> GATE
+    GATE -->|"yes"| STOP(["Stub D-n in decisions.md, stop.<br/>Re-run the same command to continue"])
+    GATE -->|"no, WRITE"| CANON[("Canonical contract")]
+    GATE -->|"no, EDIT"| EACH{"Per item:<br/>touches a built or<br/>shipped package?"}
+    EACH -->|"no"| DIRECT["EDIT / EDIT+STALE<br/>edit now, list stale package plans"]
+    EACH -->|"yes"| DELTA["CHANGE<br/>docs/changes/slug.md"]
+    EACH -->|"needs the user"| STOP
+    DIRECT --> CANON
+    DELTA --> LOOP["Package loop builds it"]
+    LOOP --> SYNC
+    MAP --> CANON
+    SYNC --> CANON
+    CANON --> NEXT["Read by designer, tester,<br/>implementer, reviewer,<br/>and the next architect run"]
+
+    classDef stop fill:#fde2e1,stroke:#c0392b,color:#000
+    classDef canon fill:#e1f0e5,stroke:#2e7d32,color:#000
+    classDef out fill:#eeeeee,stroke:#888,color:#000,stroke-dasharray:4 3
+    class STOP stop
+    class CANON canon
+    class LOOP out
