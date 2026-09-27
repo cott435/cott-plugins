@@ -1,0 +1,9 @@
+{
+  "script": "format",
+  "repo": "arch",
+  "raw": "{",
+  "expect": {
+    "exit": 0,
+    "stderr": ""
+  }
+}

@@ -128,6 +128,12 @@ forbid:
     files: ['agents/reviewer.md', 'skills/review-plan/SKILL.md', 'skills/review-section/SKILL.md',
             'skills/review-package/SKILL.md', 'skills/run-package/SKILL.md']
 
+  - name: every hook matcher and agent_type names an agent this plugin ships
+    # A SubagentStop matcher or an agent_type test on a name with no agents/<name>.md never
+    # fires, and the gate it implements silently does not exist.
+    pattern: 'dev-team:(?!architect|designer|researcher|tester|implementer|reviewer|documenter|curator)[a-z-]+'
+    files: ['hooks/hooks.json', 'hooks/*.py']
+
 # Every heading a reader parses is one the owner's template defines.
 headings:
   - name: interface.md headings its readers parse are ones the implementer writes
@@ -288,8 +294,8 @@ headings:
   - name: docs/constraints.md headings its readers run are ones the template defines
     # set-constraints writes the file from its template; four readers act on it by heading —
     # the reviewer runs Floor and Enforced, greps for Guarded and honours Exceptions; the
-    # implementer, status.py and CI run Floor and Enforced. A renamed heading turns each into
-    # a check that silently runs nothing. The template's numbered list under the fenced block
+    # implementer, the stop hook (through status.py's parser) and CI run Floor and Enforced. A
+    # renamed heading turns each into a check that silently runs nothing. The template's numbered list under the fenced block
     # is what the owner parser reads.
     owner: skills/set-constraints/references/constraints-template.md
     owner_span: ['## Floor', null]
@@ -298,8 +304,8 @@ headings:
         cites: ['Floor', 'Enforced', 'Guarded', 'Exceptions']
       - file: agents/implementer.md
         cites: ['Floor', 'Enforced']
-      - file: skills/status/SKILL.md
-        cites: ['Floor', 'Enforced']
+      - file: hooks/gate_on_stop.py
+        cites: ['Floor', 'Enforced', 'Guarded', 'Exceptions']
       - file: skills/workspace-scaffold/SKILL.md
         cites: ['Floor', 'Enforced']
 

@@ -1,0 +1,21 @@
+{
+  "script": "guard",
+  "repo": "arch",
+  "event": {
+    "session_id": "9b1f0c52-3d4e-4a7b-8c21-5e6f7a8b9c0d",
+    "transcript_path": "{cwd}/../transcript.jsonl",
+    "cwd": "{cwd}",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "{cwd}/packages/data/tests/intent/ingest/test_x.py",
+      "content": "…"
+    },
+    "tool_use_id": "toolu_01AbCdEf"
+  },
+  "expect": {
+    "exit": 0,
+    "stderr": ""
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "script": "gate",
+  "repo": "built",
+  "raw": "{",
+  "expect": {
+    "exit": 0,
+    "stderr_startswith": "dev-team gate: error"
+  }
+}

@@ -269,3 +269,87 @@ dir, and exits 1 naming each case whose exit code or stderr does not match:
 - `check-contracts` prints all PASS including the hook claim; `build-site` exits 0.
 - Eval log rows for 2.1–2.4 exist in `evals/README.md`; 2.3's iteration directory is named.
 - The ledger row for phase 2 reads `done`.
+
+## Deviations
+
+- **Agent memory is allowed to every guarded role.** The note's allowlist table has no row
+  for `.claude/agent-memory/**`. Every agent under `agents/` runs with `memory: project`, and
+  writes its memory there with Write and Edit, so with the table as written the guard would
+  refuse every agent's memory write. What was done: `guard_writes.py` allows
+  `.claude/agent-memory/**` to all guarded roles, and says so in the refusal text. The path is
+  already a Baseline exemption. Case `guard-memory-allowed`.
+- **The implementer's `docs/` carve-outs are globs, so they are a third list.** The note
+  writes the row as "everything except `docs/**` … under `docs/` only …". Two of the carve-outs
+  are globs (`docs/packages/*/interface.md`, `docs/api/*.md`), so an exact-name exception
+  could not express them. Each role is now written as allowed, excluded, and carved back out.
+  The paths the table allows are unchanged. The architect's `docs/deviations.md` is expressed
+  the same way.
+- **The gate asks pytest for every outcome, with `-rfEpxX` instead of `-rf`.** The note's
+  `gate.txt` rule wants one line per intent test node id, but `-rf` lists only the failures,
+  so the passing node ids had no line. `-rfEpxX` lists passed, failed, errored, xfailed and
+  xpassed tests; xfail and xpass are written as PASS lines with the outcome in brackets.
+  Pytest can also exit non-zero with no failed node id, such as on a collection error or with
+  no tests collected; that is written as `FAIL intent <pkg>/<section>: pytest exited <n>`. A
+  gated section with no `tests/intent/<section>/` directory is also a FAIL. The note does not
+  cover that case, and at IMPLEMENT the tree always exists.
+- **`gate.txt` ends with a `result:` line.** Its last line is one of `pass`, `not done
+  (attempt n of 3)`, or `letting the run stop after 3 attempts with <k> failures`. The reason:
+  on attempt 3 the hook exits 0, and a `SubagentStop` hook's stderr on exit 0 does not reach
+  the agent or the caller. Row 2.3 confirmed this: the in-scope stream and the relayed report
+  hold both refusals and not the attempt-3 text, which appears only in `gate.txt`. So the file
+  the reviewer reads is the one place that says the stop went through with failures.
+- **The exit-2 text carries the two corrections from phase 0.** The fix instruction is `git
+  commit --amend --no-edit -- <paths>` rather than a bare `--amend --no-edit`. Per PF-5, a
+  commit without a pathspec takes in whatever a parallel agent has staged. The text also adds
+  a final line: when you finish, end with your full return message again, first line
+  `Result:`. Per PF-1, the caller receives only the last turn. Both came from the ledger's
+  notes for this phase.
+- **`ruff format` runs again after `ruff check --fix`.** The note says format, then check
+  `--fix`. Row 2.3's in-scope run found that a fix that deletes a line (here the unused
+  `import os`) leaves the file unformatted, with two blank lines at the top. The gate's Floor
+  `ruff format --check` row would then fail on a file the hook had just touched. The fix: a
+  second `ruff format` after the check. Case `fmt-fixable` now asserts the exact formatted
+  result. Before, it asserted only that the import was gone, which the defect also satisfied.
+  Iteration 1's eval 1 ran before this fix. Its grader noted that expectation 3 passed a file
+  `ruff format --check` fails. The set now asserts the fully formatted file, and eval 1 was
+  rerun on the fix as iteration 2.
+- **The hook reports from a last `ruff check` run after the final format.** Row 2.3's
+  iteration 2 grader found the problem. The unfixable-finding text came from the
+  `check --fix` run, which happens before the second format. The second format deletes the
+  blank lines the fix left behind, so the reported line was stale: `test_parse.py:5:12: F821`
+  pointed at a call that is now on line 3. The fix is a separate `ruff check` after the last
+  format, whose output and exit code decide the message. Case `fmt-unfixable` now checks a
+  file whose fix shifts the lines, and asserts `extra.py:2:12: F821`. The set does not assert
+  line numbers, so no eval verdict changed.
+- **Ruff falls back rather than giving up.** When `uv.lock` exists, `format_on_edit.py`
+  first probes `uv run ruff --version`. If uv cannot run ruff (uv exits 2 when ruff is not a
+  dependency, not 127), it uses `ruff` from PATH, and exits 0 only when neither works. The
+  check also runs with `--output-format concise`, which gives one `path:line:col: code` line
+  per finding.
+- **The gate deletes its counter on every stop it lets through**, including the "no section
+  in this run's diff" exit. The ledger note for this phase asks for this: the data directory
+  persists across sessions.
+- **The Guarded grep's Exceptions matching was not specified in the note, so it was
+  decided here.** A row pardons a hit when its glob matches the path, its `check` cell
+  contains the item's word (`noqa`, `type: ignore`, `no cover`, `skip`, `xfail`, `assert`,
+  `raises`, `threshold`), and its expiry date is today or later. A row with no date in the
+  expiry cell never expires. A removed `assert` or `pytest.raises` line is not a hit when the
+  same line was added back in the same file, as a reformat does. The lowered-threshold check
+  compares the numbers in each Floor and Enforced row's threshold cell with the diff's base.
+  Cases `gate-guarded-expired` and `gate-guarded-threshold`.
+- **`contracts.yml` got one more edit than the note's Files lists.** The
+  constraints-headings claim's reader `skills/status/SKILL.md` is re-pointed to
+  `hooks/gate_on_stop.py`, which cites Floor, Enforced, Guarded and Exceptions. The ledger's
+  note for this phase asked for this, and the overview's *Files other files parse* row says
+  the status SKILL.md leaves as a reader.
+- **The fixture has more than the note's table.** `evals/fixtures/hook-events/` has 47 cases,
+  against the table's 38 once ×8 is expanded. It also has a README, as `state-cases/` does.
+  The coverage case uses a failing one-line command instead of `pytest-cov`, which is not
+  installed here.
+- **Row 2.2 was proven headlessly, not with an interactive `/hooks` listing.** An interactive
+  session cannot be driven from the phase's chat. Instead, a `claude -p --plugin-dir` session
+  ran with `--debug-file` and `--include-hook-events` in the eval repo. Its log reads
+  `Loading hooks from plugin: dev-team` and `Registered 3 hooks`, and its stream shows
+  `PreToolUse:Write` and `PostToolUse:Write` firing on one Write. The `SubagentStop`
+  registration is shown by row 2.3's eval 2. The evidence is stronger than a listing, since
+  it shows the hooks fire, not only that they are listed.

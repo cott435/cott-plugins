@@ -1,0 +1,29 @@
+{
+  "description": "dev-team: ruff after every .py edit by the implementer or tester; a stop gate the implementer must pass; a per-role write guard. Every script exits 0 outside a repo that has docs/architecture.md.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/format_on_edit.py"], "timeout": 120 }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "^dev-team:implementer$",
+        "hooks": [
+          { "type": "command", "command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gate_on_stop.py"], "timeout": 600 }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/guard_writes.py"], "timeout": 30 }
+        ]
+      }
+    ]
+  }
+}

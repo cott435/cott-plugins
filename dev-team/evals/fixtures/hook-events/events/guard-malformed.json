@@ -1,0 +1,9 @@
+{
+  "script": "guard",
+  "repo": "arch",
+  "raw": "{",
+  "expect": {
+    "exit": 0,
+    "stderr": ""
+  }
+}

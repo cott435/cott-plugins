@@ -1,0 +1,32 @@
+{
+  "script": "gate",
+  "repo": "built",
+  "setup": {
+    "files": {
+      "docs/constraints.md": "# Constraints\n\n## Floor\n\n| check | threshold | command | scope |\n|---|---|---|---|\n| lint | 0 errors | `ruff check packages/<pkg>` | package |\n| format | clean | `ruff format --check packages/<pkg>` | package |\n\n## Enforced\n\n| dimension | threshold | command | scope |\n|---|---|---|---|\n| docstrings | 70% | `python3 -c \"print('docstrings: 100%')\"` | package |\n\n## Measured\n\n| dimension | current | target | command | scope |\n|---|---|---|---|---|\n\n## Guarded\n\n- a new `# noqa`, `# type: ignore`, `# pragma: no cover`\n- a new `@pytest.mark.skip` or `@pytest.mark.xfail` whose reason does not cite a `D<n>`\n- a deleted or weakened assertion in an existing test\n- a threshold in this file edited down\n\n## Exceptions\n\n| path or glob | check | reason | expires |\n|---|---|---|---|\n"
+    }
+  },
+  "event": {
+    "session_id": "9b1f0c52-3d4e-4a7b-8c21-5e6f7a8b9c0d",
+    "transcript_path": "{cwd}/../transcript.jsonl",
+    "cwd": "{cwd}",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false,
+    "agent_id": "a3f09c2e71b8d4e65",
+    "agent_type": "dev-team:implementer",
+    "agent_transcript_path": "{cwd}/../subagents/agent-a3f09c2e71b8d4e65.jsonl",
+    "last_assistant_message": "Result: done\n…",
+    "background_tasks": [],
+    "effort": "high",
+    "prompt_id": "p-1",
+    "scratchpad_dir": "{cwd}/../scratch",
+    "session_crons": []
+  },
+  "expect": {
+    "exit": 2,
+    "stderr_contains": [
+      "FAIL guarded lowered threshold Enforced/docstrings at docs/constraints.md"
+    ]
+  }
+}
