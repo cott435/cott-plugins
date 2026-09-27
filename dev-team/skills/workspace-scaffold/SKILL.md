@@ -1,15 +1,16 @@
 ---
 name: workspace-scaffold
-description: The skeleton files a new repository or package starts from — root and package pyproject.toml for a uv workspace, the import-linter contracts that enforce dependency direction, mkdocs.yml, and the CI commands. Invoke when planning a repo's Toolchain section or when scaffolding the first section of a repo or package. Values come from docs/architecture.md; this skill supplies the shapes.
+description: The skeleton files a new repository or package starts from — root and package pyproject.toml for a uv workspace, the import-linter contracts that enforce dependency direction, mkdocs.yml, and the CI commands. Invoke when planning a repo's Toolchain section, when scaffolding the first section of a repo or package, or when building a package's surface section. Values come from docs/architecture.md and the package contract's Sections table; this skill supplies the shapes.
 ---
 
 # Workspace scaffold
 
 The shapes a repo starts from. Kept out of the always-loaded path because only two runs ever
 need them: the architect writing the repo contract's **Toolchain** section, and the implementer
-scaffolding the first section of a repo or a package. Everything repo-specific — package names,
-dependency order, env prefixes — comes from `docs/architecture.md`; copy shapes from here and
-values from there.
+— scaffolding the first section of a repo or a package, or building a package's `surface`
+section. Everything repo-specific — package names, dependency order, env prefixes — comes from
+`docs/architecture.md`, and a package's section order from the **Sections** table of
+`docs/packages/<pkg>/contract.md`; copy shapes from here and values from there.
 
 The lint thresholds are **not** here. They live in `${CLAUDE_PLUGIN_ROOT}/pyproject-lint-config.toml`, which
 is merged into the root `pyproject.toml` verbatim; a second copy would drift.
@@ -74,8 +75,8 @@ dependencies = [
 ]
 
 [project.scripts]
-# <pkg>-<verb> = "<pkg>.cli:<function>"   — added by /dev-team:finalize-package; the module must live
-#                                          inside src/<pkg>/ or the entry point cannot resolve
+# <pkg>-<verb> = "<pkg>.cli:<function>"   — added by the surface section's implementer; the module
+#                                          must live inside src/<pkg>/ or the entry point cannot resolve
 
 [build-system]
 requires = ["hatchling"]
@@ -105,16 +106,20 @@ name = "package dependency direction"
 type = "layers"
 layers = ["ml", "analysis", "data"]
 
-# 2. Consumers use the public surface only — one per shipped package, listing its sections.
-#    Written by /dev-team:finalize-package from the package contract's Sections table.
+# 2. Consumers use the public surface only — one per shipped package: forbidden_modules is
+#    every row of the package contract's Sections table but `surface`, as <pkg>.<section>;
+#    source_modules is every package whose `depends on` names this one. Written by the
+#    implementer of the package's `surface` section.
 [[tool.importlinter.contracts]]
 name = "data: consumers import the top level only"
 type = "forbidden"
 source_modules = ["analysis", "ml"]
 forbidden_modules = ["data.ingest", "data.clean", "data.audit", "data.storage"]
 
-# 3. Section layering inside a package — from surface.md §5, derived from the Sections
-#    table's Depends on column. `|` separates sections that may not import each other.
+# 3. Section layering inside a package — derived from the Sections table's `depends on`
+#    column, the `surface` row left out: a section sits above every section it depends on.
+#    `|` separates sections that may not import each other; a section not built yet is
+#    wrapped `(name)` so the contract passes before it exists.
 [[tool.importlinter.contracts]]
 name = "data: section layering"
 type = "layers"
@@ -125,10 +130,12 @@ layers = ["storage", "audit | clean", "ingest"]
 `pipelines` and `configs` are container-level modules, not layers, so a pipeline that imports
 every section is legal. `lint-imports` is the command; it exits non-zero on any broken contract.
 
-**Growing the block.** The first `/dev-team:implement-section` of a package adds the package to
+**Growing the block.** The implementer of a package's first section adds the package to
 `root_packages` and to contract 1 in the position `docs/architecture.md` gives, and adds
-contract 3 for that package. `/dev-team:finalize-package` adds contract 2. Never list a package that
-has no code yet.
+contract 3 for that package with every section of the Sections table placed by its `depends
+on`, the unbuilt ones wrapped `(name)`; each later section's implementer unwraps its own name.
+The implementer of the package's `surface` section adds contract 2, once every other section
+is built. Never list a package that has no code yet.
 
 ## 4. `mkdocs.yml`
 
@@ -152,19 +159,19 @@ plugins:
             merge_init_into_class: true
             show_source: false
 nav:
-  - Home: index.md                    # stub written at scaffold; regenerated by /dev-team:finalize-project
   - Architecture: architecture.md
   - Decisions: decisions.md
-  - API: []                           # /dev-team:finalize-package appends "- <pkg>: api/<pkg>.md" per package
+  - API: []                           # each surface section appends "- <pkg>: api/<pkg>.md"
+                                      # Home: index.md is added by the documenter with the page
 ```
 
 The site must build strict from the first scaffold onward, so the `nav` only ever names
-files that exist: the scaffold step writes a stub `docs/index.md` (repo name, the Goal
-paragraph, links to `architecture.md` and `decisions.md`) and a nav with `Home`,
-`Architecture`, and `Decisions`; each `/dev-team:finalize-package` adds `docs/api/<pkg>.md` (one
-`::: <module>` block per providing module in `interface.md`, plus `::: <pkg>.cli` and the
-pipeline modules) and its `API` nav entry; `/dev-team:finalize-project` regenerates `index.md` and
-keeps the nav in sync. Cross-references in docstrings use `` [`name`][pkg.module.name] ``;
+files that exist: the scaffold step writes a nav with `Architecture` and `Decisions` and no
+`docs/index.md` — nothing under `docs/` but the ledgers, `interface.md` and `docs/api/` is the
+implementer's to write, so the home page waits for the documenter; each package's `surface`
+section adds `docs/api/<pkg>.md` (one `::: <module>` block per providing module in
+`interface.md`, plus `::: <pkg>.cli` and the pipeline modules) and its `API` nav entry;
+`/dev-team:finalize-project` writes `index.md`, adds `Home` and keeps the nav in sync. Cross-references in docstrings use `` [`name`][pkg.module.name] ``;
 `mkdocs build --strict` turns an unresolved one, or a nav entry with no file, into a build
 failure — which is the point.
 
@@ -182,10 +189,12 @@ uv run pytest packages/*/tests                              # everything
 uv run mkdocs build --strict
 ```
 
-These are the commands the repo contract's Toolchain section states, and the ones every
-implementer and reviewer copies rather than guesses.
+These are the commands the repo contract's Toolchain section states, and the ones the stop
+gate runs when a repo has no `docs/constraints.md`.
 
 When `docs/constraints.md` exists, CI runs its **Floor** and **Enforced** rows instead of the
 fixed list above — `repo` rows once, `package` rows once per package with `<pkg>`
 substituted — after `uv sync --all-packages`, plus the `pylint` size check, which the Floor
-does not carry. Without that file, the list above is the CI.
+does not carry. They are the same rows the implementer's stop gate runs before every
+implementer may finish, so a section the gate let through is one CI passes. Without that
+file, the list above is the CI.

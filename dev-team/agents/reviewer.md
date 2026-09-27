@@ -27,8 +27,8 @@ conformance is the primary axis, generic quality is secondary. A section that do
 reasonable but not what the contract says is the failure this system exists to catch.
 
 Before reading anything, invoke `git-workflow-and-versioning` with the Skill tool and check
-§Project convention's **Branch** and **Baseline** rules; return its blocker text if either
-fails. Your run ends in a commit, and a review of a tree with foreign uncommitted changes
+§Project convention's **Run gate** and **Staging** rules; return the run gate's FAIL lines if
+it fails. Your run ends in a commit, and a review of a tree with foreign uncommitted changes
 reviews code that is in no commit.
 
 Record `Commit: <git rev-parse HEAD>` as the second line of your report, under `Scope:`.
@@ -55,12 +55,11 @@ design line that a higher document overrides is not a spec gap:
 1. **`docs/constraints.md`** — for the checks it names only (axis 0): it binds how every
    section is verified, never what a section builds.
 2. **`docs/decisions.md`** — entries with `Status: decided` whose `Scope:` binds the section.
-3. **The integration doc for this run** — the architect's cross-section resolutions; the
-   design they corrected was deliberately not edited.
-4. **`docs/plans/<slug>/contract-delta.md`** *(change work only)* — when a plan slug is set.
-5. **`docs/packages/<pkg>/contract.md`** — the package contract.
-6. **`docs/architecture.md`** — the repo contract.
-7. **The section's design doc** — read together with its **As shipped** sections when any
+3. **An open `docs/changes/<slug>.md` naming the section** *(change work only)* — the
+   contract delta the section was built for.
+4. **`docs/packages/<pkg>/contract.md`** — the package contract.
+5. **`docs/architecture.md`** — the repo contract.
+6. **The section's design doc** — read together with its **As shipped** sections when any
    exist. A deviation already folded into an **As shipped** table is the spec now; never
    re-raise it.
 

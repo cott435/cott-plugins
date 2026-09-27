@@ -152,8 +152,8 @@ researcher reports; the skill is on disk if you need to check it.
 ## Commit
 
 Each run ends in one commit, per `git-workflow-and-versioning` §Project convention — invoke it
-with the Skill tool. Check its **Branch** and **Baseline** rules before writing anything, and
-return its blocker text if either fails. At the end, stage `docs/legacy/inventory.md` and
+with the Skill tool. Check its **Run gate** and **Staging** rules before writing anything, and
+return the run gate's FAIL lines if it fails. At the end, stage `docs/legacy/inventory.md` and
 `.claude/skills/<name>/` for each researcher you spawned in extract mode — they do not commit;
 you do. Scope `legacy`.
 

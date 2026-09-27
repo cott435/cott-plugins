@@ -138,7 +138,7 @@ forbid:
 headings:
   - name: interface.md headings its readers parse are ones the implementer writes
     owner: agents/implementer.md
-    owner_span: ['**Write `docs/packages/<pkg>/interface.md`**', null]
+    owner_span: ['1. **Public names**', null]
     readers:
       - file: agents/documenter.md
         span: ['The ones you read are', 'spelled exactly like that']
@@ -174,7 +174,7 @@ headings:
 
   - name: section README headings its readers parse are ones the implementer writes
     owner: agents/implementer.md
-    owner_span: ['## Section README template', '## Deviations']
+    owner_span: ['## Section README template', '## The surface section']
     readers:
       - file: agents/documenter.md
         cites: ['Entry points and interfaces']
@@ -238,15 +238,15 @@ headings:
         cites: ['Public names', 'Pipelines', 'Tests']
 
   - name: every agent that commits cites the one commit rule, by its rule names
-    # git-workflow-and-versioning §Project convention is the one copy of the branch, baseline,
-    # staging and message rules; agents cite it and never restate it. Each reader's span starts
+    # git-workflow-and-versioning §Project convention is the one copy of the run gate, staging,
+    # message, one-commit and lock rules; agents cite it and never restate it. Each reader's span starts
     # at its `§Project convention` citation, so an agent that stops citing it fails as a missing
     # marker, and the bolded rule names inside the span must be ones the section numbers.
     owner: skills/git-workflow-and-versioning/SKILL.md
     owner_span: ['## Project convention', '## Core Principles']
     readers:
       - file: agents/implementer.md
-        span: ['§Project convention', 'never create or switch']
+        span: ['§Project convention', 'trailer from']
       - file: agents/reviewer.md
         span: ['§Project convention', 'rules; return']
       - file: agents/architect.md
@@ -264,8 +264,8 @@ headings:
 
   - name: the reviewer ranks documents by the implementer's order of authority
     # The reviewer measures a finding against the highest document that speaks to it, so its
-    # list must be the implementer's list — a reviewer ranking the design above the
-    # integration doc punishes a section for following an accepted resolution. The reader span
+    # list must be the implementer's list — a reviewer ranking the design above an open
+    # change file punishes a section for following the change it was built for. The reader span
     # covers the reviewer's numbered items only; the bolded names in it must be the
     # implementer's numbered item names. Items that open with a backticked path are not caught
     # by the bold-name reader; the full equality is eval E's mechanical half:
@@ -289,8 +289,6 @@ headings:
         cites: ['As shipped']
       - file: skills/plan-change/SKILL.md
         cites: ['As shipped']
-      - file: agents/implementer.md
-        cites: ['As shipped']
       - file: agents/architect.md
         cites: ['As shipped']
       - file: skills/plan-package/SKILL.md
@@ -307,6 +305,9 @@ headings:
         cites: ['Clause', 'Found', 'Why', 'Status', 'Raised by']
       - file: agents/tester.md
         cites: ['Clause', 'Did', 'Found', 'Status']
+      # The implementer appends deviation and spec-change entries field by field.
+      - file: agents/implementer.md
+        cites: ['Clause', 'Said', 'Did', 'Found', 'Why', 'Status', 'Raised by']
 
   - name: docs/constraints.md headings its readers run are ones the template defines
     # set-constraints writes the file from its template; four readers act on it by heading —

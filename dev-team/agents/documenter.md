@@ -98,8 +98,8 @@ trustworthy. List, specifically:
 ## Commit
 
 Each run ends in one commit, per `git-workflow-and-versioning` §Project convention — invoke it
-with the Skill tool. Check its **Branch** and **Baseline** rules before writing anything, and
-return its blocker text if either fails. At the end, stage the READMEs and `docs/api/*.md` you
+with the Skill tool. Check its **Run gate** and **Staging** rules before writing anything, and
+return the run gate's FAIL lines if it fails. At the end, stage the READMEs and `docs/api/*.md` you
 wrote, `docs/index.md`, and the root `README.md` — nothing else. Scope `docs`. Your return
 gains `Commit: <sha>`.
 

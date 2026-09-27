@@ -255,3 +255,58 @@ agent follows.`
 - `check-contracts` all PASS; `build-site` exits 0.
 - Logs for 4.1–4.4 in `evals/README.md`.
 - The ledger row for phase 4 reads `done`.
+
+## Deviations
+
+- **Four other agents' commit sentences re-pointed.** The note renames §Project convention's
+  rules and drops **Branch** and **Baseline**, but `reviewer.md`, `architect.md`, `curator.md`
+  and `documenter.md` still told their agent to check those two rules, and the commit-rule
+  claim reads the bold names in each reader's span. Left alone, `check-contracts` fails on four
+  readers. Done instead: one sentence in each now reads *check its **Run gate** and
+  **Staging** rules … return the run gate's FAIL lines if it fails*, each span's end marker
+  kept. Phases 5, 6 and 9 rewrite those agents anyway; the curator is unchanged by the design
+  except for this sentence. `skills/set-constraints/SKILL.md` still names **Branch** and
+  **Baseline** in prose (no claim reads it); that is phase 10's wording change.
+- **The reviewer's order-of-authority list re-pointed.** The note drops the integration doc
+  and the contract-delta from the implementer's list and says the reviewer (phase 5) carries
+  the same list, with the existing claim enforcing it. At this boundary the reviewer still
+  named **The integration doc for this run**, which the owner no longer has, so the claim
+  failed. Done: the reviewer's items 3 and 4 became the implementer's item 3 (**An open
+  `docs/changes/<slug>.md` naming the section**) and the rest renumbered; its item 6 text
+  (*read together with its **As shipped** sections*) is phase 5's to rewrite.
+- **The pathspec commit is in the rules, not only the lock rule.** Per the ledger (phase 0,
+  PF-5 false as stated): **Staging** requires `git add <paths>` then `git commit -m … --
+  <paths>`, and **One commit per run**'s amend exception is `git commit --amend --no-edit --
+  <paths>`, matching the gate's exit-2 text. **Lock** says *never delete the lock file*. The
+  message table carries the designer's and tester's phase-3 summaries and a no-`Run:`
+  trailer form (`designer data/ingest`).
+- **No `docs/index.md` at scaffold.** The note keeps step 1 "as today", which writes a stub
+  `docs/index.md` with a `Home` nav entry. The write guard (phase 2, as the design specifies)
+  refuses the implementer anything under `docs/` but the ledgers, `interface.md` and
+  `docs/api/*.md`. Done: `workspace-scaffold` §4's nav starts at `Architecture` and
+  `Decisions`, and `/dev-team:finalize-project` writes `index.md` and adds `Home`; the
+  implementer's step 1 no longer mentions the stub.
+- **Backlog lines are taken, not ticked.** The note's step 6 says the implementer ticks the
+  `docs/followups.md` lines it takes. The write guard refuses it that file. Done: the
+  implementer lists the lines it took under *backlog lines taken* in its return, and the
+  **Decisions and markers** row that filed a follow-up now reports *decided but blocked* in the
+  return instead. Whoever ticks them is an open question for the guard or the design (a ledger
+  *noticed* line).
+- **The missing-probe fallback stops.** The note says a differing observed shape files a
+  `spec-change:design` entry "instead of a followups line". A spec-change entry means the
+  marker and `Result: spec-change`, per the note's own **Deviations and spec-changes**, so the
+  fallback now stops the run there rather than building on and continuing.
+- **`Gate:` on a first return.** The implementer cannot see a gate pass (exit 0 stderr reaches
+  no one, phase 2), so the return line is defined by what the agent has seen: `PASS` on a
+  first return (a failing gate would have stopped it), `passed after <n> attempts` after
+  `n-1` exit-2s, `let through after 3 attempts` when finishing a third time, `not run` when a
+  harness says no hook runs.
+- **Blocking rule "no contract"** also names `/dev-team:plan-package <pkg>` when only the
+  package contract is missing; the note named only `plan-repo` and `map-repo`.
+- **The `Clause:` of a deviation** is written `design §<n> <item>`, since `status.clause_key()`
+  needs the literal `design` to match the intent test's docstring (phase 3's *noticed*).
+- **Commit prefix `(phase 4)`.** The note's step 8 writes `(phase 04)`; the ledger resolves SHAs
+  with `--grep='(phase N)'`, and phases 1–3 used the unpadded form, so this commit does too.
+- **Evals 5–8, expectation 2 reworded** in `evals/sets/implementer.json` on the graders' critique
+  (it measured whether a proxy executor admitted an orientation read, not the target); no verdict
+  changed. See the eval log.

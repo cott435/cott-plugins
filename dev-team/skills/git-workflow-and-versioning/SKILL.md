@@ -1,6 +1,6 @@
 ---
 name: git-workflow-and-versioning
-description: Structures git workflow practices — atomic commits, descriptive messages, save points, pre-commit hygiene. Preloaded into the implementer; invoked by every other agent that commits, at the moment it checks the branch and commits. §Project convention is the commit rule every agent follows.
+description: Structures git workflow practices — atomic commits, descriptive messages, save points, pre-commit hygiene. Preloaded into every dev-team agent that commits. §Project convention is the commit rule every agent follows.
 license: agent-skills by Addy Osmani, MIT. Complete terms in LICENSE.
 user-invocable: false
 ---
@@ -19,56 +19,54 @@ Every dev-team run that writes files ends by committing exactly those files. The
 the one copy; agents cite this section and do not restate it. Where anything below this
 section disagrees, this section wins.
 
-1. **Branch** — Agents never create, switch or delete branches. A run that would commit refuses
-   to start when the current branch is `main` or `master` (`git branch --show-current`), or when
-   the directory is not a git repository. Blocker text: *on `<branch>`; create a feature branch
-   and re-run* / *not a git repository; `git init`, create a branch, and re-run*.
+1. **Run gate** — The branch and baseline checks are `status.py --run-gate` (in this plugin's
+   `skills/status/scripts/status.py`): not on `main` or `master`, a git repository, and a tree
+   clean but for `docs/decisions.md`, `docs/brief.md`, `docs/constraints.md` and
+   `.claude/agent-memory/`. `/dev-team:run-package` runs it once before its first spawn; a typed
+   skill that forks an agent runs it first and returns its FAIL lines as the blocker. An agent
+   the driver spawned does not run it again. Agents never create, switch or delete branches.
 
-2. **Baseline** — Before writing anything, `git status --porcelain` must be empty except for
-   modifications to `docs/decisions.md`, `docs/brief.md` and `docs/constraints.md` — the three
-   files the user edits by hand between runs — and anything under `.claude/agent-memory/`,
-   which agents write as they go and nobody stages but the user. Anything else is a blocker listing the paths:
-   *uncommitted changes outside the user-edited files: <paths>; commit or stash them and
-   re-run*. The exemption exists so answering a decision never requires a commit first; the
-   run that consumes the answer commits the file.
-
-3. **Staging** — Stage by explicit path — the paths the run wrote, which are the paths its
+2. **Staging** — Stage by explicit path — the paths the run wrote, which are the paths its
    return message lists. Never `git add -A`, `git add .`, or `git commit -a`. A file the run
-   did not write is never staged, even if it is modified; that is the baseline rule's job.
+   did not write is never staged, even if it is modified. Commit with the same paths as a
+   pathspec: `git add <paths>`, then `git commit -m "<message>" -- <paths>`. A plain `git
+   commit` after `git add` takes whatever is staged, including a parallel agent's `git add`,
+   and neither run sees an error; the pathspec form commits only these paths and holds the
+   index lock while it runs.
 
-4. **Message** — First line `<scope>: <imperative summary>`, at most 72 characters, where
-   `<scope>` is one of:
+3. **Message** — First line `<scope>: <imperative summary>`, at most 72 characters:
 
-   | Run | `<scope>` | Example |
+   | Run | `<scope>` | Summary, example |
    |---|---|---|
-   | `implement-section` | `<pkg>/<section>` | `data/ingest: parse polygon aggregates into Bar rows` |
-   | `finalize-package` | `<pkg>/surface` | `data/surface: lazy re-exports, load_bars pipeline, cli` |
-   | `test-section` (intent) | `<pkg>/<section>` | `data/ingest: 14 intent tests from design` |
-   | `test-section` (reconcile) | `<pkg>/<section>` | `data/ingest: reconcile 2 intent tests with deviations` |
-   | `review-section` / `review-package` / `review-plan` | `review <pkg>/<section>` / `review <pkg>/surface` / `review <pkg>/plan` | `review data/ingest: request changes (2 critical)` |
-   | `plan-repo` / `plan-package` / `plan-change` / `sync-plan` / `sync-design` / `map-project` | `plan <target>` | `plan data: contract, spine design (ingest), integration` |
-   | `extract-legacy` | `legacy` | `legacy: inventory of ../old-repo` |
-   | `finalize-project` | `docs` | `docs: package READMEs, api pages, root README` |
-   | `set-constraints` | `docs` | `docs: set constraints (coverage 80, mypy strict, docstrings 95)` |
+   | designer | `<pkg>/<section>` | `design` · `design (delta)` · `design (document)` · `spec-change (contract)` · `stopped for D<n>` — `data/ingest: design` |
+   | tester | `<pkg>/<section>` | `<n> intent tests from design` · `regenerate <k> intent tests` — `data/ingest: 14 intent tests from design` |
+   | implementer | `<pkg>/<section>` · `<pkg>/surface` | what was built — `data/ingest: parse trades.csv into Trade rows` |
+   | reviewer | `review <pkg>/<section>` | the round and verdict — `review data/ingest r1-a: request changes (2 critical)` |
+   | researcher | `probe <source>` | what was probed, for whom — `probe polygon: aggregates for data/ingest` |
+   | architect | `plan <target>` | `plan data: contract with surface row` |
+   | curator | `legacy` | `legacy: inventory of ../old-repo` |
+   | documenter | `docs` | `docs: package READMEs, root README` |
+   | set-constraints | `docs` | `docs: set constraints (coverage 80, mypy strict, docstrings 95)` |
 
-   Body: blank line, then one trailer per line and nothing else:
+   Body: blank line, then one trailer and nothing else: `Dev-Team-Run: <skill> <argument as
+   typed>` — under the driver, `run-package <pkg>` for every agent it spawns (the prompt's
+   `Run:` line). An agent spawned with no `Run:` line writes its role and target instead
+   (`Dev-Team-Run: designer data/ingest`). The trailer is what lets any tool — the stop gate
+   among them — find a run's commit without parsing the summary.
 
-   ```
-   Dev-Team-Run: <skill name> <argument as typed>
-   Plan: <slug>                       (only when a plan slug is set)
-   ```
+4. **One commit per run** — A run never makes two commits, and a run that wrote nothing
+   commits nothing and returns `Commit: none`. The one exception to "never two": an
+   implementer whose stop gate exits 2 stages its fix and runs `git commit --amend --no-edit
+   -- <paths>` on its own, unpushed commit, the paths being every path the run has written.
+   A run that stops on a blocker commits nothing unless its agent says otherwise.
 
-   The trailer is what lets any tool find a run's commit without parsing the summary.
+5. **Lock** — Agents run in parallel and commit concurrently. When `git add` or `git commit`
+   fails on `.git/index.lock`, wait two seconds and retry, up to ten times; a failure after
+   that is a blocker quoting the error. Never delete the lock file.
 
-5. **Hygiene** — The run's own verification (its test command, `lint-imports`, `ruff check`) has
-   already passed before the commit step — the commit step never runs them again. If a
-   pre-commit hook rejects the commit, fix what it names and retry once; a second rejection is a
-   blocker quoting the hook output.
-
-6. **One commit per run** — A run never makes two commits. Mid-run "save points" from the
-   Save Point Pattern below are `git stash`-free and commit-free here: the run is the unit of
-   work, and a partial run that stops on a blocker leaves its files uncommitted for the user to
-   inspect (the next run's baseline rule will name them).
+6. **Hygiene** — The run's own verification has already passed before the commit step; the
+   commit step never runs it again. If a pre-commit hook rejects the commit, fix what it names
+   and retry once; a second rejection is a blocker quoting the hook output.
 
 ## Core Principles
 

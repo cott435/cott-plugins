@@ -568,8 +568,8 @@ replaces all of this when you stop.)
 ## Commit
 
 Every scope ends in one commit, per `git-workflow-and-versioning` §Project convention —
-invoke it with the Skill tool. Check its **Branch** and **Baseline** rules before writing
-anything, and return its blocker text if either fails. At the end, stage exactly the paths
+invoke it with the Skill tool. Check its **Run gate** and **Staging** rules before writing
+anything, and return the run gate's FAIL lines if it fails. At the end, stage exactly the paths
 your return message lists as written or modified — including every file your designers and
 researchers wrote this run: they do not commit; they return to you, and you commit. Scope
 `plan <target>`. A run that stops — for the interview rule or for access — still commits the
