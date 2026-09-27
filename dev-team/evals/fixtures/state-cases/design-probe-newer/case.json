@@ -1,0 +1,24 @@
+{
+  "note": "the probe doc's shared headings changed after the design",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "edit",
+      "path": "docs/sources/trades.md",
+      "append": "\n- one timestamp out of order\n",
+      "message": "docs/sources: trades re-probed"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "DESIGN",
+    "evidence": "docs/sources/trades.md [0-9a-f]{7} newer than design"
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "note": "round 3 requests changes: cap",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 1,
+      "reports": {
+        "a": "approve",
+        "b": "request changes"
+      }
+    },
+    {
+      "do": "fix",
+      "section": "ingest",
+      "note": "fix"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 2,
+      "reports": {
+        "s": "request changes"
+      },
+      "convergence": "0 prior unfixed, 1 new"
+    },
+    {
+      "do": "fix",
+      "section": "ingest",
+      "note": "fix r2"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 3,
+      "reports": {
+        "s": "request changes"
+      },
+      "convergence": "0 prior unfixed, 1 new"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "BLOCKED",
+    "rounds": 3,
+    "evidence": "^review r3 request changes \\(cap\\)$",
+    "contains": [
+      "next: /dev-team:run-package data ingest --step REVIEW (one more round) or /dev-team:run-package data --defer"
+    ]
+  }
+}

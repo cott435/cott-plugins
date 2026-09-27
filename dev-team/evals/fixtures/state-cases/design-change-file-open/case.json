@@ -1,0 +1,24 @@
+{
+  "note": "DONE, then an open change file names the section",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "files": {
+        "docs/changes/vwap-window.md": "# `docs/changes/vwap-window.md`\nStatus: open\n\n1. **Change goal** — let the window be set per call.\n2. **Affected sections**\n   - data/ingest — returns the window column\n3. **Contract changes** — none yet\n4. **Downstream impact** — none\n"
+      },
+      "message": "docs: change vwap-window"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "DESIGN",
+    "evidence": "^change vwap-window [0-9a-f]{7} newer than design [0-9a-f]{7}$"
+  }
+}

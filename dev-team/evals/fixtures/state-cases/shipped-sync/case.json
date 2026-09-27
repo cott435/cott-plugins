@@ -1,0 +1,40 @@
+{
+  "note": "surface DONE with an approved deviation: sync-plan",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    },
+    {
+      "do": "deviation",
+      "section": "ingest",
+      "kind": "deviation",
+      "status": "approved",
+      "clause": "design §6 EmptyFile"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "DONE",
+    "contains": [
+      "shipped: yes",
+      "next: /dev-team:sync-plan data"
+    ]
+  }
+}

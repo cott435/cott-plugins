@@ -1,0 +1,18 @@
+{
+  "note": "--surface before interface.md exists",
+  "steps": [
+    {
+      "do": "base"
+    }
+  ],
+  "args": [
+    "--surface",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "surface: n/a (no interface.md)"
+    ]
+  }
+}

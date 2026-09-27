@@ -1,7 +1,8 @@
 # `docs/packages/<pkg>/contract.md` — the package contract
 
 Written at package scope before designers are delegated; read by designers, implementer,
-reviewer, `/dev-team:finalize-package`, and `/dev-team:plan-change` (its **Consumes** table). Budget 200 lines.
+reviewer, `/dev-team:run-package`, and the architect when it classifies an edit (its
+**Consumes** table). Budget 200 lines.
 
 Where this contract needs a repo-contract shape to change, do not change it here — raise it
 under **Repo contract deviations** in the integration doc.
@@ -17,7 +18,7 @@ under **Repo contract deviations** in the integration doc.
    depends on | source. Paths are `packages/<pkg>/src/<pkg>/<section>/` (or `src/<pkg>/<section>/`
    in a single-package repo); owner docs are `docs/packages/<pkg>/design/<section>.md`.
    `Depends on` names sections in this package only, and must form a DAG — it becomes an
-   import-linter contract and the order `/dev-team:implement-section` enforces.
+   import-linter contract and the order `/dev-team:run-package` builds in.
 
    `source` is each external source the section consumes, written `<kind>:<token>` — `api` for a
    service called over the network, `dataset` for a file, table or corpus that is read. The
@@ -27,6 +28,12 @@ under **Repo contract deviations** in the integration doc.
    prefix means `api`, which is how every contract written before kinds existed still reads.
    `/dev-team:plan-package` probes every entry in this column before delegating designers, so a
    source not named here is never probed, and a kind written wrong probes the wrong thing.
+
+   The last row is always `surface`: responsibility *the package's pipelines (§4) and public
+   surface (§5)*, path the package top level (`packages/<pkg>/src/<pkg>/`, or `src/<pkg>/` in a
+   single-package repo), owner doc `docs/packages/<pkg>/design/surface.md`, `builds with` `—`,
+   `depends on` every other section by name, `source` `—`. It is designed last, from the shipped
+   READMEs, and its README is `docs/packages/<pkg>/interface.md`.
 
 3. **Section interfaces** — per section, what it returns to its dependents, as signatures.
    Reference repo shapes by name; never redefine them. This is where "what each section
@@ -38,15 +45,16 @@ under **Repo contract deviations** in the integration doc.
 
 5. **Public surface (intent)** — which repo shapes this package provides, which section
    realizes each, and which downstream package or CLI command consumes each. This is the
-   list `surface.md` will be checked against: a name with no consumer here does not become
-   public later. Keep it short; the surface is what consumers need, not what sections offer.
+   list the `surface` section's design (`docs/packages/<pkg>/design/surface.md`) is checked
+   against: a name with no consumer here does not become public later. Keep it short; the
+   surface is what consumers need, not what sections offer.
    A one-off command that runs one section entry point rather than a pipeline (schema init, a
    backfill) belongs here too, with the command as the consumer — it will have no row under
    **Pipelines**.
 
 6. **Consumes** — table: upstream package | name | shape | status (`shipped` /
-   `provisional` / `stale`). `/dev-team:plan-change` reads this to find planned consumers of a package,
-   so list every upstream name this package will use.
+   `provisional` / `stale`). The architect reads this to find planned consumers of a package
+   when it classifies an edit, so list every upstream name this package will use.
 
 7. **Package conventions** — only what goes beyond the repo contract.
 

@@ -1,0 +1,19 @@
+{
+  "note": "--run-gate for a package with no contract",
+  "steps": [
+    {
+      "do": "base",
+      "contract": false
+    }
+  ],
+  "args": [
+    "--run-gate",
+    "data"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "data: missing docs/packages/data/contract.md — run /dev-team:plan-package data"
+    ]
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "note": "--rounds after two rounds",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 1,
+      "reports": {
+        "a": "approve",
+        "b": "request changes"
+      }
+    },
+    {
+      "do": "fix",
+      "section": "ingest",
+      "note": "fix"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 2,
+      "reports": {
+        "s": "request changes"
+      },
+      "convergence": "0 prior unfixed, 1 new"
+    }
+  ],
+  "args": [
+    "--rounds",
+    "data/ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "rounds: 2",
+      "next round: 3"
+    ],
+    "absent": [
+      "## data"
+    ]
+  }
+}

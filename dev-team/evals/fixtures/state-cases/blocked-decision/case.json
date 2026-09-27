@@ -1,0 +1,25 @@
+{
+  "note": "open decisions: none, an em dash, and a real assumption",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "files": {
+        "docs/decisions.md": "# Decisions\n\n## D3 — Which timestamp parser?\nScope: data/ingest\nRaised by: OQ-data-ingest-1\nRecommendation: fromisoformat\nStatus: open\n\n## D4 — Keep the raw file?\nScope: data/clean\nAssumption if unanswered: —\nStatus: open\n\n## D5 — WAL mode?\nScope: data/storage\nAssumption if unanswered: WAL on.\nStatus: open\n"
+      },
+      "message": "docs: decisions"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "BLOCKED",
+    "evidence": "^D3 open, no assumption$",
+    "contains": [
+      "clean · BLOCKED · D4 open, no assumption",
+      "storage · DESIGN",
+      "next: answer D3 in docs/decisions.md, then /dev-team:run-package data"
+    ]
+  }
+}

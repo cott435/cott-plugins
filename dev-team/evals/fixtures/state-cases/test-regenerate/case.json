@@ -1,0 +1,32 @@
+{
+  "note": "approved deviation whose clause an untagged intent test cites",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "deviation",
+      "section": "ingest",
+      "kind": "deviation",
+      "status": "approved"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "TEST",
+    "evidence": "^regenerate: data/ingest — 2026-09-27 — deviation$"
+  }
+}

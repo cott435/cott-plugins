@@ -1,0 +1,15 @@
+{
+  "note": "no design; no dependencies",
+  "steps": [
+    {
+      "do": "base"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "DESIGN",
+    "ready": true,
+    "evidence": "no design"
+  }
+}

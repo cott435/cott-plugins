@@ -1,0 +1,41 @@
+{
+  "note": "--repo lists the open D, the open spec-change and the unbuilt sections",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "files": {
+        "docs/decisions.md": "# Decisions\n\n## D3 — Which timestamp parser?\nScope: data/ingest\nRaised by: OQ-data-ingest-1\nRecommendation: fromisoformat\nStatus: open\n\n## D4 — Keep the raw file?\nScope: data/clean\nAssumption if unanswered: —\nStatus: open\n\n## D5 — WAL mode?\nScope: data/storage\nAssumption if unanswered: WAL on.\nStatus: open\n"
+      },
+      "message": "docs: decisions"
+    },
+    {
+      "do": "deviation",
+      "section": "clean",
+      "kind": "spec-change:contract",
+      "status": "open"
+    },
+    {
+      "files": {
+        "docs/followups.md": "- [ ] data/ingest: log the row number — reviewer 2026-09-27\n- [ ] data/ingest: faster parse — reviewer 2026-09-27\n- [x] data/clean: done — reviewer 2026-09-27\n"
+      },
+      "message": "docs: followups"
+    }
+  ],
+  "args": [
+    "--repo"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "packages:\n  - data: planned\n  - analysis: no contract",
+      "sections:\n  - data/ingest: BLOCKED",
+      "  - data/clean: ",
+      "decisions:\n  - D3: Which timestamp parser?",
+      "spec-changes:\n  - data/clean — 2026-09-27 — spec-change:contract",
+      "changes:\n  - none",
+      "backlog:\n  - data/ingest: 2"
+    ]
+  }
+}

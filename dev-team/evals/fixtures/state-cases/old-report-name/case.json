@@ -1,0 +1,32 @@
+{
+  "note": "a 0.6-era report name reads as round 1",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "files": {
+        "docs/reviews/2026-09-01-data-ingest.md": "# Review — data/ingest\nCommit: {HEAD}\nVerdict: approve\n"
+      },
+      "message": "data/ingest: review"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "DONE",
+    "rounds": 1
+  }
+}

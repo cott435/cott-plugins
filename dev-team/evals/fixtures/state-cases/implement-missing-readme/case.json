@@ -1,0 +1,22 @@
+{
+  "note": "intent tests, no README",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "IMPLEMENT",
+    "evidence": "no .*README.md"
+  }
+}

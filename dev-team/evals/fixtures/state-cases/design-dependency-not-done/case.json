@@ -1,0 +1,14 @@
+{
+  "note": "no design; ingest (a dependency) not DONE",
+  "steps": [
+    {
+      "do": "base"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "clean",
+    "state": "DESIGN",
+    "ready": false
+  }
+}

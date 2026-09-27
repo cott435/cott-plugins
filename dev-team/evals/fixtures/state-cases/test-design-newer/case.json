@@ -1,0 +1,28 @@
+{
+  "note": "design edited after the intent tests",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "edit",
+      "path": "docs/packages/data/design/ingest.md",
+      "append": "\n- revised\n",
+      "message": "data/ingest: design revised"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "TEST",
+    "evidence": "^design [0-9a-f]{7} newer than tests [0-9a-f]{7}$"
+  }
+}

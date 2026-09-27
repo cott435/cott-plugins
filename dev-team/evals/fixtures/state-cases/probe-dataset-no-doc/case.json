@@ -1,0 +1,15 @@
+{
+  "note": "dataset source with no probe doc",
+  "steps": [
+    {
+      "do": "base",
+      "sources": false
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "PROBE",
+    "evidence": "dataset:trades"
+  }
+}

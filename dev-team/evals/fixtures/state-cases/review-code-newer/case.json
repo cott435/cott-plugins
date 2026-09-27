@@ -1,0 +1,24 @@
+{
+  "note": "approved, then the code changed",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "fix",
+      "section": "ingest",
+      "note": "later edit"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "REVIEW",
+    "rounds": 1,
+    "evidence": "newer than review r1"
+  }
+}

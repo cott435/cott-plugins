@@ -1,0 +1,19 @@
+{
+  "note": "--run-gate on main",
+  "steps": [
+    {
+      "do": "base"
+    }
+  ],
+  "args": [
+    "--run-gate"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "run gate: FAIL",
+      "on `main`; create a feature branch and re-run"
+    ]
+  },
+  "branch": "main"
+}

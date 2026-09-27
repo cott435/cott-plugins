@@ -1,41 +1,78 @@
 #!/usr/bin/env python3
-"""Print where every package and section stands, derived from docs/ and the code.
+"""Derive where every package and section stands from docs/ and the code. Nothing is stored.
 
-Usage:  python3 status.py [pkg] [--gate] [--plan-gate <pkg>] [--run-gate] [--rounds <target>]
+Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--repo]
 
-Nothing here is written down by anyone; it is all derived: a package is planned when its
-contract exists, built when every section has a README, shipped when interface.md exists. A
-section is reviewed when its newest review's (`<date>-<pkg>-<section>[-<n>].md`) `Commit:`
-line names a commit after which no commit touches the section's source, tests/unit/<section>
-or tests/intent/<section>. The
-intent column is the tester's suite, run: `<pass>/<total>`, or `—` with no tests/intent/<section>.
-`--gate` exits 1 when the named package fails /dev-team:finalize-package's preconditions.
-`--plan-gate <pkg>` exits 1 unless the package's plan is complete, reviewed by
-/dev-team:review-plan since its last change, approved, and carries no open plan finding and no
-open decision without an assumption; it also prints the plan's round count.
-`--rounds <pkg> | <pkg>/<section> | <pkg>/surface` prints only that scope's round count —
-consecutive `request changes` reviews since the last approving one — which the reviewer and
-/dev-team:run-package read to stop a review-and-fix loop that is not converging. `<pkg> --run-gate` exits 1 unless /dev-team:run-package may
-start on pkg: a feature branch, a clean tree (git-workflow-and-versioning's Baseline
-exemptions), contract.md and integration.md present, and either a spine-only plan (mode: spine)
-or a plan that passes --plan-gate (mode: full) — or, once interface.md exists, mode: full with no
-plan check. When docs/constraints.md exists, every package shows how
-many of its Floor and Enforced rows fail, and `--gate` fails on each one that does.
+A section is in exactly one state, decided in this order, first match wins:
+
+1. **BLOCKED** — an open decision with no assumption binds the section (`docs/decisions.md`
+   entry with `Status: open`, no `Assumption if unanswered:`, `Scope:` covering `repo`, the
+   package or the section); or the newest review round says `request changes` and the cap is
+   hit: round 3 or later, or round 2 whose `Convergence:` line has one or more prior unfixed.
+2. **PLAN** — an open `spec-change:contract` entry names the section in `docs/deviations.md`.
+3. **PROBE** — a source in the row's `source` column needs probing: an `api:` source whose
+   `docs/sources/<token>.md` lacks a `## <pkg>/<section>` heading, or a `dataset:` source with
+   no `docs/sources/<token>.md` at all.
+4. **DESIGN** — no design at `docs/packages/<pkg>/design/<section>.md`; or an open
+   `spec-change:design` entry; or an open `docs/changes/<slug>.md` whose **Affected sections**
+   names the section and is newer than the design; or a probe doc the row names is newer than
+   the design.
+5. **TEST** — no `tests/intent/<section>/` under the package root; or the design is newer than
+   the intent tree; or an open `spec-change:test` entry; or an `approved` deviation entry whose
+   `Clause:` is cited by an intent test docstring that carries no `(deviation ` tag
+   (regenerate).
+6. **IMPLEMENT** — no README (`<section path>/README.md`; for `surface`,
+   `docs/packages/<pkg>/interface.md`); or the intent tree, regeneration commits skipped, is
+   newer than the README.
+7. **REVIEW** — no review round, or the section's code (its path, `tests/unit/<section>`,
+   `tests/intent/<section>` less regeneration commits, its README) is newer than the newest
+   round's `Commit:`, or the newest round's verdict is `spec-change` with no open entry left.
+8. **FIX n** — the newest round `n` says `request changes`, the cap is not hit, and the code is
+   not newer than its `Commit:`.
+9. **DONE** — the newest round approves and the code is not newer than its `Commit:`.
+
+Ready: a section whose state is neither DONE nor BLOCKED and whose every in-package `depends
+on` is DONE. The `surface` row depends on every other row whatever its cell says.
+Shipped: the `surface` section is DONE. Rounds: the highest `n` over
+`docs/reviews/<date>-<pkg>-<section>-r<n>-<a|b|s>.md`; a round's verdict is the worst of its
+reports (request changes > spec-change > approve); a report with no `-r<n>-` is round 1.
 """
 
 from __future__ import annotations
 
-import datetime as dt
+import ast
 import os
 import re
-import shlex
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
-ROOT = Path.cwd()
+ROOT = Path.cwd().resolve()
 DOCS = ROOT / "docs"
+
+STATES = ("BLOCKED", "PLAN", "PROBE", "DESIGN", "TEST", "IMPLEMENT", "REVIEW", "FIX", "DONE")
+
+# git-workflow-and-versioning §Project convention, Baseline: the files the user edits between
+# runs, and agent memory, which agents write and nobody stages but the user. The one copy; a
+# trailing slash exempts everything under it.
+BASELINE_EXEMPT = ("docs/decisions.md", "docs/brief.md", "docs/constraints.md", ".claude/agent-memory/")
+
+# A round's verdict is the worst of its reports; higher is worse.
+VERDICT_RANK = {"approve": 0, "spec-change": 1, "request changes": 2}
+
+UNCOMMITTED = "U"
+
+
+def set_root(path: Path) -> None:
+    """Point every parser at the repo rooted at path. The default is the working directory."""
+    global ROOT, DOCS
+    ROOT = Path(path).resolve()
+    DOCS = ROOT / "docs"
+
+
+# ---------------------------------------------------------------------------------------------
+# Markdown parsing
+# ---------------------------------------------------------------------------------------------
 
 
 def table_rows(md: str, must_have: tuple[str, ...]) -> list[dict[str, str]]:
@@ -44,13 +81,13 @@ def table_rows(md: str, must_have: tuple[str, ...]) -> list[dict[str, str]]:
     for i, line in enumerate(lines):
         if not line.startswith("|"):
             continue
-        header = [c.strip().lower() for c in line.strip("|").split("|")]
+        header = [c.strip().lower().strip("`* ") for c in line.strip().strip("|").split("|")]
         if all(any(m in h for h in header) for m in must_have) and i + 1 < len(lines) and set(lines[i + 1].replace("|", "").strip()) <= set("-: "):
             rows = []
             for row in lines[i + 2:]:
                 if not row.startswith("|"):
                     break
-                cells = [c.strip() for c in row.strip("|").split("|")]
+                cells = [c.strip() for c in row.strip().strip("|").split("|")]
                 rows.append({h: (cells[k] if k < len(cells) else "") for k, h in enumerate(header)})
             return rows
     return []
@@ -64,6 +101,58 @@ def col(row: dict[str, str], name: str) -> str:
     return ""
 
 
+def _names(cell: str) -> list[str]:
+    """A comma-separated cell as bare names; `—`, `-` and empty give none."""
+    out = []
+    for part in cell.split(","):
+        name = part.strip().strip("`*_ ")
+        if name and name not in ("—", "-", "–", "none"):
+            out.append(name)
+    return out
+
+
+def _block(text: str, heading: str) -> str:
+    """The body under a `##` heading named heading, up to the next `##` heading; empty when absent."""
+    m = re.search(rf"^##\s+(?:\d+\.\s*)?{re.escape(heading)}\b.*?$(.*?)(?=^##\s|\Z)", text, re.M | re.S)
+    return m.group(1) if m else ""
+
+
+def _item(text: str, name: str) -> str:
+    """The body of a heading or a numbered bold item named name, up to the next of either.
+
+    Lines inside fenced code blocks never end the body, so a `# comment` in a shell block does
+    not read as a heading.
+    """
+    lines = text.splitlines()
+    start = None
+    for i, line in enumerate(lines):
+        if re.match(rf"\s*(#+\s*(\d+\.\s*)?{re.escape(name)}\b|(\d+\.\s*)?\*\*{re.escape(name)}\*\*)", line):
+            start = i
+            break
+    if start is None:
+        return ""
+    body = [re.sub(rf"^.*?\*\*{re.escape(name)}\*\*\s*[—:-]?", "", lines[start])]
+    fenced = False
+    for line in lines[start + 1:]:
+        if line.strip().startswith("```"):
+            fenced = not fenced
+        elif not fenced and re.match(r"\s*(#+\s|\d+\.\s*\*\*)", line):
+            break
+        body.append(line)
+    return "\n".join(body)
+
+
+def _field(text: str, key: str) -> str:
+    """The value of a `Key: value` line (bold, bulleted or numbered forms accepted); empty when absent."""
+    m = re.search(rf"^[ \t]*(?:[-*][ \t]+|\d+\.[ \t]+)?\**{re.escape(key)}\**[ \t]*(?::|—)\**[ \t]*(.*)$", text, re.M | re.I)
+    return m.group(1).strip() if m else ""
+
+
+# ---------------------------------------------------------------------------------------------
+# git
+# ---------------------------------------------------------------------------------------------
+
+
 def git(*args: str) -> str | None:
     """Run a git command in the repo root; its stripped stdout, or None when git fails."""
     try:
@@ -73,237 +162,707 @@ def git(*args: str) -> str | None:
     return out.stdout.strip() if out.returncode == 0 else None
 
 
-def last_commit(*paths: Path) -> str | None:
+def _rel(path: Path | str) -> str:
+    """A path as git sees it: relative to the root, posix; pathspec magic passed through."""
+    s = str(path)
+    if s.startswith(":("):
+        return s
+    p = Path(path)
+    if p.is_absolute():
+        try:
+            p = p.relative_to(ROOT)
+        except ValueError:
+            return p.as_posix()
+    return p.as_posix() or "."
+
+
+def last_commit(*paths: Path | str) -> str | None:
     """Full SHA of the newest commit touching any of paths; None when not a repo or none does."""
-    return git("log", "-1", "--format=%H", "--", *map(str, paths)) or None
+    return git("log", "-1", "--format=%H", "--", *map(_rel, paths)) or None
 
 
-def uncommitted(*paths: Path) -> bool:
+def uncommitted(*paths: Path | str) -> bool:
     """True when any of paths has staged, unstaged or untracked changes."""
-    return bool(git("status", "--porcelain", "--", *map(str, paths)))
+    return bool(git("status", "--porcelain", "--untracked-files=all", "--", *map(_rel, paths)))
 
 
-def changed_since(sha: str, *paths: Path, ignore_runs: tuple[str, ...] = ()) -> bool:
-    """True when a commit after sha touches any of paths, or sha is not in this history.
+def _is_regen(summary: str, pkg: str, section: str) -> bool:
+    return re.match(rf"{re.escape(pkg)}/{re.escape(section)}: regenerate \d+ intent tests", summary) is not None
 
-    A commit whose `Dev-Team-Run:` trailer names a run in ignore_runs does not count. That is
-    how a plan stays reviewed across `/dev-team:sync-design`, which appends **As shipped** to
-    every design of a package the plan review already passed: the designs it edits are what
-    shipped, not a new plan to review. A commit that touches paths *and* other work is not
-    exempt — the trailer is one run's own files.
+
+def _log(paths: tuple[Path | str, ...], since: str | None = None) -> list[tuple[str, str]]:
+    """(sha, summary) of every commit touching paths, newest first; only after since when given."""
+    rng = [f"{since}..HEAD"] if since else []
+    out = git("log", "--format=%H%x1f%s", *rng, "--", *map(_rel, paths)) or ""
+    return [tuple(line.split("\x1f", 1)) for line in out.splitlines() if "\x1f" in line]  # type: ignore[misc]
+
+
+def changed_since(sha: str, *paths: Path | str, skip_regen: tuple[str, str] | None = None) -> str | None:
+    """The first commit after sha touching paths ('U' for uncommitted changes), or None.
+
+    sha not in this history counts as changed: its sha is returned. With skip_regen=(pkg,
+    section), commits whose summary is that section's `regenerate <k> intent tests` are skipped.
     """
-    if git("merge-base", "--is-ancestor", sha, "HEAD") is None:
-        return True
-    log = git("log", "--format=%H%x1f%B%x1e", f"{sha}..HEAD", "--", *map(str, paths)) or ""
-    for entry in (e for e in log.split("\x1e") if e.strip()):
-        head, _, body = entry.strip().partition("\x1f")
-        run = re.search(r"^Dev-Team-Run:\s*(\S+)", body, re.M)
-        if not (run and run.group(1) in ignore_runs):
-            return bool(head)
-    return False
-
-
-def latest_review(stem: str) -> tuple[dt.date | None, str, str | None]:
-    """Newest docs/reviews/<date>-<stem>[-<n>].md → (date, verdict, its Commit: sha or None).
-
-    A second review on the same day is `<date>-<stem>-2.md`, a third `-3`, and so on; the
-    highest suffix on the newest date wins.
-    """
-    best: tuple[dt.date, int, Path] | None = None
-    pattern = re.compile(rf"(\d{{4}}-\d{{2}}-\d{{2}})-{re.escape(stem)}(?:-(\d+))?\.md")
-    for f in (DOCS / "reviews").glob(f"*-{stem}*.md"):
-        m = pattern.fullmatch(f.name)
-        if m:
-            key = (dt.date.fromisoformat(m.group(1)), int(m.group(2) or 1), f)
-            if best is None or key[:2] > best[:2]:
-                best = key
-    if not best:
-        return None, "", None
-    text = best[2].read_text()
-    v = re.search(r"^Verdict:\s*(.+)$", text, re.M)
-    c = re.search(r"^Commit:\s*([0-9a-f]{7,40})\b", text, re.M)
-    return best[0], (v.group(1).strip() if v else "?"), (c.group(1) if c else None)
-
-
-def review_reports(stem: str) -> list[tuple[dt.date, int, Path]]:
-    """Every docs/reviews/<date>-<stem>[-<n>].md, oldest first — (date, suffix, path)."""
-    pattern = re.compile(rf"(\d{{4}}-\d{{2}}-\d{{2}})-{re.escape(stem)}(?:-(\d+))?\.md")
-    out = []
-    for f in (DOCS / "reviews").glob(f"*-{stem}*.md"):
-        m = pattern.fullmatch(f.name)
-        if m:
-            out.append((dt.date.fromisoformat(m.group(1)), int(m.group(2) or 1), f))
-    return sorted(out, key=lambda t: t[:2])
-
-
-def rounds(stem: str) -> int:
-    """Consecutive `request changes` reviews of one scope since the last approving one.
-
-    stem is the report stem: `<pkg>-plan`, `<pkg>-<section>` or `<pkg>-package`. Nothing writes
-    this down: it is the count of reports the current review-and-fix loop has produced, 0 when
-    the newest review approves or there is none. The reviewer numbers its report from it
-    (`Round: <n+1>`) and stops the loop at the cap its Rounds and convergence section states;
-    /dev-team:run-package reads it in place of a counter of its own, which reset on re-run.
-    """
-    n = 0
-    for _, _, f in reversed(review_reports(stem)):
-        v = re.search(r"^Verdict:\s*(.+)$", f.read_text(), re.M)
-        if v and v.group(1).strip().lower() in ("approve", "approve with fixes"):
-            break
-        n += 1
-    return n
-
-
-def freshness(stem: str, *paths: Path, ignore_runs: tuple[str, ...] = ()) -> tuple[str, str]:
-    """Review state of the code at paths → (state, column text).
-
-    state is `reviewed` when the newest review has a Commit: line and no commit since it
-    touches paths; `uncommitted` when paths have changes git does not hold; else `stale`.
-    A review with no Commit: line is stale by definition — there is no mtime fallback.
-    ignore_runs names `Dev-Team-Run:` runs whose commits do not make a review stale.
-    """
-    rdate, verdict, rsha = latest_review(stem)
-    tail = f"{rdate or '—'} {verdict} @{rsha[:7] if rsha else '—'}".replace("  ", " ")
     if uncommitted(*paths):
-        return "uncommitted", "uncommitted"
-    if rsha and last_commit(*paths) and not changed_since(rsha, *paths, ignore_runs=ignore_runs):
-        return "reviewed", f"✓ {tail}"
-    return "stale", f"· {tail}"
-
-
-def open_followups(target: str) -> tuple[int, int]:
-    """(open items addressed to target, of which review-sourced)."""
-    f = DOCS / "followups.md"
-    if not f.exists():
-        return 0, 0
-    total = crit = 0
-    # An entry is its `- [ ]` line plus the indented lines that wrap it; `review ` may be on any.
-    for entry in re.split(r"\n(?=\S)", f.read_text()):
-        if re.match(rf"- \[ \]\s*{re.escape(target)}\s*:", entry):
-            total += 1
-            if "review " in entry:
-                crit += 1
-    return total, crit
-
-
-def intent(pkg_path: Path, sec: str) -> str:
-    """Pass/total of tests/intent/<sec> under pkg_path, from a collect and a run; `—` when absent."""
-    tree = pkg_path / "tests" / "intent" / sec
-    if not tree.is_dir():
-        return "—"
-    # uv when the repo is a uv project, else the interpreter on PATH; from the root, so the
-    # repo's own pytest config (pythonpath, rootdir) applies. No bytecode and no cache: a
-    # status run that left files behind would read as uncommitted changes on the next one.
-    runner = ["uv", "run", "pytest"] if (ROOT / "uv.lock").exists() else ["python3", "-m", "pytest"]
-    cmd = [*runner, str(tree.relative_to(ROOT)), "-q", "-p", "no:cacheprovider"]
-    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
-    try:
-        co = subprocess.run([*cmd, "--co"], capture_output=True, text=True, cwd=ROOT, env=env)
-        run = subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT, env=env)
-    except OSError:
-        return "?"
-    total = re.search(r"(\d+) tests? collected", co.stdout)
-    if not total:
-        return "?"
-    # Not failing = total less failed and errors: an xfail is the tester's mark for a decision
-    # still open on its assumption, and counts as holding.
-    bad = sum(int(n) for n in re.findall(r"(\d+) (?:failed|errors?)\b", run.stdout))
-    return f"{int(total.group(1)) - bad}/{total.group(1)}"
-
-
-def spine(pdocs: Path) -> str | None:
-    """The spine section when integration.md's **Spine** item or heading reads `spine only`, else None."""
-    f = pdocs / "integration.md"
-    if not f.exists():
-        return None
-    lines = f.read_text().splitlines()
-    for i, line in enumerate(lines):
-        if re.match(r"\s*(#+\s*Spine\b|(\d+\.\s*)?\*\*Spine\*\*)", line):
-            block = [line]
-            for nxt in lines[i + 1:]:
-                if re.match(r"\s*(#|\d+\.\s*\*\*)", nxt):
-                    break
-                block.append(nxt)
-            text = "\n".join(block)
-            if "spine only" not in text.lower():
-                return None
-            sec = re.search(r"^\W*Section:\W*([\w-]+)", text, re.M)
-            return sec.group(1) if sec else "?"
+        return UNCOMMITTED
+    if git("merge-base", "--is-ancestor", sha, "HEAD") is None:
+        return sha
+    for c, summary in reversed(_log(paths, since=sha)):
+        if not (skip_regen and _is_regen(summary, *skip_regen)):
+            return c
     return None
 
 
-def spine_only(pdocs: Path) -> bool:
-    """True when integration.md's **Spine** item or heading reads `spine only` before the next one."""
-    return spine(pdocs) is not None
+def _rev(*paths: Path | str, skip_regen: tuple[str, str] | None = None) -> str | None:
+    """'U' when any path is uncommitted, else the newest commit touching them, else None."""
+    if uncommitted(*paths):
+        return UNCOMMITTED
+    for c, summary in _log(paths):
+        if not (skip_regen and _is_regen(summary, *skip_regen)):
+            return c
+    return None
 
 
-def blocking_decisions(pkg: str) -> list[str]:
-    """D<n> that are open, have no assumption, and bind repo, pkg, or a section of pkg."""
-    dec = DOCS / "decisions.md"
-    if not dec.exists():
-        return []
-    out = []
-    for e in re.split(r"^## D", dec.read_text(), flags=re.M)[1:]:
-        field = lambda k: (re.search(rf"^{k}:[ \t]*(.*)$", e, re.M) or [None, ""])[1].strip()
-        scope = [t.strip().strip("`") for t in (field("Scope") or field("Sections")).split(",")]
-        binds = any(t in ("repo", pkg) or t.startswith(f"{pkg}/") for t in scope)
-        if binds and field("Status").lower() == "open" and not field("Assumption if unanswered"):
-            out.append("D" + e.split()[0])
+def _newer(b: str | None, a: str | None) -> bool:
+    """True when revision b is newer than revision a, by commit order ('U' is newest of all)."""
+    if b is None or b == a:
+        return False
+    if b == UNCOMMITTED:
+        return True
+    if a == UNCOMMITTED:
+        return False
+    if a is None:
+        return True
+    return git("merge-base", "--is-ancestor", a, b) is not None
+
+
+def _short(rev: str | None) -> str:
+    return "uncommitted" if rev == UNCOMMITTED else rev[:7] if rev else "—"
+
+
+# ---------------------------------------------------------------------------------------------
+# Packages and sections
+# ---------------------------------------------------------------------------------------------
+
+
+def packages() -> list[tuple[str, Path]]:
+    """(name, path) for every row of architecture.md's Packages table; docs/packages/* without one."""
+    arch = DOCS / "architecture.md"
+    out: list[tuple[str, Path]] = []
+    if arch.exists():
+        for row in table_rows(arch.read_text(), ("package", "path")):
+            name, path = col(row, "package"), col(row, "path")
+            if name and not name.startswith("-"):
+                out.append((name, (ROOT / (path or ".")).resolve()))
+    if not out and (DOCS / "packages").is_dir():
+        out = [(d.name, ROOT / "packages" / d.name) for d in sorted((DOCS / "packages").glob("*")) if d.is_dir()]
     return out
 
 
-def plan_gate(pkg: str) -> list[str]:
-    """Reasons /dev-team:run-package may not build pkg from its plan; empty when it may."""
-    pdocs = DOCS / "packages" / pkg
-    if spine_only(pdocs):
-        return [f"{pkg}: plan is spine-only ({spine(pdocs)}) — build it, then re-run plan-package"]
-    missing = [f"{n}.md" for n in ("contract", "integration", "surface") if not (pdocs / f"{n}.md").exists()]
-    if missing:
-        return [f"{pkg}: plan incomplete, missing {', '.join(missing)}"]
-    fails = []
-    _, verdict, _ = latest_review(f"{pkg}-plan")
-    state, _ = freshness(f"{pkg}-plan", *plan_paths(pdocs), ignore_runs=PLAN_EXEMPT_RUNS)
-    if state != "reviewed":
-        fails.append(f"{pkg}: plan not reviewed since last change")
-    elif verdict.lower() not in ("approve", "approve with fixes"):
-        pr = rounds(f"{pkg}-plan")
-        # Round 3 or later is the reviewer's unconditional stop; the round-2 convergence test is
-        # its own, in the report. The gate only says which command table row applies.
-        tail = f" (round {pr}; not converging — see the report's stop block)" if pr >= 3 else f" (round {pr})"
-        fails.append(f"{pkg}: plan review verdict is {verdict}{tail}")
-    _, crit = open_followups(f"{pkg}/plan")
-    if crit:
-        fails.append(f"{pkg}: {crit} open plan finding(s)")
-    for d in blocking_decisions(pkg):
-        fails.append(f"{pkg}: {d} is open with no assumption")
-    return fails
+def package_root(pkg: str) -> Path:
+    """packages/<pkg>, or the path the Packages table gives it (the root for `.`)."""
+    for name, path in packages():
+        if name == pkg:
+            return path
+    return ROOT / "packages" / pkg
 
 
-# git-workflow-and-versioning §Project convention, Baseline: the files the user edits between runs,
-# and agent memory, which agents write and nobody stages but the user.
-BASELINE_EXEMPT = ("docs/decisions.md", "docs/brief.md", "docs/constraints.md")
-
-# A plan review covers the plan: the package contract, every design, integration.md and
-# surface.md. interface.md is what shipped, so finalize-package writing it leaves the plan
-# review current, and sync-design appending **As shipped** to those designs does too.
-PLAN_EXEMPT_RUNS = ("sync-design",)
+def contract_path(pkg: str) -> Path:
+    return DOCS / "packages" / pkg / "contract.md"
 
 
-def plan_paths(pdocs: Path) -> tuple[Path, ...]:
-    """The documents a plan review covers, under docs/packages/<pkg>/."""
-    return (pdocs / "contract.md", pdocs / "integration.md", pdocs / "surface.md", pdocs / "design")
+def sections(pkg: str) -> list[dict[str, str]]:
+    """The Sections table rows of the package contract, path resolved relative to the root.
+
+    Keys: section, responsibility, path, owner doc, builds with, depends on, source. The
+    `surface` row's `depends on` is every other section, whatever its cell says.
+    """
+    f = contract_path(pkg)
+    if not f.exists():
+        return []
+    root = package_root(pkg)
+    out = []
+    for row in table_rows(f.read_text(), ("section", "path")):
+        name = col(row, "section")
+        if not name or name.startswith("-"):
+            continue
+        cell = col(row, "path")
+        default = root / "src" / pkg / ("" if name == "surface" else name)
+        path = (ROOT / cell) if cell and cell not in ("—", "-") else default
+        out.append({
+            "section": name,
+            "responsibility": col(row, "responsibility"),
+            "path": _rel(path.resolve()).rstrip("/"),
+            "owner doc": col(row, "owner"),
+            "builds with": col(row, "builds"),
+            "depends on": col(row, "depends"),
+            "source": col(row, "source"),
+        })
+    names = [r["section"] for r in out]
+    for r in out:
+        if r["section"] == "surface":
+            r["depends on"] = ", ".join(n for n in names if n != "surface")
+    return out
 
 
-def run_gate(pkg: str) -> tuple[str | None, list[str]]:
-    """(mode, reasons) for /dev-team:run-package on pkg: mode `spine` or `full` when reasons is empty."""
+def _row(pkg: str, section: str) -> dict[str, str] | None:
+    return next((r for r in sections(pkg) if r["section"] == section), None)
+
+
+def section_for_path(path: Path) -> tuple[str, str] | None:
+    """(pkg, section) by longest section path prefix; the package top level → (pkg, "surface").
+
+    A file under `<package root>/tests/intent/<section>/` or `tests/unit/<section>/` belongs to
+    that section too.
+    """
+    p = Path(path)
+    rel = _rel(p if p.is_absolute() else (ROOT / p).resolve())
+    best: tuple[int, str, str] | None = None
+    for pkg, root in packages():
+        proot = _rel(root)
+        for r in sections(pkg):
+            prefixes = [r["path"]]
+            for tree in ("intent", "unit"):
+                prefixes.append(f"{proot}/tests/{tree}/{r['section']}" if proot != "." else f"tests/{tree}/{r['section']}")
+            for pre in prefixes:
+                if rel == pre or rel.startswith(pre.rstrip("/") + "/"):
+                    if best is None or len(pre) > best[0]:
+                        best = (len(pre), pkg, r["section"])
+    return (best[1], best[2]) if best else None
+
+
+def _paths(pkg: str, section: str) -> dict[str, object]:
+    """Every path the state rules read for one section."""
+    row = _row(pkg, section) or {"path": _rel(package_root(pkg) / "src" / pkg / section), "source": ""}
+    root = package_root(pkg)
+    spath = row["path"]
+    nested = [r["path"] for r in sections(pkg) if r["section"] != section and r["path"].startswith(spath.rstrip("/") + "/")]
+    code = [spath, *(f":(exclude){n}" for n in nested)]
+    readme = (DOCS / "packages" / pkg / "interface.md") if section == "surface" else (ROOT / spath / "README.md")
+    return {
+        "row": row,
+        "design": DOCS / "packages" / pkg / "design" / f"{section}.md",
+        "intent": root / "tests" / "intent" / section,
+        "unit": root / "tests" / "unit" / section,
+        "code": code,
+        "readme": readme,
+    }
+
+
+# ---------------------------------------------------------------------------------------------
+# Ledgers: decisions, deviations, changes, reviews
+# ---------------------------------------------------------------------------------------------
+
+
+def _no_assumption(value: str) -> bool:
+    return value.strip().strip("`*_ ").lower() in ("", "none", "—", "-", "–")
+
+
+def decisions() -> list[dict[str, str]]:
+    """Every `## D<n> — <question>` entry: n, question, scope, status, assumption."""
+    f = DOCS / "decisions.md"
+    if not f.exists():
+        return []
+    out = []
+    for e in re.split(r"^## D(?=\d)", f.read_text(), flags=re.M)[1:]:
+        head = e.splitlines()[0] if e.strip() else ""
+        m = re.match(r"(\d+)\s*[—–-]?\s*(.*)", head)
+        if not m:
+            continue
+        out.append({
+            "n": m.group(1),
+            "question": m.group(2).strip(),
+            "scope": _field(e, "Scope") or _field(e, "Sections"),
+            "status": _field(e, "Status").lower(),
+            "assumption": _field(e, "Assumption if unanswered"),
+        })
+    return out
+
+
+def _binds(scope: str, pkg: str, section: str) -> bool:
+    for t in _names(scope):
+        if t in ("repo", pkg, f"{pkg}/{section}") or ("/" not in t and t == section):
+            return True
+    return False
+
+
+def blocking_decisions(pkg: str, section: str) -> list[str]:
+    """D<n> that are open, have no assumption, and bind repo, pkg, or pkg/section."""
+    return [f"D{d['n']}" for d in decisions()
+            if d["status"].startswith("open") and _no_assumption(d["assumption"]) and _binds(d["scope"], pkg, section)]
+
+
+DEVIATION_FIELDS = ("Clause", "Said", "Did", "Found", "Why", "Status", "Raised by", "Resolved by")
+
+
+def deviation_entries(pkg: str, section: str | None = None) -> list[dict[str, str]]:
+    """Entries of docs/deviations.md for pkg (and section): heading fields and the eight fields.
+
+    Keys: heading, pkg, section, date, kind, and Clause, Said, Did, Found, Why, Status, Raised
+    by, Resolved by.
+    """
+    f = DOCS / "deviations.md"
+    if not f.exists():
+        return []
+    out = []
+    for e in re.split(r"^## ", f.read_text(), flags=re.M)[1:]:
+        head = e.splitlines()[0].strip()
+        m = re.match(r"`?([\w.-]+)/([\w.-]+)`?\s+[—–-]+\s+(\S+)\s+[—–-]+\s+`?([\w:-]+)`?", head)
+        if not m or m.group(1) != pkg or (section is not None and m.group(2) != section):
+            continue
+        entry = {"heading": head, "pkg": m.group(1), "section": m.group(2), "date": m.group(3), "kind": m.group(4).lower()}
+        for k in DEVIATION_FIELDS:
+            entry[k] = _field(e, k)
+        out.append(entry)
+    return out
+
+
+def _status(entry: dict[str, str]) -> str:
+    return entry.get("Status", "").strip("`*_ ").lower().split()[0] if entry.get("Status", "").strip("`*_ ") else ""
+
+
+def open_spec_changes(pkg: str, section: str | None = None) -> list[dict[str, str]]:
+    return [e for e in deviation_entries(pkg, section) if e["kind"].startswith("spec-change") and _status(e) == "open"]
+
+
+def clause_key(text: str) -> tuple[str, str] | None:
+    """(n, item) of a `design §<n> <item>` citation, case-insensitive; None when there is none."""
+    m = re.search(r"design\s*§\s*(\d+)\s+`?([^\s:;,`]+)", text, re.I)
+    return (m.group(1), m.group(2).lower()) if m else None
+
+
+def change_files() -> list[dict[str, object]]:
+    """Every docs/changes/<slug>.md: slug, path, status, and the sections **Affected sections** names."""
+    out = []
+    for f in sorted((DOCS / "changes").glob("*.md")):
+        text = f.read_text()
+        affected = _item(text, "Affected sections")
+        out.append({
+            "slug": f.stem,
+            "path": f,
+            "status": _field(text, "Status").strip("`*_ ").lower(),
+            "sections": set(re.findall(r"\b([\w.-]+/[\w.-]+)\b", affected)),
+        })
+    return out
+
+
+def open_changes(pkg: str, section: str | None = None) -> list[dict[str, object]]:
+    out = []
+    for c in change_files():
+        if not str(c["status"]).startswith("open"):
+            continue
+        secs: set[str] = c["sections"]  # type: ignore[assignment]
+        if (section and f"{pkg}/{section}" in secs) or (not section and any(s.startswith(f"{pkg}/") for s in secs)):
+            out.append(c)
+    return out
+
+
+def _reports(pkg: str, section: str) -> dict[int, list[Path]]:
+    """Review reports of one section grouped by round. A 0.6-era report is round 1, suffix s."""
+    stem = re.escape(f"{pkg}-{section}")
+    new = re.compile(rf"\d{{4}}-\d{{2}}-\d{{2}}-{stem}-r(\d+)-([abs])\.md")
+    old = re.compile(rf"(\d{{4}}-\d{{2}}-\d{{2}})-{stem}(?:-(\d+))?\.md")
+    rounds_: dict[int, list[Path]] = {}
+    olds: list[tuple[str, int, Path]] = []
+    for f in (DOCS / "reviews").glob(f"*-{pkg}-{section}*.md"):
+        if m := new.fullmatch(f.name):
+            rounds_.setdefault(int(m.group(1)), []).append(f)
+        elif m := old.fullmatch(f.name):
+            olds.append((m.group(1), int(m.group(2) or 1), f))
+    if olds and 1 not in rounds_:
+        # Several same-scope 0.6 reports are one loop; the newest one speaks for it.
+        rounds_[1] = [max(olds)[2]]
+    return rounds_
+
+
+REPORT_FIELDS = ("Scope", "Commit", "Verdict", "Round", "Focus", "Convergence", "Diff")
+
+
+def _report_fields(f: Path) -> dict[str, str]:
+    text = f.read_text()
+    out = {}
+    for k in REPORT_FIELDS:
+        m = re.search(rf"^\**{k}:\**\s*(.*)$", text, re.M)
+        if m:
+            out[k] = m.group(1).strip()
+    return out
+
+
+def _verdict(value: str | None) -> str:
+    """A Verdict: value normalized; absent or unrecognized reads as `request changes`."""
+    v = (value or "").strip("`*_ ").lower()
+    if v.startswith("approve"):
+        return "approve"
+    if v.startswith("spec-change") or v.startswith("spec change"):
+        return "spec-change"
+    return "request changes"
+
+
+def rounds(pkg: str, section: str) -> int:
+    """The newest review round of a section; 0 with none."""
+    return max(_reports(pkg, section), default=0)
+
+
+def newest_round(pkg: str, section: str) -> tuple[int, str, str | None, dict[str, str]]:
+    """(n, verdict, Commit sha, header fields) of the newest round; (0, "", None, {}) with none.
+
+    The verdict is the worst of the round's reports. The Commit is the earliest over its
+    reports, and None when any report lacks one. Header fields are the worst report's.
+    """
+    reps = _reports(pkg, section)
+    if not reps:
+        return 0, "", None, {}
+    n = max(reps)
+    parsed = [_report_fields(f) for f in sorted(reps[n])]
+    worst = max(parsed, key=lambda p: VERDICT_RANK[_verdict(p.get("Verdict"))])
+    shas = [re.match(r"[0-9a-f]{7,40}", p.get("Commit", "").strip("`")) for p in parsed]
+    sha: str | None = None
+    if all(shas):
+        sha = shas[0].group(0)  # type: ignore[union-attr]
+        for m in shas[1:]:
+            if git("merge-base", "--is-ancestor", m.group(0), sha) is not None:  # type: ignore[union-attr]
+                sha = m.group(0)  # type: ignore[union-attr]
+    return n, _verdict(worst.get("Verdict")), sha, worst
+
+
+def _prior_unfixed(fields: dict[str, str]) -> int:
+    m = re.search(r"(\d+)\s+prior unfixed", fields.get("Convergence", ""))
+    return int(m.group(1)) if m else 0
+
+
+# ---------------------------------------------------------------------------------------------
+# Sources
+# ---------------------------------------------------------------------------------------------
+
+
+def _sources(cell: str) -> list[tuple[str, str]]:
+    """(kind, token) per entry of a `source` cell; a bare token is `api`."""
+    out = []
+    for name in _names(cell):
+        kind, _, token = name.partition(":") if ":" in name else ("api", "", name)
+        out.append((kind.strip().lower(), token.strip().lower()))
+    return out
+
+
+def _has_section_heading(text: str, pkg: str, section: str) -> bool:
+    return re.search(rf"^##\s+`?{re.escape(pkg)}/{re.escape(section)}`?\s*$", text, re.M) is not None
+
+
+def _strip_other_sections(text: str, pkg: str, section: str) -> str:
+    """A probe doc less every `## <pkg>/<section>` block but this section's own."""
+    parts = re.split(r"(?=^##\s)", text, flags=re.M)
+    keep = []
+    for part in parts:
+        m = re.match(r"##\s+`?([\w.-]+)/([\w.-]+)`?\s*$", part.splitlines()[0]) if part.startswith("##") else None
+        if m and (m.group(1), m.group(2)) != (pkg, section):
+            continue
+        keep.append(part.rstrip())
+    return "\n".join(keep).strip()
+
+
+def _probe_newer(doc: Path, design_rev: str | None, pkg: str, section: str) -> str | None:
+    """The probe doc's revision when it is newer than the design for this section, else None.
+
+    A commit that only appends or edits another section's `## <pkg>/<section>` entry does not
+    count: a new consuming section makes that section need PROBE, not this design stale.
+    """
+    doc_rev = _rev(doc)
+    if not _newer(doc_rev, design_rev):
+        return None
+    if design_rev in (None, UNCOMMITTED):
+        return doc_rev
+    before = git("show", f"{design_rev}:{_rel(doc)}")
+    if before is None:
+        return doc_rev
+    now = doc.read_text() if doc.exists() else ""
+    if _strip_other_sections(before, pkg, section) == _strip_other_sections(now, pkg, section):
+        return None
+    return doc_rev
+
+
+# ---------------------------------------------------------------------------------------------
+# The state
+# ---------------------------------------------------------------------------------------------
+
+
+def intent_docstrings(tree: Path) -> dict[str, str]:
+    """Test node id → first docstring line, for every test function under tree, via ast."""
+    out: dict[str, str] = {}
+    if not tree.is_dir():
+        return out
+    for f in sorted(tree.rglob("*.py")):
+        if not (f.name.startswith("test_") or f.name.endswith("_test.py")):
+            continue
+        try:
+            mod = ast.parse(f.read_text())
+        except (SyntaxError, UnicodeDecodeError):
+            continue
+        rel = _rel(f.resolve())
+
+        def visit(body: list[ast.stmt], prefix: str) -> None:
+            for node in body:
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("test"):
+                    doc = ast.get_docstring(node) or ""
+                    out[f"{prefix}::{node.name}"] = doc.strip().splitlines()[0] if doc.strip() else ""
+                elif isinstance(node, ast.ClassDef) and node.name.startswith("Test"):
+                    visit(node.body, f"{prefix}::{node.name}")
+
+        visit(mod.body, rel)
+    return out
+
+
+def _cap_hit(n: int, verdict: str, fields: dict[str, str]) -> bool:
+    return verdict == "request changes" and (n >= 3 or (n == 2 and _prior_unfixed(fields) >= 1))
+
+
+def section_state(pkg: str, section: str) -> tuple[str, str]:
+    """(STATE, evidence) for one section: the first rule in the module docstring that fires."""
+    p = _paths(pkg, section)
+    row: dict[str, str] = p["row"]  # type: ignore[assignment]
+    design: Path = p["design"]  # type: ignore[assignment]
+    intent: Path = p["intent"]  # type: ignore[assignment]
+    unit: Path = p["unit"]  # type: ignore[assignment]
+    readme: Path = p["readme"]  # type: ignore[assignment]
+    code: list[str] = p["code"]  # type: ignore[assignment]
+    regen = (pkg, section)
+
+    # 1. BLOCKED
+    if ds := blocking_decisions(pkg, section):
+        return "BLOCKED", f"{', '.join(ds)} open, no assumption"
+    n, verdict, rsha, fields = newest_round(pkg, section)
+    if _cap_hit(n, verdict, fields):
+        k = _prior_unfixed(fields)
+        return "BLOCKED", f"review r{n} request changes" + (f", {k} prior unfixed" if k else "") + " (cap)"
+
+    spec = open_spec_changes(pkg, section)
+    kinds = {e["kind"] for e in spec}
+
+    # 2. PLAN
+    if "spec-change:contract" in kinds:
+        e = next(e for e in spec if e["kind"] == "spec-change:contract")
+        return "PLAN", f"open {e['heading']}"
+
+    # 3. PROBE
+    for kind, token in _sources(row.get("source", "")):
+        doc = DOCS / "sources" / f"{token}.md"
+        if kind == "dataset" and not doc.exists():
+            return "PROBE", f"dataset:{token} has no {_rel(doc)}"
+        if kind == "api" and (not doc.exists() or not _has_section_heading(doc.read_text(), pkg, section)):
+            return "PROBE", f"api:{token} lacks ## {pkg}/{section}"
+
+    # 4. DESIGN
+    if not design.exists():
+        return "DESIGN", "no design"
+    if "spec-change:design" in kinds:
+        e = next(e for e in spec if e["kind"] == "spec-change:design")
+        return "DESIGN", f"open {e['heading']}"
+    design_rev = _rev(design)
+    for c in open_changes(pkg, section):
+        crev = _rev(c["path"])  # type: ignore[arg-type]
+        if _newer(crev, design_rev):
+            return "DESIGN", f"change {c['slug']} {_short(crev)} newer than design {_short(design_rev)}"
+    for _, token in _sources(row.get("source", "")):
+        doc = DOCS / "sources" / f"{token}.md"
+        if doc.exists() and (prev := _probe_newer(doc, design_rev, pkg, section)):
+            return "DESIGN", f"{_rel(doc)} {_short(prev)} newer than design {_short(design_rev)}"
+
+    # 5. TEST
+    if not intent.is_dir():
+        return "TEST", f"no {_rel(intent)}"
+    intent_rev = _rev(intent)
+    if _newer(design_rev, intent_rev):
+        if design_rev == UNCOMMITTED:
+            return "TEST", f"uncommitted: {_rel(design)}"
+        return "TEST", f"design {_short(design_rev)} newer than tests {_short(intent_rev)}"
+    if "spec-change:test" in kinds:
+        e = next(e for e in spec if e["kind"] == "spec-change:test")
+        return "TEST", f"open {e['heading']}"
+    approved = [e for e in deviation_entries(pkg, section) if e["kind"] == "deviation" and _status(e) == "approved"]
+    if approved:
+        docs = intent_docstrings(intent)
+        for e in approved:
+            key = clause_key(e["Clause"])
+            if key and any(clause_key(d) == key and "(deviation " not in d for d in docs.values()):
+                return "TEST", f"regenerate: {e['heading']}"
+
+    # 6. IMPLEMENT
+    if not readme.exists():
+        return "IMPLEMENT", f"no {_rel(readme)}"
+    readme_rev = _rev(readme)
+    intent_rev_nr = _rev(intent, skip_regen=regen)
+    if _newer(intent_rev_nr, readme_rev):
+        if intent_rev_nr == UNCOMMITTED:
+            return "IMPLEMENT", f"uncommitted: {_rel(intent)}"
+        return "IMPLEMENT", f"tests {_short(intent_rev_nr)} newer than README {_short(readme_rev)}"
+
+    # 7. REVIEW
+    if n == 0:
+        return "REVIEW", "no review"
+    code_paths = (*code, unit, intent, readme)
+    if rsha is None:
+        return "REVIEW", f"review r{n} has no Commit:"
+    if (after := changed_since(rsha, *code_paths, skip_regen=regen)) is not None:
+        if after == UNCOMMITTED:
+            return "REVIEW", f"uncommitted: {code[0]}"
+        return "REVIEW", f"code {_short(after)} newer than review r{n} {rsha[:7]}"
+    if verdict == "spec-change":
+        return "REVIEW", f"review r{n} spec-change, no open entry left"
+
+    # 8. FIX n
+    if verdict == "request changes":
+        return f"FIX {n}", f"review r{n} request changes"
+
+    # 9. DONE
+    return "DONE", f"review r{n} approve @{rsha[:7]}"
+
+
+def _section_rev(pkg: str, section: str) -> str | None:
+    p = _paths(pkg, section)
+    return _rev(p["design"], p["intent"], p["unit"], p["readme"], *p["code"])  # type: ignore[arg-type]
+
+
+def package_table(pkg: str) -> list[dict[str, object]]:
+    """One dict per section: section, state, evidence, ready, round, spec, commit."""
+    rows = sections(pkg)
+    states = {r["section"]: section_state(pkg, r["section"]) for r in rows}
+    names = set(states)
+    out = []
+    for r in rows:
+        sec = r["section"]
+        state, ev = states[sec]
+        deps = [d for d in _names(r["depends on"]) if d in names and d != sec]
+        ready = state not in ("DONE", "BLOCKED") and all(states[d][0] == "DONE" for d in deps)
+        n = rounds(pkg, sec)
+        spec = ", ".join(sorted({e["kind"] for e in open_spec_changes(pkg, sec)})) or "—"
+        out.append({"section": sec, "state": state, "evidence": ev, "ready": ready,
+                    "round": n, "spec": spec, "commit": _short(_section_rev(pkg, sec))})
+    return out
+
+
+# ---------------------------------------------------------------------------------------------
+# next
+# ---------------------------------------------------------------------------------------------
+
+
+def _to_sync(pkg: str) -> bool:
+    approved = [e for e in deviation_entries(pkg) if e["kind"] == "deviation" and _status(e) == "approved"]
+    return bool(approved or open_changes(pkg))
+
+
+def next_command(pkg: str, table: list[dict[str, object]] | None = None) -> str:
+    """The one command to type next for pkg, every name filled in."""
+    if not contract_path(pkg).exists():
+        return f"/dev-team:plan-package {pkg}"
+    table = package_table(pkg) if table is None else table
+    for r in table:
+        if r["state"] == "BLOCKED" and str(r["evidence"]).startswith("D"):
+            d = str(r["evidence"]).split(",")[0].split()[0]
+            return f"answer {d} in docs/decisions.md, then /dev-team:run-package {pkg}"
+    for r in table:
+        if r["state"] == "BLOCKED":
+            return f"/dev-team:run-package {pkg} {r['section']} --step REVIEW (one more round) or /dev-team:run-package {pkg} --defer"
+    if any(r["ready"] for r in table):
+        return f"/dev-team:run-package {pkg}"
+    if any(r["state"] != "DONE" for r in table):
+        return f"/dev-team:run-package {pkg}"
+    if _to_sync(pkg):
+        return f"/dev-team:sync-plan {pkg}"
+    others = [name for name, _ in packages() if name != pkg]
+    for other in others:
+        if contract_path(other).exists() and any(r["state"] != "DONE" for r in package_table(other)):
+            return f"/dev-team:run-package {other}"
+    for other in others:
+        if not contract_path(other).exists():
+            return f"/dev-team:plan-package {other}"
+    return "/dev-team:finalize-project"
+
+
+def package_report(pkg: str) -> list[str]:
+    lines = [f"## {pkg}", "section · state · evidence · ready · round · open spec-change · last commit"]
+    if not contract_path(pkg).exists():
+        lines += [f"shipped: no (no {_rel(contract_path(pkg))})", f"next: {next_command(pkg)}"]
+        return lines
+    table = package_table(pkg)
+    for r in table:
+        lines.append(" · ".join([str(r["section"]), str(r["state"]), str(r["evidence"]),
+                                 "yes" if r["ready"] else "no", str(r["round"] or "—"),
+                                 str(r["spec"]), str(r["commit"])]))
+    surface = next((r for r in table if r["section"] == "surface"), None)
+    if surface is None:
+        lines.append("shipped: no (no surface row)")
+    else:
+        lines.append("shipped: yes" if surface["state"] == "DONE" else f"shipped: no (surface {surface['state']})")
+    lines.append(f"next: {next_command(pkg, table)}")
+    return lines
+
+
+# ---------------------------------------------------------------------------------------------
+# docs/constraints.md and the Toolchain
+# ---------------------------------------------------------------------------------------------
+
+
+def constraints_rows(pkg: str) -> list[tuple[str, str, str, str]]:
+    """(heading, dimension, command with <pkg> filled, scope) over Floor, Enforced and Measured."""
+    f = DOCS / "constraints.md"
+    if not f.exists():
+        return []
+    text = f.read_text()
+    out = []
+    for heading in ("Floor", "Enforced", "Measured"):
+        for row in table_rows(_block(text, heading), ("command", "scope")):
+            cmd = col(row, "command")
+            if cmd:
+                dim = col(row, "check") or col(row, "dimension")
+                out.append((heading, dim, cmd.replace("<pkg>", pkg), col(row, "scope").lower() or "package"))
+    return out
+
+
+def guarded_items() -> list[str]:
+    """The Guarded bullet texts of docs/constraints.md."""
+    f = DOCS / "constraints.md"
+    if not f.exists():
+        return []
+    return [m.group(1).strip() for m in re.finditer(r"^\s*[-*]\s+(.+)$", _block(f.read_text(), "Guarded"), re.M)]
+
+
+def exceptions_rows() -> list[dict[str, str]]:
+    """The Exceptions table rows of docs/constraints.md."""
+    f = DOCS / "constraints.md"
+    if not f.exists():
+        return []
+    return table_rows(_block(f.read_text(), "Exceptions"), ("path", "check"))
+
+
+def toolchain_commands() -> list[str]:
+    """One command per line of every fenced block under architecture.md's Toolchain heading."""
+    f = DOCS / "architecture.md"
+    if not f.exists():
+        return []
+    body = _item(f.read_text(), "Toolchain")
+    out = []
+    for block in re.findall(r"^\s*```[^\n]*\n(.*?)^\s*```", body, re.M | re.S):
+        for line in block.splitlines():
+            line = line.strip()
+            if line and not line.startswith("#"):
+                out.append(line)
+    return out
+
+
+# ---------------------------------------------------------------------------------------------
+# Flags
+# ---------------------------------------------------------------------------------------------
+
+
+def run_gate(pkg: str | None) -> list[str]:
+    """Reasons a run may not start; empty when it may."""
     if git("rev-parse", "--is-inside-work-tree") is None:
-        return None, ["not a git repository; `git init`, create a branch, and re-run"]
+        return ["not a git repository; git init, create a branch, and re-run"]
     fails = []
     branch = git("branch", "--show-current") or ""
     if branch in ("main", "master"):
         fails.append(f"on `{branch}`; create a feature branch and re-run")
-    # -z: NUL-separated and unquoted, read unstripped — git() strips the leading status space
-    # of the first entry. A rename or copy entry is followed by its source path, skipped.
+    # -z: NUL-separated and unquoted, read unstripped. A rename or copy entry is followed by
+    # its source path, skipped.
     raw = subprocess.run(["git", "status", "--porcelain", "-z", "--untracked-files=all"],
                          capture_output=True, text=True, cwd=ROOT).stdout
     entries = iter(raw.split("\0"))
@@ -314,247 +873,180 @@ def run_gate(pkg: str) -> tuple[str | None, list[str]]:
         if entry[0] in "RC":
             next(entries, None)
         path = entry[3:]
-        if path not in BASELINE_EXEMPT and not path.startswith(".claude/agent-memory/"):
+        if not any(path == e or (e.endswith("/") and path.startswith(e)) for e in BASELINE_EXEMPT):
             dirty.append(path)
     if dirty:
-        fails.append(f"uncommitted changes outside the user-edited files: {', '.join(dirty)}")
-    pdocs = DOCS / "packages" / pkg
-    missing = [f"{n}.md" for n in ("contract", "integration") if not (pdocs / f"{n}.md").exists()]
-    if missing:
-        fails.append(f"{pkg}: missing {', '.join(missing)} — run /dev-team:plan-package {pkg}")
-    if fails:
-        return None, fails
-    if spine_only(pdocs):
-        return "spine", []
-    if (pdocs / "interface.md").exists():
-        # Shipped: finalize-package wrote interface.md and sync-design appends As shipped under
-        # docs/packages/<pkg>/, so the plan review is stale by construction. The package review
-        # is the gate now; the driver has only the close-out left to resume.
-        return "full", []
-    pfails = plan_gate(pkg)
-    return (None, pfails) if pfails else ("full", [])
+        fails.append(f"uncommitted changes outside the user-edited files: {', '.join(dirty)}; commit or stash them and re-run")
+    if pkg and not contract_path(pkg).exists():
+        fails.append(f"{pkg}: missing docs/packages/{pkg}/contract.md — run /dev-team:plan-package {pkg}")
+    return fails
 
 
-def constraints_rows(pkg: str) -> list[tuple[str, str, str]]:
-    """(dimension, command, scope) for every Floor and Enforced row of docs/constraints.md, <pkg> filled in."""
-    f = DOCS / "constraints.md"
-    if not f.exists():
-        return []
-    text = f.read_text()
-    out = []
-    for heading, name_col in (("Floor", "check"), ("Enforced", "dimension")):
-        m = re.search(rf"^##\s+{heading}\b.*?(?=^##\s|\Z)", text, re.M | re.S)
-        for row in table_rows(m.group(0), ("command", "scope")) if m else []:
-            cmd = col(row, "command")
-            if cmd:
-                out.append((col(row, name_col) or col(row, "dimension"), cmd.replace("<pkg>", pkg), col(row, "scope").lower() or "package"))
-    return out
+def _dunder_all(init: Path) -> set[str] | None:
+    try:
+        mod = ast.parse(init.read_text())
+    except (OSError, SyntaxError):
+        return None
+    for node in mod.body:
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target] if isinstance(node, ast.AnnAssign) else []
+        if any(isinstance(t, ast.Name) and t.id == "__all__" for t in targets) and node.value is not None:
+            try:
+                return set(ast.literal_eval(node.value))
+            except ValueError:
+                return None
+    return set()
 
 
-_constraint_results: dict[str, bool] = {}
-
-
-def run_constraint(command: str) -> bool:
-    """Run one constraints command from the repo root; True when it exits 0. Cached per command.
-
-    No shell; a 10-minute timeout. Tool caches (pytest, coverage, mypy, ruff, bytecode) go to a
-    temporary directory: a status run that left files behind would read as uncommitted changes.
-    """
-    if command in _constraint_results:
-        return _constraint_results[command]
-    with tempfile.TemporaryDirectory() as tmp:
-        env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "COVERAGE_FILE": f"{tmp}/.coverage",
-               "MYPY_CACHE_DIR": f"{tmp}/mypy", "RUFF_CACHE_DIR": f"{tmp}/ruff",
-               "PYTEST_ADDOPTS": (os.environ.get("PYTEST_ADDOPTS", "") + " -p no:cacheprovider").strip()}
-        try:
-            ok = subprocess.run(shlex.split(command), capture_output=True, cwd=ROOT, env=env, timeout=600).returncode == 0
-        except (OSError, subprocess.TimeoutExpired):
-            ok = False
-    _constraint_results[command] = ok
-    return ok
-
-
-def constraint_failures(pkg: str) -> tuple[int, list[str]]:
-    """(rows run, one gate line per failing row) for pkg; (0, []) with no docs/constraints.md."""
-    rows = constraints_rows(pkg)
-    fails = [f"{pkg}: constraint {dim} FAIL ({cmd})" for dim, cmd, _ in rows if not run_constraint(cmd)]
-    return len(rows), fails
-
-
-def markers(path: Path) -> int:
-    """Count TODO(decision ...) markers under a path."""
-    if not path.exists():
-        return 0
-    return sum(len(re.findall(r"TODO\(decision", p.read_text(errors="ignore"))) for p in path.rglob("*.py"))
-
-
-def packages() -> list[tuple[str, Path]]:
-    arch = DOCS / "architecture.md"
-    out: list[tuple[str, Path]] = []
-    if arch.exists():
-        for row in table_rows(arch.read_text(), ("package", "path")):
-            name, path = col(row, "package"), col(row, "path")
-            if name and not name.startswith("-"):
-                out.append((name, ROOT / (path or ".")))
-    if not out:
-        out = [(d.name, ROOT / "packages" / d.name) for d in sorted((DOCS / "packages").glob("*")) if d.is_dir()]
-    return out
-
-
-def package_report(pkg: str, pkg_path: Path) -> tuple[list[str], list[str]]:
-    """Lines to print and a list of finalize-gate failures."""
-    pdocs = DOCS / "packages" / pkg
-    have = {n: (pdocs / f"{n}.md").exists() for n in ("contract", "integration", "surface", "interface")}
-    status = "shipped" if have["interface"] else ("planned" if have["contract"] else "unplanned")
-    lines = [f"\n## {pkg}  —  {status}   " + "  ".join(f"{k}.md {'✓' if v else '·'}" for k, v in have.items())]
-    fails: list[str] = []
-    if not have["contract"]:
-        return lines + ["  (no contract.md — run /dev-team:plan-package)"], [f"{pkg}: no contract.md"]
-    if not have["surface"]:
-        fails.append(f"{pkg}: no surface.md")
-    pdate, pverdict, psha = latest_review(f"{pkg}-plan")
-    pstate, _ = freshness(f"{pkg}-plan", *plan_paths(pdocs), ignore_runs=PLAN_EXEMPT_RUNS)
-    ptail = f"{pdate} {pverdict} @{psha[:7] if psha else '—'}"
-    if spine_only(pdocs):
-        lines.append(f"  plan: spine only ({spine(pdocs)}) — build it, then re-run plan-package")
-    else:
-        pr = rounds(f"{pkg}-plan")
-        lines.append("  plan: " + ("unreviewed" if not pdate else f"reviewed {ptail}" if pstate == "reviewed" else f"{pstate} (last review {ptail})")
-                     + (f"; {pr} request-changes round(s) since last approve" if pr else ""))
-    rows = table_rows((pdocs / "contract.md").read_text(), ("section", "path"))
-    lines.append("  section              design  built  intent   reviewed-since-build             open followups          markers")
-    all_built = True
-    for row in rows:
-        sec = col(row, "section")
-        if not sec:
+def surface_check(pkg: str) -> tuple[str, list[str]]:
+    """(PASS | FAIL | n/a, reasons): __all__ vs interface.md Public names vs READMEs' Public: yes rows, and lazy import."""
+    iface = DOCS / "packages" / pkg / "interface.md"
+    if not iface.exists():
+        return "n/a", []
+    fails = []
+    root = package_root(pkg)
+    rows = sections(pkg)
+    surface_row = next((r for r in rows if r["section"] == "surface"), None)
+    top = ROOT / (surface_row["path"] if surface_row else _rel(root / "src" / pkg))
+    all_names = _dunder_all(top / "__init__.py")
+    if all_names is None:
+        fails.append(f"no readable __all__ in {_rel(top / '__init__.py')}")
+        all_names = set()
+    public = {col(r, "name") for r in table_rows(_item(iface.read_text(), "Public names"), ("name",)) if col(r, "name")}
+    readmes: set[str] = set()
+    for r in rows:
+        if r["section"] == "surface":
             continue
-        spath = ROOT / col(row, "path") if col(row, "path") else pkg_path / "src" / pkg / sec
-        readme = spath / "README.md"
-        design = (pdocs / "design" / f"{sec}.md").exists()
-        built = readme.exists()
-        all_built &= built
-        tests = pkg_path / "tests"
-        state, rev_txt = freshness(f"{pkg}-{sec}", spath, tests / "unit" / sec, tests / "intent" / sec)
-        if (r := rounds(f"{pkg}-{sec}")):
-            rev_txt += f" r{r}"
-        fu, crit = open_followups(f"{pkg}/{sec}")
-        ifu, _ = open_followups(f"{pkg}/{sec}/intent")
-        mk = markers(spath)
-        itxt = intent(pkg_path, sec)
-        lines.append(f"  {sec:<20} {'✓' if design else '·':^6} {'✓' if built else '·':^6} {itxt:^7}  {rev_txt:<32} {fu + ifu:>3} ({crit} review, {ifu} intent)  {mk:>5}")
-        if not built:
-            fails.append(f"{pkg}/{sec}: no README (unbuilt)")
-        elif state == "uncommitted":
-            fails.append(f"{pkg}/{sec}: uncommitted changes")
-        elif state != "reviewed":
-            fails.append(f"{pkg}/{sec}: not reviewed since last build")
-        if crit:
-            fails.append(f"{pkg}/{sec}: {crit} open review-sourced follow-up(s)")
-        if ifu:
-            fails.append(f"{pkg}/{sec}: {ifu} open follow-up(s) in tests/intent — run /dev-team:test-section {pkg}/{sec}")
-    sfu, _ = open_followups(f"{pkg}/surface")
-    src = pkg_path / "src" / pkg
-    surface_paths = [src / n for n in ("__init__.py", "pipelines", "pipelines.py", "cli.py", "cli")]
-    _, prev = freshness(f"{pkg}-package", *surface_paths)
-    if (r := rounds(f"{pkg}-package")):
-        prev += f" r{r}"
-    lines.append(f"  surface: open followups {sfu}; package review {prev}")
-    if (DOCS / "constraints.md").exists() and not src.exists():
-        lines.append(f"  constraints: {len(constraints_rows(pkg))} enforced, not run (no code)")
-    elif (DOCS / "constraints.md").exists():
-        n, cfails = constraint_failures(pkg)
-        lines.append(f"  constraints: {n} enforced, {len(cfails)} failing")
-        fails += cfails
+        f = ROOT / r["path"] / "README.md"
+        if f.exists():
+            for er in table_rows(_item(f.read_text(), "Entry points and interfaces"), ("name",)):
+                if col(er, "public").lower().startswith("yes") and col(er, "name"):
+                    readmes.add(col(er, "name").split("(")[0])
+    for a, an, b, bn in ((all_names, "__all__", public, "interface.md Public names"),
+                         (public, "interface.md Public names", readmes, "README Public: yes rows"),
+                         (readmes, "README Public: yes rows", all_names, "__all__")):
+        for name in sorted(a - b):
+            fails.append(f"{name}: in {an}, not in {bn}")
+    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1",
+           "PYTHONPATH": os.pathsep.join(filter(None, [str(top.parent), os.environ.get("PYTHONPATH", "")]))}
+    try:
+        res = subprocess.run([sys.executable, "-X", "importtime", "-c", f"import {pkg}"],
+                             capture_output=True, text=True, cwd=ROOT, env=env, timeout=120)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        fails.append(f"import {pkg} did not run: {exc}")
     else:
-        lines.append("  constraints: no docs/constraints.md")
-    if all_built and status == "planned":
-        lines[0] = lines[0].replace("planned", "built, not finalized")
-    return lines, fails
+        if res.returncode != 0:
+            last = (res.stderr.strip().splitlines() or ["?"])[-1]
+            fails.append(f"import {pkg} failed: {last}")
+        else:
+            eager = sorted({m.group(1) for m in re.finditer(rf"\|\s*({re.escape(pkg)}\.[\w.]+)\s*$", res.stderr, re.M)
+                            if m.group(1).split(".")[1] in {r['section'] for r in rows if r['section'] != 'surface'}})
+            for mod in eager:
+                fails.append(f"import {pkg} loads section module {mod} (not lazy)")
+    return ("FAIL" if fails else "PASS"), fails
 
 
 def repo_report() -> list[str]:
-    lines = ["\n## repo"]
-    dec = DOCS / "decisions.md"
-    if dec.exists():
-        text = dec.read_text()
-        entries = re.split(r"^## D", text, flags=re.M)[1:]
-        opn = sum(1 for e in entries if re.search(r"^Status:\s*(open|deferred)", e, re.M))
-        decided_unapplied = [e.split()[0] for e in entries if re.search(r"^Status:\s*decided", e, re.M) and not re.search(r"^Applied:\s*\S", e, re.M)]
-        lines.append(f"  decisions: {len(entries)} total, {opn} open/deferred, decided without Applied: {', '.join('D' + d for d in decided_unapplied) or 'none'}")
-    else:
-        lines.append("  decisions: no ledger")
-    plans = [p.parent.name for p in (DOCS / "plans").glob("*/integration.md")]
-    synced = (DOCS / "plans" / "synced.md").read_text() if (DOCS / "plans" / "synced.md").exists() else ""
-    unsynced = [s for s in plans if s not in synced]
-    lines.append(f"  plans: {len(plans)} with integration.md, unsynced: {', '.join(unsynced) or 'none'}")
+    """The repo-wide gap list, six groups, for the documenter's Known gaps."""
+    pk, secs, specs, chg = [], [], [], []
+    for pkg, _ in packages():
+        if not contract_path(pkg).exists():
+            pk.append(f"{pkg}: no contract")
+            continue
+        table = package_table(pkg)
+        done = sum(1 for r in table if r["state"] == "DONE")
+        surface = next((r for r in table if r["section"] == "surface"), None)
+        if surface and surface["state"] == "DONE":
+            pk.append(f"{pkg}: shipped")
+        elif not any(_paths(pkg, str(r["section"]))["design"].exists() for r in table):  # type: ignore[union-attr]
+            pk.append(f"{pkg}: planned")
+        else:
+            pk.append(f"{pkg}: building ({done}/{len(table)} DONE)")
+        secs += [f"{pkg}/{r['section']}: {r['state']}" for r in table if r["state"] != "DONE"]
+        specs += [e["heading"] for e in open_spec_changes(pkg)]
+    for c in change_files():
+        if str(c["status"]).startswith("open"):
+            chg.append(str(c["slug"]))
+    decs = [f"D{d['n']}: {d['question']}" for d in decisions() if d["status"].startswith(("open", "deferred"))]
+    backlog: dict[str, int] = {}
     fu = DOCS / "followups.md"
     if fu.exists():
-        lines.append(f"  open followups: {sum(1 for l in fu.read_text().splitlines() if l.startswith('- [ ]'))}")
+        for m in re.finditer(r"^- \[ \]\s*`?([^:`]+?)`?\s*:", fu.read_text(), re.M):
+            backlog[m.group(1).strip()] = backlog.get(m.group(1).strip(), 0) + 1
+    groups = [("packages", pk), ("sections", secs), ("decisions", decs), ("spec-changes", specs),
+              ("changes", chg), ("backlog", [f"{t}: {n}" for t, n in backlog.items()])]
+    lines = []
+    for label, items in groups:
+        lines.append(f"{label}:")
+        lines += [f"  - {i}" for i in items] or ["  - none"]
     return lines
+
+
+def _flag_value(argv: list[str], flag: str) -> tuple[bool, str | None]:
+    """(present, value) for a flag with an optional non-flag value after it; removes both from argv."""
+    if flag not in argv:
+        return False, None
+    i = argv.index(flag)
+    argv.pop(i)
+    if i < len(argv) and not argv[i].startswith("--"):
+        return True, argv.pop(i)
+    return True, None
 
 
 def main() -> int:
     argv = sys.argv[1:]
-    plan_pkg = None
-    if "--plan-gate" in argv:
-        i = argv.index("--plan-gate")
-        if i + 1 >= len(argv) or argv[i + 1].startswith("--"):
-            print("--plan-gate needs a package name")
-            return 2
-        plan_pkg = argv.pop(i + 1)
-    args = [a for a in argv if not a.startswith("--")]
-    if "--rounds" in argv:
-        # The reviewer's one question before a review; no package report, so no test or
-        # constraint command runs. <pkg> is the plan, <pkg>/<section> a section, <pkg>/surface
-        # the package review.
-        i = argv.index("--rounds")
-        target = argv[i + 1] if i + 1 < len(argv) and not argv[i + 1].startswith("--") else None
-        if not target:
-            print("--rounds needs a target: status.py --rounds <pkg> | <pkg>/<section> | <pkg>/surface")
-            return 2
-        pkg, _, sec = target.partition("/")
-        stem = f"{pkg}-plan" if not sec else f"{pkg}-package" if sec == "surface" else f"{pkg}-{sec}"
-        print(f"rounds since last approve: {rounds(stem)}")
-        return 0
-    gate = "--gate" in argv
-    run = "--run-gate" in argv
-    if run and not args:
-        print("--run-gate needs a package name: status.py <pkg> --run-gate")
+    has_rounds, rounds_target = _flag_value(argv, "--rounds")
+    has_surface, surface_pkg = _flag_value(argv, "--surface")
+    has_gate, gate_pkg = _flag_value(argv, "--run-gate")
+    has_repo = "--repo" in argv
+    argv = [a for a in argv if a != "--repo"]
+    unknown = [a for a in argv if a.startswith("--")]
+    if unknown:
+        print(f"unknown flag: {' '.join(unknown)}")
         return 2
-    if plan_pkg and not args:
-        args = [plan_pkg]
-    only = args[0] if args else None
+    only = argv[0] if argv else None
+    code = 0
+    if has_rounds:
+        pkg, _, sec = (rounds_target or "").partition("/")
+        if not pkg or not sec:
+            print("--rounds needs a target: status.py --rounds <pkg>/<section>")
+            return 2
+        n = rounds(pkg, sec)
+        print(f"rounds: {n}")
+        print(f"next round: {n + 1}")
+    if has_gate:
+        fails = run_gate(gate_pkg or only)
+        print("run gate: PASS" if not fails else "run gate: FAIL")
+        for f in fails:
+            print(f"  - {f}")
+        code |= 1 if fails else 0
+    if has_surface:
+        if not surface_pkg:
+            print("--surface needs a package: status.py --surface <pkg>")
+            return 2
+        verdict, fails = surface_check(surface_pkg)
+        print(f"surface: {verdict}" + (" (no interface.md)" if verdict == "n/a" else ""))
+        for f in fails:
+            print(f"  - {f}")
+        code |= 1 if verdict == "FAIL" else 0
+    if has_repo:
+        if not DOCS.exists():
+            print("no docs/ directory here — run from the repo root")
+            return 2
+        print("\n".join(repo_report()))
+    if has_rounds or has_gate or has_surface or has_repo:
+        return code
     if not DOCS.exists():
         print("no docs/ directory here — run from the repo root")
         return 2
-    all_fails: list[str] = []
-    for pkg, path in packages():
-        if only and pkg != only:
-            continue
-        lines, fails = package_report(pkg, path)
-        print("\n".join(lines))
-        all_fails += fails
-    if not only:
-        print("\n".join(repo_report()))
-    code = 0
-    if plan_pkg:
-        pfails = plan_gate(plan_pkg)
-        print("\nplan gate:", "PASS" if not pfails else "FAIL")
-        for f in pfails:
-            print("  -", f)
-        print(f"plan rounds since last approve: {rounds(f'{plan_pkg}-plan')}")
-        code |= 1 if pfails else 0
-    if run:
-        mode, rfails = run_gate(only)
-        print("\nrun gate:", f"PASS (mode: {mode})" if mode else "FAIL")
-        for f in rfails:
-            print("  -", f)
-        code |= 0 if mode else 1
-    if gate:
-        print("\nfinalize gate:", "PASS" if not all_fails else "FAIL")
-        for f in all_fails:
-            print("  -", f)
-        code |= 1 if all_fails else 0
+    pkgs = packages()
+    if not pkgs:
+        print("no packages: docs/architecture.md has no Packages table and docs/packages/ is empty")
+        print("next: /dev-team:plan-repo")
+        return 0
+    if only and only not in {name for name, _ in pkgs}:
+        pkgs = [(only, package_root(only))]
+    blocks = [package_report(pkg) for pkg, _ in pkgs if not only or pkg == only]
+    print("\n\n".join("\n".join(b) for b in blocks))
     return code
 
 

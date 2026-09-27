@@ -303,6 +303,17 @@ headings:
       - file: skills/workspace-scaffold/SKILL.md
         cites: ['Floor', 'Enforced']
 
+# Every frontmatter key is one the platform documents and plugins honor. The key lists are
+# plugin-anatomy's `frontmatter-keys` blocks, not a copy here: a misspelled key (`allowed_tools`)
+# fails as undocumented, and a key plugin agents ignore (`hooks`, `mcpServers`) fails as ignored.
+frontmatter:
+  - name: every agent uses only fields plugin agents honor
+    kind: agent
+    files: 'agents/*.md'
+  - name: every skill uses only documented frontmatter fields
+    kind: skill
+    files: 'skills/*/SKILL.md'
+
 # A list of names that goes stale when the directory it describes changes.
 names_listed:
   - name: every skill this plugin ships is named in reserved-skill-names

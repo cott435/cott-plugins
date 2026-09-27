@@ -1,0 +1,328 @@
+#!/usr/bin/env python3
+"""Build one state case as a git repository, so status.py can be run against it.
+
+Usage:  python3 build.py <case> <dest>
+
+Copies two-package/'s brief and dataset into dest (which must not exist), runs `git init`,
+commits an empty root on `main`, creates branch `build` (unless the case says
+`"branch": "main"`), commits the brief and dataset, then applies the case's steps in order,
+one commit per step, so commit order is the evidence. Files listed under the case's `dirty`
+are written last and left uncommitted. Prints dest.
+
+A step is either explicit, `{"files": {"<path>": "<content>"}, "message": "<summary>"}`, or a
+macro, `{"do": "<macro>", ...}`; the macros are the functions named `m_<macro>` below. In any
+file content, `{HEAD}` is replaced with the sha of the commit the step is made on top of — the
+`Commit:` a reviewer writes is the code it reviewed, not its own report's commit.
+"""
+
+from __future__ import annotations
+
+import json
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+TWO_PACKAGE = HERE.parent / "two-package"
+PKG = "data"
+DATE = "2026-09-27"
+
+ARCHITECTURE = """# Architecture — trade tape
+
+## Packages
+
+| package | path | depends on | covers |
+|---|---|---|---|
+| data | packages/data | — | load trades, clean trades, store trades |
+| analysis | packages/analysis | data | rolling VWAP, summary report |
+
+## Toolchain
+
+```
+uv run pytest packages/<pkg>
+# lint and format
+uv run ruff check
+```
+"""
+
+CONTRACT = """# data — package contract
+
+## Purpose
+
+Loads, cleans and stores the trade export.
+
+## Sections
+
+| section | responsibility | path | owner doc | builds with | depends on | source |
+|---|---|---|---|---|---|---|
+| ingest | read the export | packages/data/src/data/ingest/ | docs/packages/data/design/ingest.md | csv | — | {source} |
+| clean | dedupe and sort | packages/data/src/data/clean/ | docs/packages/data/design/clean.md | — | ingest | — |
+| storage | persist to SQLite | packages/data/src/data/storage/ | docs/packages/data/design/storage.md | sqlite3 | clean | — |
+| surface | the package's pipelines (§4) and public surface (§5) | packages/data/src/data/ | docs/packages/data/design/surface.md | — | ingest, clean, storage | — |
+"""
+
+TRADES = """# trades — dataset
+
+## Kind `dataset`
+
+`data/trades.csv`, 400 rows.
+
+## Quirks
+
+- two exact duplicate rows
+
+## data/ingest
+
+- columns `ts`, `symbol`, `price`, `size`, `side`
+"""
+
+POLYGON = """# polygon — api
+
+## Kind `api`
+
+## Access
+
+- env `POLYGON_API_KEY`
+"""
+
+README = """# {section}
+
+## Purpose
+
+The {section} section.
+
+## Files
+
+- `__init__.py`
+
+## Entry points and interfaces
+
+| name | signature | one-line use case | Public |
+|---|---|---|---|
+| {name} | {name}(path) | {section} the trades | {public} |
+
+## Pipeline / workflow
+
+- one step
+
+## Configuration
+
+- none
+
+## Running and testing
+
+- `uv run pytest packages/data`
+
+## Implementation notes
+
+- none
+"""
+
+INTERFACE = """# data — interface
+
+## Public names
+
+| name | kind | signature | providing module | consumer | since |
+|---|---|---|---|---|---|
+| load_trades | function | load_trades(path) | data.ingest | analysis | 2026-09-27 |
+
+## Pipelines
+
+- none
+
+## CLI commands
+
+- none
+
+## Configuration
+
+- none
+
+## Shapes provided
+
+- Trade
+
+## Deviations
+
+- none
+
+## Consumers (computed)
+
+- analysis
+"""
+
+SURFACE_INIT = '''"""data — the public surface."""
+
+__all__ = ["load_trades"]
+
+
+def __getattr__(name):
+    if name == "load_trades":
+        from data.ingest import load_trades
+
+        return load_trades
+    raise AttributeError(name)
+'''
+
+ENTRY = {"ingest": ("load_trades", "yes"), "clean": ("dedupe", "no"), "storage": ("store", "no")}
+
+
+def run(dest: Path, *args: str) -> str:
+    out = subprocess.run(["git", "-c", "user.name=fixture", "-c", "user.email=fixture@example.invalid",
+                          "-c", "commit.gpgsign=false", *args], cwd=dest, capture_output=True, text=True)
+    if out.returncode != 0:
+        raise SystemExit(f"git {' '.join(args)} failed: {out.stderr}")
+    return out.stdout.strip()
+
+
+def write(dest: Path, files: dict[str, str]) -> None:
+    head = run(dest, "rev-parse", "HEAD")
+    for rel, content in files.items():
+        p = dest / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(content.replace("{HEAD}", head))
+
+
+def commit(dest: Path, files: dict[str, str], message: str) -> None:
+    write(dest, files)
+    run(dest, "add", "--", *files)
+    run(dest, "commit", "-q", "-m", message, "--", *files)
+
+
+def append(dest: Path, rel: str, text: str) -> dict[str, str]:
+    return {rel: (dest / rel).read_text() + text}
+
+
+# Macros: each returns a list of (files, message) commits.
+
+
+def m_base(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
+    files = {"docs/architecture.md": ARCHITECTURE}
+    contract = step.get("contract", "dataset")
+    if contract:
+        files["docs/packages/data/contract.md"] = CONTRACT.format(source="api:polygon" if contract == "api" else "dataset:trades")
+    if step.get("sources", True):
+        if contract == "api":
+            files["docs/sources/polygon.md"] = POLYGON
+        else:
+            files["docs/sources/trades.md"] = TRADES
+    return [(files, "docs: architecture, data contract, probe doc")]
+
+
+def m_design(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
+    s = step["section"]
+    text = f"# {PKG}/{s} — design\nMode: new\n\n## 5. Interfaces\n\n- the {s} entry point\n"
+    return [({f"docs/packages/{PKG}/design/{s}.md": text}, f"{PKG}/{s}: design")]
+
+
+def m_tests(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
+    s = step["section"]
+    name = ENTRY.get(s, ("load_trades", ""))[0]
+    text = f'def test_{s}():\n    """Design §5 {name}: the entry point answers."""\n    assert True\n'
+    return [({f"packages/{PKG}/tests/intent/{s}/test_{s}.py": text}, f"{PKG}/{s}: intent tests")]
+
+
+def m_build(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
+    s = step["section"]
+    unit = {f"packages/{PKG}/tests/unit/{s}/test_unit_{s}.py": f"def test_unit_{s}():\n    assert True\n"}
+    if s == "surface":
+        files = {f"packages/{PKG}/src/{PKG}/__init__.py": SURFACE_INIT,
+                 f"docs/packages/{PKG}/interface.md": INTERFACE, **unit}
+    else:
+        name, public = ENTRY[s]
+        files = {f"packages/{PKG}/src/{PKG}/{s}/__init__.py": f'"""{s}."""\n\n\ndef {name}(path):\n    return []\n',
+                 f"packages/{PKG}/src/{PKG}/{s}/README.md": README.format(section=s, name=name, public=public), **unit}
+    return [(files, f"{PKG}/{s}: build")]
+
+
+def m_review(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
+    s, n = step["section"], step.get("round", 1)
+    files = {}
+    for suffix, verdict in step["reports"].items():
+        focus = {"a": "conformance", "b": "correctness", "s": "full"}[suffix]
+        head = [f"# Review — {PKG}/{s} — round {n} — {focus}", "Scope: design, contract, code", "Commit: {HEAD}",
+                f"Verdict: {verdict}", f"Round: {n}", f"Focus: {focus}"]
+        if n > 1:
+            head += [f"Convergence: {step.get('convergence', '0 prior unfixed, 0 new')}", "Diff: {HEAD}..HEAD"]
+        body = "\n\n## CRITICAL\n\n" + ("- none" if verdict == "approve" else f"- src:1 — finding — fix it") + "\n\n## WARNING\n\n- none\n"
+        files[f"docs/reviews/{DATE}-{PKG}-{s}-r{n}-{suffix}.md"] = "\n".join(head) + body
+    return [(files, f"{PKG}/{s}: review r{n}")]
+
+
+def m_done(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
+    s = {"section": step["section"]}
+    return [*m_design(dest, s), *m_tests(dest, s), *m_build(dest, s),
+            *m_review(dest, {**s, "reports": {"a": "approve", "b": "approve"}})]
+
+
+def m_fix(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
+    s = step["section"]
+    rel = f"packages/{PKG}/src/{PKG}/{s}/__init__.py"
+    return [(append(dest, rel, f"\n# {step.get('note', 'fix')}\n"), f"{PKG}/{s}: {step.get('note', 'fix')}")]
+
+
+def m_edit(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
+    return [(append(dest, step["path"], step["append"]), step["message"])]
+
+
+def m_regenerate(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
+    s = step["section"]
+    rel = f"packages/{PKG}/tests/intent/{s}/test_{s}.py"
+    text = (dest / rel).read_text().replace(": the entry point answers.", f": the entry point answers (deviation {PKG}/{s} — {DATE}).")
+    return [({rel: text}, f"{PKG}/{s}: regenerate 1 intent tests")]
+
+
+def m_deviation(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
+    s, kind = step["section"], step["kind"]
+    rel = "docs/deviations.md"
+    old = (dest / rel).read_text() if (dest / rel).exists() else "# Deviations\n"
+    evidence = "Did: built it the other way" if kind == "deviation" else "Found: src/x.py:1"
+    entry = (f"\n## {PKG}/{s} — {DATE} — {kind}\n\nClause: {step.get('clause', 'design §5 load_trades')}\n"
+             f"Said: \"one thing\"\n{evidence}\nWhy: the data says otherwise\nStatus: {step['status']}\n"
+             f"Raised by: implementer — run-package {PKG}\nResolved by: —\n")
+    return [({rel: old + entry}, f"{PKG}/{s}: {kind} {step['status']}")]
+
+
+def apply(dest: Path, step: dict) -> None:
+    if "do" in step:
+        commits = globals()[f"m_{step['do']}"](dest, step)
+    else:
+        commits = [(step["files"], step["message"])]
+    for files, message in commits:
+        commit(dest, files, message)
+
+
+def build(case: Path, dest: Path) -> Path:
+    spec = json.loads((case / "case.json").read_text())
+    if dest.exists():
+        raise SystemExit(f"{dest} already exists")
+    (dest / "docs").mkdir(parents=True)
+    (dest / "data").mkdir()
+    shutil.copy(TWO_PACKAGE / "docs" / "brief.md", dest / "docs")
+    shutil.copy(TWO_PACKAGE / "data" / "trades.csv", dest / "data")
+    run(dest, "init", "-q", "-b", "main")
+    run(dest, "commit", "-q", "--allow-empty", "-m", "root")
+    if spec.get("branch", "build") != "main":
+        run(dest, "checkout", "-q", "-b", spec.get("branch", "build"))
+    commit(dest, {"docs/brief.md": (dest / "docs/brief.md").read_text(),
+                  "data/trades.csv": (dest / "data/trades.csv").read_text()}, "fixture: brief and trades dataset")
+    for step in spec.get("steps", []):
+        apply(dest, step)
+    write(dest, spec.get("dirty", {}))
+    return dest
+
+
+def main() -> int:
+    if len(sys.argv) != 3:
+        print(__doc__.split("\n\n")[1])
+        return 2
+    case = Path(sys.argv[1])
+    if not (case / "case.json").exists():
+        case = HERE / sys.argv[1]
+    print(build(case, Path(sys.argv[2]).resolve()))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

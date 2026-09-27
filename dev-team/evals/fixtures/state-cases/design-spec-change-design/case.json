@@ -1,0 +1,28 @@
+{
+  "note": "open spec-change:design after the tests",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "deviation",
+      "section": "ingest",
+      "kind": "spec-change:design",
+      "status": "open"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "DESIGN",
+    "evidence": "spec-change:design"
+  }
+}

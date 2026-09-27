@@ -1,6 +1,6 @@
 ---
 name: planning-templates
-description: The heading-by-heading templates for the documents the architect and the researcher write — repo contract, package contract, contract-delta, integration doc, surface doc, source probe. Invoke when about to write one of them and read only the reference for that document. Kept out of their always-loaded prompts so a run pays for the templates it uses.
+description: The heading-by-heading templates for the documents the loop writes and parses — repo contract, package contract, change file, deviations entry, review report, source probe. Invoke when about to write one of them and read only the reference for that document. Kept out of the always-loaded prompts so a run pays for the templates it uses.
 ---
 
 # Planning document templates
@@ -15,10 +15,13 @@ the headings, the budget, and what goes under each heading.
 |---|---|
 | `docs/architecture.md` — the repo contract | `references/repo-contract.md` |
 | `docs/packages/<pkg>/contract.md` — the package contract | `references/package-contract.md` |
-| `docs/plans/<slug>/contract-delta.md` | `references/contract-delta.md` |
-| `docs/packages/<pkg>/integration.md` or `docs/plans/<slug>/integration.md` | `references/integration.md` |
-| `docs/packages/<pkg>/surface.md` | `references/surface.md` |
+| `docs/changes/<slug>.md` — a change file | `references/change.md` |
+| an entry in `docs/deviations.md` — a deviation or a spec-change | `references/deviations-entry.md` |
+| `docs/reviews/<date>-<pkg>-<section>-r<n>-<a, b or s>.md` — a review report | `references/review-report.md` |
 | `docs/sources/<source>.md` — a source probe, either kind | `references/source-probe.md` |
+| `docs/plans/<slug>/contract-delta.md` | `references/contract-delta.md` (removed in phase 6) |
+| `docs/packages/<pkg>/integration.md` | `references/integration.md` (removed in phase 6) |
+| `docs/packages/<pkg>/surface.md` | `references/surface.md` (removed in phase 6) |
 
 The reviewer, implementer, documenter, and — for the source probe — every one of the four
 agents that read it parse these documents by heading, so the headings are a contract too: keep

@@ -1,0 +1,22 @@
+{
+  "note": "--run-gate with an uncommitted code file",
+  "steps": [
+    {
+      "do": "base"
+    }
+  ],
+  "args": [
+    "--run-gate",
+    "data"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "run gate: FAIL",
+      "uncommitted changes outside the user-edited files: packages/data/src/data/ingest/__init__.py; commit or stash them and re-run"
+    ]
+  },
+  "dirty": {
+    "packages/data/src/data/ingest/__init__.py": "x = 1\n"
+  }
+}

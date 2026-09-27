@@ -1,0 +1,28 @@
+{
+  "note": "DONE, then an approved deviation and a regeneration commit: still DONE",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "deviation",
+      "section": "ingest",
+      "kind": "deviation",
+      "status": "approved"
+    },
+    {
+      "do": "regenerate",
+      "section": "ingest"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "DONE",
+    "rounds": 1
+  }
+}

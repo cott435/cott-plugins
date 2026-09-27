@@ -1,0 +1,42 @@
+{
+  "note": "--surface: an extra __all__ name and an eager section import",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    },
+    {
+      "files": {
+        "packages/data/src/data/__init__.py": "\"\"\"data.\"\"\"\nfrom data import ingest\n\n__all__ = [\"load_trades\", \"extra\"]\n"
+      },
+      "message": "data: eager surface"
+    }
+  ],
+  "args": [
+    "--surface",
+    "data"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "surface: FAIL",
+      "extra: in __all__, not in interface.md Public names",
+      "loads section module data.ingest"
+    ]
+  }
+}

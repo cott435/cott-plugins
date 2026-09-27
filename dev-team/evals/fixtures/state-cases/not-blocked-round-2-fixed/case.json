@@ -1,0 +1,49 @@
+{
+  "note": "round 2 requests changes, every prior fixed: no cap",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 1,
+      "reports": {
+        "a": "approve",
+        "b": "request changes"
+      }
+    },
+    {
+      "do": "fix",
+      "section": "ingest",
+      "note": "fix"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 2,
+      "reports": {
+        "s": "request changes"
+      },
+      "convergence": "0 prior unfixed, 1 new"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "FIX 2",
+    "rounds": 2
+  }
+}

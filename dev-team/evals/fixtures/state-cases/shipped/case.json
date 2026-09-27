@@ -1,0 +1,33 @@
+{
+  "note": "surface DONE, nothing to sync: next package",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "surface",
+    "state": "DONE",
+    "contains": [
+      "shipped: yes",
+      "next: /dev-team:plan-package analysis"
+    ]
+  }
+}

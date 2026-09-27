@@ -1,0 +1,35 @@
+{
+  "note": "round 1: a approves, b requests changes; the worst wins",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 1,
+      "reports": {
+        "a": "approve",
+        "b": "request changes"
+      }
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "FIX 1",
+    "rounds": 1
+  }
+}

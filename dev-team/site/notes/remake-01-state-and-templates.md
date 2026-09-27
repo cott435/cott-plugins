@@ -426,3 +426,28 @@ naming each case whose expectation is not in the output.
 - `build-site` exits 0.
 - `evals/README.md` has a row for this phase's log.
 - The ledger row for phase 1 reads `done`.
+
+## Deviations
+
+- **Eval 1.4's pass bar asked for a `next:` line from `--repo`**, which the Specification above
+  defines as six groups and no `next:`. Done instead: `packages:` was checked on
+  `/dev-team:status --repo` and `next:` on `/dev-team:status data`, both through `claude
+  --plugin-dir`. The bar was wrong, not the script. Log:
+  `evals/2026-09-27-remake-phase1-state-and-templates.md`.
+- **Rule 4's probe-doc clause ignores other sections' entries.** Read literally ("a probe doc
+  the row names is newer than the design"), the PROBE step for `data/clean` appending
+  `## data/clean` to `docs/sources/trades.md` would re-open `data/ingest` at DESIGN. The
+  design's *Stale when* for a probe doc says a new consuming section does not make it stale.
+  So the rule compares the doc as of the design's commit with the doc now, each less every
+  other section's `## <pkg>/<section>` block; it fires only when commit order says newer
+  *and* that comparison differs. Case `design-probe-other-section` pins it.
+- **The fixture goes beyond the listed shape.** `case.json` steps may be macros
+  (`{"do": "done", "section": "ingest"}`) as well as `{files, message}`, and `expect` adds
+  `evidence` (a regex), `contains`, `absent` and `exit`. There are 36 cases, not 29: the
+  `shipped` and `run-gate-dirty` rows each named two outcomes and became two cases, plus
+  `design-probe-other-section`, `run-gate-no-contract`, and three `--surface` cases.
+- **`skills/status/SKILL.md` still cites `docs/constraints.md`'s Floor and Enforced**, in
+  one closing sentence (the stop hook runs those rows through this script's parser). The
+  overview lists the `status` SKILL.md as a reader that leaves. Removing it would fail the
+  existing constraints-headings claim, and this phase's Files do not touch that claim. The
+  claim's reader list is re-pointed with the hook in phase 2.

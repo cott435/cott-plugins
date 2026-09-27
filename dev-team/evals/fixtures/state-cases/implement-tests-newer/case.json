@@ -1,0 +1,32 @@
+{
+  "note": "intent tests edited after the README (not a regeneration)",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "edit",
+      "path": "packages/data/tests/intent/ingest/test_ingest.py",
+      "append": "\n\ndef test_more():\n    \"\"\"Design §5 load_trades: more.\"\"\"\n",
+      "message": "data/ingest: one more intent test"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "IMPLEMENT",
+    "evidence": "^tests [0-9a-f]{7} newer than README [0-9a-f]{7}$"
+  }
+}

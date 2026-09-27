@@ -1,0 +1,15 @@
+{
+  "note": "api source whose probe doc lacks the section heading",
+  "steps": [
+    {
+      "do": "base",
+      "contract": "api"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "PROBE",
+    "evidence": "api:polygon lacks ## data/ingest"
+  }
+}

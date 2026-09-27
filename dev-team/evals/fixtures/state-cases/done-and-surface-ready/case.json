@@ -1,0 +1,33 @@
+{
+  "note": "ingest, clean, storage DONE; surface ready",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "surface",
+    "state": "DESIGN",
+    "ready": true,
+    "contains": [
+      "ingest · DONE",
+      "clean · DONE",
+      "storage · DONE",
+      "shipped: no (surface DESIGN)",
+      "next: /dev-team:run-package data"
+    ]
+  }
+}

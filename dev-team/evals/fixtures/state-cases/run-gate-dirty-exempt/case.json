@@ -1,0 +1,27 @@
+{
+  "note": "--run-gate with only docs/decisions.md dirty",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "files": {
+        "docs/decisions.md": "# Decisions\n"
+      },
+      "message": "docs: decisions"
+    }
+  ],
+  "args": [
+    "--run-gate",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "run gate: PASS"
+    ]
+  },
+  "dirty": {
+    "docs/decisions.md": "# Decisions\n\n## D1 — edited by the user\n"
+  }
+}

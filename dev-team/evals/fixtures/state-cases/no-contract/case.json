@@ -1,0 +1,15 @@
+{
+  "note": "no package contract: next is plan-package",
+  "steps": [
+    {
+      "do": "base",
+      "contract": false
+    }
+  ],
+  "args": [],
+  "expect": {
+    "contains": [
+      "next: /dev-team:plan-package data"
+    ]
+  }
+}

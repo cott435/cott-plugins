@@ -1,0 +1,27 @@
+{
+  "note": "built, never reviewed",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "REVIEW",
+    "rounds": 0,
+    "evidence": "no review"
+  }
+}

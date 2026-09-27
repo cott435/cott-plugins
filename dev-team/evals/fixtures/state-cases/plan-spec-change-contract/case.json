@@ -1,0 +1,27 @@
+{
+  "note": "open spec-change:contract",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "deviation",
+      "section": "ingest",
+      "kind": "spec-change:contract",
+      "status": "open"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "PLAN",
+    "evidence": "spec-change:contract",
+    "contains": [
+      "· spec-change:contract ·"
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "note": "round 2 requests changes with a prior finding unfixed: cap",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 1,
+      "reports": {
+        "a": "approve",
+        "b": "request changes"
+      }
+    },
+    {
+      "do": "fix",
+      "section": "ingest",
+      "note": "fix"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 2,
+      "reports": {
+        "s": "request changes"
+      },
+      "convergence": "1 prior unfixed, 0 new"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "BLOCKED",
+    "evidence": "^review r2 request changes, 1 prior unfixed \\(cap\\)$"
+  }
+}

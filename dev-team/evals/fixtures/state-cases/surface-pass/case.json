@@ -1,0 +1,34 @@
+{
+  "note": "--surface: __all__, interface.md and README Public rows agree; lazy import",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    }
+  ],
+  "args": [
+    "--surface",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "surface: PASS"
+    ]
+  }
+}

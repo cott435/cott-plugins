@@ -1,0 +1,18 @@
+{
+  "note": "design, no intent tree",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "TEST",
+    "ready": true
+  }
+}
