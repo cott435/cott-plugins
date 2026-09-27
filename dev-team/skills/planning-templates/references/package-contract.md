@@ -4,8 +4,8 @@ Written at package scope before designers are delegated; read by designers, impl
 reviewer, `/dev-team:run-package`, and the architect when it classifies an edit (its
 **Consumes** table). Budget 200 lines.
 
-Where this contract needs a repo-contract shape to change, do not change it here — raise it
-under **Repo contract deviations** in the integration doc.
+Where this contract needs a repo-contract shape to change, do not change it here — it is a
+change item for `/dev-team:plan-repo`, stubbed as a `D<n>` scoped `repo` until that run.
 
 1. **Purpose** — one paragraph, and which repo-contract shapes this package provides. Then
    the brief capabilities this package covers (its `covers` cell in the repo contract), one
@@ -26,8 +26,9 @@ under **Repo contract deviations** in the integration doc.
    repo-wide, so a source two packages consume is one document. Several sources are
    comma-separated (`api:fred, dataset:trades-2024`); no source is `—`. A bare token with no
    prefix means `api`, which is how every contract written before kinds existed still reads.
-   `/dev-team:plan-package` probes every entry in this column before delegating designers, so a
-   source not named here is never probed, and a kind written wrong probes the wrong thing.
+   `/dev-team:run-package`'s PROBE step probes every entry in this column before the section's
+   designer runs, so a source not named here is never probed, and a kind written wrong probes
+   the wrong thing.
 
    The last row is always `surface`: responsibility *the package's pipelines (§4) and public
    surface (§5)*, path the package top level (`packages/<pkg>/src/<pkg>/`, or `src/<pkg>/` in a

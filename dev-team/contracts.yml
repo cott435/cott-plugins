@@ -105,13 +105,15 @@ forbid:
     near: 90
     files: ['agents/*.md', 'skills/**/*.md']
 
-  - name: the architect spawns designers and researchers by their plugin-prefixed names
+  - name: the architect spawns researchers and architects by their plugin-prefixed names
     # Same platform fact, one layer down: a forked architect fanning out with a bare
-    # `designer` silently gets a general-purpose agent, which loads none of the role's
-    # prompt (eval K run 5). Its instructions name the agent, so they name it namespaced.
-    pattern: '\b(?<!dev-team:)(designer|researcher)`? per (section|source)'
+    # name silently gets a general-purpose agent, which loads none of the role's prompt
+    # (eval K run 5). It spawns researchers (datasets) and architects (map-repo), never
+    # designers; its instructions name the agent, so they name it namespaced.
+    # The second branch catches a designer fan-out in any spelling, prefixed or not.
+    pattern: '\b(?<!dev-team:)(architect|researcher)`? per (package|source|dataset)|\b(dev-team:)?designer`? per section'
     near: 60
-    unless: ['dev-team:designer', 'dev-team:researcher']
+    unless: ['dev-team:architect', 'dev-team:researcher']
     files: ['agents/architect.md']
 
   - name: the plan loop's exit is never bypassed by a bare next command
@@ -209,30 +211,6 @@ headings:
         cites: ['Interfaces', 'Workflow / pipeline', 'Error handling and logging', 'Tests',
                 'Open questions']
 
-  - name: integration headings the plan review checks are ones planning-templates defines
-    # review-plan measures the architect's reconciliation by heading: a section missing from
-    # Dependency order, a mismatch Cross-section mismatches leaves unresolved, a deviation no
-    # resolution answers. A renamed heading turns each of those checks into a false CRITICAL.
-    # Item 0, **Spine**, is read by review-plan's blocker, the architect's run classification
-    # and status.py's `plan:` line; a renamed heading makes a spine-only plan look complete.
-    owner: skills/planning-templates/references/integration.md
-    owner_span: ['0. **Spine**', null]
-    readers:
-      - file: skills/review-plan/SKILL.md
-        cites: ['Spine']
-      - file: agents/architect.md
-        cites: ['Spine', 'Dependency order', 'Propagation']
-      # The driver reads Dependency order for its section order and Spine for spine mode.
-      - file: skills/run-package/SKILL.md
-        cites: ['Dependency order', 'Spine']
-
-  - name: surface headings the plan review checks are ones planning-templates defines
-    # The plan review was its only reader and is gone (remake phase 5); phase 6 deletes this
-    # claim with surface.md.
-    owner: skills/planning-templates/references/surface.md
-    owner_span: ['1. **Public names**', null]
-    readers: []
-
   - name: every agent that commits cites the one commit rule, by its rule names
     # git-workflow-and-versioning §Project convention is the one copy of the run gate, staging,
     # message, one-commit and lock rules; agents cite it and never restate it. Each reader's span starts
@@ -272,21 +250,6 @@ headings:
       - file: agents/reviewer.md
         span: ['design line that a higher document overrides', 'read together with']
 
-  - name: As shipped is a heading sync-design writes before anyone reads it
-    # sync-design is the only writer of a design doc's As shipped sections; plan-change starts from the latest one. The
-    # architect's completion run checks a built section's design for it and, when stale,
-    # performs sync-design's step 1 itself — the one time another run writes the heading, by
-    # reading the skill file rather than restating it.
-    owner: skills/sync-design/SKILL.md
-    owner_span: ['## What you write', '## Commit and return']
-    readers:
-      - file: skills/plan-change/SKILL.md
-        cites: ['As shipped']
-      - file: agents/architect.md
-        cites: ['As shipped']
-      - file: skills/plan-package/SKILL.md
-        cites: ['As shipped']
-
   - name: deviations.md entry fields its readers parse are ones planning-templates defines
     # One ledger for "the document and the code disagree": the designer and the tester append
     # spec-change entries, the tester regenerates the tests an approved entry's Clause is cited
@@ -305,6 +268,22 @@ headings:
       # appends spec-change entries with Found in place of Did.
       - file: agents/reviewer.md
         cites: ['Clause', 'Said', 'Found', 'Why', 'Status', 'Raised by', 'Resolved by']
+      # The architect verifies an approved entry's Did against the code at its Clause's path
+      # before sync-plan applies it, then sets Status and Resolved by.
+      - file: agents/architect.md
+        cites: ['Clause', 'Did', 'Status', 'Resolved by']
+
+  - name: change file headings its readers parse are ones planning-templates defines
+    # The architect writes a change file on a CHANGE outcome and sync-plan verifies and applies
+    # it by heading; the designer's delta mode designs from its Contract changes; status.py
+    # re-opens its Affected sections (mechanical, phase 1's fixture).
+    owner: skills/planning-templates/references/change.md
+    owner_span: ['1. **Change goal**', null]
+    readers:
+      - file: agents/architect.md
+        cites: ['Change goal', 'Affected sections', 'Contract changes', 'Downstream impact']
+      - file: agents/designer.md
+        cites: ['Contract changes']
 
   - name: review report headings its readers parse are ones planning-templates defines
     # status.py reads the header lines, the fix-round implementer reads CRITICAL and WARNING,

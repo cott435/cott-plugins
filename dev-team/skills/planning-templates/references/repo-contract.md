@@ -1,6 +1,6 @@
 # `docs/architecture.md` — the repo contract
 
-Written at repo scope (`/dev-team:plan-repo`, `/dev-team:map-project`); read by every skill; edited later only
+Written at repo scope (`/dev-team:plan-repo`, `/dev-team:map-repo`); read by every skill; edited later only
 for parts no bound package (shipped, or with code already built) provides or consumes — which
 includes the rewrite `/dev-team:plan-repo` does when a corrected brief puts it in Revise mode —
 or by `/dev-team:sync-plan` after a change ships.

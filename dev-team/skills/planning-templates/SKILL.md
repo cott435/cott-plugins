@@ -19,9 +19,6 @@ the headings, the budget, and what goes under each heading.
 | an entry in `docs/deviations.md` — a deviation or a spec-change | `references/deviations-entry.md` |
 | `docs/reviews/<date>-<pkg>-<section>-r<n>-<a, b or s>.md` — a review report | `references/review-report.md` |
 | `docs/sources/<source>.md` — a source probe, either kind | `references/source-probe.md` |
-| `docs/plans/<slug>/contract-delta.md` | `references/contract-delta.md` (removed in phase 6) |
-| `docs/packages/<pkg>/integration.md` | `references/integration.md` (removed in phase 6) |
-| `docs/packages/<pkg>/surface.md` | `references/surface.md` (removed in phase 6) |
 
 The reviewer, implementer, documenter, and — for the source probe — every one of the four
 agents that read it parse these documents by heading, so the headings are a contract too: keep

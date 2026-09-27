@@ -1,8 +1,8 @@
 ---
 name: plan-package
-description: Plan one package of a repo that /dev-team:plan-repo has already contracted. Writes the package contract - sections, section interfaces, pipelines - runs parallel section designs, reconciles them into integration.md, and designs the public surface in surface.md. Spine-first on three or more sections - designs the spine, then the rest once it ships; --all plans everything in one run. Reads the shipped interface.md of every package this one depends on.
-argument-hint: "<pkg> [--all] [--spine <section>]"
-arguments: [pkg, flags]
+description: Write or edit one package's contract under the repo contract - the Sections table (ending with the surface row), section interfaces, pipelines, public surface intent, consumes. On an existing contract each change item is classified EDIT, EDIT+STALE, CHANGE (a change file) or DECIDE (stop). Run after plan-repo, when the repo contract changed, when a spec-change at contract level is open, or to request a change; run-package runs it at the PLAN step.
+argument-hint: "<pkg> [change request]"
+arguments: [pkg, request]
 context: fork
 agent: dev-team:architect
 background: false
@@ -17,189 +17,84 @@ Plan package **$pkg** at **package scope**.
 > Code started. Stop, tell the user to run `/reload-plugins` (or restart Claude Code),
 > verify with `/agents`, and re-run. Do not plan in the main thread.
 
-The command was typed with these arguments: **`$ARGUMENTS`**. The first word is the package.
-Any words after it are flags, and they change what this run does — check for both now:
+The command was typed with these arguments: **`$ARGUMENTS`**. The first word is the package;
+anything after it is a change request, one or more items. If the package name above reached
+you unsubstituted, as a literal dollar-sign placeholder, take the first word of the arguments
+line as the package name directly.
 
-- `--all` — plan every section in this one run: step 4c classifies the run **full**, whatever
-  the section count.
-- `--spine <section>` — use that section as the spine instead of computing one.
-
-If the package name above reached you unsubstituted, as a literal dollar-sign placeholder,
-take the first word of the arguments line as the package name directly.
-
-**Invoked by run-package.** If your task prompt carries a `Package:` line instead of a
-substituted argument — `/dev-team:run-package` spawns you that way — use it: the package from
-that line, and the same name as the argument in your commit trailer. The Guard block above
-does not fire: you have neither earlier turns nor `AskUserQuestion`.
+**Spawned by run-package.** A prompt that carries `Package: <pkg>` and `Run: run-package <pkg>`
+lines instead of a substituted argument comes from `/dev-team:run-package` at the PLAN step: use
+that package, skip step 1 (the driver ran the run gate), and use `Dev-Team-Run: run-package
+<pkg>` as the trailer. The Guard block does not fire: you have neither earlier turns nor
+`AskUserQuestion`.
 
 ## Preconditions
 
 `docs/architecture.md` must exist and its Packages table must have a row for `$pkg`. If not,
-return a blocker naming `/dev-team:plan-repo` — a package planned without the repo contract will
-invent its own shapes and conventions, and the next package will invent them differently.
-
-## What you read before anything else
-
-- `docs/architecture.md` — the repo contract. Your package's row, its `Depends on`, the
-  Boundaries subsections for every edge into and out of it, Shared conventions, Toolchain.
-- `docs/brief.md` — only the rows of its **Scope — now** and **Scope — later** tables (and
-  of any `Addition` section) whose capability is in your package's `covers` cell, plus any
-  `Revision` section that names one of them. Not the rest: what applies repo-wide is already
-  in the repo contract. Skip when `covers` is `—` or the brief does not exist.
-- For each package in `Depends on`: `docs/packages/<dep>/interface.md` if it exists — that
-  package is **shipped** and those signatures are what your designers build against. If it
-  does not, `docs/packages/<dep>/contract.md` if that exists, else only the repo contract's
-  Boundaries; in both of those cases every name you consume is **provisional**.
-- `docs/packages/$pkg/` if it exists — a re-run after the interview rule stopped.
-- The package's code directory if it exists (an existing repo being adopted package by
-  package).
-- `docs/legacy/inventory.md` if it exists — its `resource` and `skill` columns only, to fill
-  `Extracted skill:` when probing. Never its paths; the old code is not yours to read.
-- `docs/sources/*.md` if any — probe docs from an earlier run, from `/dev-team:plan-repo`, or
-  from `/dev-team:probe-source`. They are repo-wide, so some may belong to another package's
-  sources; the ones that matter here are the sources your Sections table names. One dated today
-  whose **Access** reads `valid` or `readable` is not re-probed.
+return `Result: blocked` naming `/dev-team:plan-repo` — a package planned without the repo
+contract invents its own shapes and conventions, and the next package invents them differently.
 
 ## Steps
 
-1. **Assess.** Survey the package directory if it exists and write
-   `docs/packages/$pkg/assessment.md`; on a greenfield package there is nothing to assess.
+1. **Run gate.** `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --run-gate $pkg`.
+   FAIL → return `Result: blocked` with its lines, and write nothing.
 
-2. **Survey skills.** Enumerate the project skills per your instructions; the repo contract's
-   `candidate skills` column for `$pkg` is the starting point.
+2. **Survey.** Read, and nothing beyond it:
+   - `docs/architecture.md` — the `$pkg` row, its `depends on`, the Boundaries subsections for
+     every edge into and out of it, Shared conventions, Toolchain.
+   - `docs/brief.md` — only the rows of its **Scope — now** and **Scope — later** tables (and
+     of any `Addition` section) whose capability is in `$pkg`'s `covers` cell, plus any
+     `Revision` section naming one of them. Skip when `covers` is `—` or there is no brief.
+   - For each package in `depends on`: `docs/packages/<dep>/interface.md` when that package is
+     shipped (`status.py <dep>` reads `shipped: yes`); else its `contract.md` if it exists,
+     else the repo contract's Boundaries — and every name consumed from it is **provisional**.
+   - `docs/packages/$pkg/contract.md` if it exists, and the package's code directory if any.
+   - `docs/deviations.md`: open `spec-change:contract` entries naming a `$pkg/<section>`.
+   - `docs/changes/*.md` with `Status: open` naming a `$pkg/<section>`.
+   - The project skills, per your **Project skills**; the repo contract's `candidate skills`
+     column for `$pkg` is the starting point.
 
-3. **Interview rule.** Section boundaries the repo contract does not settle, a candidate
-   skill with no section, a section with no skill, a pipeline whose ordering is ambiguous, a
-   covered *now* capability no section builds, a provisional upstream name you need settled, or a section that plainly needs an external
-   `source` whose exact vendor or token you cannot pin down from the repo contract — a wrong
-   guess there sends a probe, a design, and a build at the wrong API or the wrong dataset, which
-   is the cost test's textbook case. Check the ledger; stub anything unasked tagged
-   `Raised by: /dev-team:plan-package $pkg (interview)` and **stop** with the stop message. Otherwise
-   proceed.
+3. **Interview rule.** Section boundaries the repo contract does not settle, a candidate skill
+   with no section, a section with no skill, a pipeline whose ordering is ambiguous, a covered
+   *now* capability no section builds, a provisional upstream name you need settled, a section
+   that plainly needs an external `source` whose vendor or token you cannot pin down, and every
+   DECIDE item. Check the ledger; stub anything unasked tagged
+   `Raised by: /dev-team:plan-package $pkg (interview)` and **stop** with the stop message,
+   whose continue command is `/dev-team:plan-package $pkg`. Otherwise proceed.
 
-3b. **Plan findings.** Read `docs/followups.md` for open entries addressed to `$pkg/plan`. None
-   → continue. Otherwise this is a re-plan, per your **Plan findings** section: each finding
-   is answered in the contract (step 4 edits it rather than rewriting it), at unify (steps 6
-   and 7), or — when its object is a design — by re-delegating only that section in step 5. Keep the list; step 9
-   ticks it.
+4. **The contract.**
+   - **No contract — WRITE.** Invoke `planning-templates`, read `references/package-contract.md`,
+     and write `docs/packages/$pkg/contract.md` to it. **Purpose** carries the covered brief
+     rows, Notes verbatim — designers read the contract, never the brief. The Sections table's
+     `source` column names each external source as `<kind>:<token>` (`api:polygon`,
+     `dataset:trades-2024`, several comma-separated, or `—`): the driver's PROBE step iterates
+     over it, so a source missing from it is never probed. **Public surface (intent)** names a
+     consumer — a downstream package or a CLI command — for every entry, and nothing without
+     one. The table's last row is `surface`: path the package top level, `depends on` every
+     other section, `builds with` and `source` `—`.
+   - **A contract exists — the change list.** The items are the change request in the
+     arguments, each open `spec-change:contract` entry naming the package, and whatever the
+     repo contract's diff since its last archive copy under `docs/history/` changes for `$pkg`'s
+     row, boundaries or conventions. With none of the three, return `Result: done` saying the
+     contract is current, and commit nothing. Otherwise classify and apply each item per your
+     **Edits — the change list**: EDIT, EDIT+STALE, CHANGE, DECIDE; archive before the first
+     edit. A `spec-change:contract` entry answered by an EDIT, EDIT+STALE or CHANGE outcome is
+     closed per your **Edits**; one answered by DECIDE stays `open`.
 
-4. **Package contract.** Invoke `planning-templates`, read `references/package-contract.md`,
-   and write `docs/packages/$pkg/contract.md` to it. Its **Purpose** carries the covered brief
-   rows, Notes verbatim — designers read the contract, never the brief. **Public surface
-   (intent)** is the filter `surface.md` will be checked against: every entry names the downstream package or
-   CLI command that consumes it, and nothing without a consumer is listed. The Sections
-   table's `source` column names each external source a section consumes as
-   `<kind>:<token>` — `api:polygon`, `dataset:trades-2024`, several comma-separated, or `—`. It
-   is what the next step iterates over, so a source missing from it is never probed, and a kind
-   guessed wrong sends the probe at the wrong thing entirely.
+5. **Decisions.** Append a `D<n>` stub for every open question that survived — a convention you
+   picked without a basis, a boundary you are unsure of — `Scope:` the sections it binds, or
+   `$pkg` when it is package-wide, and list each number under the contract's **Open
+   decisions**.
 
-4c. **Classify the run** per your **Spine-first** section, from the contract's Sections table
-   and what is on disk. `--all` in the arguments line at the top of this prompt makes it
-   **full** before anything else is looked at. Otherwise: **full** (two sections or fewer), **spine**,
-   **completion**, **too early**, or **re-run**. On a spine run, choose the spine now — or take
-   `--spine` — and keep the count for the **Spine** heading. On **too early**, return that
-   section's message and stop here: write nothing, commit nothing. On **completion**, apply
-   that section's stale-spine rule before anything else: a built section whose design has no
-   **As shipped** citing its last commit is synced now, in this run, before a designer is
-   briefed against it. A re-plan for step-3b findings on a complete plan is a **re-run**; an
-   adoption run (below) is always **full**.
-
-4b. **Probe.** For every entry in every section's `source` column, spawn one `researcher` in
-   probe mode per your **Probing** section, all in parallel, in one message — `Kind:` and
-   `Source:` from the entry, `Purpose:` from the section's responsibility, `Access:` from the
-   repo contract's Shared conventions when it names one, `Extracted skill:` from the inventory
-   when a row names this source. Skip a source whose probe doc is dated today and reads `valid`
-   or `readable`, including one `/dev-team:plan-repo` wrote. Wait for all of them. Any access
-   failure → **stop** with the access stop message and write nothing further.
-
-   Otherwise read each dataset probe's **Supported tasks** and **Splitting**, per your
-   **Probing** section: where either contradicts a section you just wrote into the contract,
-   amend the contract here, before step 5, and say so in your return. Then continue.
-
-5. **Delegate.** One `designer` per section the run classification names — the spine alone on
-   a spine run, every undesigned section on a completion or full run — all in parallel, using
-   your delegation template:
-   - `Section: $pkg/<section>`
-   - `Mode: new` (or `document` for a section that already has code and is being adopted)
-   - `Contracts (highest first): docs/packages/$pkg/contract.md, docs/architecture.md`
-   - `Upstream interfaces:` the shipped `interface.md` paths, or `provisional:` paths, or `none`
-   - `Source probes:` `docs/sources/<source>.md` for each of the section's sources from step
-     4b, comma-separated, or `none` for a section whose `source` is `—`
-   - `Sibling shipped:` on a completion run, the README of every section that has one, at its
-     Sections-table path; `none` otherwise
-   - `Existing design: none` · `Assessment:` the package assessment if you wrote one
-   - `Review findings: none` — on a re-plan, a section a step-3b finding names gets
-     `Existing design:` its design path and `Review findings:` the plan review's path; a
-     section no finding names is not re-delegated — unless a cross-cutting finding's
-     propagation list names it (**Plan findings**), in which case it is, with
-     `Propagate: <fact> — <sections>` beside the two
-   - `Skills to invoke:` that section's project skills
-   - `Write your design to: docs/packages/$pkg/design/<section>.md`
-   - `Constraints:` what the section must not import — including every sibling section it
-     does not depend on, and every upstream package's internals
-   
-   If every section already has a current design on disk and no step-3b finding names one, no designer is spawned this run —
-   proceed straight to step 6 with those files. Otherwise, once the last spawned designer has
-   returned, continue immediately, in that same turn, to step 6 — do not end your turn
-   reporting that unification will happen next; nothing else will trigger it.
-
-6. **Unify.** Read the design docs you delegated, read `references/integration.md`, and write
-   `docs/packages/$pkg/integration.md` to it, starting with its **Spine** heading for this run's
-   classification, including **Repo contract deviations** with its
-   shipped-package rule, and any probe-doc **Quirks** that cross sections under its risks.
-   Update `docs/packages/$pkg/contract.md` where you accept a deviation into the package
-   contract; update `docs/architecture.md` only where the resolution is `update repo contract`.
-
-7. **Surface.** Completion, full and re-run runs only — a spine run writes no `surface.md`,
-   and skips to step 8. Read `references/surface.md` and write `docs/packages/$pkg/surface.md` to it.
-   Apply its selection rule strictly: a name is public only when the contract's **Public
-   surface (intent)** names a consumer for it — a downstream package or a CLI command. The
-   designs' `Public: yes` rows are candidates, not the answer; most section entry points are
-   for siblings and stay internal. Pipelines as concrete signatures and ordered section calls;
-   CLI commands with every argument spelled out; the end-to-end tests; the two import-linter
-   contracts.
-
-8. **Record decisions.** Append a `D<n>` stub for every open question that survived — every
-   `OQ-…` tag in the designs' **Open questions** that `integration.md` does not resolve by
-   name, each cited in its `Raised by:`; your **Contract deviations**, **Repo contract deviations**
-   with `needs plan-change`, and `surface.md`'s open questions. `Scope:` the sections it
-   binds, or `$pkg` when it is package-wide.
-
-9. **Commit** per your **Commit** section — trailer `Dev-Team-Run: plan-package $ARGUMENTS`,
-   staging `docs/followups.md` too on a re-plan, after ticking each step-3b entry
-   `[x] <date>` — then **return** your standard summary — implementation order, provisional
-   upstreams named, on a re-plan the plan review you answered and the sections each
-   cross-cutting finding was propagated to, and on a completion run the built sections you
-   synced — ending with the next command: `/dev-team:review-plan $pkg`. A spine run ends
-   instead with the spine's five commands and then this one again:
-
-   ```
-   /dev-team:test-section $pkg/<spine>
-   /dev-team:implement-section $pkg/<spine>
-   /dev-team:test-section $pkg/<spine>
-   /dev-team:review-section $pkg/<spine>
-   /dev-team:sync-design $pkg
-   /dev-team:plan-package $pkg
-   ```
-
-## Adopting an existing package
-
-When the package directory already has code (a repo mapped by `/dev-team:map-project`, or a package
-someone wrote by hand), this run documents rather than designs: the assessment in step 1 is
-the survey of that code; the contract is written *as it is* (the template says how); every
-designer runs `Mode: document`; the integration doc gains its **Coverage** heading; and
-`surface.md` is *transcribed* from the top-level `__init__.py`, entry points, and CLI as they
-exist — or *inferred* and marked so when the top-level `__init__.py` is empty. If it was
-transcribed, also write `docs/packages/$pkg/interface.md` in the same as-is spirit: it is a
-transcription of shipped code, which is what that file always is. If inferred, write no
-`interface.md` — the package is not shipped in this system's sense until `/dev-team:finalize-package`
-runs — and say so in your return. Nothing in an adoption run proposes a change; what looks
-wrong becomes a followup addressed to its section.
+6. **Commit** per your **Commit** section — scope `plan $pkg`, trailer `Dev-Team-Run:
+   plan-package $ARGUMENTS` (or `run-package $pkg` from the driver) — then **return** your
+   standard message: the paths written or one row per change item, stale packages, provisional
+   dependencies, `D<n>` stubs, `Commit:`, and the next command, `/dev-team:run-package $pkg`.
 
 ## Constraints
 
-- Planning documents only. No code, no config, no tests.
-- Never edit another package's documents. A change you need from a shipped package is a
-  stub recommending `/dev-team:plan-change`; from an unshipped one, a stub scoped to that package that
-  its `/dev-team:plan-package` run will find.
-- Do not implement anything. The user reviews the plan and answers decisions first.
+- Contracts only. No design, no code, no config, no tests, no probe: the driver's PROBE step
+  probes each section's sources, and its designers design from this contract.
+- Never edit another package's documents. A change a planned sibling needs is a stale package in
+  your return; a change a shipped one needs is a CHANGE item.
+- An existing codebase is adopted by `/dev-team:map-repo`, not here.

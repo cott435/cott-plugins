@@ -240,3 +240,44 @@ them after phase 8 rewrites the claim).
 - `check-contracts` all PASS; `build-site` exits 0.
 - Logs for 6.1–6.3 in `evals/README.md`.
 - The ledger row for phase 6 reads `done`.
+
+## Deviations
+
+- **`package-contract.md` and `repo-contract.md` edited beyond the Files table.** Deleting
+  `integration.md` and `surface.md` left `package-contract.md` telling the architect to raise a
+  repo-shape change "under **Repo contract deviations** in the integration doc", and saying
+  `/dev-team:plan-package` probes every `source` entry before its designers. `repo-contract.md`
+  said a boundary's signature is fixed in the providing package's `surface.md`. Now: a repo-shape
+  change is a `D<n>` scoped `repo` for `/dev-team:plan-repo`; the driver's PROBE step probes the
+  column; the signature lives in the providing contract's **Section interfaces**. Phase 1's ledger
+  row had assigned the first two to phase 6.
+- **The spawn claim's pattern could not fail the note's own plant.** The note's pattern,
+  `(architect|researcher)`? per (package|source|dataset)`, does not match `designer per section`,
+  which step 4 plants. A second branch, `` \b(dev-team:)?designer`? per section ``, was added:
+  the architect never spawns designers, so the prefixed form fails too. Both plants fail
+  (`architect.md:333`, `:464`), and the prefixed designer line fails at `:333`.
+- **The architect closes a `spec-change:contract` entry it answers.** The note is silent. The
+  design lists the architect as a writer of `resolved`, and `status.py` holds a section at PLAN
+  while such an entry is open, so without the close a `plan-package` run under the driver would
+  loop. **Edits** now sets `Status: resolved` and `Resolved by:` (the run trailer, plus the
+  change file after a CHANGE) after an EDIT, EDIT+STALE or CHANGE; a DECIDE leaves it open.
+- **`--fix` keeps `--revise`'s semantics**, as the note says: the notes are appended to the brief
+  under `## Revision — <date>`. The design's Components row says `--fix` "corrects without
+  touching the brief". The note was followed; the design is not edited.
+- **`sync-plan`'s `Resolved by: <sha>`** is the section's latest approving review `Commit:`,
+  since the close's own commit does not exist when the line is written.
+- **6.3's commit bar cannot hold on `shipped` as written.** Nothing is open there, so the close
+  writes nothing, and §Project convention rule 4 says a run that writes nothing commits nothing:
+  the run returned `Result: done` and `Commit: none`. A second build of `shipped` with one
+  committed, verifiable `approved` deviation gave `Result: done` and a commit carrying
+  `Dev-Team-Run: sync-plan data`.
+- **6.2's set prompts were rewritten (iteration 2), on the user's call.** In iteration 1 every
+  prompt quoted the new skills' tasks, so the 0.6 architect passed 24/24 as well and the
+  baseline half of the bar could not be measured. Each prompt now names the forking skill and has
+  the executor read that `SKILL.md` from its configuration's own plugin copy. Iteration 2: 100%
+  vs 63%. The 0.6 architect now fails the `surface` row (eval 1, 6/8) and the CHANGE outcome
+  (eval 2, 1/7). **The `synced` half of the bar is still missed**: eval 3's baseline, finding no
+  `docs/plans/<slug>/` for the 0.6 `sync-plan`, improvised the close from the fixture and passed
+  9/9. The bar, the result and what was tried are in
+  `evals/2026-09-27-remake-phase6-architect.md`.
+- **Commit prefix `(phase 6)`**, not the note's `(phase 06)`, to match the ledger's grep.
