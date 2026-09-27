@@ -162,3 +162,24 @@ From the design's **What must not break**; listed here so phase 11 finds them.
 8. Agents commit under the retry rule and every driver spawn's trailer is
    `Dev-Team-Run: run-package <pkg>`; a regeneration commit's summary is
    `<pkg>/<section>: regenerate <k> intent tests`.
+
+## Deviations
+
+- **PF-5 came out differently.** The design's Platform facts row said two agents committing at
+  once collide on `.git/index.lock`, and that a retry of up to ten two-second waits lands both
+  commits. Run as written (`git add <f> && git commit -m …`), there was no lock error. In git
+  2.48, a plain `git commit` holds no lock while its hooks run and re-reads the shared index
+  before writing the tree. So the other agent's staged file went into this agent's commit, and
+  the other agent's own commit failed with `nothing to commit`. Nothing was lost on disk, but
+  the result was one commit with one agent's message, and no error either agent could see.
+  What was done instead: one fix, rerun twice. Commit with an explicit pathspec, `git add
+  <paths>` then `git commit -m … -- <paths>`. That commits only those paths and holds the lock
+  for the whole commit, so a parallel `git add` or `git commit` gets the `index.lock` error the
+  retry rule is written for. Under a forced lock, the agent retried twice and landed its commit.
+  Both runs gave two commits with one file each. The design is not edited; phases 2 and 4 carry
+  the corrected rule (ledger notes). Log: `evals/2026-09-27-remake-platform-facts.md`.
+- **PF-1 found something the design did not assume.** After a `SubagentStop` exit 2 and a
+  retry, the parent's Agent result is the text of the subagent's **last** turn, not its first
+  reply. The driver branches on a `Result:` first line, which a gated implementer loses unless
+  it repeats its return message after every retry. This is a note for phases 2, 4 and 8, not a
+  change here.
