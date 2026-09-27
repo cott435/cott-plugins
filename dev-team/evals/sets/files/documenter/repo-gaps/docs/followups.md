@@ -1,0 +1,1 @@
+- [ ] data/clean: `dropna` drops halted sessions (null volume) that the vendor marks on purpose — reviewer 2026-09-12

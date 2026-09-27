@@ -1,0 +1,97 @@
+{
+  "target": "designer",
+  "target_path": "agents/designer.md",
+  "evals": [
+    {
+      "id": 1,
+      "name": "storage-new-mode",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/designer/eval-1-storage-new.md",
+      "prompt": "Repo root for this run: evals/sets/files/designer/repo (every path below is relative to it).\n\nSection: data/storage\nMode: new\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: packages/data/src/data/ingest/README.md\nUpstream interfaces: none\nSource probes: none\nChange file: none\nDesign-gap: none\nSkills to invoke: none\nWrite to: docs/packages/data/design/storage.md\nRun: run-package data",
+      "expected_output": "A new design for data/storage at outputs/docs/packages/data/design/storage.md whose first line is `Mode: new`, carrying the eleven template headings with a Module plan and no Revision or As shipped heading, consuming Bar by citing the ingest README, a commit message `data/storage: design` with the run trailer in outputs/commit.txt, and a return of ten lines or fewer beginning `Result: done`.",
+      "files": [
+        "evals/sets/files/designer/repo/docs/architecture.md",
+        "evals/sets/files/designer/repo/docs/packages/data/contract.md",
+        "evals/sets/files/designer/repo/docs/decisions.md",
+        "evals/sets/files/designer/repo/docs/deviations.md",
+        "evals/sets/files/designer/repo/packages/data/src/data/ingest/README.md"
+      ],
+      "expectations": [
+        "outputs/docs/packages/data/design/storage.md exists and its first line is exactly `Mode: new`",
+        "The design contains, in this order, headings whose text includes: Purpose and scope; Inputs and outputs; Data model / internal contracts; Workflow / pipeline; Interfaces; Error handling and logging; Tests; Pitfalls and risks; Skills used; Contract deviations; Open questions",
+        "The design contains a `Module plan` under the Data model / internal contracts heading, listing files under packages/data/src/data/storage/ and naming which Interfaces rows each file defines",
+        "The design contains no heading named `Revision` and no heading named `As shipped`",
+        "Under Inputs and outputs, `Bar` (and `load_bars` if consumed) is cited by the path `packages/data/src/data/ingest/README.md` as the document it comes from, and the design does not redefine Bar's fields",
+        "The Interfaces table has a Public column; `query_bars` is the only row marked `yes`, and `open_store` and `write_bars` are marked `no`",
+        "The design uses the config name `DATA_DB_PATH` from docs/architecture.md Shared conventions and cites D1 for the DuckDB choice rather than restating it as an open question",
+        "Every entry under Open questions, if any, is tagged `OQ-data-storage-<k>` and states the assumption designed against; the return's `Open questions:` line lists the same tags or says `none`",
+        "outputs/commit.txt exists and contains a first line `data/storage: design` and a trailer line `Dev-Team-Run: run-package data`",
+        "transcript.md records reading docs/packages/data/contract.md, docs/architecture.md and packages/data/src/data/ingest/README.md before writing the design",
+        "The final message in transcript.md is ten lines or fewer, its first line is exactly `Result: done`, and it contains lines beginning `Design:`, `Open questions:`, `Deviations:` and `Commit:`",
+        "No file exists under outputs/ other than docs/packages/data/design/storage.md, commit.txt and, if present, interview.md; in particular outputs/docs/decisions.md does not exist and the return is not `stopped`"
+      ],
+      "added_in": "remake phase 0, run from phase 3"
+    },
+    {
+      "id": 2,
+      "name": "ingest-delta-from-change-file",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/designer/eval-2-ingest-delta.md",
+      "prompt": "Repo root for this run: evals/sets/files/designer/repo (every path below is relative to it).\n\nSection: data/ingest\nMode: delta\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: none\nUpstream interfaces: none\nSource probes: none\nChange file: docs/changes/ingest-tz-aware-bars.md\nDesign-gap: none\nSkills to invoke: none\nWrite to: docs/packages/data/design/ingest.md\nRun: run-package data",
+      "expected_output": "The ingest design rewritten whole at outputs/docs/packages/data/design/ingest.md, first line `Mode: delta` and second line `Change: docs/changes/ingest-tz-aware-bars.md`, with the change file's Contract changes applied (load_bars gains the keyword `tz`, Bar.ts tz-aware UTC, the unknown_tz error code), the unchanged interfaces carried over, no Revision or As shipped heading and no changelog stapled on, a commit `data/ingest: design (delta)`, and a return beginning `Result: done`.",
+      "files": [
+        "evals/sets/files/designer/repo/docs/architecture.md",
+        "evals/sets/files/designer/repo/docs/packages/data/contract.md",
+        "evals/sets/files/designer/repo/docs/packages/data/design/ingest.md",
+        "evals/sets/files/designer/repo/docs/changes/ingest-tz-aware-bars.md",
+        "evals/sets/files/designer/repo/packages/data/src/data/ingest/README.md"
+      ],
+      "expectations": [
+        "outputs/docs/packages/data/design/ingest.md exists; its first line is exactly `Mode: delta` and its second line is exactly `Change: docs/changes/ingest-tz-aware-bars.md`",
+        "The design contains, in this order, headings whose text includes: Purpose and scope; Inputs and outputs; Data model / internal contracts; Workflow / pipeline; Interfaces; Error handling and logging; Tests; Pitfalls and risks; Skills used; Contract deviations; Open questions",
+        "The design contains no heading named `Revision` and no heading named `As shipped`, although the existing design it replaced had both",
+        "The Interfaces row for `load_bars` gives the signature from the change file: it contains a keyword-only `tz: str = \"America/New_York\"` parameter",
+        "The design states that every yielded `Bar.ts` is tz-aware UTC, and Error handling and logging names the `IngestError` code `data.ingest.unknown_tz`",
+        "The Interfaces table still carries the unchanged rows `discover_files` and `Bar`, so the document is a whole design and not only the delta",
+        "The design has no heading or section named Changes, Delta, Changelog or What changed that lists only the differences from the previous design; the change is applied in place under the eleven headings",
+        "transcript.md records reading docs/changes/ingest-tz-aware-bars.md and the existing docs/packages/data/design/ingest.md before writing",
+        "outputs/commit.txt exists and contains a first line `data/ingest: design (delta)` and a trailer line `Dev-Team-Run: run-package data`",
+        "The final message in transcript.md is ten lines or fewer, its first line is exactly `Result: done`, and it contains a `Design:` line naming docs/packages/data/design/ingest.md and a `Commit:` line",
+        "No file exists under outputs/ other than docs/packages/data/design/ingest.md, commit.txt and, if present, interview.md; docs/changes/ingest-tz-aware-bars.md and docs/packages/data/contract.md are not written to outputs/"
+      ],
+      "added_in": "remake phase 0, run from phase 3"
+    },
+    {
+      "id": 3,
+      "name": "prices-spec-change-contract",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/designer/eval-3-prices-spec-change.md",
+      "prompt": "Repo root for this run: evals/sets/files/designer/repo (every path below is relative to it).\n\nSection: data/prices\nMode: new\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: packages/data/src/data/ingest/README.md\nUpstream interfaces: none\nSource probes: docs/sources/alpaca.md\nChange file: none\nDesign-gap: none\nSkills to invoke: none\nWrite to: docs/packages/data/design/prices.md\nRun: run-package data",
+      "expected_output": "No design is written; instead outputs/docs/deviations.md gains one appended `## data/prices — <date> — spec-change:contract` entry whose Clause cites the contract's prices interface row, whose Found cites the probe doc's Observed schema (no adjusted_close field; adjustment is a request parameter and `c` is the adjusted close), with Status open and Raised by the designer; outputs/commit.txt commits the ledger with scope data/prices and the run trailer; the return is `Result: spec-change`, then `Spec-change: contract — <one line>`, then the entry heading, ten lines or fewer.",
+      "files": [
+        "evals/sets/files/designer/repo/docs/architecture.md",
+        "evals/sets/files/designer/repo/docs/packages/data/contract.md",
+        "evals/sets/files/designer/repo/docs/deviations.md",
+        "evals/sets/files/designer/repo/docs/sources/alpaca.md",
+        "evals/sets/files/designer/repo/packages/data/src/data/ingest/README.md"
+      ],
+      "expectations": [
+        "outputs/docs/packages/data/design/prices.md does not exist",
+        "outputs/docs/deviations.md exists, keeps the fixture's title line and note, and appends exactly one entry whose heading matches `## data/prices — <YYYY-MM-DD> — spec-change:contract`",
+        "The entry has lines beginning `Clause:`, `Said:`, `Found:`, `Why:`, `Status:` and `Raised by:`; `Status:` is `open`",
+        "`Clause:` names the package contract's Section interfaces entry for prices (`fetch_bars`, the `adjusted_close` claim), and `Said:` quotes or paraphrases that the response carries an `adjusted_close` field",
+        "`Found:` cites docs/sources/alpaca.md (its Observed schema or Quirks heading) and states that no `adjusted_close` field exists and that adjustment is the `adjustment` request parameter with `c` as the adjusted close",
+        "`Raised by:` names the designer and the run (`run-package data`), and no `Resolved by:` line claims a resolution",
+        "transcript.md records reading docs/sources/alpaca.md and docs/packages/data/contract.md, and reading the deviations entry template under skills/planning-templates/references/ (deviations-entry.md) before writing the entry",
+        "The final message in transcript.md is ten lines or fewer; its first line is exactly `Result: spec-change`, its second line begins `Spec-change: contract — `, and its third line is the entry heading written to outputs/docs/deviations.md",
+        "outputs/commit.txt exists, its first line begins `data/prices: ` and it has a trailer line `Dev-Team-Run: run-package data`; the commit stages docs/deviations.md and no design file",
+        "No file exists under outputs/ other than docs/deviations.md, commit.txt and, if present, interview.md; in particular outputs/docs/decisions.md does not exist and the return is not `stopped` or `done`",
+        "The transcript does not describe the contradiction as an Open questions entry, a Contract deviations entry or a Pitfalls and risks entry of a design; it is raised only as the ledger entry"
+      ],
+      "added_in": "remake phase 0, run from phase 3"
+    }
+  ]
+}

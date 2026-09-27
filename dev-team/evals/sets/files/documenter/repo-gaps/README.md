@@ -1,0 +1,14 @@
+# `repo-gaps/` — the overlay for documenter eval 3
+
+Read on top of `../repo/`: a path present in both trees is read from here; every other path
+is read from `../repo/`. The union is the repo root. Nothing in `../repo/` is edited for this
+eval; the files here add a second package (`analysis`, contract and one built section, no
+`interface.md`), a third package with no contract (`report`, named in `architecture.md` only),
+a `data/clean` README whose `DATA_RETRIES` default (`5`) disagrees with `data/ingest`'s (`3`),
+a backlog with one unchecked line, and the two contracts in the remake's Sections-table shape
+(the last row is `surface`). `data` has an `interface.md` (in `../repo/`) and no
+`docs/api/data.md` anywhere.
+
+`../status-repo.txt` is what `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py
+--repo` prints for this union, in the phase-1 note's format. The executor is told to treat it
+as the command's stdout.

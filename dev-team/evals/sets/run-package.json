@@ -1,0 +1,102 @@
+{
+  "target": "run-package",
+  "target_path": "skills/run-package/SKILL.md",
+  "note": "Written in remake phase 0 for the driver phase 8 rewrites. Evals 1-3 run the driver's procedure in the executor with real `dev-team:<agent>` spawns against a reset.sh copy of the two-package fixture seeded with a planned `data` package (evals/sets/files/run-package/seed/); eval 4 runs the six typed commands headless (`claude -p`) and measures the streams, as eval K and L did. The baseline is the 0.6 driver: it reads `integration.md`, a file nothing writes any more, so it cannot start on the seeded documents. Caveat for 1-3: the plugin hooks key on the session cwd, which is the plugin directory, not the fixture copy, so the stop gate and the write guard may not fire in those runs; eval 4 exercises them for real.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "walk-one-section-to-done",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/run-package/harness-1-walk-one-section.md",
+      "prompt": "/dev-team:run-package data ingest\n\nHarness: this command runs against a fresh `reset.sh` copy of `evals/fixtures/two-package/` in your scratchpad, seeded and committed as `evals/sets/files/run-package/harness-1-walk-one-section.md` says — never against the plugin repo, and never inside `evals/fixtures/`. You are the driver: run `status.py` yourself from that copy (`${CLAUDE_PLUGIN_ROOT}` is the plugin directory) and spawn every agent yourself with the Agent tool as `dev-team:<agent>`, `run_in_background: false`, with the target's prompt block plus the one `Repo:` line the harness adds; the agents commit inside the copy, which is not the repo. Where the target would call `AskUserQuestion`, write the question to `outputs/interview.md` and answer from the harness. The walk is `data/ingest` alone. When the summary block is written, copy what the harness's **After the run** lists into `outputs/`.",
+      "expected_output": "the driver takes data/ingest from its seeded contract to DONE in one run — designer, tester, implementer, then two round-1 reviewers in one message — with one trailered commit per agent run, status.py re-derived after every batch, and the summary block with status.py's next command as the last message",
+      "files": [
+        "evals/sets/files/run-package/seed/common/docs/architecture.md",
+        "evals/sets/files/run-package/seed/common/docs/packages/data/contract.md",
+        "evals/sets/files/run-package/seed/common/docs/sources/trades.md"
+      ],
+      "expectations": [
+        "outputs/status-final.txt shows the `ingest` row of `data` in state `DONE`, and outputs/summary.md's `sections:` line lists `ingest · DONE`",
+        "outputs/spawns.md shows the walk for data/ingest in this order: a `dev-team:designer` first (no tester or implementer spawn precedes its `Result: done`), then a `dev-team:tester`, then a `dev-team:implementer`, then two `dev-team:reviewer` calls in one message batch — one prompt with `Focus: conformance` and `Letter: a`, the other with `Focus: correctness` and `Letter: b`; any later round is a single reviewer with `Focus: full`, `Letter: s` and a `Diff:` line",
+        "Every Agent call in outputs/spawns.md has a `subagent_type` of the form `dev-team:<agent>` and `run_in_background: false`, and no prompt block contains `Procedure: open`, names a `skills/<skill>/SKILL.md` for the agent to read, or names `integration.md`",
+        "outputs/repo holds `docs/packages/data/design/ingest.md` whose first line is `Mode: new`, a `tests/intent/ingest/` directory with at least one `test_*.py`, `packages/data/src/data/ingest/README.md`, and `docs/reviews/<date>-data-ingest-r1-a.md` and `-r1-b.md` each with `Verdict:` on its second line; every report of the last round reads `Verdict: approve` and none has a **Deferred** heading",
+        "outputs/git-log.txt shows one commit per agent run: as many commits after the seed commit as spawns in outputs/spawns.md that returned `Result: done`, no two runs sharing a commit, each commit carrying exactly one `Dev-Team-Run:` trailer that names `run-package data`",
+        "outputs/status-log.txt and transcript.md show `status.py --run-gate data` run once before any spawn, then `status.py data` before the first spawn and again after every spawn batch; the executor wrote no file in the copy itself (docs/decisions.md included, since nothing asked) and ran no git command in the copy other than `git rev-parse --short HEAD` and `git rev-list --count` before the summary",
+        "outputs/summary.md is the run's last message with nothing after it: the lines `run-package data:`, `sections:`, `agent runs:`, `commits:` and `next:` in that order; the `agent runs:` counts equal the per-role spawn counts in outputs/spawns.md; the `next:` line is one `/dev-team:` command with no angle brackets and equals the `next:` line of outputs/status-final.txt"
+      ],
+      "added_in": "remake phase 0, run from phase 8"
+    },
+    {
+      "id": 2,
+      "name": "designer-spec-change-contract-routes-to-architect",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/run-package/harness-2-spec-change-contract.md",
+      "prompt": "/dev-team:run-package data ingest\n\nHarness: this command runs against a fresh `reset.sh` copy of `evals/fixtures/two-package/` in your scratchpad, seeded and committed as `evals/sets/files/run-package/harness-2-spec-change-contract.md` says — never against the plugin repo, and never inside `evals/fixtures/`. You are the driver: run `status.py` yourself from that copy (`${CLAUDE_PLUGIN_ROOT}` is the plugin directory) and spawn every agent yourself with the Agent tool as `dev-team:<agent>`, `run_in_background: false`, with the target's prompt block plus the one `Repo:` line the harness adds; the agents commit inside the copy, which is not the repo. Where the target would call `AskUserQuestion`, write the question to `outputs/interview.md` and answer from the harness. The walk is `data/ingest` alone. When the summary block is written, copy what the harness's **After the run** lists into `outputs/`.",
+      "expected_output": "the designer's spec-change:contract on the phantom venue column is routed to the architect at PLAN with the ledger entry's heading in its block, the contract is archived and corrected, the entry resolved, and the section re-enters DESIGN with a second designer before any tester or implementer has run",
+      "files": [
+        "evals/sets/files/run-package/seed/common/docs/architecture.md",
+        "evals/sets/files/run-package/seed/common/docs/packages/data/contract.md",
+        "evals/sets/files/run-package/seed/common/docs/sources/trades.md",
+        "evals/sets/files/run-package/seed/eval-2/docs/packages/data/contract.md"
+      ],
+      "expectations": [
+        "outputs/spawns.md shows the first `dev-team:designer` spawn for data/ingest returning `Result: spec-change`, and outputs/repo/docs/deviations.md holds an entry headed `## data/ingest — <date> — spec-change:contract` with `Clause:`, `Found:` (citing `docs/sources/trades.md` or `docs/architecture.md` for the absent `venue` column), `Why:`, `Status:` and `Raised by:` lines",
+        "The next spawn for data/ingest after that return is a `dev-team:architect` whose prompt block carries `Package: data`, `Run: run-package data` and a `Spec-change:` line equal to that entry's heading; no `dev-team:tester` or `dev-team:implementer` is spawned for data/ingest between the designer's `spec-change` return and the architect's return",
+        "The designer's return past its first line appears in no spawn prompt other than the architect's, and transcript.md records the driver reading that return in full only to relay it there",
+        "After the architect's return, outputs/repo holds a `docs/history/<date>-<name>.md` copy of the seeded contract still naming `venue`, while `docs/packages/data/contract.md`'s `ingest` interface and Public surface rows no longer name `venue` and the `spec-change:contract` entry's `Status:` is `resolved`",
+        "outputs/status-log.txt shows `data/ingest` at `PLAN` on the `status.py data` run after the designer's return and at `DESIGN` on the run after the architect's; outputs/spawns.md shows a second `dev-team:designer` spawn for data/ingest after the architect's `done`, and outputs/repo/docs/packages/data/design/ingest.md names no `venue` field",
+        "Every commit in outputs/git-log.txt after the seed commit belongs to exactly one agent run and carries exactly one `Dev-Team-Run:` trailer naming `run-package data`; no agent run has two commits",
+        "outputs/summary.md is the last message; its `agent runs:` line counts the PLAN spawn under `architect`, and its `next:` line equals the `next:` line of outputs/status-final.txt"
+      ],
+      "added_in": "remake phase 0, run from phase 8"
+    },
+    {
+      "id": 3,
+      "name": "blocked-decision-asks-once-and-records-answer",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/run-package/harness-3-ask-on-blocked-decision.md",
+      "prompt": "/dev-team:run-package data ingest\n\nHarness: this command runs against a fresh `reset.sh` copy of `evals/fixtures/two-package/` in your scratchpad, seeded and committed as `evals/sets/files/run-package/harness-3-ask-on-blocked-decision.md` says — never against the plugin repo, and never inside `evals/fixtures/`. You are the driver: run `status.py` yourself from that copy (`${CLAUDE_PLUGIN_ROOT}` is the plugin directory) and spawn every agent yourself with the Agent tool as `dev-team:<agent>`, `run_in_background: false`, with the target's prompt block plus the one `Repo:` line the harness adds; the agents commit inside the copy, which is not the repo. Where the target would call `AskUserQuestion`, write the question to `outputs/interview.md` and answer from the harness. The walk is `data/ingest` alone. When the summary block is written, copy what the harness's **After the run** lists into `outputs/`.",
+      "expected_output": "the run asks the one question D1 leaves open before spawning anything, records the answer as Decision: and Status: decided on the stub in docs/decisions.md without committing it, and walks ingest on from DESIGN with the summary noting the uncommitted ledger",
+      "files": [
+        "evals/sets/files/run-package/seed/common/docs/architecture.md",
+        "evals/sets/files/run-package/seed/common/docs/packages/data/contract.md",
+        "evals/sets/files/run-package/seed/common/docs/sources/trades.md",
+        "evals/sets/files/run-package/seed/eval-3/docs/decisions.md"
+      ],
+      "expectations": [
+        "outputs/interview.md holds exactly one question, asked before any Agent call (transcript.md places it before the first entry of outputs/spawns.md): its text names `D1` or its question (`ingest` and the exact-duplicate rows), and the answer recorded is the harness's — pass them through, `clean` owns deduplication",
+        "outputs/repo/docs/decisions.md's `D1` entry has `Decision:` filled with that answer and `Status: decided`; its `Scope:`, `Raised by:`, `Recommendation:` and `Assumption if unanswered:` lines are unchanged; transcript.md shows the executor, as the driver, wrote those two lines itself and wrote nothing else in the copy",
+        "outputs/status-log.txt shows `data/ingest` as `BLOCKED` on the `status.py data` run before the question and as `DESIGN` on the run right after the answer, before the first spawn",
+        "outputs/spawns.md shows the walk continuing after the answer: a `dev-team:designer` for data/ingest, then a tester, an implementer and two reviewers in one batch, as in eval 1; the designer's prompt block does not quote the answer (it reads `docs/decisions.md`), and outputs/repo/docs/packages/data/design/ingest.md says duplicate rows pass through to `clean` and cites `D1`",
+        "outputs/summary.md is the last message; it has an `uncommitted: docs/decisions.md` line and a `next:` line equal to outputs/status-final.txt's; outputs/git-status.txt lists `docs/decisions.md` as modified, or outputs/git-log.txt shows it committed only inside an agent's own commit — never by the executor",
+        "There is no second question: outputs/interview.md holds one block, transcript.md records one ask, and `docs/decisions.md` gained no new `## D<n>` stub from the driver"
+      ],
+      "added_in": "remake phase 0, run from phase 8"
+    },
+    {
+      "id": 4,
+      "name": "end-to-end-two-package-build-headless",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/run-package/harness-4-end-to-end.md",
+      "prompt": "/dev-team:plan-repo, then /dev-team:plan-package data, /dev-team:run-package data, /dev-team:plan-package analysis, /dev-team:run-package analysis, /dev-team:finalize-project — the whole two-package build.\n\nHarness: run each command headless, in that order, from inside a fresh `reset.sh` copy of `evals/fixtures/two-package/` in your scratchpad — `claude -p \"/dev-team:<command>\" --plugin-dir <plugin-dir> --output-format stream-json --verbose --permission-mode bypassPermissions` — exactly as `evals/sets/files/run-package/harness-4-end-to-end.md` says; never inside the plugin repo or `evals/fixtures/`. You drive nothing by hand: the plugin runs itself in each `claude -p`. For the baseline configuration, `<plugin-dir>` is a scratch copy of the plugin with `skills/run-package/` replaced by the snapshot's. Keep every stream under `outputs/streams/`; where a run stops on a decision, answer it in `docs/decisions.md` from the harness and re-run once. Afterwards write the row count, commit, fixed-cost and status files the harness lists into `outputs/`.",
+      "expected_output": "the whole two-package build runs headless end to end: both packages shipped, 398 rows stored and a second run storing nothing, every section with an approving round, one trailered commit per agent run, a backlog with no review queue lines, the fixed cost per role measured with the tester's and reviewer's below eval L's, and /dev-team:finalize-project as the last next command",
+      "files": [],
+      "expectations": [
+        "outputs/status-data.txt and outputs/status-analysis.txt each end with `shipped: yes`, and every section row of both packages — `ingest`, `clean`, `storage`, `surface`; `features`, `report`, `surface` — reads `DONE`",
+        "outputs/rows.txt shows the stored trades table holding 398 rows after the first pipeline run and still 398 after the second run on the same input, with the second run reporting 0 rows inserted",
+        "For each of the seven sections, outputs/repo/docs/reviews/ holds a round `-r<n>-` all of whose reports carry `Verdict: approve`; round 1 of every section is a pair `-r1-a.md` and `-r1-b.md`; no report has a **Deferred** heading",
+        "outputs/commits.md maps every agent run — each `task_started` with a `subagent_type` in the streams, plus the forked architect run of each `plan-repo` and `plan-package` command and the documenter run of `finalize-project` — to at most one commit, maps no commit to two runs, and every commit in outputs/git-log.txt after the fixture commit (the executor's own `decisions:` commits aside) carries exactly one `Dev-Team-Run:` trailer; a run with no commit is listed with its reason",
+        "outputs/repo/docs/followups.md is absent or holds no line that files a review finding as a queue item: no line tagged `— review <date>`, and no line restating a CRITICAL from any report in docs/reviews/; every line it has is the backlog form `- [ ] <pkg>/<section>: <what> — <who> <date>`",
+        "outputs/fixed-cost.md gives, per role spawned (designer, tester, implementer, reviewer, architect, and researcher when spawned), the fixed cost read from each spawn's first assistant-turn `usage` in the streams (or, failing that, the first `task_progress` `usage.total_tokens`, as eval L did — the file says which), with min, max and mean per role beside eval L's means; the tester's mean is below 39,652 and the reviewer's below 38,467",
+        "outputs/summaries.md shows each `run-package` run ending in the summary block as its last message — `run-package <pkg>: done`, `sections:`, `agent runs:`, `commits:`, `next:` — and the `next:` line of the `run-package analysis` run is exactly `/dev-team:finalize-project`",
+        "The six commands ran headless in order from inside the fixture copy, each stream in outputs/streams/ ending in a `result` event; every subagent spawn in the two `run-package` streams has a `subagent_type` of the form `dev-team:<agent>`, and no prompt sent to a subagent contains `Procedure: open`",
+        "In the two `run-package` streams, the driver's own tool calls (those with no `parent_tool_use_id`) write or edit no file other than `docs/decisions.md` and run no git command that writes: its Bash calls are `status.py`, `git rev-parse --short HEAD` and `git rev-list --count` only"
+      ],
+      "added_in": "remake phase 0, run from phase 11"
+    }
+  ]
+}

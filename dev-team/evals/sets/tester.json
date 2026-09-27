@@ -1,0 +1,78 @@
+{
+  "target": "tester",
+  "target_path": "agents/tester.md",
+  "note": "Written in remake phase 0 for phase 3 (row 3.3 of site/notes/remake-03-designer-tester-researcher.md). The agent is exercised as a proxy: a general-purpose subagent given agents/tester.md; its tools: and skills: are not reproduced. Fixtures: evals/sets/files/tester/repo/ (evals 1 and 2; the section path holds a scaffold with two canaries, `kestrel-9127` and a `vwap` field, so a grader can tell whether the source was read, and so two tests pass and must be deleted), evals/sets/files/tester/ingest-gap.md (eval 2's design, read in place of the tree's), evals/sets/files/tester/repo-shipped/ (eval 3: shipped source with canary `heron-3350`, an approved deviation entry, an intent tree green but for the one test citing the entry's clause). Commits are written as files under outputs/ plus commit.txt (the message) and staged.txt (the paths).",
+  "evals": [
+    {
+      "id": 1,
+      "name": "intent-tests-from-complete-design",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/tester/harness-intent.md",
+      "prompt": "You are the dev-team tester, spawned by `/dev-team:run-package data` at the TEST step. The repo root is `evals/sets/files/tester/repo/`, relative to the plugin directory holding this eval set (the one with `.claude-plugin/plugin.json`); every path below is relative to that repo root, and test paths are relative to the package root `packages/data/`. Treat the tree as read-only: your files and your commit go where the harness sheet says.\n\nSection: data/ingest\nDesign: docs/packages/data/design/ingest.md\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: none\nUpstream interfaces: none\nSource probes: docs/sources/polygon.md\nRegenerate: none\nAdopted code: no\nWrite to: tests/intent/ingest/ under packages/data\nRun: run-package data",
+      "expected_output": "a red-by-construction intent tree under tests/intent/ingest/ written from the design alone — conftest, one file per Interfaces row, test_workflow — every docstring citing its design item, imports inside the tests from the Module plan's modules, the two tests the scaffold makes pass deleted and counted, one commit message in the new form, and a Result: done return with no Mode line and no next command",
+      "files": [
+        "evals/sets/files/tester/repo/",
+        "evals/sets/files/tester/harness-intent.md"
+      ],
+      "expectations": [
+        "`outputs/tests/intent/ingest/` holds `conftest.py`, `test_workflow.py`, and a `test_<interface>.py` file named for the design's §5 rows, at least `test_parse_bars.py` and `test_fetch_bars.py`; `outputs/tests/fixtures/polygon.sample.json` exists and is a copy of `docs/sources/polygon.sample.json`.",
+        "Every test function under `outputs/tests/intent/ingest/` has a docstring whose first line matches `Design §<n> <row or step>: <one line>` — `§` then a digit, the design's own name for the item, a colon — and the `§<n>` is a design heading that actually states that item (an Interfaces row → §5, an error case → §6, a workflow step → §4, a case named only under Tests → §7); no docstring paraphrases the item away from the design's name for it.",
+        "No `test_*.py` under `outputs/tests/intent/ingest/` imports from `data.ingest` at module top level: every `from data.ingest… import …` sits inside a test function or a conftest fixture body, and each name comes from the module the design's Module plan assigns it — `Bar` and `IngestError` from `data.ingest.models`, `parse_bars` from `data.ingest.parse`, `fetch_bars`, `VendorClient` and `VendorError` from `data.ingest.fetch`.",
+        "The section's source was never read: `transcript.md` records no Read, Grep, Glob, `cat`, `ls` or `python -c` against any file under `packages/data/src/data/ingest/`; the string `kestrel-9127` appears nowhere under `outputs/` or in `transcript.md`; no test mentions a `vwap` field.",
+        "The transcript shows the suite run against the outputs tree, and the return's `Deleted for passing:` line gives a count of at least 1 — the scaffold at the section path makes a `Bar`-is-frozen test and an `IngestError` test pass — and no test function that passed on that run survives in the files; on the final run every remaining test fails or errors (or is the D2 xfail).",
+        "Exactly one test is marked `@pytest.mark.xfail(strict=False, reason=\"D2 open — assumption: …\")` — the zero-volume case, with a reason starting `D2 open — assumption:` — and the tree contains no other `xfail`, no `pytest.mark.skip`, and no `# noqa`, `# type: ignore` or `# pragma: no cover`.",
+        "`transcript.md` records reading the plugin's `skills/test-driven-development/SKILL.md` by path with the Read tool (for its RED paragraph) and records no invocation of `test-driven-development` through the Skill tool.",
+        "The return (the final message recorded in `transcript.md`) begins with the line `Result: done`; contains lines starting `Tests:`, `Not written:`, `Deleted for passing:` and `Commit:`; is twenty lines or fewer; has no `Mode:` line; and names no next command (no `/dev-team:implement-section`, `/dev-team:test-section` or any other `/dev-team:` command).",
+        "`outputs/commit.txt`'s first line is `data/ingest: <n> intent tests from design` where `<n>` equals the number of test functions left under `outputs/tests/intent/ingest/` after deletions, and its trailer line is exactly `Dev-Team-Run: run-package data` (not `test-section`); `outputs/staged.txt` lists only paths under `tests/intent/ingest/` and `tests/fixtures/`.",
+        "Nothing under `outputs/docs/` (no design edit, no `deviations.md`, no `followups.md`), and no file under `outputs/` outside `tests/` other than `commit.txt`, `staged.txt` and, if a question was logged, `interview.md`."
+      ],
+      "added_in": "remake phase 0, run from phase 3"
+    },
+    {
+      "id": 2,
+      "name": "design-gap-interfaces-row-without-module",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/tester/harness-gap.md",
+      "prompt": "You are the dev-team tester, spawned by `/dev-team:run-package data` at the TEST step. The repo root is `evals/sets/files/tester/repo/`, relative to the plugin directory holding this eval set (the one with `.claude-plugin/plugin.json`); every path below is relative to that repo root, and test paths are relative to the package root `packages/data/`. Treat the tree as read-only: your files and your commit go where the harness sheet says. One substitution: read `evals/sets/files/tester/ingest-gap.md` (relative to the plugin directory) as `docs/packages/data/design/ingest.md`, in place of the copy in the tree.\n\nSection: data/ingest\nDesign: docs/packages/data/design/ingest.md\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: none\nUpstream interfaces: none\nSource probes: docs/sources/polygon.md\nRegenerate: none\nAdopted code: no\nWrite to: tests/intent/ingest/ under packages/data\nRun: run-package data",
+      "expected_output": "no tree and no commit: a Result: design-gap return whose Gap: lines name the two §5 rows (fetch_bars, VendorClient) the Module plan assigns no module to, and nothing else",
+      "files": [
+        "evals/sets/files/tester/repo/",
+        "evals/sets/files/tester/ingest-gap.md",
+        "evals/sets/files/tester/harness-gap.md"
+      ],
+      "expectations": [
+        "The return (the final message recorded in `transcript.md`) begins with the line `Result: design-gap`.",
+        "The return has a line of the form `Gap: §5 fetch_bars — <why>` and one `Gap: §5 VendorClient — <why>`, each saying (in its own words) that the Module plan assigns the row no module; no `Gap:` line names `Bar`, `IngestError` or `parse_bars`, and no `Gap:` line cites §4, §6 or §7 — those headings are complete in this design.",
+        "Nothing was written: there is no `outputs/tests/` directory, no `outputs/commit.txt`, no `outputs/staged.txt`, and nothing under `outputs/docs/`.",
+        "`transcript.md` shows no test file drafted and no pytest run, and records no Read, Grep, Glob, `cat`, `ls` or `python -c` against any file under `packages/data/src/data/ingest/`; the string `kestrel-9127` appears nowhere under `outputs/` or in `transcript.md`.",
+        "The return is twenty lines or fewer, has no `Mode:` line, no `Commit:` line carrying a sha, and names no next command (no `/dev-team:` command at all)."
+      ],
+      "added_in": "remake phase 0, run from phase 3"
+    },
+    {
+      "id": 3,
+      "name": "regenerate-tests-citing-approved-deviation",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/tester/harness-regenerate.md",
+      "prompt": "You are the dev-team tester, spawned by `/dev-team:run-package data` at the TEST step. The repo root is `evals/sets/files/tester/repo-shipped/`, relative to the plugin directory holding this eval set (the one with `.claude-plugin/plugin.json`); every path below is relative to that repo root, and test paths are relative to the package root `packages/data/`. Treat the tree as read-only: your files and your commit go where the harness sheet says.\n\nSection: data/ingest\nDesign: docs/packages/data/design/ingest.md\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: none\nUpstream interfaces: none\nSource probes: docs/sources/polygon.md\nRegenerate: ## data/ingest — 2026-09-24 — deviation\nAdopted code: no\nWrite to: tests/intent/ingest/ under packages/data\nRun: run-package data",
+      "expected_output": "only the one test citing `§6 missing results` rewritten to assert the entry's Did: (parse_bars returns an empty tuple), tagged ` (deviation 2026-09-24)`, every other file byte-identical, the suite green, a commit summary `data/ingest: regenerate 1 intent tests`, and a Result: done return with `Regenerated: 1`",
+      "files": [
+        "evals/sets/files/tester/repo-shipped/",
+        "evals/sets/files/tester/harness-regenerate.md"
+      ],
+      "expectations": [
+        "`outputs/tests/intent/ingest/test_parse_bars.py` exists and the test whose docstring cites `Design §6 missing results` now asserts what the entry's `Did:` says — `parse_bars` on a payload without a `results` key returns `()` (an empty tuple), with no `pytest.raises(IngestError)` for that case — and that docstring's first line ends with ` (deviation 2026-09-24)`.",
+        "Every other test is untouched: `conftest.py`, `test_bar.py`, `test_ingest_error.py`, `test_fetch_bars.py` and `test_workflow.py` are each either absent from `outputs/` or byte-identical to the repo's copy; in `test_parse_bars.py` the four other test functions keep their exact docstrings and bodies (a diff against the repo's copy touches only `test_parse_missing_results_raises`, which may be renamed); ` (deviation` appears exactly once in the whole outputs tree.",
+        "`transcript.md` shows the intent suite run after the rewrite with 0 failures — every test passed or xpassed (e.g. `12 passed, 1 xpassed`).",
+        "`outputs/commit.txt`'s first line is exactly `data/ingest: regenerate 1 intent tests` and its trailer line is exactly `Dev-Team-Run: run-package data`; `outputs/staged.txt` lists only `tests/intent/ingest/test_parse_bars.py`.",
+        "The return (the final message recorded in `transcript.md`) begins with the line `Result: done`, has a line `Regenerated: 1`, has a `Commit:` line, is twenty lines or fewer, has no `Mode:` line, and does not mention `reconcile`, `README item 7` or `docs/followups.md`.",
+        "The section's source was never read: `transcript.md` records no Read, Grep, Glob, `cat`, `ls` or `python -c` against any file under `packages/data/src/data/ingest/` other than `README.md`; the strings `heron-3350` and `_coerce_row` appear nowhere under `outputs/` or in `transcript.md`.",
+        "Nothing under `outputs/docs/`: the design is not rewritten, `docs/deviations.md` is not edited (its entry stays `Status: approved` for the architect to sync), and no `docs/followups.md` is created."
+      ],
+      "added_in": "remake phase 0, run from phase 3"
+    }
+  ]
+}

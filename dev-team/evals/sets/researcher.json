@@ -26,6 +26,31 @@
         "Quirks names every redacted column and the `systolic` dtype mismatch"
       ],
       "added_in": "0.9-evals phase 6"
+    },
+    {
+      "id": 2,
+      "name": "dataset-reprobe-second-section-appends-sections-served-item",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": null,
+      "prompt": "You are the dev-team researcher in probe mode, spawned by `/dev-team:run-package risk` at the PROBE step for a section whose contract row names a source that already has a probe doc. Your seven fields:\n\n- Kind: `dataset`\n- Source: `readmissions`\n- Purpose: the `risk` package's `features` section builds the per-admission feature frame \u2014 `age`, `region`, `systolic`, `cholesterol` \u2014 keyed by `patient_id` and `admitted_at`, for the `model` section to consume; the designer needs each of those columns' loaded dtype, null rate and range, and nothing about the target or the outcome codes.\n- Access: `evals/sets/files/researcher/readmissions.csv`, relative to the plugin directory holding this eval set (the one with `.claude-plugin/plugin.json`).\n- Extracted skill: `none`\n- Section: `risk/features`\n- Write to: `docs/sources/readmissions.md`\n\nThe document at `docs/sources/readmissions.md` already exists: in this harness it is `evals/sets/files/researcher/readmissions.md` in the plugin directory, written on 2026-09-20 for the `risk/model` section. Its profile script and statistics file were not carried into the harness; recompute them.\n\nHarness rules: write every file you would write \u2014 the updated probe doc, the profile script, the statistics file \u2014 into `outputs/`, keeping its repo-relative path (`outputs/docs/sources/...`). Write nothing anywhere else, including scratch files. No scratch venv is needed: `python3` with pandas is on PATH. The Skill tool cannot load this project's skills in this harness, so invoking `planning-templates` means reading `skills/planning-templates/references/source-probe.md` in the plugin directory, and invoking `git-workflow-and-versioning` means reading `skills/git-workflow-and-versioning/SKILL.md`; record in `transcript.md` that you read each. Where you would run `git add` and `git commit`, do not: write the exact commands you would run \u2014 the staged paths and the full commit message with its trailer \u2014 to `outputs/commit.txt`, and record the same in `transcript.md`.",
+      "expected_output": "the existing readmissions probe doc kept whole and refreshed to today's date, with a new `## risk/features` item appended under **Sections served** carrying only the six columns the features purpose needs, no schema change recorded, the model section's task-fit content intact, and a commit with scope `probe readmissions`",
+      "files": [
+        "evals/sets/files/researcher/readmissions.csv",
+        "evals/sets/files/researcher/readmissions.md"
+      ],
+      "expectations": [
+        "`outputs/docs/sources/readmissions.md` exists and is the fixture document kept, not replaced: every `##` heading of `evals/sets/files/researcher/readmissions.md` is present in the same order, and the `## risk/model` item under **Sections served** is still there with the same nine columns it listed",
+        "**Sections served** gains exactly one new `## risk/features` heading, placed after the `## risk/model` item, and its first line after the heading states the purpose it was probed for (the features section's contract purpose from the prompt)",
+        "The `## risk/features` item lists only the columns the features purpose needs \u2014 `patient_id`, `admitted_at`, `age`, `region`, `systolic`, `cholesterol` \u2014 each with its loaded dtype, null rate or range, and an `observed` label; it does not name `readmitted_30d`, `discharge_code`, `full_name`, `email`, `notes` or `site_version`",
+        "The title line reads `# Source probe \u2014 readmissions \u2014 dataset \u2014 <date>` where `<date>` is the run's date, not 2026-09-20, and the Purpose and Profile/Statistics preamble lines still follow it",
+        "**Changes since last probe** is either absent or records no change to the observed schema (`none` or the equivalent): no column is reported added, removed, retyped, or with a different null rate or distinct count, because the data is the same file the 2026-09-20 probe profiled",
+        "The task-fit headings keep the first probe's content: **Target** still names `readmitted_30d` with the 89.4% majority-class baseline, **Leakage** still names `discharge_code`, **Splitting** still says chronological on `admitted_at` and grouped by `patient_id`; none of Target, Leakage, Features, Splitting or Supported tasks reads `not a modeling task`",
+        "`outputs/commit.txt` records a commit whose message summary begins `probe readmissions:` (scope `probe <source>`), stages only `docs/sources/readmissions.*` paths by explicit path, and carries one `Dev-Team-Run:` trailer; neither `transcript.md` nor the final message says the run does not commit because no `Commit: yes` field was given",
+        "outputs/ also holds `readmissions.profile.py` and `readmissions.stats.json` beside the doc; no value from the CSV's `full_name`, `email` or `notes` columns appears anywhere under outputs/, and there is no `.sample.json` anywhere under outputs/",
+        "The return (the final message in `transcript.md`) is ten lines or fewer and gives the access status, the rows and columns profiled, whether it was a sample, the discrepancy count, the path, and the commit"
+      ],
+      "added_in": "remake phase 0, run from phase 3"
     }
   ]
 }

@@ -1,0 +1,22 @@
+[project]
+name = "quant-workspace"
+version = "0.1.0"
+description = "Daily bars and the analysis built on them"
+requires-python = ">=3.12"
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+data = { workspace = true }
+analysis = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["packages/data/tests", "packages/analysis/tests"]

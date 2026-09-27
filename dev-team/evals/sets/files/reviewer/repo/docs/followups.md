@@ -1,0 +1,1 @@
+- [ ] data/ingest: retry back-off is a fixed 0.5s with no jitter — implementer 2026-09-22

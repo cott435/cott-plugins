@@ -1,0 +1,2 @@
+- [ ] data/ingest: retry back-off is a fixed 0.5s with no jitter — implementer 2026-09-22
+- [ ] data/clean: `trading_days` fills calendar days (`freq="D"`), so a span crossing a weekend gains Saturday and Sunday bars; design §4 step 4 says business days — noted 2026-09-27, see docs/reviews/2026-09-27-data-clean-r2-s.md

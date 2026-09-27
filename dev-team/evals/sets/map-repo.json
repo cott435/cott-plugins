@@ -1,0 +1,57 @@
+{
+  "target": "map-repo",
+  "target_path": "skills/map-repo/SKILL.md",
+  "note": "Written in remake phase 0 for phase 7, which creates skills/map-repo/SKILL.md and runs these. The skill forks into dev-team:architect, so the executor is a proxy: it reads the skill file and agents/architect.md, cannot spawn the plugin's agents, and states its fan-out in transcript.md, where the spawn block is graded. Eval 1's fixture (two-packages/) has data (ingest -> clean -> store) and analysis (features -> report), analysis importing data's public surface and analysis/report reaching into data.clean.rules, the one planted defect. Eval 2's fixture (monolith/) is one src/app/ with ingest, clean, report and no packages/; its harness refuses to answer the split, so the run must stop at the interview.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "two-packages-mapped-in-parallel",
+      "kind": "behavioral",
+      "baseline": "none",
+      "harness": "evals/sets/files/map-repo/two-packages.md",
+      "prompt": "/dev-team:map-repo\n\nThe repo is the tree at `evals/sets/files/map-repo/two-packages/`, relative to the plugin directory holding this eval set (the one with `.claude-plugin/plugin.json`). Treat that directory as the repo root and read it read-only; the harness sheet says where the run's files go.",
+      "expected_output": "two package contracts and a repo contract describing the fixture as it is, each Sections table ending with the surface row, analysis depending on data in the Dependency graph, the report section's reach into data.clean.rules filed to the backlog, and phase 2 stated as two architect spawns in one message",
+      "files": [
+        "evals/sets/files/map-repo/two-packages/",
+        "evals/sets/files/map-repo/two-packages.md"
+      ],
+      "expectations": [
+        "outputs/docs/packages/data/contract.md, outputs/docs/packages/analysis/contract.md and outputs/docs/architecture.md all exist, and no other outputs/docs/packages/*/contract.md does",
+        "In each package contract the Sections table's last row is `surface`, its path is the package top level (`packages/data/src/data/` or `packages/analysis/src/analysis/`), and its `depends on` cell names every other section of that package",
+        "Every path in both Sections tables is a directory that exists in the fixture (no row points at a file or at a path that does not exist), and the tables cover the real subpackages: `packages/data/src/data/ingest/`, `clean/` and `store/` for data, `packages/analysis/src/analysis/features/` and `report/` for analysis",
+        "The `depends on` cells follow the in-package imports: data's `clean` depends on `ingest` and `store` depends on `clean`; analysis's `report` depends on `features`",
+        "outputs/docs/architecture.md has a Packages table listing exactly `data` (path `packages/data`) and `analysis` (path `packages/analysis`), with every `covers` cell `—` since the fixture has no brief",
+        "outputs/docs/architecture.md's Dependency graph shows `analysis` depending on `data` and no edge from `data` to `analysis`; no cycle is recorded",
+        "outputs/docs/followups.md holds a line of the form `- [ ] analysis/report: <what> — architect <date>` whose <what> names the import of `data.clean.rules` (or `BAR_COLUMNS`) from another package's internals rather than data's public surface",
+        "transcript.md states phase 2 as exactly two Agent calls in one message, each with `subagent_type: \"dev-team:architect\"` and `run_in_background: false`, and each prompt carries the fields `Scope: package (map-repo phase 2)`, `Package:`, `Path:`, `Existing contract: none`, `Sibling packages:`, `Import graph:` and `Write to: docs/packages/<pkg>/contract.md`",
+        "transcript.md shows the import graph came from a read-only grep of `from`/`import` lines over the fixture, and no `lint-imports` or `uv run lint-imports` command was run",
+        "The final message's first line is `Result: done`, it names both contract paths, the defect filed, and its next command is `/dev-team:run-package data` (the lowest package in the Dependency graph), not analysis",
+        "transcript.md states the phase-3 commit with scope `plan repo` and the trailer `Dev-Team-Run: map-repo`, and no file in the fixture or the plugin was modified"
+      ],
+      "added_in": "remake phase 0, run from phase 7"
+    },
+    {
+      "id": 2,
+      "name": "monolith-stops-at-the-split",
+      "kind": "behavioral",
+      "baseline": "none",
+      "harness": "evals/sets/files/map-repo/monolith.md",
+      "prompt": "/dev-team:map-repo\n\nThe repo is the tree at `evals/sets/files/map-repo/monolith/`, relative to the plugin directory holding this eval set (the one with `.claude-plugin/plugin.json`). Treat that directory as the repo root and read it read-only; the harness sheet says where the run's files go.",
+      "expected_output": "the run finds no packages, stubs one open D<n> per proposed boundary tagged as a map-repo interview with the src/app/ directories each would own, writes no contract, and stops with Result: stopped",
+      "files": [
+        "evals/sets/files/map-repo/monolith/",
+        "evals/sets/files/map-repo/monolith.md"
+      ],
+      "expectations": [
+        "outputs/docs/decisions.md exists and holds at least one entry headed `## D<n> — <question>` whose `Raised by:` line is exactly `/dev-team:map-repo (interview)`",
+        "Every `D<n>` entry proposes one package boundary and names the `src/app/` directories that package would own (from `ingest`, `clean`, `report`, and `settings.py`/`cli.py` where assigned); taken together the stubs assign each of `ingest`, `clean` and `report` to a proposed package",
+        "Every `D<n>` entry carries `Status: open`, an `Assumption if unanswered:` line, and no `Decision:` value: the run never writes `Status: decided` itself",
+        "No outputs/docs/architecture.md and no outputs/docs/packages/*/contract.md is written: the split is not invented and no contract is written on an unanswered stub",
+        "transcript.md shows no `dev-team:architect` Agent call for phase 2: the run stopped in phase 1, before any fan-out",
+        "outputs/interview.md holds the split question with its options and no chosen answer, and the final message's first line is `Result: stopped`, naming the `D<n>` stubs and telling the user to answer them in docs/decisions.md and re-run `/dev-team:map-repo`",
+        "No package name appears in the outputs as if decided: no directory under outputs/docs/packages/ and no Packages table anywhere in outputs/"
+      ],
+      "added_in": "remake phase 0, run from phase 7"
+    }
+  ]
+}

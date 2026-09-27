@@ -42,6 +42,29 @@
         "outputs/packages/data/README.md still lists the `data-daily` command with its entry point, so the missing heading cost only its own section"
       ],
       "added_in": "0.9-evals phase 6"
+    },
+    {
+      "id": 3,
+      "name": "known-gaps-from-status-repo",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": null,
+      "prompt": "You are the dev-team documenter, invoked by `/dev-team:finalize-project`.\n\nThe repo's shipped documents are the tree at `evals/sets/files/documenter/repo/`, relative to the plugin directory holding this eval set (the one with `.claude-plugin/plugin.json`), overlaid with `evals/sets/files/documenter/repo-gaps/`: a path present in both trees is read from `repo-gaps/`, every other path from wherever it exists, and the union is the repo root. Read it read-only.\n\nAssemble the package READMEs, `docs/index.md` and the root README, and report everything still open.\n\nHarness rules: `status.py --repo` cannot be run in this harness \u2014 wherever you would run `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --repo`, read `evals/sets/files/documenter/status-repo.txt` instead and treat its contents as that command's complete stdout. Write every file you would write into `outputs/`, keeping its repo-relative path \u2014 `outputs/packages/data/README.md`, `outputs/packages/analysis/README.md`, `outputs/docs/index.md`, `outputs/README.md`. Write nothing anywhere else.",
+      "expected_output": "Known gaps opens with the status.py --repo lines copied verbatim and then adds only what a document check finds (the DATA_RETRIES default conflict, the missing API page), no docs/api/ file is written, and the root README's Packages table carries the script's three statuses",
+      "files": [
+        "evals/sets/files/documenter/repo/",
+        "evals/sets/files/documenter/repo-gaps/",
+        "evals/sets/files/documenter/status-repo.txt"
+      ],
+      "expectations": [
+        "Under a `Known gaps` heading in outputs/README.md, every non-empty line of `evals/sets/files/documenter/status-repo.txt` appears verbatim (the six group labels `packages:` through `backlog:` and each item under them), as one contiguous block, and that block comes before any gap the documenter found itself, such as the `DATA_RETRIES` conflict or the missing API page",
+        "Nothing is written under outputs/docs/api/ (no `outputs/docs/api/data.md`), and Known gaps holds a line saying the shipped package `data` has no `docs/api/data.md`",
+        "Known gaps reports that `DATA_RETRIES` is declared with default `3` by `data/ingest` and default `5` by `data/clean`, naming both sections and both values; outputs/packages/data/README.md's Configuration does not present one of the two as the default without pointing at that conflict",
+        "The Packages table in outputs/README.md gives `data` the status `shipped`, `analysis` the status `building (1/2 DONE)` and `report` the status `planned`, spelled exactly so",
+        "No output file, and no Known gaps entry, mentions `docs/plans/` or `synced.md`",
+        "outputs/docs/index.md and outputs/packages/analysis/README.md both exist; the analysis README says the package has no `interface.md` and lists no public name taken from `build.py` (`ROLLING_MEAN` appears nowhere in the outputs)"
+      ],
+      "added_in": "remake phase 0, run from phase 9"
     }
   ]
 }

@@ -1,0 +1,56 @@
+# Review — data/clean — round 1 — conformance
+Scope: design/clean.md, contract.md §2–§6, architecture.md Boundaries and Shared conventions, ingest README, docs/decisions.md D1 D2, docs/deviations.md, packages/data/src/data/clean/, packages/data/tests/intent/clean/, packages/data/tests/unit/clean/, .dev-team/gate.txt
+Commit: 7c2e4b1
+Verdict: request changes
+Round: 1
+Focus: conformance
+
+## CRITICAL
+
+- docs/deviations.md — data/clean — 2026-09-25 — deviation (design §4 step 3 zero-volume rows) — deviation recorded without a reason; rejected — restore the design's behavior in `rules.py:drop_zero_volume` (drop `volume == 0` rows before gaps are filled) or re-propose the deviation with a `Why:`.
+- packages/data/src/data/clean/rules.py:19 — `dedupe` drops duplicates on `timestamp` alone; D1 (decided, scope data/clean) says a duplicate is the same `(symbol, timestamp)` pair, so a two-symbol frame loses every bar but one per day — a break — dedupe on `["symbol", "timestamp"]`.
+
+## WARNING
+
+- packages/data/src/data/clean/README.md:41 — **Implementation notes** cites the 2026-09-25 entry as if it stood; once the code conforms, the line goes.
+
+## SUGGESTION
+
+- MEASURED complexity `uv run radon cc packages/data/src -s -a` — clean: max B (6) clean_bars, average A (3.2)
+- MEASURED module size `wc -l packages/data/src/**/*.py` — clean/api.py 48, clean/rules.py 52, clean/calendar.py 10, clean/errors.py 14
+
+## Coverage
+
+| clause or design item | pass / fail / can't-tell | file:line |
+|---|---|---|
+| contract §2 Sections row `clean` (path, depends on ingest) | pass | packages/data/src/data/clean/api.py:1 |
+| contract §3 `clean_bars(df) -> DataFrame`, same columns | pass | api.py:16, api.py:48 |
+| contract §3 one row per `(symbol, timestamp)` | fail | rules.py:19 |
+| contract §3 `MissingColumns`, `EmptyBars` | pass | api.py:32, api.py:34 |
+| contract §4 daily pipeline, clean step | pass | api.py:16 |
+| contract §5 `clean_bars` public, `BarFrame` shape | pass | README.md:21, api.py:48 |
+| contract §6 Consumes (none) | pass | api.py:9 |
+| design §5 `clean_bars` | pass | api.py:16 |
+| design §5 `trading_days` (not public) | pass | calendar.py:8, README.md:22 |
+| design §4 step 1 validate | pass | api.py:30–34 |
+| design §4 step 2 dedupe, keep first | fail (approved deviation 2026-09-24; D1 key: fail) | rules.py:18–19 |
+| design §4 step 3 drop zero-volume rows | fail (rejected deviation 2026-09-25) | rules.py:27 |
+| design §4 step 4 fill gaps per symbol, previous close, volume 0 | pass | rules.py:30–48 |
+| design §4 step 5 log and return | pass | api.py:44 |
+| design §6 `MissingColumns(missing)` | pass | errors.py:4 |
+| design §6 `EmptyBars` | pass | errors.py:12 |
+| design §6 `data.clean.done` with rows_in, rows_out, gaps_filled | pass | api.py:44–47 |
+| design §7 intent tests as listed | pass | tests/intent/clean/test_clean_bars.py, test_workflow.py |
+| ingest README seam: columns consumed | pass | api.py:12 |
+
+## Carried
+
+- none
+
+## Spec-change
+
+- none
+
+## Deferred
+
+- none

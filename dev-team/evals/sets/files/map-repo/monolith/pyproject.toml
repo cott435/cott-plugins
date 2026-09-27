@@ -1,0 +1,20 @@
+[project]
+name = "app"
+version = "0.4.2"
+description = "Vendor export: ingest, clean, report"
+requires-python = ">=3.12"
+dependencies = ["pandas>=2.2", "pydantic-settings>=2.3"]
+
+[project.scripts]
+app-run = "app.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

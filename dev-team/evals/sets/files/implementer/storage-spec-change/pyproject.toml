@@ -1,0 +1,21 @@
+[project]
+name = "marketdata"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+data = { workspace = true }
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11", "import-linter>=2"]
+
+[tool.importlinter]
+root_packages = ["data"]
+
+[[tool.importlinter.contracts]]
+name = "data: sections only import their dependencies"
+type = "layers"
+layers = ["data.storage", "data.clean", "data.ingest"]

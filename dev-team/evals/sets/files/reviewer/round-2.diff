@@ -1,0 +1,83 @@
+# git diff 7c2e4b1..HEAD -- packages/data/src/data/clean packages/data/tests/unit/clean packages/data/tests/intent/clean
+# HEAD is 4b1e9c2 — data/clean: fix round 1 (dedupe on (symbol, timestamp), drop zero-volume rows, gap rows at previous close)
+--- a/packages/data/src/data/clean/rules.py
++++ b/packages/data/src/data/clean/rules.py
+@@ -12,24 +12,24 @@
+ def dedupe(df: pd.DataFrame) -> pd.DataFrame:
+     """Resolve duplicate bars, keeping the row with the higher volume.
+ 
+-    Departs from design §4 step 2 (keep the first row): the later vendor row is the
+-    end-of-day correction. See docs/deviations.md, data/clean — 2026-09-24.
++    A duplicate is the same `(symbol, timestamp)` pair (D1). Departs from design §4 step 2
++    (keep the first row): the later vendor row is the end-of-day correction. See
++    docs/deviations.md, data/clean — 2026-09-24 (approved).
+     """
+-    ordered = df.sort_values(["timestamp", "volume"], ascending=[True, False], kind="stable")
+-    return ordered.drop_duplicates(subset=["timestamp"], keep="first").reset_index(drop=True)
++    ordered = df.sort_values(["symbol", "timestamp", "volume"], ascending=[True, True, False], kind="stable")
++    return ordered.drop_duplicates(subset=["symbol", "timestamp"], keep="first").reset_index(drop=True)
+ 
+ 
+ def drop_zero_volume(df: pd.DataFrame) -> pd.DataFrame:
+-    """Return the frame with zero-volume rows kept as the vendor sent them.
++    """Drop every row whose volume is 0, so the day is filled like a missing one."""
++    return df[df["volume"] > 0].reset_index(drop=True)
+ 
+-    See docs/deviations.md, data/clean — 2026-09-25.
+-    """
+-    return df
+ 
+-
+ def fill_gaps(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
+     """Insert a bar for every trading day between a symbol's first and last bar.
+ 
++    A filled bar opens and closes at the previous bar's close with volume 0.
++
+     Returns:
+         The filled frame and the number of rows inserted.
+     """
+@@ -41,7 +41,10 @@
+         full = part.reindex(index)
+         gaps = full["close"].isna()
+         filled += int(gaps.sum())
+-        full[PRICE_COLUMNS] = full[PRICE_COLUMNS].ffill()
++        previous_close = full["close"].ffill()
++        full["close"] = previous_close
++        full["open"] = full["open"].where(~gaps, previous_close)
++        full[["high", "low"]] = full[["high", "low"]].ffill()
+         full["volume"] = full["volume"].fillna(0).astype("int64")
+         full["symbol"] = symbol
+         frames.append(full.rename_axis("timestamp").reset_index())
+--- a/packages/data/tests/unit/clean/test_rules.py
++++ b/packages/data/tests/unit/clean/test_rules.py
+@@ -24,9 +24,10 @@
+     assert float(out["close"].iloc[0]) == 1.5
+ 
+ 
+-def test_drop_zero_volume_keeps_rows():
++def test_drop_zero_volume_drops_rows():
+     frame = _frame([("AAA", "2026-03-03", 1, 1, 1, 1, 0), ("AAA", "2026-03-04", 1, 1, 1, 1, 5)])
+-    assert len(rules.drop_zero_volume(frame)) == 2
++    out = rules.drop_zero_volume(frame)
++    assert len(out) == 1 and int(out["volume"].iloc[0]) == 5
+ 
+ 
+ def test_fill_gaps_counts_inserted_rows():
+--- a/packages/data/tests/intent/clean/test_workflow.py
++++ b/packages/data/tests/intent/clean/test_workflow.py
+@@ -5,12 +5,12 @@
+ from data.clean.api import clean_bars
+ 
+ 
+-def test_dedupe_keeps_first(bars):
+-    """Design §4 step 2: duplicate bars are resolved by keeping the first row."""
++def test_dedupe_keeps_higher_volume(bars):
++    """Design §4 step 2 (deviation 2026-09-24): duplicate bars keep the higher-volume row."""
+     out = clean_bars(bars)
+     tuesday = out[out["timestamp"] == pd.Timestamp("2026-03-03")]
+     assert len(tuesday) == 1
+-    assert int(tuesday["volume"].iloc[0]) == 120
++    assert int(tuesday["volume"].iloc[0]) == 150
+ 
+ 
+ def test_zero_volume_rows_dropped(bars):
