@@ -294,3 +294,51 @@ and `researcher.md` get spans ending at the phrase each new file uses (`'rules; 
 - `check-contracts` all PASS; `build-site` exits 0.
 - Logs for 3.1–3.5 in `evals/README.md`, each behavioral one naming its iteration directory.
 - The ledger row for phase 3 reads `done`.
+
+## Deviations
+
+- **Row 3.3 missed its bar after one fix.** The bar: every tester expectation passes for
+  `with_skill`. Iteration 1: 9/10, 3/5, 4/7. One fix in `agents/tester.md`: the Hard rule
+  forbids `find`, `tree` and any recursive listing or search that reaches the section path;
+  the regenerate tag ends the first line; the return has three separate blocks. Iteration 2
+  (Sonnet): 8/10, 5/5, 7/7. `design-gap` and regenerate now pass. Intent eval 1 still fails
+  two expectations: one exploratory `find` over the fixture repo printed two file names under
+  the section path (none opened), and one docstring cites §7 for an error case that §6 states.
+  The 0.6 baseline makes the same listing in both iterations, so it reads as the proxy
+  executor orienting itself in an unfamiliar tree rather than something the new prompt
+  introduced. No second fix was made. Log: `evals/2026-09-27-remake-phase3-designer-tester-researcher.md`.
+- **Row 3.4's regression baseline.** The note compares eval 1 to "the 2026-09-20 log's" pass
+  rate, but that log only created the set and records no rate. The regression reference is
+  this iteration's `old_skill` run instead: 7/9 against the corrected expectations, beside
+  `with_skill`'s 9/9.
+- **Models.** Designer, researcher and tester iteration 1 ran on the inherited model (Opus).
+  The user then asked for every eval agent to run on Sonnet; tester iteration 2 and the
+  researcher eval 1 regrades did. `site/notes/CLAUDE.md` now states that rule for every later
+  phase, at the user's request, and rides in this commit.
+- **`contracts.yml`, the section-README claim.** The note re-points only the design-headings
+  claim. The tester's reader in the README claim cited **Implementation notes**, which only
+  reconcile mode read; with reconcile gone, it now cites **Entry points and interfaces**,
+  which the tester reads from dependency READMEs to build fakes. The designer's comment there
+  no longer mentions `Sibling shipped:`.
+- **The designer's `stopped` commit summary.** The note gives summaries for a design and a
+  spec-change but not for a stop. The designer uses `stopped for D<n>`.
+- **The researcher's commit rule.** The note does not add `git-workflow-and-versioning` to the
+  researcher's frontmatter, so its Hard rule says to invoke the skill with the Skill tool
+  rather than calling it preloaded. The Branch and Baseline check it used to make under
+  `Commit: yes` is gone, as for the tester.
+- **Done when, `tester.md` has no `test-driven-development` line.** Read as the frontmatter
+  `skills:` line, which is gone. The body names the skill's path once, because the note's
+  **Procedure** has the tester read its RED paragraph by path.
+- **Eval-set corrections**, each from a grader's critique of the expectations (run-evals step
+  7): designer allow-lists admit the designer's own agent memory; tester expectations name
+  `find` and `tree` beside `ls` and Glob, admit `interview.md` and tool caches, read eval 2's
+  §4/§6/§7 clause as the `Gap:` heading, and allow a rewritten test's imports; tester eval 2's
+  fixture had dropped `VendorError`'s definition along with the `fetch.py` row, planting a
+  second gap, and it is restored; the harness sheets run pytest without bytecode and ruff
+  without a cache; researcher eval 1's `systolic` expectation claimed pandas loads `n/a` as
+  object, which it does not by default, and its heading order now admits **Sections served**.
+- **A contaminated run.** Designer eval 1's first `with_skill` executor read
+  `eval_metadata.json`. It was discarded and rerun with a harness rule against reading
+  `evals/workspace/` and `evals/sets/*.json`; the rerun passed 12/12.
+- **The commit message.** Step 8 writes `(phase 03)`; the commit uses `(phase 3)`, the form the
+  ledger's Commit cell holds and the next chat greps for.

@@ -29,7 +29,7 @@
         "outputs/commit.txt exists and contains a first line `data/storage: design` and a trailer line `Dev-Team-Run: run-package data`",
         "transcript.md records reading docs/packages/data/contract.md, docs/architecture.md and packages/data/src/data/ingest/README.md before writing the design",
         "The final message in transcript.md is ten lines or fewer, its first line is exactly `Result: done`, and it contains lines beginning `Design:`, `Open questions:`, `Deviations:` and `Commit:`",
-        "No file exists under outputs/ other than docs/packages/data/design/storage.md, commit.txt and, if present, interview.md; in particular outputs/docs/decisions.md does not exist and the return is not `stopped`"
+        "No file exists under outputs/ other than docs/packages/data/design/storage.md, commit.txt and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/; in particular outputs/docs/decisions.md does not exist and the return is not `stopped`"
       ],
       "added_in": "remake phase 0, run from phase 3"
     },
@@ -59,7 +59,7 @@
         "transcript.md records reading docs/changes/ingest-tz-aware-bars.md and the existing docs/packages/data/design/ingest.md before writing",
         "outputs/commit.txt exists and contains a first line `data/ingest: design (delta)` and a trailer line `Dev-Team-Run: run-package data`",
         "The final message in transcript.md is ten lines or fewer, its first line is exactly `Result: done`, and it contains a `Design:` line naming docs/packages/data/design/ingest.md and a `Commit:` line",
-        "No file exists under outputs/ other than docs/packages/data/design/ingest.md, commit.txt and, if present, interview.md; docs/changes/ingest-tz-aware-bars.md and docs/packages/data/contract.md are not written to outputs/"
+        "No file exists under outputs/ other than docs/packages/data/design/ingest.md, commit.txt and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/; docs/changes/ingest-tz-aware-bars.md and docs/packages/data/contract.md are not written to outputs/"
       ],
       "added_in": "remake phase 0, run from phase 3"
     },
@@ -88,7 +88,7 @@
         "transcript.md records reading docs/sources/alpaca.md and docs/packages/data/contract.md, and reading the deviations entry template under skills/planning-templates/references/ (deviations-entry.md) before writing the entry",
         "The final message in transcript.md is ten lines or fewer; its first line is exactly `Result: spec-change`, its second line begins `Spec-change: contract — `, and its third line is the entry heading written to outputs/docs/deviations.md",
         "outputs/commit.txt exists, its first line begins `data/prices: ` and it has a trailer line `Dev-Team-Run: run-package data`; the commit stages docs/deviations.md and no design file",
-        "No file exists under outputs/ other than docs/deviations.md, commit.txt and, if present, interview.md; in particular outputs/docs/decisions.md does not exist and the return is not `stopped` or `done`",
+        "No file exists under outputs/ other than docs/deviations.md, commit.txt and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/; in particular outputs/docs/decisions.md does not exist and the return is not `stopped` or `done`",
         "The transcript does not describe the contradiction as an Open questions entry, a Contract deviations entry or a Pitfalls and risks entry of a design; it is raised only as the ledger entry"
       ],
       "added_in": "remake phase 0, run from phase 3"

@@ -23,9 +23,9 @@ nobody is at the keyboard, and the tester asks nothing.
   lists the package-relative paths you would stage, one per line (only the files you changed).
   No `git` command is needed; none may write. Treat the branch as `feature/data` and the
   baseline as clean.
-- Running the suite: `PYTHONPATH=<repo>/packages/data/src python3 -m pytest
+- Running the suite: `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=<repo>/packages/data/src python3 -m pytest
   <outputs>/tests/intent/ingest -q -p no:cacheprovider`. `pytest` and `ruff` are on PATH;
-  install nothing. Run `ruff format` and `ruff check --fix` on your `outputs/` tree, never on
+  install nothing. Run `ruff format --no-cache` and `ruff check --fix --no-cache` on your `outputs/` tree, never on
   the repo.
 - `${CLAUDE_PLUGIN_ROOT}` is the plugin directory holding this eval set. The Skill tool may not
   resolve this plugin's skills in this harness: invoking one means reading its `SKILL.md`

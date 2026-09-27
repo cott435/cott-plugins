@@ -35,12 +35,14 @@ Your prompt names a mode. Everything below the shared rules applies to one mode 
 - You cannot ask the user questions. A gap becomes a stated line in the document you write
   (`unverified`, `unset`, `not probed`), never a guess presented as fact.
 - Return ten lines or fewer. Your content is on disk.
-- You do not commit; the agent that spawned you does — even when you probe a source, and even
-  when the task reads like a probe run. The one exception is a prompt that says
-  `Commit: yes`, which only `/dev-team:probe-source` sets: then you commit your
-  `docs/sources/<source>.*` files yourself per `git-workflow-and-versioning` §Project convention
-  (invoke it; check its **Branch** and **Baseline** rules first), scope `plan <source>`, and
-  return `Commit: <sha>`.
+- **A probe run always commits**, whoever spawned it — the driver, the architect or
+  `/dev-team:probe-source`. Commit your `docs/sources/<source>.*` files per
+  `git-workflow-and-versioning` §Project convention (invoke it with the Skill tool) — its
+  **Staging**, **Message** and **One commit per run** rules; stage only the
+  `docs/sources/<source>.*` paths this run wrote, scope `probe <source>`, trailer
+  `Dev-Team-Run:` from your prompt's `Run:` line (`Dev-Team-Run: run-package <pkg>` under the
+  driver), or `Dev-Team-Run: researcher <source>` when there is none. Return `Commit: <sha>`.
+  An extract run does not commit; the curator that spawned you does.
 
 ## Extract mode
 
@@ -114,15 +116,17 @@ directory from the old repo.
 
 ## Probe mode
 
-Your prompt gives you six fields: a **kind** (`api` or `dataset`), a source token, the purpose
-the section needs it for, an access field (an env var name, a location, or `discover`), an
-extracted skill path (or `none`), and an output path. Those six are what a probe prompt
-carries. `architect.md`'s **Probing** and `/dev-team:probe-source` each resolve them their own
-way; from here the procedure is the same however you were started, and every step's result
-goes in the probe doc whether or not the next step runs.
+Your prompt gives you seven fields: `Kind:` (`api` or `dataset`), `Source:` (the token),
+`Purpose:` (what the section needs it for — its contract row), `Access:` (an env var name, a
+location, or `discover`), `Extracted skill:` (a path, or `none`), `Section:` (`<pkg>/<section>`
+that consumes it, or `repo` for a dataset probed by `/dev-team:plan-repo`), and `Write to:`
+(the output path, `docs/sources/<source>.md`). An optional `Run:` line gives the commit
+trailer. The driver's PROBE step, the architect and `/dev-team:probe-source` each resolve the
+fields their own way; from here the procedure is the same however you were started, and every
+step's result goes in the probe doc whether or not the next step runs.
 
 Both kinds have the same shape. Step 1 establishes that you can reach the thing at all, and
-**stops the planning run** if you cannot. Step 2 records what its documentation claims. Steps
+**stops the run** if you cannot. Step 2 records what its documentation claims. Steps
 3–5 observe what is actually there and diff the two. Step 7 writes the doc. What "reach it"
 and "observe it" mean is what differs, so steps 1–7 are given per kind below.
 
@@ -182,9 +186,9 @@ and one unmarked line spends that trust on every other line.
    than losing it.
 6. **Re-verify** — only with an extracted skill: load its `fixtures/`, diff against today's
    responses, write **Differs from the extracted skill's fixtures**.
-7. **Write** the probe doc per **The probe doc** below; on a re-run, diff against the previous
-   version first and fill **Changes since last probe**. Return: access status, endpoints
-   called, discrepancy count, path.
+7. **Write** the probe doc per **The probe doc** below — whole when it does not exist,
+   extended per **When the doc already exists** when it does. Commit. Return: access status,
+   endpoints called, discrepancy count, path, `Commit: <sha>`.
 
 ### Kind: `dataset`
 
@@ -260,9 +264,10 @@ settles them.
    Then **supported tasks**: what this data can carry and what it cannot, each with its
    reason. A target with eleven positive rows does not support classification, and this is the
    cheapest that finding will ever be.
-7. **Write** the probe doc per **The probe doc** below; on a re-run, diff against the
-   previous version first and fill **Changes since last probe**. Return: access status, rows
-   and columns profiled, whether it was a sample, discrepancy count, path.
+7. **Write** the probe doc per **The probe doc** below — whole when it does not exist,
+   extended per **When the doc already exists** when it does. Commit. Return: access status,
+   rows and columns profiled, whether it was a sample, discrepancy count, path, `Commit:
+   <sha>`.
 
 ### The probe doc
 
@@ -278,6 +283,28 @@ looking for something that is not there.
 called or loaded, and from nothing else. In a dataset run that reached task fit, **Target**,
 **Leakage** and **Splitting** carry the same weight: those decide what the section can be, not
 merely how it parses.
+
+**Sections served** is the template's last item: one `## <pkg>/<section>` heading per
+consuming section, holding the purpose it was probed for and only the endpoints or columns
+that section needs, each labelled `observed` or `documented`. Your `Section:` field names the
+heading this run writes; `repo` writes none. `status.py` and the driver look for that heading
+to decide whether a section still needs PROBE, so spell it exactly.
+
+**When the doc already exists** — another section already consumes the source, or the world
+changed and `/dev-team:probe-source` was run — keep the document and extend it:
+
+- Re-run the probe or profile program, rewriting `<source>.probe.py` or `<source>.profile.py`
+  and `<source>.sample.json` or `<source>.stats.json`.
+- Append this section's `## <pkg>/<section>` heading under **Sections served**, after the
+  entries already there, or replace it in place when it exists. Every other section's entry
+  stays as it is.
+- The ISO date in the title line becomes today's.
+- **Changes since last probe** is written only when the observed schema changed — a column or
+  field added, removed or retyped, a null rate or a distinct count moved — and is otherwise
+  absent.
+- Task-fit headings written for an earlier section are kept, even when this section's purpose
+  names no modeling task: they are that section's contract, not yours to reset to `not a
+  modeling task`.
 
 ## Memory
 

@@ -178,10 +178,11 @@ headings:
     readers:
       - file: agents/documenter.md
         cites: ['Entry points and interfaces']
+      # The tester builds fakes to a dependency README's shipped signatures.
       - file: agents/tester.md
-        cites: ['Implementation notes']
-      # A README under `Sibling shipped:` outranks that sibling's design for the names a
-      # completion-run designer consumes (spine-first, note 07).
+        cites: ['Entry points and interfaces']
+      # A README under `Dependency READMEs:` outranks the contract for the names the
+      # designer consumes; the `surface` section's design is built from every sibling's.
       - file: agents/designer.md
         cites: ['Entry points and interfaces']
       # The plan review's seam check reads a built sibling's README, not its stale design §5,
@@ -193,7 +194,9 @@ headings:
     # The tester inventories its cases by design heading and cites them in every test's
     # docstring; a renamed heading leaves it inventorying a section no design has. The Module
     # plan is a bolded term inside item 3, not a numbered item, so the owner parser cannot see
-    # it; the tester cites item 3 by name, and the Module plan rides on that.
+    # it; the tester cites item 3 by name, and the Module plan rides on that. The design's
+    # first line, `Mode:`, is not a numbered item either; the tester reads it beside its
+    # `Adopted code:` field. No reader cites `As shipped` or `Revision`: the template has none.
     owner: agents/designer.md
     owner_span: ['## Design document template', null]
     readers:
@@ -253,9 +256,11 @@ headings:
       - file: agents/documenter.md
         span: ['§Project convention', 'rules before writing']
       - file: agents/researcher.md
-        span: ['§Project convention', 'rules first']
+        span: ['§Project convention', 'rules; stage']
       - file: agents/tester.md
-        span: ['§Project convention', 'rules before writing']
+        span: ['§Project convention', 'rules; stage']
+      - file: agents/designer.md
+        span: ['§Project convention', 'rules; stage']
 
   - name: the reviewer ranks documents by the implementer's order of authority
     # The reviewer measures a finding against the highest document that speaks to it, so its
@@ -290,6 +295,18 @@ headings:
         cites: ['As shipped']
       - file: skills/plan-package/SKILL.md
         cites: ['As shipped']
+
+  - name: deviations.md entry fields its readers parse are ones planning-templates defines
+    # One ledger for "the document and the code disagree": the designer and the tester append
+    # spec-change entries, the tester regenerates the tests an approved entry's Clause is cited
+    # by, and status.py and the stop gate parse the same fields (mechanical, their own evals).
+    owner: skills/planning-templates/references/deviations-entry.md
+    owner_span: ['1. **Clause**', null]
+    readers:
+      - file: agents/designer.md
+        cites: ['Clause', 'Found', 'Why', 'Status', 'Raised by']
+      - file: agents/tester.md
+        cites: ['Clause', 'Did', 'Found', 'Status']
 
   - name: docs/constraints.md headings its readers run are ones the template defines
     # set-constraints writes the file from its template; four readers act on it by heading —

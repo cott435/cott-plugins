@@ -71,6 +71,12 @@ trust on every other line.
 
 12. **Differs from the extracted skill's fixtures** — only when an extracted skill exists.
 
+13. **Sections served** — one `## <pkg>/<section>` heading per consuming section (a `##`
+    heading, literally, so `status.py` and the driver find it), appended by the probe that
+    served it: the purpose it was probed for (the contract row), then only the endpoints (api)
+    or columns (dataset) that section needs, each with its `observed` / `documented` label. A
+    new consuming section makes the section need PROBE; it does not make the document stale.
+
 ## Kind `dataset`
 
 1. **Access** — `Location: <path | URI | table>` — `missing` | `unreadable (<error>)` |
@@ -127,3 +133,9 @@ trust on every other line.
 13. **Changes since last probe** — re-run only, diffed against the previous version.
 
 14. **Differs from the extracted skill's fixtures** — only when an extracted skill exists.
+
+15. **Sections served** — one `## <pkg>/<section>` heading per consuming section (a `##`
+    heading, literally, so `status.py` and the driver find it), appended by the probe that
+    served it: the purpose it was probed for (the contract row), then only the endpoints (api)
+    or columns (dataset) that section needs, each with its `observed` / `documented` label. A
+    new consuming section makes the section need PROBE; it does not make the document stale.

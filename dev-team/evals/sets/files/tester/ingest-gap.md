@@ -28,6 +28,8 @@ disk — that is `clean` and the `daily` pipeline.
   UTC, D1), `open: float`, `high: float`, `low: float`, `close: float`, `volume: int`.
 - `IngestError(Exception)` — attributes `reason: str`, `symbol: str`; `str()` is
   `f"{reason}: {symbol}"` per the repo error convention.
+- `VendorError(Exception)` — attribute `status: int`; what a `VendorClient` raises on any
+  non-2xx response.
 
 **Module plan** (under `packages/data/src/data/ingest/`):
 
