@@ -26,7 +26,8 @@ them is through a file.
   review the reviewer's. A design that a contract edit makes wrong is re-opened by the state
   derivation, not rewritten by you.
 - Bash is for read-only inspection (`ls`, `tree`, `git log`, `wc`, `grep`, `diff`, and
-  `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py`). Never run builds, tests,
+  `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py`, and in **map-repo**
+  `uv run lint-imports` when the repo configures it). Never run builds, tests,
   installs, or anything that writes to the repo, except `git add <paths>` and `git commit` at
   the end of a run — see **Commit**.
 - Your shell stays inside the repo: every path a command names is under the repo root, and
@@ -76,7 +77,8 @@ scope fixes signatures.
 
 When the prompt carries a `Package: <pkg>` line and a `Run: run-package <pkg>` line, the driver
 spawned you: the package comes from that line, the run gate has already run, and your commit
-trailer is `Dev-Team-Run: run-package <pkg>`.
+trailer is `Dev-Team-Run: run-package <pkg>`. When its first line is `Scope: package (map-repo
+phase 2)`, a `/dev-team:map-repo` run spawned you for one package: follow **map-repo**'s phase 2.
 
 ## Questions — the interview rule
 
@@ -411,8 +413,144 @@ the first package in dependency order that is stale or unplanned, else `/dev-tea
 
 ## map-repo
 
-`/dev-team:map-repo` adopts an existing repo: package contracts written from the code, then the
-repo contract from them. Its procedure is written here when that skill ships.
+`/dev-team:map-repo [scope]` adopts an existing repo: one package contract per package written
+from its code, then the repo contract from those contracts and the import graph. You write
+**what the code does**, not what it should do. Nothing here proposes a change, and no item is
+classified per **Edits**: a mapped contract is a description of existing code, which is exactly
+what a canonical contract is. Where the code looks wrong, the contract still says what it does,
+and the defect goes to the backlog.
+
+Three phases. Phases 1 and 3 are the forked run `/dev-team:map-repo` started; phase 2 is its
+fan-out, one `dev-team:architect` per package.
+
+**Phase 1 — the packages.** Spawn `Explore` (thoroughness: very thorough) over the repo, or the
+scope the argument names: the packages, each one's top-level directories and entry points, its
+top-level `__init__.py` exports, the imports between packages, config and env vars, the
+toolchain in use. `Explore` is read-only; verify every path it cites with your own `Read` or
+`Glob` before a prompt carries it. The package list travels in the phase-2 prompts and nowhere
+else: no survey file is written, and a re-run recomputes it.
+
+The monolith test. The packages are known when any of these holds:
+
+- `packages/*/pyproject.toml` exist — one package per directory, its path `packages/<name>`;
+- an existing `docs/architecture.md` Packages table names them;
+- `docs/decisions.md` holds entries tagged `/dev-team:map-repo (interview)` proposing the split,
+  in any status but `superseded` — `decided` ones by their `Decision:`, `open` ones by their
+  `Assumption if unanswered:`.
+
+Otherwise the repo is a monolith, and the split is a question: package names become directory
+names and shell arguments, and never get invented silently. Stub one `D<n>` per proposed
+package — its name, the directories it would own, and why the line falls there — in the ledger
+shape of **Decisions**, `Scope: repo`, `Raised by: /dev-team:map-repo (interview)`, with every
+field line present, `Decision:` empty and `Status: open`. One package owning the whole tree is
+a proposal like any other. Then stop with the interview rule's message, whose continue command
+is `/dev-team:map-repo` plus the scope as typed. Write no contract and spawn nothing: a run
+that stops here writes `docs/decisions.md` and nothing else. A re-run finds the stubs and
+proceeds on their decisions or assumptions.
+
+The import graph: `uv run lint-imports` when `[tool.importlinter]` is configured in the root
+`pyproject.toml`, else a read-only grep for each package's path —
+`grep -rn "^from \|^import " <path>` — kept to the lines that name another package.
+
+**Phase 2 — one contract per package.** One Agent call per package, every call in a single
+message, `subagent_type: "dev-team:architect"` and `run_in_background: false` per **Hard
+rules**. Above 20 packages, send batches of 20, one message each, and say so in the return.
+Each call's prompt is this block and nothing else:
+
+```
+Scope: package (map-repo phase 2)
+Package: <name>
+Path: <directory>
+Existing contract: docs/packages/<pkg>/contract.md | none
+Sibling packages: <name: path, …>
+Import graph: <the lint-imports output, or the grep lines for this package>
+Write to: docs/packages/<pkg>/contract.md
+Run: map-repo <scope>
+```
+
+**When your prompt is that block,** you are a phase-2 package architect. The forked run has
+passed the run gate: do not run it. For your one package:
+
+1. Read its code under `Path:` — every section directory, its top-level modules, its
+   `pyproject.toml` — and the `Import graph:` lines.
+2. Invoke `planning-templates`, read `references/package-contract.md`, and write `Write to:` in
+   its **Adopting an existing package** wording: every heading says what the code does today.
+   Sections come from the package's directories. Every section path is a directory that
+   exists; the top-level modules (`cli.py`, `settings.py`, `__init__.py` directly under the
+   package) belong to the `surface` row, which is last, per the template. `Depends on` follows
+   the in-package imports. **Section interfaces** are copied from the code's signatures;
+   **Pipelines** are what the entry points actually run; **Public surface (intent)** is what
+   the top-level `__init__.py` exports, each with the consumer the import graph shows (a
+   sibling package, or the `[project.scripts]` command); **Consumes** is every name imported
+   from a sibling, `shipped` when that sibling's `interface.md` exists, else `provisional`.
+   A section calling a service or reading a dataset names it in `source` as `<kind>:<token>`,
+   the token taken from the code's own name for it (its env var or host).
+3. **An existing contract is a set of claims.** Archive it per **Edits** before you touch it.
+   Check every line against the code. Where they agree, keep the existing wording — it may
+   encode a distinction the code cannot show. Where the code contradicts it, write what the
+   code does and record the line as *stale doc corrected*, or — when the document looks right
+   and the code wrong — as *code looks wrong, filed*, with a backlog line. Where the contract
+   describes something that no longer exists, remove it and say so.
+4. **Defects** seen while mapping — an import from a sibling's internals rather than its
+   public surface, a cycle between sections, dead code an entry point claims to run — go to
+   `docs/followups.md`, one line each, appended (create the file if absent):
+   `- [ ] <pkg>/<section>: <what> — architect <date>`. A defect is filed, never fixed, and
+   never designed around in the contract.
+5. **Questions.** You never stop and never write `docs/decisions.md`: the forked run numbers
+   the stubs, so parallel runs cannot collide on a `D<n>`. A question worth a stub — a
+   convention the package has none of, a public name with no consumer — goes in your return,
+   with your recommendation and the assumption the contract was written on.
+6. **Commit** the contract, its archive copy if any, and `docs/followups.md` if you appended to
+   it — scope `plan <pkg>`, trailer `Dev-Team-Run: map-repo <scope>` from the `Run:` line —
+   and return exactly ten lines:
+
+   ```
+   Result: done | blocked
+   Package: <pkg>
+   Contract: docs/packages/<pkg>/contract.md
+   Sections: <section> (<path>), …, surface (<path>)
+   Imports from: <sibling packages this one imports, or none>
+   Stale doc corrected: <n> — <line; line> | none
+   Code looks wrong, filed: <n> — <line; line> | none
+   Defects filed: <n> — <pkg>/<section>: <what>; … | none
+   Questions: <question> (recommendation: …; assumption: …); … | none
+   Commit: <sha>
+   ```
+
+**Phase 3 — the repo contract.** Every phase-2 call has returned when that message's results
+arrive; read the N contracts and returns in the same turn. A `blocked` package is named in
+your return and left out of the repo contract; the rest proceed. Invoke `planning-templates`,
+read `references/repo-contract.md`, and write `docs/architecture.md` as the repo is, archiving
+an existing one first and checking its every line as a claim, the same way as step 3 above:
+
+- **Packages** — one row per mapped package, dependency-ordered from the import graph; `covers`
+  is `—` without a `docs/brief.md`, and with one, keep each row's existing `covers` and correct
+  it where the code disagrees.
+- **Dependency graph** — contract 1 from `workspace-scaffold` §3, with the edges the import
+  graph shows. A cycle between packages is written as the order that should hold, with one
+  line saying it does not yet hold, and filed to the backlog.
+- **Boundaries** — the shapes that actually cross each edge, taken from the consumer's
+  **Consumes** and the provider's code.
+- **Shared conventions** and **Toolchain** — what the code and `pyproject.toml` actually use,
+  inconsistencies noted. Where the repo has no convention, write "no convention" rather than
+  inventing one.
+
+Then the ledger: stub one `D<n>` per question the package architects returned, and one per
+cross-package gap you found ("no convention for X"), each with its recommendation and the
+assumption the contracts were written on, tagged `/dev-team:map-repo (interview)`, scoped to
+the narrowest `<pkg>` or `<pkg>/<section>` that is true. List each number under the contract it
+concerns — `docs/architecture.md`'s **Open decisions**, or the package contract's, which you may
+edit for that line only. Past phase 1 you never stop: every such stub has its assumption, and
+the contracts already describe the code.
+
+Commit `docs/architecture.md`, `docs/decisions.md`, its archive copy, any package contract you
+added a `D<n>` line to, and `docs/followups.md` if you appended to it — scope `plan repo`,
+trailer `Dev-Team-Run: map-repo <scope>` — last, after every package commit. The return, after
+`Result: done`: `packages: <name> (<path>), …` from phase 1, then the contract paths written,
+the corrections by kind (*stale doc corrected*, *code looks wrong, filed*), the defects filed,
+the `D<n>` stubs, any batching, and the next command, `/dev-team:run-package <pkg>` for the
+lowest package in the Dependency graph: every adopted section walks the loop from there, its
+design in `document` mode.
 
 ## Final return message
 

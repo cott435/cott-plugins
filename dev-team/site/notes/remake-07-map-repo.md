@@ -119,3 +119,27 @@ next command `/dev-team:run-package <pkg>` for the lowest package in the Depende
 - `check-contracts` all PASS; `build-site` exits 0 and `site/docs/` has a `map-repo` page.
 - Logs for 7.1–7.3 in `evals/README.md`.
 - The ledger row for phase 7 reads `done`.
+
+## Deviations
+
+- **Package architects do not write `docs/decisions.md`.** The note has each phase-2 package
+  architect return ten lines and says the forked architect commits `docs/decisions.md` last,
+  but it does not say who numbers a package-level question. Two parallel runs that each append
+  a stub would both take the same next `D<n>`. So a package architect puts its questions in
+  its return (the `Questions:` line, one of its ten). The forked run stubs them in phase 3 and
+  adds each number to that package contract's **Open decisions**. That is the one line it may
+  edit in a phase-2 contract, and it stages that contract in its own commit.
+- **`uv run lint-imports` joins the architect's Bash allow-list.** The note's import-graph
+  decision uses it, and the Hard rules list only read-only tools. The rule now names it,
+  for **map-repo** only, when the repo configures `[tool.importlinter]`.
+- **Pointer from the Scopes section.** One sentence after the driver-spawn paragraph routes a
+  prompt whose first line is `Scope: package (map-repo phase 2)` to **map-repo**'s phase 2.
+  Otherwise a spawned package architect would read its `Package:` line as a plan-package run.
+- **Past phase 1, map-repo never stops.** The architect's general interview rule stops on any
+  boundary question. In map-repo the boundaries are the code's, so only the monolith split
+  stops. Every later question is a stub with an assumption, and the contracts are already
+  written.
+- **Eval 7.2's set corrected** (run-evals step 7). Eval 2's expectation 7 passed a baseline
+  that wrote a full architecture map naming `app`. It now requires that every file under
+  `outputs/` is `docs/decisions.md` or `interview.md`. Both runs were regraded by hand, and
+  no executor was rerun. The bar is unchanged: `with_skill` passes every expectation.

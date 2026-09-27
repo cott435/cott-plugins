@@ -49,7 +49,7 @@
         "No outputs/docs/architecture.md and no outputs/docs/packages/*/contract.md is written: the split is not invented and no contract is written on an unanswered stub",
         "transcript.md shows no `dev-team:architect` Agent call for phase 2: the run stopped in phase 1, before any fan-out",
         "outputs/interview.md holds the split question with its options and no chosen answer, and the final message's first line is `Result: stopped`, naming the `D<n>` stubs and telling the user to answer them in docs/decisions.md and re-run `/dev-team:map-repo`",
-        "No package name appears in the outputs as if decided: no directory under outputs/docs/packages/ and no Packages table anywhere in outputs/"
+        "No package name appears in the outputs as if decided: every file under outputs/ is outputs/docs/decisions.md or outputs/interview.md, so a proposed package is named only inside an open stub or the split question — no architecture map, module table, contract or directory under outputs/docs/packages/"
       ],
       "added_in": "remake phase 0, run from phase 7"
     }

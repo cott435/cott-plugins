@@ -35,7 +35,7 @@ dev-team/
     ├── plan-package/       → architect     one package: sections, designs, integration, surface
     ├── review-plan/        → reviewer      <pkg>: the plan, before any code — CRITICALs go back to plan-package
     ├── plan-change/        → architect     change to shipped code, with downstream impact
-    ├── map-project/        → architect     adopt an existing repo (repo level; then plan-package per package)
+    ├── map-repo/           → architect     adopt an existing repo: package contracts in parallel, then the repo contract
     ├── extract-legacy/     → curator       old repo → inventory (stop) → project skills, one per kept row
     ├── probe-source/       → researcher    one api or dataset → docs/sources/<source>.md
     ├── test-section/       → tester        <pkg>/<section> [slug]: intent tests before the build, reconcile after

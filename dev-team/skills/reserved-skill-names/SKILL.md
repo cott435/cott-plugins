@@ -17,7 +17,7 @@ the list does the same. Do not paste the names into another file.
 
 ## Workflow skills — the ones a person types
 
-`shape-brief` · `set-constraints` · `plan-repo` · `plan-package` · `review-plan` · `plan-change` · `map-project` ·
+`shape-brief` · `set-constraints` · `plan-repo` · `plan-package` · `review-plan` · `plan-change` · `map-repo` ·
 `test-section` · `implement-section` · `review-section` · `finalize-package` · `review-package` · `sync-plan` ·
 `sync-design` · `run-package` · `finalize-project` · `extract-legacy` · `probe-source` · `status`
 

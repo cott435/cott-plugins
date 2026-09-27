@@ -31,7 +31,7 @@ workflow_skills_order:
   - plan-change
   - sync-plan
   - finalize-project
-  - map-project
+  - map-repo
   - status                # not a step — the checklist you run between any two of them
 
 # Extra files rendered verbatim as code pages under "Rules and config".
