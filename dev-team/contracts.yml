@@ -185,8 +185,8 @@ headings:
       # designer consumes; the `surface` section's design is built from every sibling's.
       - file: agents/designer.md
         cites: ['Entry points and interfaces']
-      # The plan review's seam check reads a built sibling's README, not its stale design §5,
-      # and the section review reads item 7's recorded deviations.
+      # The conformance reviewer checks seams against a sibling's shipped README, and reads
+      # item 7 for the deviations entries it cites.
       - file: agents/reviewer.md
         cites: ['Entry points and interfaces', 'Implementation notes']
 
@@ -203,10 +203,11 @@ headings:
       - file: agents/tester.md
         cites: ['Interfaces', 'Inputs and outputs', 'Workflow / pipeline',
                 'Error handling and logging', 'Tests', 'Data model / internal contracts']
-      # The plan review checks seams, tests, skills, deviations and open questions design by
-      # design. The Module plan it also reads rides on item 3, as for the tester.
+      # The conformance reviewer's Coverage table has one row per Interfaces row, Workflow
+      # step, Error handling case and named Test, and judges Open questions by their assumption.
       - file: agents/reviewer.md
-        cites: ['Interfaces', 'Tests', 'Skills used', 'Contract deviations', 'Open questions']
+        cites: ['Interfaces', 'Workflow / pipeline', 'Error handling and logging', 'Tests',
+                'Open questions']
 
   - name: integration headings the plan review checks are ones planning-templates defines
     # review-plan measures the architect's reconciliation by heading: a section missing from
@@ -217,11 +218,6 @@ headings:
     owner: skills/planning-templates/references/integration.md
     owner_span: ['0. **Spine**', null]
     readers:
-      # Propagation is the re-plan's blast radius; the reviewer counts a fact unfixed while
-      # any design it lists still assumes the old one.
-      - file: agents/reviewer.md
-        cites: ['Dependency order', 'Cross-section mismatches', 'Contract deviations',
-                'Repo contract deviations', 'Decisions needed from user', 'Propagation']
       - file: skills/review-plan/SKILL.md
         cites: ['Spine']
       - file: agents/architect.md
@@ -231,11 +227,11 @@ headings:
         cites: ['Dependency order', 'Spine']
 
   - name: surface headings the plan review checks are ones planning-templates defines
+    # The plan review was its only reader and is gone (remake phase 5); phase 6 deletes this
+    # claim with surface.md.
     owner: skills/planning-templates/references/surface.md
     owner_span: ['1. **Public names**', null]
-    readers:
-      - file: agents/reviewer.md
-        cites: ['Public names', 'Pipelines', 'Tests']
+    readers: []
 
   - name: every agent that commits cites the one commit rule, by its rule names
     # git-workflow-and-versioning §Project convention is the one copy of the run gate, staging,
@@ -248,7 +244,7 @@ headings:
       - file: agents/implementer.md
         span: ['§Project convention', 'trailer from']
       - file: agents/reviewer.md
-        span: ['§Project convention', 'rules; return']
+        span: ['§Project convention', 'rules; stage']
       - file: agents/architect.md
         span: ['§Project convention', 'rules before writing']
       - file: agents/curator.md
@@ -277,16 +273,13 @@ headings:
         span: ['design line that a higher document overrides', 'read together with']
 
   - name: As shipped is a heading sync-design writes before anyone reads it
-    # sync-design is the only writer of a design doc's As shipped sections; the reviewer
-    # treats a folded deviation as the spec, and plan-change starts from the latest one. The
+    # sync-design is the only writer of a design doc's As shipped sections; plan-change starts from the latest one. The
     # architect's completion run checks a built section's design for it and, when stale,
     # performs sync-design's step 1 itself — the one time another run writes the heading, by
     # reading the skill file rather than restating it.
     owner: skills/sync-design/SKILL.md
     owner_span: ['## What you write', '## Commit and return']
     readers:
-      - file: agents/reviewer.md
-        cites: ['As shipped']
       - file: skills/plan-change/SKILL.md
         cites: ['As shipped']
       - file: agents/architect.md
@@ -308,10 +301,25 @@ headings:
       # The implementer appends deviation and spec-change entries field by field.
       - file: agents/implementer.md
         cites: ['Clause', 'Said', 'Did', 'Found', 'Why', 'Status', 'Raised by']
+      # The reviewer sets Status on proposed entries, judges them by Why and Clause, and
+      # appends spec-change entries with Found in place of Did.
+      - file: agents/reviewer.md
+        cites: ['Clause', 'Said', 'Found', 'Why', 'Status', 'Raised by', 'Resolved by']
+
+  - name: review report headings its readers parse are ones planning-templates defines
+    # status.py reads the header lines, the fix-round implementer reads CRITICAL and WARNING,
+    # the next reviewer reads Carried; a renamed heading leaves each reading nothing.
+    owner: skills/planning-templates/references/review-report.md
+    owner_span: ['1. **CRITICAL**', null]
+    readers:
+      - file: agents/reviewer.md
+        cites: ['CRITICAL', 'WARNING', 'SUGGESTION', 'Coverage', 'Carried', 'Spec-change', 'Deferred']
+      - file: agents/implementer.md
+        cites: ['CRITICAL', 'WARNING']
 
   - name: docs/constraints.md headings its readers run are ones the template defines
     # set-constraints writes the file from its template; four readers act on it by heading —
-    # the reviewer runs Floor and Enforced, greps for Guarded and honours Exceptions; the
+    # the reviewer reports Measured (from the gate's output) and honours Exceptions; the
     # implementer, the stop hook (through status.py's parser) and CI run Floor and Enforced. A
     # renamed heading turns each into a check that silently runs nothing. The template's numbered list under the fenced block
     # is what the owner parser reads.
@@ -319,7 +327,7 @@ headings:
     owner_span: ['## Floor', null]
     readers:
       - file: agents/reviewer.md
-        cites: ['Floor', 'Enforced', 'Guarded', 'Exceptions']
+        cites: ['Measured', 'Exceptions']
       - file: agents/implementer.md
         cites: ['Floor', 'Enforced']
       - file: hooks/gate_on_stop.py

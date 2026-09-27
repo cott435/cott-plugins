@@ -191,3 +191,60 @@ edit as the implementer's owner span (phase 4 chose them; keep them).
 - `check-contracts` all PASS with the review-report claim counted; `build-site` exits 0.
 - Logs for 5.1–5.3 in `evals/README.md`.
 - The ledger row for phase 5 reads `done`.
+
+## Deviations
+
+- **Order of authority: six items, not five.** The note says "the implementer's five
+  documents"; the implementer has six since phase 4 (constraints, decisions, an open change
+  file, package contract, repo contract, design), and the ledger's phase-4 note says the
+  reviewer's list is those six. The reviewer lists six, same wording. Item 1 names Floor and
+  Enforced unbolded: bolded, they fall inside the claim's reader span and are not implementer
+  item names (a planted `**Floor**` fails the claim). Both span markers survive, so the span is
+  unchanged: item 6 reads *read together with every `approved` entry … in
+  `docs/deviations.md`*.
+- **Design-headings claim.** The note says the reviewer's cites are kept. They named the plan
+  review's headings (`Skills used`, `Contract deviations`), which the new file never reads. They
+  now name what the Coverage table reads: `Interfaces`, `Workflow / pipeline`, `Error handling
+  and logging`, `Tests`, `Open questions`.
+- **Surface claim.** Followed as written: the reviewer was its only reader, so it now has
+  `readers: []` and a comment that phase 6 deletes it with `surface.md`.
+- **Deviations-entry claim.** The reviewer cites `Said`, `Raised by` and `Resolved by` as well
+  as the note's four, since it appends spec-change entries and sets `Resolved by:` on a
+  rejected entry.
+- **Decided where the note is silent.** A round-1 `correctness` (B) reviewer that finds a wrong
+  document writes it under its report's **Spec-change** with verdict `spec-change`, and writes
+  no ledger entry (the note gives the ledger to A alone). A `blocked` return's second line is
+  `Blocked: <reason>`, not a verdict. The gate always writes `.dev-team/gate.txt` (phase 2), so
+  the note's "no gate file" case became: a `result:` line other than a pass is quoted under
+  **WARNING**. A missing file, or one naming another section, is a WARNING too.
+- **Commit summary.** The reviewer writes `review data/clean: r1-a: request changes (2
+  critical)`, as the note and the eval set have it. `git-workflow-and-versioning`'s message
+  table example has no colon after the section. That file is not in this phase's Files; see the
+  ledger's *noticed:* line.
+- **Pass bar 5.2: "`old_skill` fails … the no-command rule."** It cannot be observed: the eval
+  harness forbids every command for both configurations, and the baseline ran none.
+- **Eval set corrected.** `status.py` was added to the forbidden-command list of all four
+  no-command expectations (user's yes). Iteration 1's eval-2 `with_skill` run had executed
+  `status.py --rounds` against the plugin checkout and passed only because the list did not name
+  it.
+- **Pass bar 5.2 missed after one fix.** Bar: every expectation passes for `with_skill`.
+  Iteration 1: 35/37, with two misses. Eval 1 added an eighth `## Deviations` report heading.
+  Eval 2 re-filed round-1 WARNINGs to the backlog beside the new calendar.py line. There was
+  also the `status.py` run above. The one fix, in `agents/reviewer.md`: no heading beyond the
+  seven; the backlog takes only WARNINGs that **Severity** demoted; `Round:` is taken as given,
+  with `status.py --rounds` only when the prompt has none. Iteration 2 reran evals 1 and 2,
+  `with_skill` only. Evals 3 and 4 passed and never ran `status.py`, so the stricter
+  expectation changes no verdict there. Eval 1 is 11/11. Eval 2 is 8/11. It found no
+  calendar.py weekend fill, so there is no WARNING and no backlog line for it; its one backlog
+  line is a different demoted finding. It classified `fill_gaps` `unfixed` under **Carried** but
+  wrote **CRITICAL** `- none` and `(0 critical)`. The grader passed that; the phase chat
+  regraded it FAIL. The second miss is a real defect: a `defer` run reads the standing CRITICALs
+  from the **CRITICAL** heading, so it would find none to defer. On the user's call, a second
+  fix went in: one sentence in **Focus: full** step 2 saying an `unfixed` prior finding also
+  stands as a line under **CRITICAL**. Iteration 3 reran eval 2, `with_skill` only: 8/11.
+  `fill_gaps` is now under **CRITICAL** and the commit reads `(1 critical)`. The three misses
+  are all the calendar.py weekend fill: not found, so there is no WARNING, no backlog line, and
+  no `docs/followups.md` to stage. Over three round-2 runs it was found once (iteration 1). The
+  new **Focus: full** judges the diff and treats the rest of the section as context, which is
+  the design's convergence rule. Finding an untouched out-of-diff defect is therefore sampling,
+  not a rule the agent skips. Committed on the user's yes with the bar missed.
