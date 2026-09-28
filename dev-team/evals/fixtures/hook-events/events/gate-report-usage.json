@@ -1,0 +1,15 @@
+{
+  "script": "gate",
+  "repo": "built",
+  "args": [
+    "--report",
+    "--since",
+    "HEAD"
+  ],
+  "expect": {
+    "exit": 2,
+    "stderr_contains": [
+      "usage: gate_on_stop.py --report [--base <rev>]"
+    ]
+  }
+}

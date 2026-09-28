@@ -1,7 +1,7 @@
 ---
 name: status
 description: Print where every package and section stands — one state per section (PROBE, DESIGN, TEST, IMPLEMENT, REVIEW, FIX n, PLAN, DONE, BLOCKED), the ready set, whether the package shipped, and the exact next command — derived from docs/ and the code every time, never from a status file. Use whenever you have lost track, before planning the next package, or to see why run-package stopped.
-argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--repo]"
+argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--repo] [--inputs <pkg>/<section>]"
 disable-model-invocation: true
 ---
 
@@ -45,6 +45,12 @@ points and interfaces** tables; and `import <pkg>` must load no section module. 
 `sections:` (every section not DONE), `decisions:` (every `D<n>` open or deferred),
 `spec-changes:`, `changes:` (open change files) and `backlog:` (unchecked `docs/followups.md`
 lines per target), each item on a `  - ` line, `  - none` for an empty group.
+
+`--inputs <pkg>/<section>` prints the implementer's spawn block — twelve `<Field>: <value>`
+lines, `none` where a field has nothing to hold — resolved from the contract, the Packages
+table, the review reports and the open change files. `/dev-team:run-package` sends it verbatim
+to the implementer, and `/dev-team:pair` reads the files it names. The script's docstring lists
+the fields and how each resolves. A section the contract lacks prints one line and exits 2.
 
 The script runs no test and no constraint command. The stop hook runs `docs/constraints.md`'s
 **Floor** and **Enforced** rows through the same parser this script exposes, so the rows the

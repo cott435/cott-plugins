@@ -1,0 +1,17 @@
+{
+  "note": "--inputs for a first build: one dependency README, no review, no change file",
+  "steps": [
+    {"do": "base"},
+    {"do": "done", "section": "ingest"},
+    {"do": "design", "section": "clean"},
+    {"do": "tests", "section": "clean"}
+  ],
+  "args": ["--inputs", "data/clean"],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "Section: data/clean\nDesign: docs/packages/data/design/clean.md\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: packages/data/src/data/ingest/README.md\nUpstream interfaces: none\nSource probes: none\nIntent tests: packages/data/tests/intent/clean/\nReview: none\nRound: 1\nChange file: none\nRun: run-package data\n"
+    ],
+    "absent": ["## data"]
+  }
+}

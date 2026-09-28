@@ -1,0 +1,26 @@
+{
+  "note": "--inputs for a section of a downstream package: a provisional upstream contract, an open change file, no intent tree yet",
+  "steps": [
+    {"do": "base"},
+    {"do": "done", "section": "ingest"},
+    {
+      "files": {
+        "docs/packages/analysis/contract.md": "# analysis — package contract\n\n## Sections\n\n| section | responsibility | path | owner doc | builds with | depends on | source |\n|---|---|---|---|---|---|---|\n| vwap | rolling VWAP | packages/analysis/src/analysis/vwap/ | docs/packages/analysis/design/vwap.md | — | — | — |\n| surface | the public surface | packages/analysis/src/analysis/ | docs/packages/analysis/design/surface.md | — | vwap | — |\n",
+        "docs/changes/vwap-window.md": "# `docs/changes/vwap-window.md`\nStatus: open\n\n1. **Change goal** — let the window be set per call.\n2. **Affected sections**\n   - analysis/vwap — takes a window\n3. **Contract changes** — none yet\n4. **Downstream impact** — none\n"
+      },
+      "message": "docs: analysis contract, change vwap-window"
+    }
+  ],
+  "args": ["--inputs", "analysis/vwap"],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "Section: analysis/vwap\n",
+      "Upstream interfaces: provisional: docs/packages/data/contract.md\n",
+      "Intent tests: none\n",
+      "Round: 1\n",
+      "Change file: docs/changes/vwap-window.md\n",
+      "Run: run-package analysis\n"
+    ]
+  }
+}

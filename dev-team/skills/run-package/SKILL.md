@@ -55,7 +55,7 @@ one line saying which, and stop — no spawn, no summary.
 One Agent call per spawn, `subagent_type: "dev-team:<agent>"`, `run_in_background: false`.
 The prompt is exactly the block for that role below: one `<Field>: <value>` line per row, in
 the row order, every value resolved, a field with nothing to hold written `none`, and nothing
-else. Each block's fields are the ones that agent's own **Inputs** defines; the agent owns
+else. The implementer's block is not a table here: `status.py --inputs` prints it whole. Each block's fields are the ones that agent's own **Inputs** defines; the agent owns
 what they mean, and every procedure lives in the agent, never in the prompt.
 
 If the first Agent call fails because the agent type is unknown, stop: the dev-team agents are
@@ -132,20 +132,12 @@ take turns, since both extend one file.
 `subagent_type: "dev-team:implementer"`, one at a time: implementers never run in parallel,
 since they share `pyproject.toml`, the workspace and `docs/deviations.md`.
 
-| Field | Value |
-|---|---|
-| **Section** | `<pkg>/<section>` |
-| **Design** | `docs/packages/<pkg>/design/<section>.md` |
-| **Contract** | `docs/packages/<pkg>/contract.md` |
-| **Repo contract** | `docs/architecture.md` |
-| **Dependency READMEs** | `<dep path>/README.md` per dependency, comma-separated |
-| **Upstream interfaces** | per upstream package, as resolved above |
-| **Source probes** | `docs/sources/<token>.md` per source |
-| **Intent tests** | `<package root>/tests/intent/<section>/` |
-| **Review** | at FIX `n`, round `n`'s report paths, comma-separated; else `none` |
-| **Round** | the row's round plus one |
-| **Change file** | the open change file naming the section, or `none` |
-| **Run** | `run-package <pkg>` |
+The prompt is the output of `status.py --inputs <pkg>/<section>`, verbatim: the script
+resolves every field of the implementer's **Inputs** — the review reports at FIX `n` and at a
+cap granted *one more round*, the round, the open change file — and its docstring is the one
+list of them. `/dev-team:pair` reads the files the same block names, so a section built here
+and a section paired on by hand start from the same documents. Do not add, drop or rewrite a
+line of it.
 
 ### Reviewer — REVIEW
 

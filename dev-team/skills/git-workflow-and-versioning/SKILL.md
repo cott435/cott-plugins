@@ -46,12 +46,14 @@ section disagrees, this section wins.
    | architect | `plan <target>` | `plan data: contract with surface row` |
    | curator | `legacy` | `legacy: inventory of ../old-repo` |
    | documenter | `docs` | `docs: package READMEs, root README` |
+   | pair | `<pkg>/<section>` | `pair — <what changed>` — `data/report: pair — sort the trade table by time` |
    | set-constraints | `docs` | `docs: set constraints (coverage 80, mypy strict, docstrings 95)` |
 
    Body: blank line, then one trailer and nothing else: `Dev-Team-Run: <skill> <argument as
    typed>` — under the driver, `run-package <pkg>` for every agent it spawns (the prompt's
    `Run:` line). An agent spawned with no `Run:` line writes its role and target instead
-   (`Dev-Team-Run: designer data/ingest`). The trailer is what lets any tool — the stop gate
+   (`Dev-Team-Run: designer data/ingest`). `/dev-team:pair`, which is you and the user rather
+   than an agent, writes `Dev-Team-Run: pair <pkg>/<section>`. The trailer is what lets any tool — the stop gate
    among them — find a run's commit without parsing the summary.
 
 4. **One commit per run** — A run never makes two commits, and a run that wrote nothing

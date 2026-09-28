@@ -11,6 +11,7 @@ workflows_order:
   - rebuild-from-legacy
   - change-shipped-code
   - adopt-existing-repo
+  - pair-on-a-section
 
 # Reading order for the workflow skills: the order you actually run them, not alphabetical.
 workflow_skills_order:
@@ -20,6 +21,7 @@ workflow_skills_order:
   - plan-repo
   - plan-package
   - run-package           # the driver: every section of one package to DONE, then sync-plan
+  - pair                  # hand-iterate on one built section, then hand it back to run-package
   - probe-source
   - sync-plan
   - map-repo

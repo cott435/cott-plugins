@@ -33,7 +33,7 @@ dev-team/
 ├── hooks/
 │   ├── hooks.json            registers the three hooks below
 │   ├── format_on_edit.py     PostToolUse: ruff on every .py edit by the implementer or tester
-│   ├── gate_on_stop.py       SubagentStop: the implementer may not finish while its checks are red
+│   ├── gate_on_stop.py       SubagentStop: the implementer may not finish while its checks are red; --report by hand
 │   └── guard_writes.py       PreToolUse: each role writes only where its job is
 ├── pyproject-lint-config.toml  merge into the root pyproject.toml; enforces the hard limits
 └── skills/
@@ -44,6 +44,7 @@ dev-team/
     ├── plan-repo/          → architect     the repo contract: write, extend, or --fix
     ├── plan-package/       → architect     one package contract, ending with the surface row; edits classified
     ├── run-package/        (inline)        the driver: <pkg> [<section>] [--step] [--defer]
+    ├── pair/               (inline)        one built section, edited with you turn by turn; wrap-up hands it back
     ├── probe-source/       → researcher    re-probe one source for one section after the world changed
     ├── sync-plan/          → architect     the package close: approved deviations and change files into the contracts
     ├── map-repo/           → architect     adopt an existing repo: package contracts in parallel, then the repo contract
@@ -117,6 +118,7 @@ a change to shipped code                    → /dev-team:plan-package <pkg> "<c
 the repo contract came out wrong            → /dev-team:plan-repo --fix "<what was wrong>" (or correct the brief with
                                               /dev-team:shape-brief, then /dev-team:plan-repo)
 one step of one section by hand             → /dev-team:run-package <pkg> <section> --step PROBE|DESIGN|TEST|IMPLEMENT|REVIEW
+iterate by hand on built code (a UI, say)   → /dev-team:pair <pkg>/<section>, then the next: line it prints
 an API changed, a dataset was refreshed     → /dev-team:probe-source <pkg>/<section> <source>
 rebuilding from an old, messy repo          → /dev-team:extract-legacy <old repo> (twice), then /dev-team:plan-repo
 human-facing docs                           → /dev-team:finalize-project (safe any time; lists what is still open)
@@ -188,6 +190,24 @@ every call and never stored:
 A package is **shipped** when its `surface` section is DONE. A round is the set of reports
 sharing `-r<n>`; its verdict is the worst of them.
 
+## Pairing on a section
+
+Some changes can only be judged by looking at them — a UI, a report layout, a CLI's output —
+and a loop of design, tests, build and review per nudge is the wrong tool for them.
+`/dev-team:pair <pkg>/<section>` runs in your conversation: it reads what the section's
+implementer would read (`status.py --inputs`, the same block the driver sends), briefs you on
+the section's boundary, and edits the code turn by turn while you try it. Nothing gates the
+edits in between. It starts only from REVIEW, FIX n, DONE or a review cap, never ahead of an
+unfinished step.
+
+When you say you are done, it wraps up: sorts every change by the clause it touches — none,
+`deviation` or `spec-change:<level>`, by the implementer's own table — shows you the list,
+writes the entries to `docs/deviations.md`, updates the section README, runs the stop gate's
+checks by hand (`gate_on_stop.py --report --base <start>`, so the next reviewer reads a gate
+record of *this* code), commits once, and prints the `next:` command. From there it is the
+ordinary loop: one review round for changes inside the design, a verdict on each deviation, or
+the spec-change's level re-opened first.
+
 ## Hooks
 
 `hooks/hooks.json` registers three, and each exits 0 outside a repo with `docs/architecture.md`:
@@ -204,7 +224,9 @@ sharing `-r<n>`; its verdict is the worst of them.
   evidence. It lets the agent stop on a green run, on a `.dev-team/stop` marker (the
   implementer writes it when it returns `blocked` or `spec-change`), or on the third attempt,
   counted per agent under `${CLAUDE_PLUGIN_DATA}/gate/`; from the second it names
-  `debugging-and-error-recovery`.
+  `debugging-and-error-recovery`. By hand, `gate_on_stop.py --report [--base <rev>]` runs the
+  same checks over `<rev>`..working tree with no counter and no marker, writes the same file,
+  and exits 1 on a FAIL; `/dev-team:pair` runs it at wrap-up.
 - **`guard_writes.py`** (`PreToolUse` on `Write|Edit`) — each role writes only where its job
   is: the architect under `docs/` but not designs or reviews; the designer to designs and the
   two ledgers; the researcher to `docs/sources/` and `.claude/skills/`; the tester to
@@ -401,7 +423,8 @@ the sections it names are DONE, after checking the code. Every contract is copie
   never writes a value anywhere. `/dev-team:plan-repo` probes the brief's datasets before the
   repo contract, because data that cannot support the task changes which packages exist.
 - **Work on a branch, commit your hand edits.** The run gate refuses `main`/`master` and a
-  dirty tree outside the four exempt paths. `git log` is the run history: every commit carries
+  dirty tree outside the four exempt paths. Hand edits that depart from the design are
+  CRITICAL findings until the ledger records them; `/dev-team:pair` writes those entries. `git log` is the run history: every commit carries
   a `Dev-Team-Run:` trailer.
 - **Re-running the same command is the continue action** after a stop. Doing nothing in the
   ledger means "accept the assumptions".

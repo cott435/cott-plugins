@@ -1,0 +1,25 @@
+{
+  "script": "gate",
+  "repo": "built",
+  "setup": {
+    "files": {
+      "packages/data/tests/intent/ingest/test_bad_row.py": "\"\"\"A second red intent test that no deviation entry covers.\"\"\"\n\nfrom pathlib import Path\n\nimport pytest\n\nfrom data.ingest import load_trades\n\n\ndef test_load_trades_rejects_missing_field(tmp_path: Path) -> None:\n    \"\"\"Design §6 bad row: a row with a missing field raises ValueError naming the field.\"\"\"\n    csv_file = tmp_path / \"trades.csv\"\n    csv_file.write_text(\"ts,symbol,price,size,side\\n2026-09-01T13:30:20Z,AAA,49.74,,sell\\n\")\n    with pytest.raises(ValueError, match=\"size\"):\n        load_trades(csv_file)\n"
+    }
+  },
+  "args": [
+    "--report"
+  ],
+  "expect": {
+    "exit": 1,
+    "stdout_contains": [
+      "FAIL intent tests/intent/ingest/test_bad_row.py::test_load_trades_rejects_missing_field"
+    ],
+    "gate_contains": [
+      "result: fail (2 failures, report since HEAD)"
+    ],
+    "stderr_lacks": [
+      "not done",
+      "attempt"
+    ]
+  }
+}

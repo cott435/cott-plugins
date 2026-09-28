@@ -46,6 +46,10 @@ optional flag).
 | `implement-missing-readme` | intent tests, no README | `—` | `ingest · IMPLEMENT`, evidence `/no .*README.md/` |
 | `implement-regeneration-skipped` | DONE, then an approved deviation and a regeneration commit: still DONE | `—` | `ingest · DONE`, round 1 |
 | `implement-tests-newer` | intent tests edited after the README (not a regeneration) | `—` | `ingest · IMPLEMENT`, evidence `/^tests [0-9a-f]{7} newer than README [0-9a-f]{7}$/` |
+| `inputs-bad-target` | --inputs names a section the contract does not have | `--inputs data/nope` | `no section nope in docs/packages/data/contract.md`; exit 2 |
+| `inputs-first-build` | --inputs for a first build: one dependency README, no review, no change file | `--inputs data/clean` | the whole twelve-line block, in order; not `## data`; exit 0 |
+| `inputs-fix-round` | --inputs at FIX 1: the round's reports, round 2, the dataset probe doc | `--inputs data/ingest` | `Review: docs/reviews/2026-09-27-data-ingest-r1-a.md, docs/reviews/2026-09-27-data-ingest-r1-b.md`; `Round: 2`; `Source probes: docs/sources/trades.md` |
+| `inputs-upstream-change` | --inputs for a downstream package's section: provisional upstream contract, an open change file, no intent tree | `--inputs analysis/vwap` | `Upstream interfaces: provisional: docs/packages/data/contract.md`; `Intent tests: none`; `Change file: docs/changes/vwap-window.md`; `Run: run-package analysis` |
 | `no-contract` | no package contract: next is plan-package | `—` | `next: /dev-team:plan-package data` |
 | `not-blocked-round-2-fixed` | round 2 requests changes, every prior fixed: no cap | `—` | `ingest · FIX 2`, round 2 |
 | `old-report-name` | a 0.6-era report name reads as round 1 | `—` | `ingest · DONE`, round 1 |

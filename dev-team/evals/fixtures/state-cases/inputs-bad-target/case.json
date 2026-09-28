@@ -1,0 +1,9 @@
+{
+  "note": "--inputs names a section the contract does not have",
+  "steps": [{"do": "base"}],
+  "args": ["--inputs", "data/nope"],
+  "expect": {
+    "exit": 2,
+    "contains": ["no section nope in docs/packages/data/contract.md"]
+  }
+}

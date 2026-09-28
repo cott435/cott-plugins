@@ -12,8 +12,9 @@ Each case is `events/<case>.json`:
 - `setup`: `files` written into the repo (uncommitted unless `commit` names a message, which
   commits everything), and `counter`, the gate's attempt count before this stop.
 - `event`: the hook input as Claude Code sends it, `{cwd}` standing for the repo; or `raw`,
-  stdin sent verbatim.
-- `expect`: `exit`; `stderr` (exact), `stderr_contains`, `stderr_lacks`, `stderr_startswith`;
+  stdin sent verbatim. `args`: command-line arguments, for the gate's `--report` mode, which
+  reads no stdin.
+- `expect`: `exit`; `stdout_contains`; `stderr` (exact), `stderr_contains`, `stderr_lacks`, `stderr_startswith`;
   `file_equals`, `file_contains`, `file_lacks` (repo-relative); `absent` (paths that must not
   exist); `gate_contains`, `gate_lacks`, and `gate_only` (every line of `.dev-team/gate.txt`
   between the header and the `result:` line starts with one of these); `counter` (the attempt
@@ -72,9 +73,9 @@ def check(case: Path) -> list[str]:
         if "counter" in setup:
             counter.parent.mkdir(parents=True, exist_ok=True)
             counter.write_text(f"{setup['counter']}\n")
-        stdin = spec["raw"] if "raw" in spec else json.dumps(event).replace("{cwd}", str(repo))
+        stdin = spec["raw"] if "raw" in spec else "" if event is None else json.dumps(event).replace("{cwd}", str(repo))
         env = {**os.environ, "CLAUDE_PLUGIN_ROOT": str(PLUGIN), "CLAUDE_PLUGIN_DATA": str(data)}
-        res = subprocess.run(["python3", str(PLUGIN / "hooks" / SCRIPTS[spec["script"]])],
+        res = subprocess.run(["python3", str(PLUGIN / "hooks" / SCRIPTS[spec["script"]]), *spec.get("args", [])],
                              input=stdin, capture_output=True, text=True, cwd=repo, env=env)
         problems = []
         err = res.stderr
@@ -84,6 +85,7 @@ def check(case: Path) -> list[str]:
             problems.append(f"stderr {err.strip()!r}, expected {exp['stderr']!r}")
         if "stderr_startswith" in exp and not err.startswith(exp["stderr_startswith"]):
             problems.append(f"stderr does not start {exp['stderr_startswith']!r}")
+        problems += [f"stdout lacks {s!r}" for s in exp.get("stdout_contains", []) if s not in res.stdout]
         problems += [f"stderr lacks {s!r}" for s in exp.get("stderr_contains", []) if s not in err]
         problems += [f"stderr has {s!r}" for s in exp.get("stderr_lacks", []) if s in err]
         for rel, text in exp.get("file_equals", {}).items():

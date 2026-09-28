@@ -154,6 +154,9 @@ headings:
         cites: ['Consumers (computed)']
       - file: skills/finalize-project/SKILL.md
         cites: ['Public names']
+      # pair treats a change to the surface's Public names as a spec-change.
+      - file: skills/pair/SKILL.md
+        cites: ['Public names']
 
   - name: probe doc headings its readers parse are ones planning-templates defines
     # A probe doc is the external provider's interface.md, and four agents parse it by heading:
@@ -195,6 +198,10 @@ headings:
       # item 7 for the deviations entries it cites.
       - file: agents/reviewer.md
         cites: ['Entry points and interfaces', 'Implementation notes']
+      # pair briefs the user from Purpose and the Public: yes rows, and at wrap-up cites each
+      # new ledger entry under Implementation notes.
+      - file: skills/pair/SKILL.md
+        cites: ['Purpose', 'Entry points and interfaces', 'Implementation notes']
 
   - name: design headings the tester writes tests from are ones the designer's template defines
     # The tester inventories its cases by design heading and cites them in every test's
@@ -276,6 +283,9 @@ headings:
       # before sync-plan applies it, then sets Status and Resolved by.
       - file: agents/architect.md
         cites: ['Clause', 'Did', 'Status', 'Resolved by']
+      # pair writes the entries for what was built by hand, field by field, at wrap-up.
+      - file: skills/pair/SKILL.md
+        cites: ['Clause', 'Said', 'Did', 'Found', 'Why', 'Status', 'Raised by', 'Resolved by']
 
   - name: change file headings its readers parse are ones planning-templates defines
     # The architect writes a change file on a CHANGE outcome and sync-plan verifies and applies
@@ -355,13 +365,17 @@ headings:
       - file: skills/run-package/SKILL.md
         span: ['### Tester — TEST', '### Implementer — IMPLEMENT']
 
-  - name: every field the driver sends the implementer is one the implementer's Inputs defines
-    # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.
+  - name: every field status.py --inputs prints is one the implementer's Inputs defines
+    # The implementer's block is not a driver table: `status.py --inputs` resolves and prints
+    # it, run-package sends it verbatim, and pair reads the files it names. The docstring's
+    # numbered list is the fields the code prints (the state-cases `inputs-first-build` case
+    # pins every line, in order); a field the agent does not define is a line it never reads,
+    # and a renamed one arrives empty.
     owner: agents/implementer.md
     owner_span: ['## Inputs', '## Order of authority']
     readers:
-      - file: skills/run-package/SKILL.md
-        span: ['### Implementer — IMPLEMENT', '### Reviewer — REVIEW']
+      - file: skills/status/scripts/status.py
+        span: ['`--inputs <pkg>/<section>` prints', 'from __future__']
 
   - name: every field the driver sends the reviewer is one the reviewer's Inputs defines
     # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.

@@ -28,4 +28,8 @@ clause. So the unmodified repo is the tolerated case, and every other gate case 
 on top of it. The coverage case stands a failing one-line command in for a coverage tool,
 since `pytest-cov` is not assumed installed.
 
+The four `gate-report-*` cases run the gate by hand (`--report`, `args` in the case, no
+stdin), as `/dev-team:pair` does at wrap-up: a pass over `--base HEAD~1`, a fail over the
+working tree, a bad flag and a `--base` that is not a commit.
+
 Needs `ruff` on PATH and `pytest` importable by `python3`.

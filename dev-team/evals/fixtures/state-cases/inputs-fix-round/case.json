@@ -1,0 +1,20 @@
+{
+  "note": "--inputs at FIX 1: the round's reports, round 2, the dataset probe doc",
+  "steps": [
+    {"do": "base"},
+    {"do": "design", "section": "ingest"},
+    {"do": "tests", "section": "ingest"},
+    {"do": "build", "section": "ingest"},
+    {"do": "review", "section": "ingest", "round": 1, "reports": {"a": "approve", "b": "request changes"}}
+  ],
+  "args": ["--inputs", "data/ingest"],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "Dependency READMEs: none\n",
+      "Source probes: docs/sources/trades.md\n",
+      "Review: docs/reviews/2026-09-27-data-ingest-r1-a.md, docs/reviews/2026-09-27-data-ingest-r1-b.md\n",
+      "Round: 2\n"
+    ]
+  }
+}

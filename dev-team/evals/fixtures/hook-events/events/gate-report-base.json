@@ -1,0 +1,27 @@
+{
+  "script": "gate",
+  "repo": "built",
+  "args": [
+    "--report",
+    "--base",
+    "HEAD~1"
+  ],
+  "expect": {
+    "exit": 0,
+    "stdout_contains": [
+      "dev-team gate — report — ",
+      "sections data/ingest",
+      "result: pass"
+    ],
+    "gate_contains": [
+      "dev-team gate — report — ",
+      "TOLERATED intent tests/intent/ingest/test_loader.py::test_load_trades_price_is_float"
+    ],
+    "gate_lacks": [
+      "FAIL"
+    ],
+    "absent": [
+      ".dev-team/stop"
+    ]
+  }
+}

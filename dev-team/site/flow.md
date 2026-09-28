@@ -161,13 +161,13 @@ upstream `interface.md`, a probe doc — wins over every plan-time document abou
 | `docs/packages/<pkg>/design/<section>.md` | designer | tester, implementer, reviewer A, `status.py` | its contract row changed; a cited probe doc is newer; an open change file or `spec-change:design` names it |
 | `docs/sources/<source>.md` (+ sample or stats, probe or profile script) | researcher | designer, implementer, reviewer, architect, `status.py` | `probe-source` re-ran; a new consuming section has no entry yet (it needs PROBE) |
 | `tests/intent/<section>/` | tester | implementer, reviewer, the stop gate, `status.py` | the design is newer than the tree |
-| section `README.md`; the `surface` section's is `docs/packages/<pkg>/interface.md` | implementer | dependents' designer, tester and implementer, reviewer, documenter, architect, `status.py` | the code is newer than it |
+| section `README.md`; the `surface` section's is `docs/packages/<pkg>/interface.md` | implementer; `pair` at wrap-up | dependents' designer, tester and implementer, reviewer, documenter, architect, `status.py` | the code is newer than it |
 | `docs/reviews/<date>-<pkg>-<section>-r<n>-<a, b or s>.md` | reviewer | `status.py`, the fix-round implementer, the next reviewer | the code is newer than its `Commit:` |
-| `docs/deviations.md` | implementer, designer, tester, reviewer, architect | reviewer, tester, architect, `status.py`, the stop gate | never; entries close by status |
+| `docs/deviations.md` | implementer, designer, tester, reviewer, architect; `pair` at wrap-up | reviewer, tester, architect, `status.py`, the stop gate | never; entries close by status |
 | `docs/changes/<slug>.md` | architect (a CHANGE outcome) | `status.py`, designer (delta), implementer, reviewer, architect (sync-plan) | its sections are DONE and `sync-plan` has not run |
-| `docs/decisions.md` | architect and designer (stubs); you or the driver (`Decision:`, `Status:`); implementer (`Applied:`) | every agent; `status.py`; documenter | never; retired by `superseded` |
+| `docs/decisions.md` | architect and designer (stubs); you, the driver or `pair` (`Decision:`, `Status:`); implementer (`Applied:`) | every agent; `status.py`; documenter | never; retired by `superseded` |
 | `docs/constraints.md` | `set-constraints`, you | the stop gate, `status.py --run-gate`, CI, reviewer (Measured, Exceptions), tester (coverage) | you change the bar |
 | `docs/followups.md` | reviewer (out-of-diff WARNINGs, defer), architect (map-repo defects) | the fix-round implementer (entries for its section), documenter, you | never counted, never a gate |
 | `docs/history/<date>-<name>.md` | architect, before every contract edit | you | never |
 | `docs/index.md`, `packages/*/README.md`, root `README.md` | documenter | you | a shipped document changed after it |
-| `.dev-team/gate.txt` | the stop gate | reviewer (its evidence) | the next implementer stop |
+| `.dev-team/gate.txt` | the stop gate; `gate_on_stop.py --report` (`pair` at wrap-up) | reviewer (its evidence) | the next implementer stop or `--report` run |

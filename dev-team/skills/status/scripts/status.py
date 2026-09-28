@@ -2,6 +2,7 @@
 """Derive where every package and section stands from docs/ and the code. Nothing is stored.
 
 Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--repo]
+                          [--inputs <pkg>/<section>]
 
 A section is in exactly one state, decided in this order, first match wins:
 
@@ -38,6 +39,28 @@ on` is DONE. The `surface` row depends on every other row whatever its cell says
 Shipped: the `surface` section is DONE. Rounds: the highest `n` over
 `docs/reviews/<date>-<pkg>-<section>-r<n>-<a|b|s>.md`; a round's verdict is the worst of its
 reports (request changes > spec-change > approve); a report with no `-r<n>-` is round 1.
+
+`--inputs <pkg>/<section>` prints the implementer's spawn block, the one place its values are
+resolved: run-package sends it verbatim as the implementer's prompt, and pair reads the files
+it names before touching the section. One `<Field>: <value>` line per field, in this order,
+`none` for a field with nothing to hold:
+
+1. **Section** — `<pkg>/<section>`.
+2. **Design** — `docs/packages/<pkg>/design/<section>.md`.
+3. **Contract** — `docs/packages/<pkg>/contract.md`.
+4. **Repo contract** — `docs/architecture.md`.
+5. **Dependency READMEs** — `<path>/README.md` per section in the row's `depends on`.
+6. **Upstream interfaces** — per package in the Packages row's `depends on`,
+   `docs/packages/<dep>/interface.md` when it exists, else `provisional:
+   docs/packages/<dep>/contract.md`.
+7. **Source probes** — `docs/sources/<token>.md` per entry in the row's `source`.
+8. **Intent tests** — `<package root>/tests/intent/<section>/` when it exists.
+9. **Review** — the newest round's reports when its verdict is `request changes`: FIX n, or a
+   cap granted one more round.
+10. **Round** — the newest round plus one.
+11. **Change file** — every open `docs/changes/<slug>.md` whose Affected sections names the
+    section.
+12. **Run** — `run-package <pkg>`.
 """
 
 from __future__ import annotations
@@ -1006,6 +1029,55 @@ def repo_report() -> list[str]:
     return lines
 
 
+def upstream_packages(pkg: str) -> list[str]:
+    """The `depends on` names of pkg's row in architecture.md's Packages table."""
+    arch = DOCS / "architecture.md"
+    if not arch.exists():
+        return []
+    for row in table_rows(arch.read_text(), ("package", "path")):
+        if col(row, "package") == pkg:
+            return _names(col(row, "depends"))
+    return []
+
+
+def implementer_inputs(pkg: str, section: str) -> list[str]:
+    """The implementer's spawn block for one section, one `<Field>: <value>` line per field.
+
+    The fields and how each resolves are the module docstring's `--inputs` list.
+    """
+    row = _row(pkg, section) or {}
+    rows = {r["section"]: r for r in sections(pkg)}
+    p = _paths(pkg, section)
+    deps = [f"{rows[d]['path']}/README.md" for d in _names(row.get("depends on", "")) if d in rows and d != section]
+    ups = []
+    for dep in upstream_packages(pkg):
+        iface = DOCS / "packages" / dep / "interface.md"
+        ups.append(_rel(iface) if iface.exists() else f"provisional: {_rel(contract_path(dep))}")
+    probes = [f"docs/sources/{token}.md" for _, token in _sources(row.get("source", ""))]
+    intent: Path = p["intent"]  # type: ignore[assignment]
+    n, verdict, _, _ = newest_round(pkg, section)
+    review = sorted(_rel(f) for f in _reports(pkg, section).get(n, [])) if verdict == "request changes" else []
+    changes = [_rel(c["path"]) for c in open_changes(pkg, section)]  # type: ignore[arg-type]
+
+    def cell(values: list[str]) -> str:
+        return ", ".join(values) or "none"
+
+    return [
+        f"Section: {pkg}/{section}",
+        f"Design: {_rel(p['design'])}",  # type: ignore[arg-type]
+        f"Contract: {_rel(contract_path(pkg))}",
+        "Repo contract: docs/architecture.md",
+        f"Dependency READMEs: {cell(deps)}",
+        f"Upstream interfaces: {cell(ups)}",
+        f"Source probes: {cell(probes)}",
+        f"Intent tests: {_rel(intent) + '/' if intent.is_dir() else 'none'}",
+        f"Review: {cell(review)}",
+        f"Round: {n + 1}",
+        f"Change file: {cell(changes)}",
+        f"Run: run-package {pkg}",
+    ]
+
+
 def _flag_value(argv: list[str], flag: str) -> tuple[bool, str | None]:
     """(present, value) for a flag with an optional non-flag value after it; removes both from argv."""
     if flag not in argv:
@@ -1022,6 +1094,7 @@ def main() -> int:
     has_rounds, rounds_target = _flag_value(argv, "--rounds")
     has_surface, surface_pkg = _flag_value(argv, "--surface")
     has_gate, gate_pkg = _flag_value(argv, "--run-gate")
+    has_inputs, inputs_target = _flag_value(argv, "--inputs")
     has_repo = "--repo" in argv
     argv = [a for a in argv if a != "--repo"]
     unknown = [a for a in argv if a.startswith("--")]
@@ -1058,7 +1131,16 @@ def main() -> int:
             print("no docs/ directory here — run from the repo root")
             return 2
         print("\n".join(repo_report()))
-    if has_rounds or has_gate or has_surface or has_repo:
+    if has_inputs:
+        pkg, _, sec = (inputs_target or "").partition("/")
+        if not pkg or not sec:
+            print("--inputs needs a target: status.py --inputs <pkg>/<section>")
+            return 2
+        if _row(pkg, sec) is None:
+            print(f"no section {sec} in {_rel(contract_path(pkg))}")
+            return 2
+        print("\n".join(implementer_inputs(pkg, sec)))
+    if has_rounds or has_gate or has_surface or has_repo or has_inputs:
         return code
     if not DOCS.exists():
         print("no docs/ directory here — run from the repo root")

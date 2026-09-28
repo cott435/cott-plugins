@@ -1,0 +1,15 @@
+{
+  "script": "gate",
+  "repo": "built",
+  "args": [
+    "--report",
+    "--base",
+    "nope"
+  ],
+  "expect": {
+    "exit": 2,
+    "stderr_contains": [
+      "--base nope is not a commit"
+    ]
+  }
+}

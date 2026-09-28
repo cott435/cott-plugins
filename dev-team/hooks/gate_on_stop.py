@@ -28,6 +28,13 @@ Input: the hook JSON on stdin (`cwd`, `agent_id`, `agent_type`, `stop_hook_activ
    stderr, delete the counter, exit 0.
 8. Malformed stdin or any exception: report it on stderr and exit 0 (fail open, reported).
 
+By hand, `python3 gate_on_stop.py --report [--base <rev>]` from the repo root runs the same
+checks of step 5 over the diff from `<rev>` (default `HEAD`) to the working tree, with no
+counter and no marker, and writes `.dev-team/gate.txt` with `report` where the attempt goes.
+It prints the file and exits 1 on a FAIL line, 2 on a bad argument. The pair skill runs it at
+wrap-up, so the reviewer of hand-made code reads a gate record of that code, not of the last
+implementer's.
+
 The parsers are status.py's, imported; there is no copy of any of them here.
 """
 
@@ -358,6 +365,51 @@ def _clear(counter: Path) -> None:
         pass
 
 
+def run_checks(base: str | None) -> tuple[list[tuple[str, str]], list[str]]:
+    """(sections in the diff since base, one line per check); no sections, no checks."""
+    paths = diff_paths(base) if base else []
+    targets = gated_sections(paths)
+    if not targets or base is None:
+        return targets, []
+    pkgs = sorted({pkg for pkg, _ in targets})
+    lines = check_rows(pkgs)
+    for pkg, section in targets:
+        lines += check_intent(pkg, section)
+    lines += check_guarded(base, paths)
+    for pkg in sorted({pkg for pkg, section in targets if section == "surface"}):
+        lines += check_surface(pkg)
+    return targets, lines
+
+
+def report(cwd: Path, base: str) -> int:
+    """`--report [--base <rev>]`: the same checks over base..working tree, run by hand.
+
+    No counter and no marker: nothing is stopped. Writes `.dev-team/gate.txt` exactly as a stop
+    does, with `report` in the header's attempt slot, prints it, and exits 1 on a FAIL line.
+    """
+    if not (cwd / "docs" / "architecture.md").exists():
+        print("dev-team gate: no docs/architecture.md here — run from the repo root", file=sys.stderr)
+        return 2
+    status.set_root(cwd)
+    if status.git("rev-parse", "--verify", "-q", f"{base}^{{commit}}") is None:
+        print(f"dev-team gate: --base {base} is not a commit", file=sys.stderr)
+        return 2
+    targets, lines = run_checks(base)
+    if not targets:
+        print(f"dev-team gate: no section in the diff since {base}", file=sys.stderr)
+        return 0
+    fails = [ln for ln in lines if ln.startswith("FAIL")]
+    names = ", ".join(f"{p}/{s}" for p, s in targets)
+    stamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    outcome = "result: pass" if not fails else f"result: fail ({len(fails)} failure{'s' * (len(fails) != 1)}, report since {base})"
+    text = "\n".join([f"dev-team gate — report — {stamp} — sections {names}", *lines, outcome]) + "\n"
+    out = cwd / ".dev-team" / "gate.txt"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(text)
+    print(text, end="")
+    return 1 if fails else 0
+
+
 def gate(event: dict) -> int:
     cwd = Path(event["cwd"]).resolve()
     if event.get("agent_type") != AGENT or not (cwd / "docs" / "architecture.md").exists():
@@ -379,20 +431,11 @@ def gate(event: dict) -> int:
 
     status.set_root(cwd)
     base = _base()
-    paths = diff_paths(base) if base else []
-    targets = gated_sections(paths)
+    targets, lines = run_checks(base)
     if not targets:
         _clear(counter)
         print("dev-team gate: no section in this run's diff", file=sys.stderr)
         return 0
-
-    pkgs = sorted({pkg for pkg, _ in targets})
-    lines = check_rows(pkgs)
-    for pkg, section in targets:
-        lines += check_intent(pkg, section)
-    lines += check_guarded(base, paths)
-    for pkg in sorted({pkg for pkg, section in targets if section == "surface"}):
-        lines += check_surface(pkg)
     fails = [ln for ln in lines if ln.startswith("FAIL")]
 
     names = ", ".join(f"{p}/{s}" for p, s in targets)
@@ -426,6 +469,13 @@ def gate(event: dict) -> int:
 
 
 def main() -> int:
+    argv = sys.argv[1:]
+    if argv:
+        if argv[0] != "--report" or len(argv) not in (1, 3) or (len(argv) == 3 and argv[1] != "--base"):
+            print("usage: gate_on_stop.py --report [--base <rev>]  (with no arguments: the SubagentStop hook)",
+                  file=sys.stderr)
+            return 2
+        return report(Path.cwd().resolve(), argv[2] if len(argv) == 3 else "HEAD")
     try:
         event = json.loads(sys.stdin.read())
         if not isinstance(event, dict) or "cwd" not in event:

@@ -23,6 +23,10 @@ exists. The outcome is **CHANGE**: `docs/changes/add-vwap.md`, with
 
 A question that changes a boundary is a `D<n>` stub and a stop, as always.
 
+A change you can only judge by looking at it — a UI, a layout — is easier the other way round:
+build it first with `/dev-team:pair <pkg>/<section>`, and let its wrap-up write the ledger
+entries that re-open the documents (**Pairing on a section**).
+
 ## Build it
 
 ```
