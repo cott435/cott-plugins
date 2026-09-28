@@ -82,3 +82,34 @@ The rest of `CLAUDE.md` (Repo-specific, the shared-protocol section, the build c
 - `check-contracts` all PASS with two `names_listed` claims counted; `build-site` exits 0.
 - Logs for 10.1–10.3 in `evals/README.md`.
 - The ledger row for phase 10 reads `done`.
+
+## Deviations
+
+- **`extract-legacy` gained a run gate.** The note's Files row for `extract-legacy` names only
+  the removed paragraph and the collision note. The ledger's phase-4 note for this phase adds
+  that `extract-legacy` must run the run gate first (§Project convention rule 1, a typed skill
+  that forks an agent). What was done: a `## Run gate` section, the same form
+  `finalize-project` and `sync-plan` use.
+- **`set-constraints`'s Boundaries needed one correction.** The note's decision says the stop
+  gate, `status.py` and CI "run the file's rows". `status.py --run-gate` checks the branch and
+  the clean tree and runs no row. `status.py` parses the rows, and `gate_on_stop.py` imports
+  that parser. The Boundaries say the gate and CI run the **Floor** and **Enforced** rows,
+  parsed by `status.py`. Its old **Branch rule** bullet, which named the retired **Branch**
+  and **Baseline** rules, is now **Run gate first**, citing `status.py --run-gate`.
+- **`probe-source`'s re-probe return names sections, not designs by grep.** The note says a
+  re-probe's return "names the designs that cite the doc". `status.py` re-opens a design when
+  its Sections row's `source` column names the doc and the doc's shared headings changed after
+  it, not when a design's text cites the path. So the return lists those sections, and says
+  that a change to this section's own entry re-opens nothing else.
+- **The probe-source description was rewritten** beyond the argument-hint. The old one said
+  `/dev-team:plan-package` probes every source, which phase 6 removed, and offered this skill
+  to add a source after planning, which the design makes a `plan-package` edit.
+- **`README.md`'s tree** needed its closing glyph moved. `reserved-skill-names/` was the last
+  branch, so `git-workflow-and-versioning/` now takes `└──`.
+- **`contracts.yml`'s two remaining `names_listed` comments** were renumbered from the
+  three-file rule's items 2 and 3 to the two-file rule's items 1 and 2.
+- **10.3's `set-constraints` half was not run.** The row names `set-constraints` as a target
+  but gives only the `probe-source` command, and `set-constraints` asks four questions in the
+  main thread, which a headless run cannot answer. It is covered by 10.1's claims only.
+- **Paired with phase 9 in one chat, on the user's word.** The overview allows 9 and 10 to
+  pair. Phase 9 committed first (`1eff8a1`) and this phase started from a clean tree.

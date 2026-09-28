@@ -388,16 +388,8 @@ frontmatter:
 
 # A list of names that goes stale when the directory it describes changes.
 names_listed:
-  - name: every skill this plugin ships is named in reserved-skill-names
-    # The architect skips these when enumerating a project's skills and extract-legacy
-    # refuses to overwrite one. Neither can derive the list: at run time a plugin skill and a
-    # project skill are both just directories under .claude/skills/.
-    dirs: 'skills/*'
-    file: skills/reserved-skill-names/SKILL.md
-    span: ['## Workflow skills', '## What each reader does with it']
-
   - name: README's Contents tree names every skill this plugin ships
-    # Item 2 of the three-file rule in CLAUDE.md. The tree is the only place a reader learns
+    # Item 1 of the two-file rule in CLAUDE.md. The tree is the only place a reader learns
     # what the plugin contains, and it is a fenced code block, so names appear as branches
     # rather than in backticks.
     dirs: 'skills/*'
@@ -406,7 +398,7 @@ names_listed:
     span: ['└── skills/', 'site/                         the authored parts']
 
   - name: every workflow skill is in site.yml's run order
-    # Item 3 of the same rule. A workflow skill is one the model may not invoke on its own —
+    # Item 2 of the same rule. A workflow skill is one the model may not invoke on its own —
     # the user types it — which is exactly what the site orders by run sequence. Unlisted
     # files are appended alphabetically, which is the one thing this list exists to prevent.
     dirs: 'skills/*'

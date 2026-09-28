@@ -57,8 +57,7 @@ dev-team/
     ├── security-review/      checklist                                    (invoked on triggers)
     ├── test-driven-development/      red-green-refactor, pytest (vendored, MIT)
     ├── debugging-and-error-recovery/ root-cause triage (vendored, MIT)
-    ├── git-workflow-and-versioning/  commit discipline; §Project convention (vendored, MIT)
-    └── reserved-skill-names/ the names this plugin's own skills occupy     (architect, extract-legacy)
+    └── git-workflow-and-versioning/  commit discipline; §Project convention (vendored, MIT)
 
 site/                         the authored parts of the reading site — see site/README.md
 CLAUDE.md                     how to work on this repo's own source
@@ -345,7 +344,6 @@ is the wrong axis here, since the architect and designer need the size limits an
 | `workspace-scaffold` — pyproject, import-linter, mkdocs skeletons | invoked | — | invoked | — | — | — | — |
 | `planning-templates` — headings for every planned document | invoked | — | — | — | — | — | invoked |
 | `security-review` — checklist | — | — | invoked | — | invoked | — | — |
-| `reserved-skill-names` — the names this plugin's own skills occupy | invoked | — | — | — | — | — | — |
 | `test-driven-development` — red-green-refactor, test design, pytest | — | — | ✓ | ✓ | — | — | — |
 | `debugging-and-error-recovery` — root-cause triage for tests and builds | — | — | invoked | — | — | — | — |
 | `git-workflow-and-versioning` — commit discipline; the project's commit rule | invoked | — | ✓ | invoked | invoked | invoked | invoked |

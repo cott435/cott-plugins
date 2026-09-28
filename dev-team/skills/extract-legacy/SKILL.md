@@ -18,6 +18,11 @@ $ARGUMENTS
 > Code started. Stop, tell the user to run `/reload-plugins` (or restart Claude Code),
 > verify with `/agents`, and re-run. Do not survey in the main thread.
 
+## Run gate
+
+`python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --run-gate`. FAIL → return
+`Result: blocked` with its lines, and write nothing.
+
 ## Two modes, decided by what exists
 
 - **Survey** — no `docs/legacy/inventory.md`. The argument is required: the path to the old
@@ -31,11 +36,6 @@ $ARGUMENTS
 ## Before extracting
 
 - Create `.claude/skills/` if it does not exist; create nothing else outside it.
-- Read `${CLAUDE_PLUGIN_ROOT}/skills/reserved-skill-names/SKILL.md` — the one copy of the
-  names this plugin's own skills occupy. A row whose `skill` is one of them is
-  `failed: name reserved`, never extracted. Read the file rather than working from a list in
-  this prompt or from memory: the plugin gains skills, and a stale list lets a researcher
-  overwrite one.
 - A row whose `skill` directory already exists is `failed: skill exists`, unless the user
   reset its `status` to `pending` — then the researcher overwrites it.
 
@@ -51,6 +51,11 @@ same way before its stop message.
 ## Constraints
 
 - `docs/legacy/inventory.md` is the only file you write; skills are written by researchers.
+- A row's `skill` name is never refused for matching one of this plugin's own skills: a plugin
+  skill never lives under the project's `.claude/skills/`, so nothing is overwritten. When a
+  name you extract matches one (`ls ${CLAUDE_PLUGIN_ROOT}/skills`), say so in your return: the
+  architect leaves a colliding project skill out and reports it on its next run, so the user
+  may want to rename it.
 - If `docs/architecture.md` already exists, this repo has been planned: say in your return that
   the architect will pick up the new skills on its next `/dev-team:plan-package` run, and that a package
   already planned needs `/dev-team:plan-package <pkg>` re-run for its designers to see them.

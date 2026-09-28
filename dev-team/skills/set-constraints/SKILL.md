@@ -1,6 +1,6 @@
 ---
 name: set-constraints
-description: Write or revise docs/constraints.md — the project's enforced quality bar (coverage, types, docstrings, and the floor every package clears) — by interviewing you with a default for every question. Runs in your conversation. Use once after shape-brief and before the first review, or whenever a threshold should change.
+description: Write or revise docs/constraints.md — the project's enforced quality bar (coverage, types, docstrings, and the floor every package clears) — by interviewing you with a default for every question. Runs in your conversation. Use any time before the first build, or whenever a threshold should change.
 argument-hint: ""
 disable-model-invocation: true
 ---
@@ -8,9 +8,9 @@ disable-model-invocation: true
 Write the project's quality bar with the user, as `docs/constraints.md`.
 
 Like `/dev-team:shape-brief`, this runs **in the main conversation**, because it asks — only
-the main conversation can. It writes one file. The reviewer, the implementer, the tester,
-`status.py` and CI each run that file's commands; none of them ever edits it, so it holds
-exactly the bar the user chose.
+the main conversation can. It writes one file, and that file is the stop gate's spec: every
+implementer stop runs its **Floor** and **Enforced** rows, and CI runs the same rows. No agent
+ever edits it, so it holds exactly the bar the user chose.
 
 Before anything else, read `references/constraint-driven-development.md` — the method this
 skill follows: detect before you ask, a default for every question, guard the bar itself,
@@ -21,13 +21,20 @@ headings are what every reader parses.
 
 - **Write only** `docs/constraints.md`. No installs, no `pyproject.toml` edits, no CI edits:
   the implementer's scaffold step adds the dev dependencies and CI commands the file names.
+- **Who reads it.** The implementer's `SubagentStop` gate and CI run the **Floor** and
+  **Enforced** rows, parsed by `status.py` — the same list, so a build that passes the gate
+  passes CI. The reviewer runs nothing: it reads **Measured** to report values and
+  **Exceptions** to honour them. The tester reads the coverage row. Lowering a row is this skill, the user's
+  call; **Guarded** catches an agent doing it.
 - **Tighten, never loosen.** The file may add checks and tighten `project-structure` §2's
   limits; it never relaxes anything a knowledge skill fixes. A request to relax one is refused
   in one line naming the skill that fixes it.
-- **Branch rule.** The run ends in a commit, so `git-workflow-and-versioning` §Project
-  convention's **Branch** rule applies: on `main`/`master` or outside a git repository, stop
-  with its blocker text before asking anything. The **Baseline** rule exempts this file, so a
-  dirty tree elsewhere is not a blocker — but only this file is staged.
+- **Run gate first.** The run ends in a commit, so `git-workflow-and-versioning` §Project
+  convention's **Run gate** applies: run
+  `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --run-gate` before asking
+  anything, and on FAIL stop with its lines. The gate exempts this file from the clean-tree
+  check, so an earlier uncommitted edit to it is not a blocker — and only this file is
+  staged.
 
 ## 1. Detect before you ask
 
