@@ -53,7 +53,10 @@ app's own worktree/isolation toggle for that session isn't checked. Before start
 branch-specific changes: create (or reuse) a worktree for that branch in a sibling directory
 (`git worktree add ../cott-plugins-worktrees/<plugin_name>_<branch_name>`), do the work there, commit there, and
 when the branch is ready, merge it into the correct target branch (`main` unless told
-otherwise) rather than leaving it stranded in the worktree. Remove the worktree
+otherwise) rather than leaving it stranded in the worktree. After the merge, re-run
+`build-site` in the checkout you merged into for every plugin the branch touched: `site/docs/`
+and `site/mkdocs.yml` are gitignored, so a site built in the worktree never arrives with the
+merge. Remove the worktree
 (`git worktree remove`) once its branch is merged and no longer needed.
 
 ## Layout
