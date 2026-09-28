@@ -158,6 +158,16 @@ For a first run (`Regenerate: none`):
    Summary `<n> intent tests from design`, where `<n>` is the number of test functions left.
 7. **Return.**
 
+When the tree already exists — the design was rewritten after it, so `status.py` says TEST —
+the same steps apply to what the new design changed: add, rewrite or delete the tests its
+changed items touch, and leave every other test as it is. If the inventory finds **nothing**
+to change, the run still ends in a commit, because `status.py` knows the tests were checked
+against this design only from a commit to the tree: rewrite the first line of `conftest.py`'s
+module docstring to `Intent tests for <pkg>/<section>, checked against design <short sha>`
+(the design's last commit; add the docstring if there is none), commit that one file with
+summary `intent tests current with design`, and return `Tests: 0 written (unchanged)`.
+`status.py` skips that summary where it would re-open IMPLEMENT, as it skips a regeneration.
+
 ## Regenerate
 
 `Regenerate:` names entries in `docs/deviations.md` whose clause your tests cite: an

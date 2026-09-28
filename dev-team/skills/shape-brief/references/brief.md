@@ -1,7 +1,7 @@
 # `docs/brief.md` — the project brief
 
 Written by `/dev-team:shape-brief` with the user (or by hand); read by `/dev-team:plan-repo`,
-`/dev-team:map-project`, and the curator. It states **what** the project covers and **why** —
+`/dev-team:map-repo`, and the curator. It states **what** the project covers and **why** —
 never how. Budget 150 lines; a table beats prose.
 
 The headings are a contract: `/dev-team:plan-repo` reads the scope sections by name.

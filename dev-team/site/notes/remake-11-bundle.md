@@ -119,3 +119,82 @@ covers the file.
 - `CHANGELOG.md` has an `## [Unreleased]` section with the eight breaking changes.
 - Logs for 11.1–11.4 in `evals/README.md`; the fixed-cost table is in 11.4's log.
 - The ledger row for phase 11 reads `done`, and the chat ends with the bump proposal.
+
+## Deviations
+
+- **"Done when"'s grep reached files the Files table does not list.** Step 1 and the Files
+  table name the eight deleted skills and the bundle's docs. But the grep for removed command
+  names must be 0 across `agents/` and `skills/`. Five kept skills still named them:
+  `shape-brief` (`SKILL.md`, `references/brief.md`), `project-structure`,
+  `set-constraints/references/constraints-template.md` and `python-style-guide`. What was done:
+  each mention was re-pointed to what replaced it (`map-repo`; a change file through
+  `plan-package`; the `surface` section; `run-package data ingest`; the stop gate). Three
+  mentions of the deleted `surface.md` remain, in `test-driven-development`, `repo-contract.md`
+  and `python-style-guide`. The grep does not cover `surface.md`, so they are *noticed*.
+- **`contracts.yml`: README joins the state-vocabulary claim by span**, not `cites`. The
+  README's **The states** table is bolded state names, and the span checks each against
+  `status.py`'s rule list.
+- **11.3's `/agents` step was not run.** It is interactive. The headless listing (`claude -p
+  --plugin-dir`, the installed dev-team disabled) showed the eight agents and nine knowledge
+  skills. Workflow skills are `disable-model-invocation: true`, so the model does not list
+  them. The e2e streams load `plan-repo`, `plan-package`, `run-package` and
+  `finalize-project` from the working tree.
+- **11.4 was run by a script runner, not an executor subagent**, as in phase 8. In this
+  session `dev-team:<agent>` resolves to the installed 0.6. `step.sh`, `chain*.sh`, `tail*.sh`,
+  `post.py` and `commits.py` lived in the session scratchpad and are not committed. Both
+  plugin copies left out `evals/`, per the ledger. The baseline copy kept `site/notes/`, and its
+  5-run driver read `remake-08-run-package.md` while diagnosing its own stop. That changed
+  nothing, since it stopped regardless.
+- **11.4 needed three fixes outside the Files table, each on the user's call.**
+  1. *Iteration 4* stopped in `run-package data` at `data/clean DESIGN`. An implementer's
+     `spec-change:design` entry is never closed: the designer and tester never set a
+     spec-change's `Status:`, and only the architect resolves `spec-change:contract`. So
+     `status.py` re-opened DESIGN on every call. Fix: `status.py` derives it. An open
+     `spec-change:design` counts only until the design is committed after the commit that added
+     the entry, and a `spec-change:test` only until the intent tree is. The table's spec-change
+     column and `--repo` follow the same rule. It comes with three state cases
+     (`design-spec-change-answered`, `test-spec-change-test`, `test-spec-change-answered`) and
+     the README's states table.
+  2. *Iteration 5*, `run-package analysis`: Claude Code 2.1.270's Write tool refuses a
+     subagent's write of any file matching `/^(REPORT|SUMMARY|FINDINGS|ANALYSIS).*\.md$/i`
+     ("Subagents should return findings as text, not write report files"). So the designer
+     could never write `design/report.md`. Fix: a naming rule in `project-structure` §4 and the
+     package-contract template (no section or source name starts with those words; use one word
+     that is also a Python package name), plus a README gotcha. The rename was then typed as a
+     user change request in the same copy (4b). The request's name, `md-report`, was wrong:
+     it is no Python package name, so the implementer built `md_report/`. A second request (4c)
+     became a CHANGE file. A change to a built section's *path* cannot close: `status.py` reads
+     the README at the contract's stale path, and `sync-plan` applies the change only at DONE.
+     The driver asked for a human call, and the user hand-edited the path cell (`b71ff5e`).
+  3. After the delta design, the tester correctly found no test to change and committed
+     nothing, so "design newer than tests" kept the section at TEST. Fix: `tester.md`. A run on
+     an existing tree that changes nothing still commits a one-line `conftest.py` stamp,
+     summary `intent tests current with design`. `status.py` skips that summary where it
+     re-opens IMPLEMENT or REVIEW, as it skips a regeneration. The message table in
+     `git-workflow-and-versioning` lists it, and it comes with one state case
+     (`test-design-newer-tests-current`).
+- **Eval-set expectation 1 was corrected** to accept the report section under the name the
+  contract gives it, per the platform fact above. The eval's `report` name can no longer be
+  written.
+- **The baseline was run once, in iteration 4, and carried into iteration 5.** Its driver is
+  the 0.6 file. It stops at the missing DESIGN step (`data`) and the missing `integration.md`
+  (`analysis`), and none of the three fixes touch that.
+- **The fixed-cost bar compares across platform versions.** Eval L measured the reviewer at
+  38,467 on the Claude Code of 2026-09-19. The same 0.6 reviewer holds 43,094 on 2.1.270. A
+  same-version control, both plugins spawned with one trivial prompt, is in the log and in
+  `fixed-cost.md`. Tester +0.4k, reviewer +0.3k, implementer +0.4k, designer +8.6k,
+  architect +5.0k. The design's expected drop for the tester and reviewer did not happen.
+- **11.4 missed its bar.** The bar: every expectation passes for `with_skill`. The result:
+  5/9 against the 0.6 baseline's 2/9, after the three fixes above (a first iteration, then a
+  from-scratch rerun and two resumed walks). Both packages shipped, 398 rows idempotent, and
+  every section approved with a round-1 pair. The misses:
+  - the tester's missing trailer and second commit (phase 8's *noticed* line);
+  - the fixed-cost bar, set on eval L's platform (same-version tester and reviewer flat,
+    designer and architect up);
+  - prose around the summary block on stopped runs;
+  - the driver's read-only diagnostic Bash calls.
+  Log: `evals/2026-09-28-remake-phase11-bundle.md`.
+- **Release level: major (`1.0.0`), not the note's minor (`0.7.0`).** The note said breaking
+  changes under `0.x` are a minor bump per `bump-version`'s policy. That policy has no `0.x`
+  exception: a removed or renamed command and a changed document format are major by its test.
+  The user chose `1.0.0`.

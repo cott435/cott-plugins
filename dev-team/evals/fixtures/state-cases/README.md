@@ -40,6 +40,7 @@ optional flag).
 | `design-probe-newer` | the probe doc's shared headings changed after the design | `—` | `ingest · DESIGN`, evidence `/docs/sources/trades.md [0-9a-f]{7} newer than design/` |
 | `design-probe-other-section` | another section's entry appended to the probe doc: not stale | `—` | `ingest · IMPLEMENT` |
 | `design-spec-change-design` | open spec-change:design after the tests | `—` | `ingest · DESIGN`, evidence `/spec-change:design/` |
+| `design-spec-change-answered` | an open spec-change:design the design was rewritten after (remake phase 11) | `—` | `ingest · TEST`, evidence `/^design [0-9a-f]{7} newer than tests [0-9a-f]{7}$/`; no `spec-change:design` |
 | `done-and-surface-ready` | ingest, clean, storage DONE; surface ready | `—` | `surface · DESIGN`, ready yes; `ingest · DONE`; `clean · DONE`; `storage · DONE`; `shipped: no (surface DESIGN)`; `next: /dev-team:run-package data` |
 | `fix-round-1` | round 1: a approves, b requests changes; the worst wins | `—` | `ingest · FIX 1`, round 1 |
 | `implement-missing-readme` | intent tests, no README | `—` | `ingest · IMPLEMENT`, evidence `/no .*README.md/` |
@@ -67,3 +68,6 @@ optional flag).
 | `test-design-newer` | design edited after the intent tests | `—` | `ingest · TEST`, evidence `/^design [0-9a-f]{7} newer than tests [0-9a-f]{7}$/` |
 | `test-missing` | design, no intent tree | `—` | `ingest · TEST`, ready yes |
 | `test-regenerate` | approved deviation whose clause an untagged intent test cites | `—` | `ingest · TEST`, evidence `/^regenerate: data/ingest — 2026-09-27 — deviation$/` |
+| `test-spec-change-test` | an open spec-change:test after the build (remake phase 11) | `—` | `ingest · TEST`, evidence `/^open data/ingest — 2026-09-27 — spec-change:test$/` |
+| `test-spec-change-answered` | the same, then a regeneration commit (remake phase 11) | `—` | `ingest · REVIEW`, evidence `/^no review$/`; no `spec-change:test` |
+| `test-design-newer-tests-current` | a delta design after the build, then a tester stamp commit `intent tests current with design` (remake phase 11) | `—` | `ingest · REVIEW`, evidence `/^no review$/` |

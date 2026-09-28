@@ -41,3 +41,4 @@ writes `docs/`, `packages/` and commits.
 | D | 2 | after `plan-repo`, `plan-package data` and `implement-section data/ingest`: `status.py` reads the three review states from commits; `git show --stat HEAD` is exactly the implementer's paths, with a `Dev-Team-Run: implement-section data/ingest` trailer |
 | E–J | 3–8 | per `site/notes/overhaul-0.5-09-evals-and-fixture.md` |
 | K | 9 | the whole two-package build: both packages `shipped`, `398` rows stored, one commit per run |
+| remake 11.4 | remake 11 | `evals/sets/run-package.json` eval 4: the six typed commands headless (`plan-repo`, `plan-package data`, `run-package data`, `plan-package analysis`, `run-package analysis`, `finalize-project`); both packages `shipped: yes` with every section DONE, `398` rows stored and a second run storing nothing, every section approved with a round-1 `-a`/`-b` pair, one trailered commit per agent run, the fixed cost per spawn beside eval L's |

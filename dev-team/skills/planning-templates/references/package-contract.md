@@ -30,6 +30,12 @@ change item for `/dev-team:plan-repo`, stubbed as a `D<n>` scoped `repo` until t
    designer runs, so a source not named here is never probed, and a kind written wrong probes
    the wrong thing.
 
+   Every section name and source token follows `project-structure` §4: one lowercase token,
+   and never starting with `report`, `summary`, `findings` or `analysis`. A subagent cannot
+   Write a `.md` file whose name starts with one of those words, and the section's design is
+   `design/<section>.md`. When the brief names a section `report`, name what it produces in
+   one word that is also a Python package name (`digest`, `markdown`), and say so in the return.
+
    The last row is always `surface`: responsibility *the package's pipelines (§4) and public
    surface (§5)*, path the package top level (`packages/<pkg>/src/<pkg>/`, or `src/<pkg>/` in a
    single-package repo), owner doc `docs/packages/<pkg>/design/surface.md`, `builds with` `—`,

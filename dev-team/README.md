@@ -1,15 +1,19 @@
 # dev-team
 
-A Claude Code **plugin** of **agents** (roles with fixed tools, model, and permissions) and
-**skills** (procedures you invoke with `/name`). Skills fork into agents; agents hand work to
-other agents; every hand-off goes through a file under `docs/`, never through chat.
+A Claude Code **plugin** that plans, builds, reviews and documents a Python monorepo, one
+section of one package at a time. Six specialist agents each answer one question: the
+architect writes the contracts, the designer designs a section, the researcher probes an
+external source, the tester turns a design into failing intent tests, the implementer builds
+the section, the reviewer judges it. One driver, `/dev-team:run-package`, runs in your
+conversation and spawns every one of them over a ready set it derives from disk each
+iteration. Hooks run every mechanical check, so no lint error, failing test or lowered bar
+reaches a reviewer.
 
-You drive it. Every workflow skill is `disable-model-invocation: true`, so Claude never
-triggers one on its own — you type them.
-
-It plans a **repo of packages** — `data` → `analysis` → `ml`, say — one package at a time,
-where each finished package publishes an `interface.md` that the next one is planned and built
-against. A single-package repo is the same thing with one row in the Packages table.
+You drive it. Every workflow skill is `disable-model-invocation: true`, so Claude never starts
+one on its own — you type them. It plans a **repo of packages** — `data` → `analysis` → `ml`,
+say — where each package's last section, `surface`, publishes an `interface.md` that the next
+package is planned and built against. A single-package repo is the same thing with one row in
+the Packages table.
 
 ## Contents
 
@@ -18,46 +22,43 @@ dev-team/
 ├── .claude-plugin/
 │   └── plugin.json           the plugin manifest
 ├── agents/
-│   ├── architect.md      plans at repo, package, or change scope; delegates; unifies
-│   ├── designer.md       designs one section against the contracts + upstream interfaces
-│   ├── implementer.md    builds one section — or, in surface mode, a package's public surface
+│   ├── architect.md      writes and edits contracts: repo, package, change files, the package close
+│   ├── designer.md       designs one section from its contract row — new, document or delta mode
+│   ├── researcher.md     probe: one api or dataset → docs/sources/<source>.md · extract: one legacy row → a project skill
 │   ├── tester.md         intent tests for one section, from its design — never from its code
-│   ├── reviewer.md       reviews one section, or one package
-│   ├── documenter.md     package READMEs, API pages, root README from shipped docs
-│   ├── curator.md        surveys an old repo into docs/legacy/inventory.md; coordinates researchers
-│   └── researcher.md     extract: one inventory row → one project skill · probe: one api or dataset → its probe doc
+│   ├── implementer.md    builds one section; the `surface` section is the package's public surface
+│   ├── reviewer.md       judges one section: conformance, correctness, a diff-scoped full round, or defer
+│   ├── documenter.md     package READMEs, docs/index.md, root README; Known gaps from status.py --repo
+│   └── curator.md        surveys an old repo into docs/legacy/inventory.md; coordinates researchers
+├── hooks/
+│   ├── hooks.json            registers the three hooks below
+│   ├── format_on_edit.py     PostToolUse: ruff on every .py edit by the implementer or tester
+│   ├── gate_on_stop.py       SubagentStop: the implementer may not finish while its checks are red
+│   └── guard_writes.py       PreToolUse: each role writes only where its job is
 ├── pyproject-lint-config.toml  merge into the root pyproject.toml; enforces the hard limits
 └── skills/
     ├── shape-brief/        (inline)        idea → docs/brief.md, discussed with you: now / later / out
-    ├── set-constraints/    (inline)        the quality bar → docs/constraints.md: coverage, types, docstrings
+    ├── set-constraints/    (inline)        the quality bar → docs/constraints.md, the stop gate's spec
     │   └── references/                     the constraints template + vendored constraint-driven-development (MIT)
-    ├── plan-repo/          → architect     repo contract: new, extend, or revise from a corrected brief
-    ├── plan-package/       → architect     one package: sections, designs, integration, surface
-    ├── review-plan/        → reviewer      <pkg>: the plan, before any code — CRITICALs go back to plan-package
-    ├── plan-change/        → architect     change to shipped code, with downstream impact
-    ├── map-repo/           → architect     adopt an existing repo: package contracts in parallel, then the repo contract
     ├── extract-legacy/     → curator       old repo → inventory (stop) → project skills, one per kept row
-    ├── probe-source/       → researcher    one api or dataset → docs/sources/<source>.md
-    ├── test-section/       → tester        <pkg>/<section> [slug]: intent tests before the build, reconcile after
-    ├── implement-section/  → implementer   <pkg>/<section> [slug]
-    ├── review-section/     → reviewer      <pkg>/<section> [slug]
-    ├── finalize-package/   → implementer   <pkg>: lazy __init__, pipelines, cli.py, docs page, interface.md
-    ├── review-package/     → reviewer      <pkg>: surface + package-level checks
-    ├── sync-design/        → architect     <pkg>: fold recorded deviations into designs, as As shipped
-    ├── run-package/        (inline)        <pkg>: drives the loop above — test, build, test, review per section; finalize, review, sync-design
-    ├── sync-plan/          → architect     fold a shipped change into canonical docs
-    ├── finalize-project/   → documenter    package READMEs, index.md, root README
-    ├── status/             (inline)        the checklist: planned / built / reviewed / open, derived
-    │   └── scripts/status.py               the only executable here; `--gate` is finalize-package's
-    ├── project-structure/    layout, size limits, config placement        (preloaded: 4 agents)
-    ├── python-style-guide/   inside a file: docstrings, function shape, … (preloaded: impl, review)
-    ├── planning-templates/   headings for every planned document           (architect, researcher)
+    ├── plan-repo/          → architect     the repo contract: write, extend, or --fix
+    ├── plan-package/       → architect     one package contract, ending with the surface row; edits classified
+    ├── run-package/        (inline)        the driver: <pkg> [<section>] [--step] [--defer]
+    ├── probe-source/       → researcher    re-probe one source for one section after the world changed
+    ├── sync-plan/          → architect     the package close: approved deviations and change files into the contracts
+    ├── map-repo/           → architect     adopt an existing repo: package contracts in parallel, then the repo contract
+    ├── finalize-project/   → documenter    package READMEs, docs/index.md, root README
+    ├── status/             (inline)        every section's state, the ready set, the next command
+    │   └── scripts/status.py               the one state derivation; the driver, the hooks and the documenter run it too
+    ├── planning-templates/   headings for every document the loop writes and parses
+    ├── project-structure/    layout, size limits, config placement        (preloaded: 5 agents)
+    ├── python-style-guide/   inside a file: docstrings, function shape, … (preloaded: impl, test, review)
     ├── python-implementation/ splitting mechanics, config code            (invoked on demand)
-    ├── workspace-scaffold/   pyproject / import-linter / mkdocs skeletons  (invoked on demand)
-    ├── security-review/      checklist                                    (invoked on triggers)
+    ├── workspace-scaffold/   pyproject / import-linter / mkdocs / CI skeletons (invoked on demand)
+    ├── security-review/      checklist                                    (implementer on triggers, reviewer)
     ├── test-driven-development/      red-green-refactor, pytest (vendored, MIT)
     ├── debugging-and-error-recovery/ root-cause triage (vendored, MIT)
-    └── git-workflow-and-versioning/  commit discipline; §Project convention (vendored, MIT)
+    └── git-workflow-and-versioning/  §Project convention, the commit rule (vendored, MIT)
 
 site/                         the authored parts of the reading site — see site/README.md
 CLAUDE.md                     how to work on this repo's own source
@@ -67,140 +68,156 @@ evals/                        test runs against this plugin's own agents and ski
 ```
 
 Versioning, eval logging and the site builder are shared with every other plugin and live in
-the **`plugin-dev`** plugin, not here. This repo keeps only what is true of this plugin.
+the **`plugin-dev`** plugin, not here.
 
-**Agents are roles; skills are entry points.** The line between them is what stops the two
-from drifting apart:
-
-- The **agent** holds what is true every time it runs: its tools, its discipline, its return
-  format, and the templates only it writes — the delegation prompt, the design template, the
-  section README template, the `interface.md` template. The architect's five document
-  templates and the researcher's source probe live in `planning-templates` instead, one
-  reference file each, because a run writes one or two of them and should not carry all six.
-- The **skill** holds what varies per invocation: which scope, which paths, which order of
-  steps, what to do when a file is missing.
-- Nothing is stated in both. If you find yourself editing the same sentence in two files, one
-  of them is in the wrong place.
-
-Domain knowledge — how *you* want a Postgres schema designed, how your vendor clients are
-built — belongs in your own skills (`db-design/`, `vendor-clients/`, `feature-pipeline/`). The
-architect discovers them, assigns each to a section, and passes the names down to the designer
-and then the implementer, so the same conventions apply at design time and at build time.
+**Agents hold procedures; skills are entry points.** Every step's procedure lives in the agent
+that does it: the driver spawns an agent with a block of `Field: value` lines that are that
+agent's own **Inputs**, and nothing else. A typed skill says which agent runs and on what. Domain
+knowledge — how *you* want a Postgres schema designed, how your vendor clients are built —
+belongs in your own project skills under `.claude/skills/`. The architect finds them (every
+directory there that is not one of this plugin's skills, listed with `ls
+${CLAUDE_PLUGIN_ROOT}/skills`), assigns each to a section as its `builds with`, and the designer
+and implementer invoke them, so the same conventions apply at design time and at build time.
 
 ## One-time setup
 
 1. Add the marketplace and install the plugin:
    `/plugin marketplace add cott435/cott-plugins` then
    `/plugin install dev-team@cott-plugins`. In Cowork: Customize -> Plugins ->
-   Add marketplace, then Install. `cott-plugins` bundles every plugin (this one included) as
-   a subdirectory; install only the ones you actually want running on this machine.
+   Add marketplace, then Install.
 2. **Verify with `/agents`** before the first run: the eight agents must be listed. If they are
-   not, run `/reload-plugins` (or restart Claude Code). Until they are registered a workflow
-   skill runs in your main conversation instead of forking — you get a question widget instead
-   of a stop message, and the run writes the wrong files. Every workflow skill checks for this
-   and refuses, but the check is an instruction, not a guarantee.
-   Note: user-level definitions in `~/.claude/agents/` override same-named plugin agents, so
-   those must not exist for the plugin's versions to take effect.
+   not, run `/reload-plugins` (or restart Claude Code). The driver stops on its first spawn if
+   they are missing. User-level definitions in `~/.claude/agents/` override same-named plugin
+   agents, so those must not exist for the plugin's versions to take effect.
 3. Run in **auto** or **acceptEdits** mode. Not plan mode: subagents inherit your mode, plan
    mode is read-only, and nothing would reach `docs/`.
 4. Every agent inherits your session model, so set `/model` before you start a run.
-5. `/dev-team:status` at any time prints where everything stands; `/dev-team:status <pkg> --gate` runs the exact
-   preconditions `/dev-team:finalize-package` will check.
-6. The repo you build in is a git repository on a feature branch; agents refuse `main`. Every
-   run ends in one commit of exactly the files it wrote, and refuses to start while anything
-   else is uncommitted — except `docs/decisions.md`, `docs/brief.md` and `docs/constraints.md`,
-   which you edit by hand between runs.
+5. `/dev-team:status` at any time prints where everything stands and the exact next command.
+6. The repo you build in is a git repository on a feature branch. Every run starts with the
+   run gate (`status.py --run-gate`): not `main` or `master`, and a clean tree except
+   `docs/decisions.md`, `docs/brief.md`, `docs/constraints.md` and `.claude/agent-memory/`,
+   which you edit by hand between runs. Every agent run ends in one commit of exactly the files
+   it wrote.
+7. The hooks run in every session the plugin is enabled in, and exit 0 outside a dev-team
+   repo — one with a `docs/architecture.md`. They never touch your own editing: only the
+   plugin's agents are checked.
 
 ## Which skill to run
 
 ```
 rough idea, scope not settled               → /dev-team:shape-brief, then /dev-team:plan-repo
-quality bar not written down                → /dev-team:set-constraints (any time before the first review)
-new repo, nothing exists yet                → /dev-team:plan-repo, then per package: /dev-team:plan-package <pkg>
-                                              (designs the spine only, on three or more sections);
-                                              build the spine — test-section, implement-section,
-                                              test-section, review-section, sync-design;
-                                              /dev-team:plan-package <pkg> again for the rest
-                                              (--all plans everything in one run)
-existing repo, no docs/ yet                 → /dev-team:map-project (repo level), then /dev-team:plan-package <pkg> per package (document mode)
-existing repo, docs/ already there          → /dev-team:plan-change
-docs/ exist but have drifted from the code  → /dev-team:map-project (re-map), then /dev-team:plan-package <pkg> as needed
+quality bar not written down                → /dev-team:set-constraints (any time before the first build)
+new repo, nothing exists yet                → /dev-team:plan-repo, then per package, lowest first:
+                                              /dev-team:plan-package <pkg>, then /dev-team:run-package <pkg>
+existing repo, no docs/ yet                 → /dev-team:map-repo, then /dev-team:run-package <pkg>, lowest package first
+docs/ exist but have drifted from the code  → /dev-team:map-repo again: every contract line is checked against the code
 adding a package to a planned repo          → /dev-team:plan-repo "<what to add>", then /dev-team:plan-package <pkg>
-a package is planned; plan reviewed?        → /dev-team:review-plan <pkg> (request changes → /dev-team:plan-package <pkg>, then again;
-                                              the review numbers the rounds and stops the loop when it is not converging —
-                                              then /dev-team:review-plan <pkg> --defer moves the findings to their sections and you build)
-plan reviewed, decisions answered           → /dev-team:run-package <pkg> (or each command by hand; spine-only plan: builds the spine)
-repo contract came out wrong                → /dev-team:shape-brief to correct the brief, then /dev-team:plan-repo
-                                              (or /dev-team:plan-repo --revise "<what was wrong>")
+a change to shipped code                    → /dev-team:plan-package <pkg> "<change>" (or /dev-team:plan-repo "<change>"),
+                                              which writes docs/changes/<slug>.md, then /dev-team:run-package <pkg>
+the repo contract came out wrong            → /dev-team:plan-repo --fix "<what was wrong>" (or correct the brief with
+                                              /dev-team:shape-brief, then /dev-team:plan-repo)
+one step of one section by hand             → /dev-team:run-package <pkg> <section> --step PROBE|DESIGN|TEST|IMPLEMENT|REVIEW
+an API changed, a dataset was refreshed     → /dev-team:probe-source <pkg>/<section> <source>
 rebuilding from an old, messy repo          → /dev-team:extract-legacy <old repo> (twice), then /dev-team:plan-repo
-an API changed, a dataset refreshed, or a
-  source added later                        → /dev-team:probe-source <pkg> <source>
-a package shipped; its designs describe the
-  plan, not the code                        → /dev-team:sync-design <pkg>
+human-facing docs                           → /dev-team:finalize-project (safe any time; lists what is still open)
 lost track                                  → /dev-team:status
 ```
 
+Each pipeline has its own page in `site/workflows/`, rendered under **Workflows** on the
+reading site: a new repo, adding a package, rebuilding from legacy, changing shipped code, and
+adopting an existing repo.
+
 ## Running a package
 
-`/dev-team:run-package <pkg>` types the per-package loop for you. It runs in your conversation
-and spawns each agent itself, handing it the same skill file the manual command would fork —
-there is one copy of every procedure, and the driver holds none of them.
+`/dev-team:run-package <pkg>` walks every section of one package to DONE, the `surface` section
+last, then closes the package. It runs in your conversation and spawns every agent itself as
+`dev-team:<agent>`, one layer deep; no state is kept anywhere but on disk.
 
-It starts with `/dev-team:status <pkg> --run-gate`: a feature branch, a clean tree (your three
-hand-edited files excepted), and a plan that is either spine-only or passes the plan gate. Then,
-per section in the integration doc's dependency order — skipping any already reviewed with
-`approve` or `approve with fixes`, no open review follow-ups and no failing intent test — it
-writes the intent tests if there are none, builds the section, reconciles the tests, builds
-again if the reconcile filed follow-ups, and reviews. On `request changes` it builds, reconciles
-and reviews again while the reviewer says the loop is converging — the reviewer counts the
-rounds from `docs/reviews/`, so re-running the driver does not start the count over. After
-the last section it finalizes the package, reviews it (again while converging), and runs
-`sync-design`. Between spawns it
-prints the section's `status.py` row, and it ends with a six-line summary whose `next:` is the
-command you would type from where it left off.
+1. **Run gate.** `status.py --run-gate <pkg>`: the branch, the clean tree, the contract exists.
+2. **State.** `status.py <pkg>` derives one state per section from the documents, the code and
+   git (**The states**, below). A re-run a week later, after hand edits or a crash, picks up
+   exactly where the files say.
+3. **The ready set.** A section is ready when it is neither DONE nor BLOCKED and every
+   section it depends on in the package is DONE. The driver takes the first kind of step the
+   ready set has, in the order PLAN, PROBE, DESIGN, TEST, IMPLEMENT/FIX, REVIEW, and spawns
+   every one of that kind in one message: probes, designs, tests and the two round-1 reviewers
+   run in parallel; implementers run one at a time, since they share `pyproject.toml` and the
+   ledgers.
+4. **Branch** on each return's first line, `Result: done | blocked | stopped | spec-change |
+   design-gap`. A tester's `design-gap` goes back to the designer with the tester's reasons
+   (three for one section in one run is a question for you). A `spec-change` needs no relay:
+   its entry is in `docs/deviations.md`, and the next `status.py` re-opens the step it names.
+   `blocked` and `stopped` are asked.
+5. **Re-derive** and loop.
+6. **The close.** When every section is DONE, the architect runs as `sync-plan`: approved
+   deviations and pending change files go into the contracts, each verified against the code.
+7. **Summary** — always the last message: sections, agent runs per role, the commit range, why
+   it stopped, and `next:`, the exact command to type.
 
-On a spine-only plan it builds the spine, runs `sync-design` so the spine's design says what
-shipped before anyone is briefed against it, re-runs `plan-package` to complete the plan, runs
-`review-plan`, and stops so you can answer decisions before the rest is built.
+**The caps.** A review loop gets three rounds, two when a prior finding is unfixed. At the cap
+the section is BLOCKED and the driver asks: *one more round*, or *defer*. `--defer` answers
+*defer* without asking: the reviewer writes a `defer` report that moves the standing findings
+to `docs/followups.md`, and the section is DONE.
 
-It stops, with the agent's first lines, on: a failing run gate; any agent returning `blocked`
-(a blocking rule) or `stopped` (the architect's decisions or access stop); a section or
-package review that stopped its loop as not converging — round 2 with a prior
-finding unfixed, or round 3 — where `next:` is the user's choice between one more round and
-the review's `--defer`. Three rounds is the budget, two when the fix did not take. It never
-edits a file, never answers a decision, and never commits — each
-agent commits its own run, exactly as by hand. Every command it drives still works on its own.
+**The ask step.** A decision with no assumption, a missing credential, a review cap or a third
+`design-gap` stops the ready set for that section. The driver asks you once per block, writes
+your answer into `docs/decisions.md` (`Decision:` and `Status: decided`) and runs the step
+again. That ledger edit is the only file it ever writes, and it runs no git command that
+writes. With nobody to ask — a headless run — it ends in the summary instead.
 
-## Workflows
+`<section>` walks one section; `--step` runs one step of it once, whatever its state, which is
+how *one more round* is typed by hand.
 
-One page per pipeline, in `site/workflows/` — rendered under **Workflows** on the reading site.
-A new pipeline is a new file there; the shared site builder picks it up.
+## The states
 
-- [New repo, package by package](site/workflows/new-repo.md) — `/dev-team:shape-brief` →
-  `/dev-team:plan-repo` (revised when the contract comes out wrong), then per
-  package: `/dev-team:plan-package` (the spine section only) → `/dev-team:run-package`, which
-  builds and reviews the spine, plans the rest against the spine's README, reviews the plan and
-  stops for your decisions → `/dev-team:run-package` again, which tests, builds and reviews
-  every remaining section, then finalizes, reviews and syncs the package. Every command it
-  drives still runs by hand. `/dev-team:finalize-project` any time.
-- [Changing shipped code](site/workflows/change-shipped-code.md) — `/dev-team:plan-change` →
-  `/dev-team:implement-section <pkg>/<section> <slug>` → `/dev-team:review-section` → `/dev-team:sync-plan`
-  → `/dev-team:sync-design`.
-- [Adding a package to an existing repo](site/workflows/add-package.md) — `/dev-team:plan-repo`
-  with the addition as its argument, which *extends* the repo contract rather than revising it,
-  then `/dev-team:plan-package <pkg>` and the per-section loop.
-- [Adopting an existing repo](site/workflows/adopt-existing-repo.md) — `/dev-team:map-project`, then
-  `/dev-team:plan-package <pkg>` per package, bottom-up, in document mode.
-- [Rebuilding from a legacy repo](site/workflows/rebuild-from-legacy.md) — `/dev-team:extract-legacy` (survey,
-  then extract) → project skills → the new-repo workflow, with every external source probed
-  live inside `/dev-team:plan-package`.
+Every section is in exactly one state, the first rule that matches, derived by `status.py` on
+every call and never stored:
+
+| State | When |
+|---|---|
+| **BLOCKED** | an open decision with no assumption binds the section, or the review cap is hit (round 3, or round 2 with a prior unfixed) |
+| **PLAN** | an open `spec-change:contract` entry names the section — the architect edits the contract |
+| **PROBE** | an `api:` source has no `## <pkg>/<section>` entry in its probe doc, or a `dataset:` source has no probe doc |
+| **DESIGN** | no design; or an open `spec-change:design` the design has not been rewritten since; or an open change file naming the section is newer than the design; or a probe doc it names is newer |
+| **TEST** | no intent tests; or the design is newer than them; or an open `spec-change:test` the tests have not been regenerated since; or an `approved` deviation's clause is cited by a test not yet regenerated |
+| **IMPLEMENT** | no README (for `surface`, no `interface.md`); or the intent tests are newer than it |
+| **REVIEW** | no review round, or the code is newer than the newest round's `Commit:`, or a `spec-change` verdict has no open entry left |
+| **FIX n** | round `n` says `request changes`, under the cap, and nothing changed since |
+| **DONE** | the newest round approves and the code is not newer than its `Commit:` |
+
+A package is **shipped** when its `surface` section is DONE. A round is the set of reports
+sharing `-r<n>`; its verdict is the worst of them.
+
+## Hooks
+
+`hooks/hooks.json` registers three, and each exits 0 outside a repo with `docs/architecture.md`:
+
+- **`format_on_edit.py`** (`PostToolUse` on `Write|Edit`) — for the implementer and the tester,
+  on a `.py` file: `ruff format`, `ruff check --fix`, `ruff format`, then `ruff check`. What
+  remains is shown to the agent; the edit stands.
+- **`gate_on_stop.py`** (`SubagentStop`, `^dev-team:implementer$`) — the implementer may not
+  finish while its section is red. It runs the **Floor** and **Enforced** rows of
+  `docs/constraints.md` (else the Toolchain commands of `docs/architecture.md`), the section's
+  intent suite — a failure tolerated only when the test cites the clause of a `proposed` or
+  `approved` deviation — a **Guarded** grep of the run's diff, and `status.py --surface` for the
+  `surface` section. Every line goes to `.dev-team/gate.txt`, which the reviewer reads as its
+  evidence. It lets the agent stop on a green run, on a `.dev-team/stop` marker (the
+  implementer writes it when it returns `blocked` or `spec-change`), or on the third attempt,
+  counted per agent under `${CLAUDE_PLUGIN_DATA}/gate/`; from the second it names
+  `debugging-and-error-recovery`.
+- **`guard_writes.py`** (`PreToolUse` on `Write|Edit`) — each role writes only where its job
+  is: the architect under `docs/` but not designs or reviews; the designer to designs and the
+  two ledgers; the researcher to `docs/sources/` and `.claude/skills/`; the tester to
+  `tests/intent/` and fixtures; the reviewer to `docs/reviews/` and the two ledgers it edits;
+  the documenter to the READMEs and `docs/index.md`; the implementer everywhere but `docs/`,
+  except the ledgers, its `interface.md` and its API page. Nobody but the tester writes under
+  `tests/intent/`.
 
 ## Questions
 
-Subagents cannot ask you anything — Claude Code removes `AskUserQuestion` from every subagent,
-whatever its `tools:` field says. So the architect does the only thing it can: when it has a
-question that would change the shape of the plan, it writes a stub to `docs/decisions.md`
-tagged `Raised by: /dev-team:plan-package data (interview)`, writes nothing else, and **stops**:
+Subagents cannot ask you anything — Claude Code removes `AskUserQuestion` from every subagent.
+So an agent with a question that changes a boundary writes a stub to `docs/decisions.md`, tagged
+`Raised by: /dev-team:plan-package data (interview)`, writes nothing else, and **stops**:
 
 ```
 Stopped for decisions: D12, D13
@@ -210,29 +227,20 @@ Answer in docs/decisions.md, or re-run `/dev-team:plan-package data` as-is to ac
 ```
 
 Fill in `Decision:` and set `Status: decided`, or do nothing — either way, re-run the same
-command. The tag is how it knows not to ask twice: on the re-run, every entry carrying that
-tag counts as asked, and it proceeds on your answer or on its assumption (leaving a marker in
-the code, below). There is no fixed number of questions per stop — the earlier "at most four"
-was the `AskUserQuestion` batch limit, and that widget is unavailable to *subagents*, which is
-what the architect is. The limit still applies where the widget is still there:
-`/dev-team:shape-brief` runs in your own conversation and asks four questions per call. For the
-architect the cost test is the only gate, and it is told that a page of stubs means it should
-have settled more itself.
+command. The tag is how it knows not to ask twice. Under `/dev-team:run-package` the driver does
+this for you: it shows the question with the stub's `Recommendation:`, records your answer and
+continues.
 
 ## Decisions
 
-Subagents start with a fresh context and never see your conversation. Anything you decide has
-to be in a file. `docs/decisions.md` is that file, and it is the highest-authority document in
-the system. One ledger for the whole repo, one `D<n>` sequence — decisions cross packages
-routinely ("what timezone do we store?"), and per-package ledgers would split them in half.
-
-The architect writes the stubs. It is the only allocator of `D` numbers. You fill in
-`Decision:` and `Status:`.
+Subagents start with a fresh context and never see your conversation, so anything you decide
+has to be in a file. `docs/decisions.md` is that file, and it outranks every document a section
+is built from. One ledger for the whole repo, one `D<n>` sequence.
 
 ```markdown
 ## D7 — Session store: Redis or Postgres?
 Scope: data/storage, analysis/cache
-Raised by: OQ-data-storage-2, docs/packages/data/integration.md
+Raised by: OQ-data-storage-2
 Recommendation: Postgres. One dependency instead of two.
 Assumption if unanswered: Postgres.
 Decision: Postgres.
@@ -240,327 +248,190 @@ Status: decided
 Applied: data/storage, 2026-09-09, packages/data/src/data/storage/session.py
 ```
 
-`Scope:` is `repo`, a package name, or a list of `<pkg>/<section>`. An implementer working on
-`analysis/cache` is bound by entries scoped `repo`, `analysis`, or any list containing
-`analysis/cache` — one prefix rule.
+`Scope:` is `repo`, a package name, or a list of `<pkg>/<section>`: one prefix rule binds an
+implementer to it. The architect and the designer write stubs; you (or the driver, relaying
+you) fill `Decision:` and `Status:`; the implementer adds `Applied:`.
 
-- `decided` — the implementer builds it and adds an `Applied:` line, one per section.
-- `deferred`, or `open` with an assumption — the implementer builds the assumption and leaves
+- `decided` — built, with an `Applied:` line per section.
+- `deferred`, or `open` with an assumption — the assumption is built and marked
   `# TODO(decision D7)` at the affected line.
-- `open` with **no** `Assumption if unanswered:` — **blocks** the implementer if the section
-  cannot be built without it; otherwise a marker and a note.
-- `superseded` — the question is moot. Only the architect sets this.
+- `open` with **no** `Assumption if unanswered:` — the section is BLOCKED.
+- `superseded` — the question is moot; only the architect sets this.
 
-**The loop closes on re-run.** Change a decision to `decided`, run `/dev-team:implement-section` again,
-and the implementer greps its section for `TODO(decision D*)`, re-reads each one's status,
-implements the ones now decided, and deletes their markers.
+## Deviations and spec-changes
 
-**Adopting an older ledger.** A `decisions.md` predating `0.1.0` says `Sections:` instead of
-`Scope:` and has unqualified section names. Nothing breaks: every agent reads `Sections:` as a `Scope:`
-over the only package, numbers continue above the highest `D<n>` found, and `Applied:` lines
-are added as decisions are applied.
+`docs/deviations.md` is the one ledger for "the document and the code disagree", one entry per
+item, `## <pkg>/<section> — <date> — <kind>`, with **Clause**, **Said**, **Did** or **Found**,
+**Why**, **Status**, **Raised by** and **Resolved by**. Append-only; the status line is the
+only edit.
 
-## Follow-ups and reviews
+- **`deviation`** — the implementer built something other than the design said, inside its
+  section, for a reason. It writes the entry `proposed`; the reviewer sets `approved` or
+  `rejected`; the tester regenerates the intent tests that cite an approved clause; `sync-plan`
+  applies it to the contracts and sets `synced`. A departure with no entry, or with an empty
+  **Why**, is a CRITICAL finding.
+- **`spec-change:<level>`** — a document is wrong: a boundary shape, a public name, a test
+  that asserts what no document says. The designer, tester, implementer or reviewer writes it
+  `open` with its evidence, and `status.py` re-opens the step for its level: `test` → TEST,
+  `design` → DESIGN, `contract` → PLAN, where the architect edits the contract and sets it
+  `resolved`. A `test` or `design` entry needs no one to close it: the next commit of the
+  intent tests or the design answers it, and `status.py` reads that from git. A spec-change is
+  a normal exit, not a failure.
 
-The implementer only touches its own section. When it needs something elsewhere, it appends to
-`docs/followups.md` with the qualified target:
+## Reviews
 
-```
-- [ ] data/storage: add index on bars(symbol, ts) — needed by analysis/features, 2026-09-04
-- [ ] data/surface: load_bars now takes a DateRange, surface.md said (start, end) — 2026-09-05
-```
+Round 1 is two reviewers in parallel, each writing its own report: **A** (`Focus:
+conformance`) owns a coverage table with one row per contract clause and design item — pass,
+fail or can't-tell, with `file:line` — plus the seams and the deviations ledger; **B**
+(`Focus: correctness`) owns correctness and security. From round 2 one reviewer (`Focus:
+full`) reads only the diff since the last round and the previous reports, classifies each
+prior finding fixed or unfixed, and may raise a new CRITICAL only on lines the fix touched, so
+the finding count can only fall.
 
-`<pkg>/surface` is a reserved target: it is what `/dev-team:finalize-package` picks up, and where an
-implementer files any drift between what it shipped and what `surface.md` planned.
+Reports are `docs/reviews/<date>-<pkg>-<section>-r<n>-<a|b|s>.md`, and the report is the
+queue: the fix-round implementer reads its **CRITICAL** and **WARNING** lines. The verdict is
+`approve`, `request changes` or `spec-change`.
 
-`<pkg>/<section>/intent` is the third: the reviewer files a finding in
-`packages/<pkg>/tests/intent/<section>/` there, because the implementer never edits that tree.
-`/dev-team:test-section` clears those in reconcile mode, before it folds anything, and
-`/dev-team:run-package` spawns the tester rather than the implementer while one is open.
-
-`<pkg>/plan` is the other reserved target: `/dev-team:review-plan` files a plan's CRITICAL
-findings there, the next `/dev-team:plan-package <pkg>` answers them and ticks them off, and
-while one is open `/dev-team:implement-section` refuses every section of `<pkg>`. That pair is
-a loop, and the reviewer is its exit: each plan report carries `Round: <n>` (consecutive
-`request changes` reviews since the last approving one, from `status.py --rounds`) and,
-from round 2, `Convergence: <k> prior unfixed, <m> new`. A re-plan that leaves its own
-finding standing did not take, and from round 3 no re-plan is converging whatever it found:
-the review then stops the loop and offers two commands — one more `plan-package`, or
-`/dev-team:review-plan <pkg> --defer`, which re-addresses the standing findings to the sections
-they concern and approves the plan with fixes, so the build starts and each finding is cleared
-by the implementer it now belongs to, where a wrong assumption is a failing intent test rather
-than a disagreement between two documents. A fact that recurs in a new section each round —
-the reviewer files such a finding once, with a `touches:` list — is one unfinished
-propagation, and the re-plan re-delegates every section the fact reaches, not only the ones
-the review named.
-
-The section and package loops have the same exit, with `implement-section` and
-`finalize-package` as the fixing commands and `review-section` / `review-package --defer` as
-the other choice, which re-files the standing findings as `— noted` follow-ups: same owner,
-same text, no longer counted by the finalize gate. Two things keep those loops short in the
-first place. CRITICAL is a closed list — a contract, decision or shipped-interface break, a
-failing test or tool, a wrong result, a security finding, an unrecorded deviation — and a
-docstring, a function's shape or a name is a WARNING however the reviewer feels about it. And
-on a re-review, a judgment finding outside the diff is a WARNING filed as ordinary work: the
-set of things that can block shrinks every round, so a new blocker on round 2 has to be in
-the code round 1 changed.
-
-`/dev-team:test-section` feeds it too. After a build, the tester files every intent test still
-failing as `- [ ] <pkg>/<section>: intent test <file>::<name> fails — … — tester <date>`; the next
-`/dev-team:implement-section` fixes the code, never the test. The reviewer treats a failing
-intent test with no such entry and no recorded deviation as CRITICAL.
-
-`/dev-team:review-section` and `/dev-team:review-package` feed the same queue: a full report to
-`docs/reviews/<date>-<pkg>-<section>.md` (or `<date>-<pkg>-package.md`), every CRITICAL finding
-appended to `docs/followups.md`. Each report's second line is `Commit: <sha>`, the commit it
-reviewed. The next review of the section covers only the diff since that commit, and
-`/dev-team:status` counts a section as reviewed when that line matches the newest commit
-touching it.
-
-Review per section, as you go. A review after finalize would cover every section under one
-return, and the surface would already re-export whatever a CRITICAL finding is about.
-
-**Fixing a CRITICAL is a re-run, not a new plan.** A plan finding: run
-`/dev-team:plan-package <pkg>` again — it re-delegates the sections a finding names, plus every
-section a cross-cutting finding's fact reaches — then `/dev-team:review-plan <pkg>`. A section finding: run
-`/dev-team:implement-section <pkg>/<section>` again — its step 6 picks up follow-ups addressed to it and
-the latest review, fixes them, ticks them off. A surface finding from `/dev-team:review-package`: run
-`/dev-team:finalize-package <pkg>` again, then `/dev-team:review-package <pkg>`. `/dev-team:plan-change` is needed only
-when the package is already shipped and the fix would change a name in `interface.md` — the
-implementer refuses that without a slug and tells you so.
+CRITICAL is a closed list: a **break** (a contract, a decided `D<n>`, or a name a consumer takes
+from a shipped document), a **wrong result** on the main path, a **security** finding, a
+**silent or unreasoned deviation**. Everything else is a WARNING or a SUGGESTION. A mechanical
+failure is never the reviewer's: the stop gate already ran it, and the reviewer runs no command.
+An out-of-diff finding on round 2+ is a WARNING appended to `docs/followups.md`, the backlog —
+work no loop step will pick up, never counted and never a gate. At the cap, **Running a
+package** says what happens.
 
 ## Code conventions
 
-Knowledge is scoped **by role**, through each agent's `skills:` frontmatter. That is the only
-mechanism in Claude Code that scopes by agent — rules scope by file path or not at all, which
-is the wrong axis here, since the architect and designer need the size limits and never open a
-`.py` file.
+Knowledge is scoped **by role**, through each agent's `skills:` frontmatter — the only
+mechanism in Claude Code that scopes by agent.
 
 | Skill | arch | design | impl | test | review | doc | research |
 |---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 | `project-structure` — layout, size limits, config placement, naming | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
 | `python-style-guide` — inside a file: docstrings, function shape, `__init__.py`, naming | — | — | ✓ | ✓ | ✓ | — | — |
 | `python-implementation` — splitting mechanics, config code | — | — | invoked | — | — | — | — |
-| `workspace-scaffold` — pyproject, import-linter, mkdocs skeletons | invoked | — | invoked | — | — | — | — |
-| `planning-templates` — headings for every planned document | invoked | — | — | — | — | — | invoked |
+| `workspace-scaffold` — pyproject, import-linter, mkdocs, CI skeletons | invoked | — | invoked | — | — | — | — |
+| `planning-templates` — headings for every document the loop parses | invoked | read | read | read | read | — | invoked |
 | `security-review` — checklist | — | — | invoked | — | invoked | — | — |
-| `test-driven-development` — red-green-refactor, test design, pytest | — | — | ✓ | ✓ | — | — | — |
+| `test-driven-development` — red-green-refactor, test design, pytest | — | — | ✓ | read | — | — | — |
 | `debugging-and-error-recovery` — root-cause triage for tests and builds | — | — | invoked | — | — | — | — |
-| `git-workflow-and-versioning` — commit discipline; the project's commit rule | invoked | — | ✓ | invoked | invoked | invoked | invoked |
+| `git-workflow-and-versioning` — §Project convention, the commit rule | ✓ | ✓ | ✓ | ✓ | ✓ | invoked | invoked |
 
-The last three are vendored from `addyosmani/agent-skills` (MIT) and adapted to this stack.
-`git-workflow-and-versioning` §Project convention is the one copy of the commit rule every
-agent that writes follows (the curator invokes it too; the researcher only when
-`/dev-team:probe-source` runs it directly). `test-driven-development` is
-preloaded into the tester, whose intent tests are its RED step, and the implementer, which
-uses its Prove-It pattern on review findings that are bugs; the implementer invokes
-`debugging-and-error-recovery` on a test still failing after two fix attempts.
+✓ is preloaded; *invoked* is loaded when the agent's procedure reaches it; *read* is one
+reference file or paragraph opened with the Read tool. `git-workflow-and-versioning` §Project convention is the
+one copy of the commit rule every agent follows: the run gate, staging by explicit path
+(`git add <paths>` then `git commit -m … -- <paths>`), `<scope>: <summary>` with one
+`Dev-Team-Run:` trailer, one commit per run, and a retry on `.git/index.lock`. The tester
+reads the RED step of `test-driven-development`; the implementer uses its Prove-It pattern on
+review findings that are bugs. `security-review` goes to the implementer on its triggers, to
+reviewer B in round 1, and to a round-2+ reviewer when the diff hits a trigger. The last three
+skills are vendored from `addyosmani/agent-skills` (MIT) and adapted to this stack.
 
-Three conventions in `python-style-guide` are marked *Project convention* because they go
-beyond or beside Google's guide:
+Three conventions in `python-style-guide` are marked *Project convention*:
 
 - **`__init__.py`.** The top-level `__init__.py` of a package exposes *only the names a
-  consumer outside the package needs* — a downstream package or a CLI command, each named in
-  `surface.md` — resolved lazily (PEP 562) so `import data` costs nothing until a name is
-  touched. Written by `/dev-team:finalize-package`, and by nothing else. Every nested one is empty.
-  Inside a package, import from the defining module; from another package, import from its top
-  level only. import-linter enforces the second.
-- **Docstrings on everything.** Every module, class, function, and method; one line is enough
-  for a private helper. Google style, `Args:` without types, `Examples:` in doctest form on
-  public entry points, cross-references in mkdocstrings syntax. The docs build runs strict in
-  CI — that is the docstring-rot catch. Agents never read the generated site; they read the
-  curated `interface.md`.
-- **Function shape.** Phases inside a function are fine and each gets a one-line purpose
-  comment; a helper is extracted only when the jump buys something (reuse, I/O split from
-  transformation, a retry wrapper, a phase that needs its own docstring, the seam under the
-  soft limit). No single-use helpers whose name restates three lines. The reviewer's test: the
-  main path reads top to bottom with at most one jump per phase.
+  consumer outside the package needs*, resolved lazily (PEP 562) so `import data` costs
+  nothing until a name is touched. The `surface` section writes it, and nothing else. Every
+  nested one is empty. Inside a package, import from the defining module; from another
+  package, import from its top level only. import-linter enforces the second.
+- **Docstrings on everything.** Google style, `Args:` without types, `Examples:` in doctest
+  form on public entry points. The docs build runs strict in CI — that is the docstring-rot
+  catch.
+- **Function shape.** Phases inside a function are fine, each with a one-line purpose comment;
+  a helper is extracted only when the jump buys something.
 
-Layout is a separate matter and a separate skill: **CLI commands live in `src/<pkg>/cli.py`**,
-one function per command, registered under `[project.scripts]`, with no `scripts/` directory —
-an entry point must be importable from the installed package, and a file beside `src/` is not.
-That is `project-structure` §1's rule, not the style guide's, which is why it carries no
-*Project convention* marker. A command's docstring names every argument: it is the `--help`
-text and the docs page.
+**CLI commands live in `src/<pkg>/cli.py`**, one function per command, registered under
+`[project.scripts]`, with no `scripts/` directory — an entry point must be importable from the
+installed package (`project-structure` §1).
 
 **Enforced, not intended.** Dependency direction between packages, "consumers import the top
 level only", and section layering inside a package are import-linter contracts in the root
-`pyproject.toml`: `layers` for direction (indirect chains count), `forbidden` for internals.
-The repo contract carries the target block; the first `/dev-team:implement-section` of each package
-grows `root_packages` and the layers list; `/dev-team:finalize-package` adds the `forbidden` contract.
-`lint-imports` runs in CI beside `ruff check`.
+`pyproject.toml`, derived from the Sections table's `depends on`. CI runs the same
+`docs/constraints.md` rows the stop gate runs. Merge `pyproject-lint-config.toml` into the root
+`pyproject.toml`; it ships beside this README so there is one copy.
 
-Merge `pyproject-lint-config.toml` into the root `pyproject.toml`; it ships beside this README
-rather than inside a skill so there is one copy.
-
-This plugin ships no rule. A plugin has no `rules/` component — Claude Code loads path-scoped
-rules only from `.claude/rules/` or `~/.claude/rules/` — so a rule here would never load, and
-the agents that need these conventions already carry them through `skills:` frontmatter. For
-your own interactive work, where no agent frontmatter applies, write a
-`.claude/rules/python-standards.md` in the repo you are building that points at
-`project-structure` and `python-style-guide`.
+This plugin ships no rule: Claude Code loads path-scoped rules only from `.claude/rules/`. For
+your own interactive work, write a `.claude/rules/python-standards.md` in the repo you are
+building that points at `project-structure` and `python-style-guide`.
 
 ## `docs/` layout
 
 ```
 docs/
-├── brief.md                        your input to /dev-team:plan-repo         (shape-brief / you)
-├── history/                        brief-contracted.md + dated copies        (plan-repo, shape-brief)
-├── constraints.md                  the quality bar: Floor, Enforced, Guarded (set-constraints / you)
-├── architecture.md                 THE REPO CONTRACT                         (plan-repo)
-├── decisions.md                    D<n> ledger, Scope: field                 (architect stubs / you / implementer)
-├── followups.md                    queue, entries `- [ ] <pkg>/<section>: …` (implementer, reviewer, sync-plan)
-├── assessment.md                   repo survey                               (map-project, plan-repo extend/revise)
-├── legacy/inventory.md             what to salvage from an old repo          (curator drafts / you mark keep)
-├── sources/<source>.md             SOURCE PROBE: an api as it answered, or a dataset as it reads (researcher)
+├── brief.md                         your input to plan-repo                        (shape-brief / you)
+├── history/                         brief-contracted.md; every contract before an edit (architect)
+├── constraints.md                   the bar: Floor, Enforced, Measured, Guarded, Exceptions (set-constraints / you)
+├── architecture.md                  THE REPO CONTRACT                              (plan-repo, map-repo, sync-plan)
+├── decisions.md                     D<n> ledger                                    (architect, designer stubs · you · implementer Applied:)
+├── deviations.md                    deviations and spec-changes                    (implementer, designer, tester, reviewer, architect)
+├── followups.md                     the backlog, `- [ ] <pkg>/<section>: …`, never a gate (reviewer, architect)
+├── changes/<slug>.md                a change to built or shipped code, until sync-plan (architect)
+├── legacy/inventory.md              what to salvage from an old repo              (curator / you mark keep)
+├── sources/<source>.md              SOURCE PROBE, one `## <pkg>/<section>` entry per consumer (researcher)
 ├── sources/<source>.sample.json · .probe.py    recorded responses + re-runnable probe   (api)
 ├── sources/<source>.stats.json  · .profile.py  column statistics + re-runnable profile  (dataset)
-├── api/<pkg>.md                    docs-site API pages                       (finalize-package; finalize-project fills gaps)
+├── api/<pkg>.md                     the docs-site API page                         (the surface section's implementer)
+├── index.md                         the docs-site home page                        (documenter)
 ├── packages/
 │   └── data/
-│       ├── assessment.md           package survey                            (plan-package)
-│       ├── contract.md             THE PACKAGE CONTRACT                      (plan-package)
-│       ├── design/<section>.md     one per section; As shipped appended      (designer; sync-design)
-│       ├── integration.md          reconciliation, plan-time; Spine heading  (architect)
-│       ├── surface.md              design of the public surface              (architect, at unify)
-│       └── interface.md            THE PUBLIC SURFACE AS SHIPPED             (finalize-package)
-├── reviews/
-│   ├── 2026-09-03-data-plan.md     one per plan review, before any code      (review-plan)
-│   ├── 2026-09-04-data-ingest.md   one per section review
-│   └── 2026-09-08-data-package.md  one per package review
-└── plans/
-    ├── synced.md                   which plan sections are folded in         (sync-plan)
-    └── add-vwap/                   one folder per /dev-team:plan-change run
-        ├── assessment.md           what the change touches + Downstream impact
-        ├── contract-delta.md       changed contracts and interfaces only
-        ├── data/clean.md           delta design per affected section
-        └── integration.md          reconciliation + canonical doc updates
+│       ├── contract.md              THE PACKAGE CONTRACT; Sections table ends with `surface` (plan-package)
+│       ├── design/<section>.md      one per section; first line `Mode:`            (designer)
+│       └── interface.md             THE PUBLIC SURFACE AS SHIPPED — the surface section's README (implementer)
+└── reviews/
+    ├── 2026-09-04-data-ingest-r1-a.md   round 1, conformance
+    ├── 2026-09-04-data-ingest-r1-b.md   round 1, correctness
+    └── 2026-09-05-data-ingest-r2-s.md   round 2, diff-scoped
 ```
 
-Outside `docs/`, one tree belongs to a single writer: `packages/<pkg>/tests/intent/<section>/`
-holds the tester's intent tests. The implementer runs them and never edits them, the reviewer
-checks they pass, and `status.py` shows the count in its intent column.
+Outside `docs/`: each section's code and `README.md` (the implementer's), its
+`tests/unit/<section>/` (the implementer's) and `tests/intent/<section>/` (the tester's alone),
+and `.dev-team/gate.txt`, the stop gate's last output.
 
-**Canonical vs proposal.** Everything outside `plans/` describes the code as it is, with one
-honest exception: a greenfield design describes intended code until its section ships — which
-is exactly why implementers read READMEs and `interface.md` over designs for anything they
-consume. `plans/*` are proposals; they stay as history after they ship and are never edited.
-`/dev-team:sync-plan` is the one skill allowed to move content from the second into the first, after
-verifying the code exists.
-
-**Package status is derived, never written down:** `contract.md` exists → planned; every
-section README → built; `interface.md` → shipped. Only a shipped package can be planned
-against without the consumed names being marked provisional.
-
-## Hand-off diagram
-
-```
-you ⇄ /dev-team:shape-brief ──────────▶ docs/brief.md   (in your conversation; asks, never forks)
-you ── /dev-team:plan-repo ────────────▶ architect ──▶ docs/architecture.md, decision stubs   (may stop for questions)
-
-you ── /dev-team:extract-legacy ../old ──▶ curator ──▶ docs/legacy/inventory.md   (stops; you mark keep)
-you ── /dev-team:extract-legacy ────────▶ curator ──┬──▶ researcher (L1) ──▶ .claude/skills/polygon-aggregates/
-                                                ├──▶ researcher (L2) ──▶ .claude/skills/bars-schema/
-                                                └──▶ …
-                                     curator ──▶ inventory statuses
-
-you ── /dev-team:plan-package data ────▶ architect ──▶ docs/packages/data/contract.md
-                                architect ──┬──▶ researcher (probe api:polygon)      ──▶ docs/sources/polygon.md   (stops if a key is unset or rejected)
-                                            └──▶ researcher (probe dataset:trades) ──▶ docs/sources/trades.md    (stops if it cannot be read)
-                                architect ──┬──▶ designer (data/ingest)  ──▶ design/ingest.md
-                                            ├──▶ designer (data/clean)   ──▶ design/clean.md
-                                            └──▶ designer (data/storage) ──▶ design/storage.md
-                                architect ◀── summaries (≤10 lines each)
-                                architect ──▶ integration.md, surface.md, decision stubs
-
-you ── /dev-team:review-plan data ───────────────▶ reviewer ──▶ docs/reviews/<date>-data-plan.md, followups `data/plan: …`
-                                          (request changes → /dev-team:plan-package data re-delegates the named sections
-                                           and every section a cross-cutting fact reaches; the review numbers the rounds
-                                           and stops the loop when it is not converging: one more round, or --defer)
-you ── docs/decisions.md (answers)
-
-you ── /dev-team:run-package data ─ (your conversation) spawns the section runs below, in order, then finalize, review, sync-design
-
-you ── /dev-team:test-section data/ingest ───────▶ tester ──▶ tests/intent/ingest/   (from the design; red)
-you ── /dev-team:implement-section data/ingest ──▶ implementer ──▶ src/data/ingest/, tests, section README
-                                          implementer ──▶ followups.md, decisions.md Applied:
-you ── /dev-team:test-section data/ingest ───────▶ tester ──▶ tests/intent/ingest/ reconciled, followups `— tester`
-you ── /dev-team:review-section data/ingest ─────▶ reviewer ──▶ docs/reviews/<date>-data-ingest.md, followups
-
-you ── /dev-team:finalize-package data ──────────▶ implementer (surface mode) ──▶ src/data/__init__.py, pipelines/, cli.py, docs/api/data.md
-                                          implementer ──▶ docs/packages/data/interface.md
-you ── /dev-team:review-package data ────────────▶ reviewer ──▶ docs/reviews/<date>-data-package.md
-you ── /dev-team:sync-design data ───────────────▶ architect ──▶ design/*.md gain As shipped (append-only)
-
-you ── /dev-team:plan-package analysis ──────────▶ architect reads docs/packages/data/interface.md as upstream …
-
-you ── /dev-team:plan-change "…" ────────────────▶ architect ──▶ docs/plans/<slug>/ (+ Downstream impact)
-you ── /dev-team:sync-plan <slug> ───────────────▶ architect ──▶ contracts, designs, surface.md, interface.md updated
-you ── /dev-team:finalize-project ───────────────▶ documenter ──▶ packages/*/README.md, docs/api/*.md, README.md
-```
-
-Every arrow into an agent carries a file path, not a conversation.
+**Canonical contracts describe code that exists.** An edit to a contract that touches a built
+or shipped package becomes a change file instead; `sync-plan` applies it to the contracts once
+the sections it names are DONE, after checking the code. Every contract is copied to
+`docs/history/` before it is edited. Package status is derived, never written down:
+`contract.md` exists → planned; section code exists → built; `surface` DONE → shipped.
 
 ## Gotchas
 
-- **Nobody can ask you anything.** The architect stops and writes stubs; designers,
-  implementers, and reviewers turn missing information into a stated assumption plus an open
-  question, or a blocker returned to you.
-- **Probes make real API calls, and read real data.** `/dev-team:plan-package` probes every
-  source in the Sections table and stops before any design if one cannot be reached. An `api`
-  gets one request per read endpoint plus one deliberately bad one; it never sends a write, so
-  a write endpoint is recorded as documented rather than observed. A `dataset` is opened and
-  profiled, and only statistics are written down — never rows, and anything that looks like
-  personal data is redacted to its null rate and cardinality. Keys come from env or a root
-  `.env`; the researcher never writes a value anywhere. A source probed successfully today is
-  not re-probed, and probe docs are repo-wide, so two packages consuming one source share
-  one document.
-- **Datasets are probed before the repo contract.** `/dev-team:plan-repo` probes the datasets
-  the brief names, because a target column that cannot support the task, or data that forbids a
-  random split, changes which packages exist — a finding that arrives during package planning
-  arrives too late to act on cheaply.
-- **Work on a branch, commit your hand edits.** Every forked run refuses `main`/`master` and a
-  dirty tree, and ends in exactly one commit carrying a `Dev-Team-Run:` trailer. Only
-  `docs/decisions.md`, `docs/brief.md` and `docs/constraints.md` may be left uncommitted between
-  runs. Anything else you touched by hand has to be committed first, or the next run refuses.
-  `git log` is the run history.
+- **Probes make real API calls, and read real data.** An `api` gets one request per read
+  endpoint the section needs plus one deliberately bad one; it never sends a write. A `dataset`
+  is profiled into statistics, never rows. Keys come from env or a root `.env`; the researcher
+  never writes a value anywhere. `/dev-team:plan-repo` probes the brief's datasets before the
+  repo contract, because data that cannot support the task changes which packages exist.
+- **Work on a branch, commit your hand edits.** The run gate refuses `main`/`master` and a
+  dirty tree outside the four exempt paths. `git log` is the run history: every commit carries
+  a `Dev-Team-Run:` trailer.
 - **Re-running the same command is the continue action** after a stop. Doing nothing in the
   ledger means "accept the assumptions".
-- **`run-package` is a loop in your conversation.** Each agent return is at most 40 lines and
-  the driver prints a `status.py` row between them, so a five-section package costs the driver
-  roughly 30 short turns of context. Run it with `/clear` behind you.
-- **Return size is context cost.** Designers and implementers return short summaries; the
-  content is on disk. If you want detail, read the file.
+- **`run-package` is a loop in your conversation.** It reads each return's first line only and
+  prints only the rows whose state changed, but a package of five sections is still dozens of
+  turns. Run it with `/clear` behind you.
+- **Return size is context cost.** Agents return short summaries; the content is on disk.
 - **Descriptions are always loaded.** Keep agent `description` fields short — the combined
-  budget warns at 15,000 tokens. Detail goes in the body, which loads only when the agent runs.
-- **Nesting depth.** Architect (layer 1) spawning designers (layer 2) is within the default
-  three-layer limit. `/dev-team:plan-repo` deliberately does not spawn package architects — that would
-  put designers at layer 3 and plan every package at once, which is not how you work.
-- **`/dev-team:finalize-package` has no partial mode.** A public surface is a promise consumers
-  build against, so the whole package qualifies or none of it does.
-  `/dev-team:status <pkg> --gate` is the list of what it checks, and shows what is missing.
-- **Expect blockers on the first implement run of an adopted repo.** Unanswered questions with
-  no fallback assumption stop the implementer by design. Answer them in `docs/decisions.md` and
-  re-run.
-- **import-linter needs the packages importable.** Run `lint-imports` inside the workspace
-  environment (`uv run lint-imports`), and expect it to fail on a package listed in
-  `root_packages` that has no code yet — which is why the block grows as packages are built.
-- **The docs site builds strict from the first section.** The scaffold writes a stub
-  `docs/index.md` and a nav naming only files that exist; `/dev-team:finalize-package` adds each
-  package's API page; `/dev-team:finalize-project` regenerates the index. MkDocs' default `docs_dir` is
-  `docs/` — your planning docs — and the scaffold keeps it, excluding `plans/**`; change it in
-  the repo contract's Toolchain before the first scaffold if you would rather not publish them.
-- **Instruction-only boundaries.** "Write only under `docs/`" is an instruction, not an
-  enforcement. To enforce it, add a `PreToolUse` hook on `Write|Edit` in `settings.json`
-  rejecting paths outside `docs/` for the architect, designer, and documenter — hooks from
-  settings files do run inside subagents.
-- **Parallel sections.** Add `isolation: worktree` to `implementer.md` frontmatter and each run
-  works in its own git worktree. Only for sections `integration.md` shows as independent — and
-  note that `.gitignore`, `docs/followups.md`, `docs/decisions.md`, and the root
-  `pyproject.toml` are shared files that runs append to, so expect to merge them. Every run
-  commits what it wrote, so a worktree merge is a commit merge, not a copy of files.
-- **Interactive session for a hard section:** `claude --agent implementer` gives the main thread
-  the implementer's system prompt, tools, and model, so you get the blocking rules and return
-  format while steering turn by turn.
+  budget warns at 15,000 tokens.
+- **Nesting depth.** The driver's spawns are layer 1. `map-repo` forks an architect that
+  spawns one architect per package, layer 2; `plan-repo` spawns researchers for datasets. Both
+  are within the three-layer limit.
+- **Expect blocks on an adopted repo.** Open questions with no assumption stop a section by
+  design. Answer them when the driver asks, or in `docs/decisions.md`, and re-run.
+- **import-linter needs the packages importable.** Run `uv run lint-imports` inside the
+  workspace, and expect it to fail on a package in `root_packages` with no code yet — which is
+  why the block grows as packages are built.
+- **The docs site builds strict from the first section.** The scaffold's nav names only files
+  that exist; each `surface` section adds its package's API page, and
+  `/dev-team:finalize-project` writes `docs/index.md`. MkDocs' `docs_dir` is `docs/`, your
+  planning docs; change it in the repo contract's Toolchain before the first scaffold if you
+  would rather not publish them.
+- **No section named `report`.** Claude Code refuses a subagent's Write of a `.md` file whose
+  name starts with `report`, `summary`, `findings` or `analysis`, so a section or source named
+  that way could never get its design or probe doc. The architect names it after what it
+  produces, one word such as `digest` (`project-structure` §4).
+- **Parallel implementers are a non-goal.** Implementers run one at a time because they share
+  `pyproject.toml`, the workspace and the ledgers; worktree isolation is a later change.
+- **Interactive session for a hard section:** `claude --agent dev-team:implementer` gives the
+  main thread the implementer's prompt, tools and model, so you get its rules and return format
+  while steering turn by turn. The stop gate is a `SubagentStop` hook and does not fire there.
 
 Reference: https://code.claude.com/docs/en/sub-agents and https://code.claude.com/docs/en/skills

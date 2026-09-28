@@ -10,14 +10,16 @@ this one.
 Every agent currently sets `model: inherit` — each one runs on whatever model the calling
 session is using. That is the deliberate default: it keeps the plugin's behavior consistent
 with a person's own model choice instead of fragmenting cost and quality decisions across
-seven agents behind their back.
+eight agent files behind their back: six roles in the section loop (architect, designer,
+researcher, tester, implementer, reviewer), plus the documenter and the curator outside it.
 
 No overrides are applied. Candidates, recorded so the reasoning is not re-derived each time:
 
 | Agent | Default | Override candidate | Why |
 |---|---|---|---|
-| architect | inherit | `opus` | Plans are read by agents with an empty context and no way to check back — a planning mistake becomes every designer's ground truth. |
+| architect | inherit | `opus` | Contracts are read by agents with an empty context and no way to check back — a contract mistake becomes every designer's ground truth. |
 | implementer | inherit | `opus` | Writes and ships the actual code; the largest and most conditional agent prompt in the plugin. |
-| reviewer | inherit | `opus` | Last gate before findings are filed; a false negative here ships. |
-| designer, curator, researcher | inherit | — | Narrower scope, and checked by a later step (review, or the architect reconciling designs). |
+| reviewer | inherit | `opus` | The last judgment before a section is DONE; a false negative here ships. Mechanical checks are the stop gate's, so what is left is judgment. |
+| designer, tester | inherit | — | Spawned by the driver once per section, several in parallel; each is checked by the next step — the tester's `design-gap` checks the design, the implementer's run against the intent tests and the reviewer check the tests. |
+| curator, researcher | inherit | — | Narrower scope, and checked by a later step (you mark the inventory; the designer reads the probe doc against the contract row). |
 | documenter | inherit | `sonnet` / `haiku` | Assembles from documents that are already written rather than deciding anything — a plausible cost optimization, not yet applied. |

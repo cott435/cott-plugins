@@ -1,0 +1,18 @@
+{
+  "note": "an open spec-change:test the intent tree was regenerated after: answered, and the regeneration re-opens nothing",
+  "steps": [
+    {"do": "base"},
+    {"do": "design", "section": "ingest"},
+    {"do": "tests", "section": "ingest"},
+    {"do": "build", "section": "ingest"},
+    {"do": "deviation", "section": "ingest", "kind": "spec-change:test", "status": "open"},
+    {"do": "regenerate", "section": "ingest"}
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "REVIEW",
+    "evidence": "^no review$",
+    "absent": ["spec-change:test"]
+  }
+}

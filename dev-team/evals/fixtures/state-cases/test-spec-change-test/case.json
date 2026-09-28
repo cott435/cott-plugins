@@ -1,0 +1,16 @@
+{
+  "note": "an open spec-change:test raised after the build: TEST, the tester regenerates",
+  "steps": [
+    {"do": "base"},
+    {"do": "design", "section": "ingest"},
+    {"do": "tests", "section": "ingest"},
+    {"do": "build", "section": "ingest"},
+    {"do": "deviation", "section": "ingest", "kind": "spec-change:test", "status": "open"}
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "TEST",
+    "evidence": "^open data/ingest — 2026-09-27 — spec-change:test$"
+  }
+}

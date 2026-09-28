@@ -1,0 +1,38 @@
+{
+  "note": "the design rewritten after the tests, then a tester run that found nothing to change and stamped conftest.py: the tests count as checked, and the stamp re-opens nothing (remake phase 11)",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "edit",
+      "path": "docs/packages/data/design/ingest.md",
+      "append": "\n- the entry point, module moved\n",
+      "message": "data/ingest: design (delta)"
+    },
+    {
+      "files": {
+        "packages/data/tests/intent/ingest/conftest.py": "\"\"\"Intent tests for data/ingest, checked against design {HEAD}.\"\"\"\n"
+      },
+      "message": "data/ingest: intent tests current with design"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "REVIEW",
+    "evidence": "^no review$"
+  }
+}

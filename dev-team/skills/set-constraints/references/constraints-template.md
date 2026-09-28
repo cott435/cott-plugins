@@ -28,8 +28,8 @@ Always enforced. Not configurable; listed so the commands are in one place.
 | docs build | strict | `uv run mkdocs build --strict` | repo |
 
 ## Enforced
-Configured thresholds. A row here is a gate: FAIL is a CRITICAL review finding and a
-blocker for finalize-package.
+Configured thresholds. A row here is a gate: FAIL keeps the stop gate closed: the
+implementer cannot finish until it passes.
 
 | dimension | threshold | command | scope |
 |---|---|---|---|

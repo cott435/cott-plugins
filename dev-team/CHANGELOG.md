@@ -12,6 +12,96 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [Unreleased]
+
+The remake. One driver over derived state, six roles that each answer one question, and hooks
+for every mechanical check. The loop in 0.6 did not converge: a wrong contract left the
+implementer no correct move, each fresh reviewer re-sampled the whole section, `run-package`
+carried a plan that was stale once the spine shipped, and half of every review was lint and
+tests a machine could have run. Built in eleven phases on `dev-team-remake`
+(`site/notes/remake-design.md`, `site/notes/remake-00-overview.md`).
+
+### Breaking
+
+| Change | What to do |
+|---|---|
+| `/dev-team:map-project` is `/dev-team:map-repo` | type the new name; it also adopts packages, so no per-package document-mode runs follow |
+| `plan-change`, `sync-design`, `review-plan`, `finalize-package`, `review-package`, `test-section`, `implement-section`, `review-section` are gone | a change to shipped code is `/dev-team:plan-package <pkg>` (or `/dev-team:plan-repo`), which writes a change file, then `/dev-team:run-package <pkg>`; one step by hand is `/dev-team:run-package <pkg> <section> --step <STEP>`; the plan review is the tester's `design-gap`; the surface is the `surface` section |
+| `surface.md`, `integration.md`, `assessment.md`, `docs/plans/`, **As shipped** sections are not read | a repo mid-flight under 0.6 is migrated by `/dev-team:map-repo`, which treats the existing contracts as claims; the old files stay on disk and are not deleted by the plugin |
+| review CRITICALs are not in `docs/followups.md`, and the file is never counted | the report is the queue; old entries can be ticked or left |
+| `docs/reviews/` filenames carry `-r<n>-<a, b or s>` | old reports are read as round 1 single reports |
+| every implementer stop runs the `docs/constraints.md` rows | a repo whose rows fail today blocks on its first build; lowering the bar is `/dev-team:set-constraints`, your call |
+| `/dev-team:status` loses `--gate` and `--plan-gate`; gains `--surface <pkg>` and `--repo` | `--run-gate` and the state table are the checks |
+| agents commit under the retry rule; every driver spawn's trailer is `Dev-Team-Run: run-package <pkg>`; a regeneration commit's summary is `<pkg>/<section>: regenerate <k> intent tests` | nothing, unless you parse the trailers |
+
+### Added
+- **`hooks/`** (23a6d3f). `format_on_edit.py` (`PostToolUse`: ruff on every `.py` edit by the
+  implementer or tester), `gate_on_stop.py` (`SubagentStop` on the implementer: the
+  constraints rows, the intent suite with ledger tolerance, a Guarded grep of the diff and
+  `status.py --surface`; a `.dev-team/stop` marker or a third attempt lets it stop), and
+  `guard_writes.py` (`PreToolUse`: a per-role write allowlist). Each exits 0 outside a repo
+  with `docs/architecture.md`.
+- **`/dev-team:map-repo`** (b4dd3aa). Lists the packages, stops at a monolith's proposed split,
+  writes one package contract per package in parallel, then the repo contract from those and
+  the import graph.
+- **`docs/deviations.md`** (6d005fb, 6d928e5, a4be52e). One ledger for deviations
+  (`proposed`, `approved`, `rejected`, `synced`) and spec-changes (`test`, `design`,
+  `contract`; `open`, `resolved`), with its template in `planning-templates`.
+- **Change files** (4ee8f00). `docs/changes/<slug>.md` carries a change to built or shipped
+  code until `sync-plan` applies it; the architect classifies every edit EDIT, EDIT+STALE,
+  CHANGE or DECIDE and archives the contract to `docs/history/` first.
+- **`run-package <pkg> [<section>] [--step] [--defer]`** (2937046) and the driver's ask step:
+  a block is asked once, and the answer is written to `docs/decisions.md`.
+- **The review report template** and a closed CRITICAL list (6d005fb, 48a1da6).
+- `status.py --surface <pkg>` and `--repo` (6d005fb); the documenter's Known gaps copy the
+  latter (1eff8a1).
+
+### Changed
+- **`status.py`** (6d005fb) derives one state per section — PROBE, DESIGN, TEST, IMPLEMENT,
+  REVIEW, FIX n, PLAN, DONE, BLOCKED — with its re-open rules, the ready set, rounds from
+  report filenames and the next command. The driver, the hooks and the documenter run it.
+- **`run-package`** (2937046) spawns every agent itself over the ready set: probes, designs,
+  tests and the two round-1 reviewers in parallel, implementers one at a time; it writes only
+  `docs/decisions.md` and reads each return's first line.
+- **The surface is a section** (6d005fb, a4be52e): the last row of every Sections table,
+  depending on every other; its README is `interface.md`; shipped = surface DONE.
+- **The designer** (6d928e5) runs in `new`, `document` or `delta` mode and returns `done`,
+  `stopped` or `spec-change`; **the tester** returns `done` or `design-gap` and regenerates only
+  cited tests; **the researcher** extends one probe doc per source under `## <pkg>/<section>`.
+- **The implementer** (a4be52e) logs deviations as `proposed`, raises `spec-change` with
+  evidence, and finishes only through the stop gate.
+- **The reviewer** (48a1da6): `Focus: conformance | correctness | full | defer`; A owns a
+  coverage table; round 2+ is diff-scoped; `spec-change` is a verdict; it runs no command.
+- **The architect** (4ee8f00) writes and edits contracts only; `plan-repo --fix` replaces
+  `--revise`; `sync-plan` is the package close.
+- **The documenter** (1eff8a1) writes package READMEs, `docs/index.md` and the root README,
+  never `docs/api/`.
+- **`git-workflow-and-versioning`** (a4be52e) shrinks to §Project convention: the run gate,
+  staging by explicit path with `git commit -- <paths>`, the message table, one commit per run,
+  the lock retry. It is preloaded into every committing agent.
+- `workspace-scaffold` derives import contracts from the Sections table, and CI runs the
+  constraints rows. `probe-source` takes `<pkg>/<section>`. `extract-legacy` reports a
+  colliding skill name instead of refusing it (31dbc61). `CLAUDE.md`'s three-file rule is two
+  files.
+- `README.md`, `VERSIONING.md`, `site/flow.md` and the five workflow pages rewritten; the
+  manifest description updated.
+- Found by the end-to-end eval, fixed before release: an open `spec-change:design` or
+  `spec-change:test` entry is answered by the next commit of the design or the intent tests,
+  derived by `status.py` (nothing ever set its `Status:`, so the section re-opened forever); a
+  tester run that finds no test to change still commits, stamping `conftest.py` with the design
+  it checked (`intent tests current with design`, skipped like a regeneration); and a section or
+  source name never starts with `report`, `summary`, `findings` or `analysis`
+  (`project-structure` §4), because Claude Code refuses a subagent's Write of such a `.md`
+  file.
+
+### Removed
+- The skills `plan-change`, `sync-design`, `review-plan`, `map-project`, `finalize-package`,
+  `review-package`, `test-section`, `implement-section`, `review-section` and
+  `reserved-skill-names`.
+- The `surface.md`, `integration.md` and `contract-delta.md` templates; `assessment.md`;
+  `docs/plans/`; **As shipped** sections; the spine; the reviewer's axis 0 and the followups
+  queue; the tester's reconcile mode.
+
 ## [0.6.0] - 2026-09-22
 
 Every review-and-fix loop gets an exit, and the two things that kept one package looping —

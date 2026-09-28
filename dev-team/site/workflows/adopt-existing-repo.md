@@ -1,65 +1,71 @@
 # Adopting an existing repo
 
-For a repo that has code but no `docs/`, or whose canonical docs have drifted from the code far
-enough to mislead. Two levels, one run each, bottom-up.
+For a repo that has code but no `docs/`, or whose contracts have drifted from the code far
+enough to mislead. One command writes every contract; then the ordinary loop walks each section
+through a document-mode design, a green intent suite, a README and a review.
 
-Every run ends in one commit of the files it wrote, and refuses to start on `main`/`master` or
-with other uncommitted changes — so commit or stash your own work and switch to a feature
-branch first.
+Every run starts with the run gate: not `main`/`master`, and no uncommitted change outside the
+hand-edited ledgers. Commit your own work and switch to a feature branch first.
+
+## 1. Map the repo
 
 ```
-/dev-team:map-project [scope]
+/dev-team:map-repo [scope]
 ```
 
-Forks into the **architect** at repo scope, document mode. It spawns `Explore` to map the repo —
-packages, the imports between them, entry points, top-level `__init__.py` exports, the shapes
-crossing package boundaries, config, error and logging patterns, toolchain — verifies the paths
-it cites, and writes `docs/assessment.md`. Then the interview rule: the package decomposition
-(these become permanent directory names), which conventions are intentional, what is out of
-scope. If it has unasked questions it stubs them in `docs/decisions.md` and **stops** (see
-**Questions** on the home page); otherwise it writes `docs/architecture.md` describing the repo
-**as it is** — a cyclic import graph is recorded as cyclic, a missing convention as missing —
-seeds the ledger, and files a follow-up for every concrete defect it found. Nothing in this run
+Forks into the **architect**, in three phases:
+
+1. **The packages.** An `Explore` pass lists the packages — each with its path and what it
+   holds. On a **monolith**, one installable tree with no package boundaries, it proposes the
+   split instead: one `D<n>` stub per proposed boundary, with the directories each package would
+   own, and it **stops**. Package names become directory names and shell arguments, so they are
+   never invented silently. Answer in `docs/decisions.md`, or re-run as-is to accept the
+   proposal.
+2. **One contract per package, in parallel.** It spawns one `dev-team:architect` per package in
+   one message, each writing `docs/packages/<pkg>/contract.md` from that package's code with
+   the same template a planned package gets — the Sections table ending with `surface`,
+   Section interfaces, Pipelines, Public surface, Consumes. Nothing downstream can tell an
+   adopted package from a planned one.
+3. **The repo contract.** From the contracts and the import graph (`uv run lint-imports` when
+   configured, else a read-only grep of imports): `docs/architecture.md`, describing the repo
+   **as it is** — a cyclic import graph is recorded as cyclic, a missing convention as missing.
+
+Defects seen while mapping go to `docs/followups.md`, the backlog. Nothing in this run
 proposes a change.
 
-On a repo whose canonical docs already exist, it treats each as a claim to check against the
-code: keeps wording the code agrees with, rewrites what the code contradicts, removes what no
-longer exists, and reports every edit as *stale doc corrected* or *code looks wrong, filed as a
-follow-up*.
+On a **re-map**, every existing contract line is a claim to check against the code: wording the
+code agrees with is kept, what it contradicts is rewritten, what no longer exists is removed,
+and each correction is reported as *stale doc corrected* or *code looks wrong, filed*. A 0.6
+repo, with its `surface.md`, `integration.md` and `docs/plans/`, migrates this way; the old files
+stay on disk and nothing reads them.
 
-With no brief to map from, the Packages table's `covers` column is `—`; a re-map of a repo that
-has a brief keeps each row's `covers` and corrects it where the code disagrees.
-
-Then, per package, lowest in dependency order first:
+## 2. Walk each package, lowest first
 
 ```
-/dev-team:plan-package <pkg>
+/dev-team:run-package data
 ```
 
-runs in **document mode** because the package directory has code: the assessment is a survey of
-that code, the contract is written as it is, every designer runs `Mode: document`, the
-integration doc gains a **Coverage** heading, and `surface.md` is transcribed from the top-level
-`__init__.py`, entry points, and CLI as they exist. If the top-level `__init__.py` already
-re-exports, `interface.md` is written too and the package counts as shipped. If it is empty,
-`surface.md` is marked *inferred*, no `interface.md` is written, and the package is not shipped
-until `/dev-team:finalize-package` runs. What looks wrong becomes a follow-up addressed to its section.
+The driver walks the sections in dependency order, as for new code, with two differences
+because the code already exists:
 
-From here the repo is on the same loop as a new one: answer decisions, then
-`/dev-team:implement-section` for follow-ups and `/dev-team:plan-change` for anything that alters a
-shipped surface. Expect blockers on the first implement run — unanswered questions with no
-fallback assumption stop the implementer by design.
+- the designer runs in **`document`** mode: code at the path and no design, so the design
+  describes what is there;
+- the tester expects its intent suite **green** on adopted code. A test that fails is either a
+  design that misread the code or code that is wrong — it files a `spec-change:design` with the
+  evidence rather than guessing which.
 
-## New scope on an adopted repo
+The implementer adds the section README and unit tests and makes the suite pass; the reviewers
+review. The `surface` section writes `interface.md` for what the package already exports, and
+the package ships like any other.
 
-A change to existing behaviour is `/dev-team:plan-change`. New capabilities — packages the
-repo does not have yet — start from a brief:
+Expect **blocks** on an adopted repo: open questions with no assumption stop a section by
+design. Answer them when the driver asks, or in `docs/decisions.md`, and re-run.
+
+## 3. The docs
 
 ```
-/dev-team:shape-brief
-/dev-team:plan-repo
+/dev-team:finalize-project
 ```
 
-`shape-brief` seeds its capability map from the mapped contract, marking what already exists,
-and you add what is new. `plan-repo` then runs in **revise** mode, because the contract was
-not written from a brief: every mapped package with code is bound, so its shapes stay exactly
-as mapped, and the run adds the new packages and fills in `covers` on every row.
+Package READMEs, `docs/index.md` and the root README, with **Known gaps** from
+`status.py --repo` and the backlog.

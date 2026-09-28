@@ -19,20 +19,12 @@ workflow_skills_order:
   - extract-legacy
   - plan-repo
   - plan-package
-  - review-plan
-  - run-package           # drives test-section → … → sync-design for one package
+  - run-package           # the driver: every section of one package to DONE, then sync-plan
   - probe-source
-  - test-section
-  - implement-section
-  - review-section
-  - finalize-package
-  - review-package
-  - sync-design
-  - plan-change
   - sync-plan
-  - finalize-project
   - map-repo
-  - status                # not a step — the checklist you run between any two of them
+  - finalize-project
+  - status                # not a step — where everything stands, and the next command
 
 # Extra files rendered verbatim as code pages under "Rules and config".
 config_files:

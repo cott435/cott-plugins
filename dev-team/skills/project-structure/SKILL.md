@@ -30,7 +30,7 @@ applies — the size limits, config placement, and naming are about keeping file
 comprehensible, and they hold in any layout.
 
 Migrating a flat repo to `src/`, or a single package to a workspace, is a real change with real
-value, but it is a change: it belongs in a `/dev-team:plan-change` run of its own, never smuggled into a
+value, but it is a change: it belongs in a change of its own (`/dev-team:plan-repo` or `/dev-team:plan-package` writes the change file), never smuggled into a
 section build. If a repo's layout is causing actual problems, file a follow-up saying so.
 
 ## 1. Layout
@@ -56,8 +56,8 @@ Multi-package repository — a `uv` workspace, one directory per package under `
         └── src/<pkg>/
             ├── __init__.py     THE PUBLIC SURFACE: re-exports + __all__ (see below)
             ├── configs.py      all settings for this package
-            ├── cli.py          CLI commands; one function per command (finalize-package)
-            ├── pipelines/      cross-section flows; written by /dev-team:finalize-package
+            ├── cli.py          CLI commands; one function per command (surface section)
+            ├── pipelines/      cross-section flows; written by the surface section
             └── <section>/
                 ├── __init__.py EMPTY
                 ├── README.md   the section README
@@ -73,8 +73,8 @@ Rules:
 - `src/` layout. Nothing importable lives at the repository root.
 - **The top-level `__init__.py` of a package is its public surface.** It exposes only the
   names consumers outside the package need, listed in `__all__`, resolved lazily so importing
-  the package costs nothing until a name is used. It is written by `/dev-team:finalize-package` from the
-  package's `surface.md`, and by nothing else. **Every nested `__init__.py` is empty.**
+  the package costs nothing until a name is used. It is written by the implementer of the package's `surface`
+  section, from that section's design, and by nothing else. **Every nested `__init__.py` is empty.**
   *Project convention, not Google's* — the pattern and the reasoning are in `python-style-guide`.
 - **Imports inside a package** come from the defining module: `from data.ingest.loaders import
   load_bars`, never `from data import load_bars` from within `data`. **Imports across packages**
@@ -88,10 +88,10 @@ Rules:
   `<pkg>-<verb> = "<pkg>.cli:<function>"`. An entry point must be importable from the installed
   package, and a file outside `src/<pkg>/` is not — a `scripts/` directory beside `src/` looks
   tidy and cannot be registered. A command function does argument handling and one call into
-  what `surface.md` says it runs — a pipeline, or a single section entry point; no logic. The
+  what the `surface` section's design says it runs — a pipeline, or a single section entry point; no logic. The
   one-off operational task is a command like any other: schema init, a backfill, a cache
   rebuild live in the section that owns the data, and the command is how you run them. Before
-  the surface exists, `/dev-team:finalize-package` has not run and there is no `cli.py` yet —
+  the `surface` section is built there is no `cli.py` yet —
   call the section's function directly (`uv run --package <pkg> python -c "…"`, or a test
   fixture) and let the command arrive with the surface.
 - Tests mirror source paths: `src/data/ingest/parsers.py` → `tests/unit/ingest/test_parsers.py`.
@@ -140,14 +140,20 @@ nested field. The parent stays the single entry point; modules import the subset
 need from it rather than constructing their own.
 
 The designer names which settings go in a section's `configs.py` as part of the Module plan.
-`/dev-team:finalize-package` composes the section settings into the package's. For the code, invoke
+The `surface` section composes the section settings into the package's. For the code, invoke
 `python-implementation`.
 
 ## 4. Module and package naming
 
 - Packages and sections: a single lowercase token, `[a-z0-9-]+` — they become directory names
-  and skill arguments (`/dev-team:implement-section data/ingest`). Modules: `snake_case` nouns —
+  and skill arguments (`/dev-team:run-package data ingest`). Modules: `snake_case` nouns —
   `indicators.py`, `bars/`.
+- A section never starts with `report`, `summary`, `findings` or `analysis`, and neither does
+  a source token. Claude Code refuses a subagent's Write of any `.md` file whose name starts
+  with one of those words, so the designer could never write `design/report.md` and the
+  researcher never `docs/sources/summary.md`. Name the thing reported, in one word
+  that is also a valid Python package name: `digest`, `markdown`, `tearsheet`. A package may be named `analysis`; its files are `contract.md` and
+  `interface.md`.
 - No `utils`, `helpers`, `misc`, or `common` at any level, except a shared package in a
   multi-package repo. A file literally named `utils.py` is a review finding once it passes 100
   lines, because nobody can tell you what belongs in it.

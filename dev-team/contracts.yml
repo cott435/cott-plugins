@@ -39,13 +39,14 @@ forbid:
 
   - name: no unprefixed plugin command is typeable
     # Plugin skills are always namespaced /dev-team:<name>, so a bare /<name> is a command
-    # nobody can run. Structural rather than a list of the 21 names: any slash-initial token
+    # nobody can run. Structural rather than a list of the skill names: any slash-initial token
     # with a hyphen, plus /status, that is not already prefixed. Claude Code's own commands
-    # have no hyphen (/agents, /model, /plugin) and so never match.
+    # have no hyphen (/agents, /model, /plugin) and so never match. README.md is in scope with
+    # every other authored file.
     #
     # Both exceptions are in the pattern, not in `unless`, because `unless` exempts the whole
-    # line: /reload-plugins appears in all 14 guard blocks, and a bare command written beside
-    # one would have been exempted with it. /reload-plugins is Claude Code's own command.
+    # line: a bare command written beside /reload-plugins would have been exempted with it.
+    # /reload-plugins is Claude Code's own command.
     pattern: '(^|[\s"(\[`])/(?!dev-team:|reload-plugins)(?:[a-z][a-z0-9]*-[a-z0-9-]+|status)\b'
 
   - name: no agent or skill stages everything
@@ -60,7 +61,7 @@ forbid:
     # A forked architect or curator never receives its backgrounded agents' completion
     # notifications — they go to the conversation that forked it — so every spawn is
     # run_in_background: false (each agent's Hard rules). Eval D run 2 ended on `echo waiting`
-    # with integration.md unwritten: evals/2026-09-18-d2-foreground-fanout.md.
+    # with its fan-out's results never read: evals/2026-09-18-d2-foreground-fanout.md.
     pattern: 'background-task notification|completion notification is your cue|[Cc]ontinuing after backgrounded'
     files: ['agents/*.md', 'skills/**/*.md']
 
@@ -320,12 +321,15 @@ headings:
   - name: the driver's state names are the ones status.py derives
     # run-package branches on the state column of status.py's rows. A renamed or dropped state
     # leaves the driver's ready-set rule naming a state no row ever shows, and the section
-    # sits there. The owner is the module docstring's numbered rule list.
+    # sits there. The owner is the module docstring's numbered rule list. The README's
+    # **The states** table is the one copy outside the script, for the user.
     owner: skills/status/scripts/status.py
     owner_span: ['1. **BLOCKED**', 'Ready:']
     readers:
       - file: skills/run-package/SKILL.md
         cites: ['BLOCKED', 'PLAN', 'PROBE', 'DESIGN', 'TEST', 'IMPLEMENT', 'REVIEW', 'FIX n', 'DONE']
+      - file: README.md
+        span: ['## The states', 'A package is **shipped**']
 
   - name: every field the driver sends the researcher is one the researcher's Inputs defines
     # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.

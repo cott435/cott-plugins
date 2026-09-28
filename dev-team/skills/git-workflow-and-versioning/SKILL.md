@@ -39,7 +39,7 @@ section disagrees, this section wins.
    | Run | `<scope>` | Summary, example |
    |---|---|---|
    | designer | `<pkg>/<section>` | `design` · `design (delta)` · `design (document)` · `spec-change (contract)` · `stopped for D<n>` — `data/ingest: design` |
-   | tester | `<pkg>/<section>` | `<n> intent tests from design` · `regenerate <k> intent tests` — `data/ingest: 14 intent tests from design` |
+   | tester | `<pkg>/<section>` | `<n> intent tests from design` · `regenerate <k> intent tests` · `intent tests current with design` — `data/ingest: 14 intent tests from design` |
    | implementer | `<pkg>/<section>` · `<pkg>/surface` | what was built — `data/ingest: parse trades.csv into Trade rows` |
    | reviewer | `review <pkg>/<section>` | the round and verdict — `review data/ingest r1-a: request changes (2 critical)` |
    | researcher | `probe <source>` | what was probed, for whom — `probe polygon: aggregates for data/ingest` |

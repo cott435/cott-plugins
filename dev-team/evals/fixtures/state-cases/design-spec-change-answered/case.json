@@ -1,0 +1,18 @@
+{
+  "note": "an open spec-change:design the design was rewritten after: answered, so the tests are next",
+  "steps": [
+    {"do": "base"},
+    {"do": "design", "section": "ingest"},
+    {"do": "tests", "section": "ingest"},
+    {"do": "deviation", "section": "ingest", "kind": "spec-change:design", "status": "open"},
+    {"do": "edit", "path": "docs/packages/data/design/ingest.md", "append": "\n- the entry point, corrected\n", "message": "data/ingest: design"}
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "TEST",
+    "evidence": "^design [0-9a-f]{7} newer than tests [0-9a-f]{7}$",
+    "contains": ["ingest · TEST · design"],
+    "absent": ["spec-change:design"]
+  }
+}

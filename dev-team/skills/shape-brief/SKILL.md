@@ -37,7 +37,7 @@ Read what exists before asking anything:
 | `docs/brief.md` with `Status: draft` | **Resume.** Pick up at the first phase whose section is empty or marked pending. |
 | `docs/brief.md`, no `docs/architecture.md` | **Rework.** The brief was never planned; edit it with the user. |
 | `docs/brief.md` and `docs/architecture.md` | **Correct or add.** Read the contract as the picture the brief produced, and ask which applies: something in it is wrong (correct), or the project is growing (add). |
-| `docs/architecture.md` from `/dev-team:map-project`, no brief | **Existing code.** Seed the map with what the contract says already exists, marked *exists*. |
+| `docs/architecture.md` from `/dev-team:map-repo`, no brief | **Existing code.** Seed the map with what the contract says already exists, marked *exists*. |
 
 Also read, when present: `docs/decisions.md` entries tagged `Raised by: /dev-team:plan-repo`
 (the questions the brief left open last time — settle them here), `docs/assessment.md`, and
@@ -53,7 +53,8 @@ what is there (see **Writing**) — unless the addition changes existing scope, 
 is a correction.
 
 A change to behaviour that has already **shipped** is neither: it is
-`/dev-team:plan-change`. Say so, and offer to draft its argument instead.
+`/dev-team:plan-package <pkg>` with the change as its argument, which writes a change file.
+Say so, and offer to draft its argument instead.
 
 ## Phases
 

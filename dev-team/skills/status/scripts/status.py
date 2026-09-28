@@ -16,16 +16,18 @@ A section is in exactly one state, decided in this order, first match wins:
 4. **DESIGN** — no design at `docs/packages/<pkg>/design/<section>.md`; or an open
    `spec-change:design` entry; or an open `docs/changes/<slug>.md` whose **Affected sections**
    names the section and is newer than the design; or a probe doc the row names is newer than
-   the design.
+   the design. A `spec-change:design` entry counts only until the design is committed after
+   the commit that added it: the designer's rewrite answers it, and nobody sets its `Status:`.
 5. **TEST** — no `tests/intent/<section>/` under the package root; or the design is newer than
-   the intent tree; or an open `spec-change:test` entry; or an `approved` deviation entry whose
+   the intent tree; or an open `spec-change:test` entry the intent tree has not been committed
+   after (the tester's regeneration answers it); or an `approved` deviation entry whose
    `Clause:` is cited by an intent test docstring that carries no `(deviation ` tag
    (regenerate).
 6. **IMPLEMENT** — no README (`<section path>/README.md`; for `surface`,
-   `docs/packages/<pkg>/interface.md`); or the intent tree, regeneration commits skipped, is
-   newer than the README.
+   `docs/packages/<pkg>/interface.md`); or the intent tree, regeneration and `intent tests current with design`
+   commits skipped, is newer than the README.
 7. **REVIEW** — no review round, or the section's code (its path, `tests/unit/<section>`,
-   `tests/intent/<section>` less regeneration commits, its README) is newer than the newest
+   `tests/intent/<section>` less those same commits, its README) is newer than the newest
    round's `Commit:`, or the newest round's verdict is `spec-change` with no open entry left.
 8. **FIX n** — the newest round `n` says `request changes`, the cap is not hit, and the code is
    not newer than its `Commit:`.
@@ -187,7 +189,7 @@ def uncommitted(*paths: Path | str) -> bool:
 
 
 def _is_regen(summary: str, pkg: str, section: str) -> bool:
-    return re.match(rf"{re.escape(pkg)}/{re.escape(section)}: regenerate \d+ intent tests", summary) is not None
+    return re.match(rf"{re.escape(pkg)}/{re.escape(section)}: (regenerate \d+ intent tests|intent tests current with design)", summary) is not None
 
 
 def _log(paths: tuple[Path | str, ...], since: str | None = None) -> list[tuple[str, str]]:
@@ -201,7 +203,8 @@ def changed_since(sha: str, *paths: Path | str, skip_regen: tuple[str, str] | No
     """The first commit after sha touching paths ('U' for uncommitted changes), or None.
 
     sha not in this history counts as changed: its sha is returned. With skip_regen=(pkg,
-    section), commits whose summary is that section's `regenerate <k> intent tests` are skipped.
+    section), commits whose summary is that section's `regenerate <k> intent tests` or `intent
+    tests current with design` are skipped.
     """
     if uncommitted(*paths):
         return UNCOMMITTED
@@ -425,6 +428,28 @@ def open_spec_changes(pkg: str, section: str | None = None) -> list[dict[str, st
     return [e for e in deviation_entries(pkg, section) if e["kind"].startswith("spec-change") and _status(e) == "open"]
 
 
+def entry_rev(entry: dict[str, str]) -> str | None:
+    """The commit that added entry's heading to docs/deviations.md; 'U' when not yet committed."""
+    heading = f"## {entry['heading']}"
+    sha = (git("log", "--reverse", "--format=%H", "-S", heading, "--", "docs/deviations.md") or "").split("\n")[0]
+    return sha or UNCOMMITTED
+
+
+def answered(entry: dict[str, str], rev: str | None) -> bool:
+    """True when a spec-change:design or :test entry is answered: rev (the design, or the intent
+    tree) was committed after the entry. A contract-level entry is closed by the architect only."""
+    if entry["kind"] not in ("spec-change:design", "spec-change:test"):
+        return False
+    return _newer(rev, entry_rev(entry))
+
+
+def live_spec_changes(pkg: str, section: str) -> list[dict[str, str]]:
+    """Open spec-change entries for one section that no later design or intent commit answered."""
+    p = _paths(pkg, section)
+    revs = {"spec-change:design": _rev(p["design"]), "spec-change:test": _rev(p["intent"])}  # type: ignore[arg-type]
+    return [e for e in open_spec_changes(pkg, section) if not answered(e, revs.get(e["kind"]))]
+
+
 def clause_key(text: str) -> tuple[str, str] | None:
     """(n, item) of a `design §<n> <item>` citation, case-insensitive; None when there is none."""
     m = re.search(r"design\s*§\s*(\d+)\s+`?([^\s:;,`]+)", text, re.I)
@@ -634,7 +659,7 @@ def section_state(pkg: str, section: str) -> tuple[str, str]:
         k = _prior_unfixed(fields)
         return "BLOCKED", f"review r{n} request changes" + (f", {k} prior unfixed" if k else "") + " (cap)"
 
-    spec = open_spec_changes(pkg, section)
+    spec = live_spec_changes(pkg, section)
     kinds = {e["kind"] for e in spec}
 
     # 2. PLAN
@@ -733,7 +758,7 @@ def package_table(pkg: str) -> list[dict[str, object]]:
         deps = [d for d in _names(r["depends on"]) if d in names and d != sec]
         ready = state not in ("DONE", "BLOCKED") and all(states[d][0] == "DONE" for d in deps)
         n = rounds(pkg, sec)
-        spec = ", ".join(sorted({e["kind"] for e in open_spec_changes(pkg, sec)})) or "—"
+        spec = ", ".join(sorted({e["kind"] for e in live_spec_changes(pkg, sec)})) or "—"
         out.append({"section": sec, "state": state, "evidence": ev, "ready": ready,
                     "round": n, "spec": spec, "commit": _short(_section_rev(pkg, sec))})
     return out
@@ -962,7 +987,7 @@ def repo_report() -> list[str]:
         else:
             pk.append(f"{pkg}: building ({done}/{len(table)} DONE)")
         secs += [f"{pkg}/{r['section']}: {r['state']}" for r in table if r["state"] != "DONE"]
-        specs += [e["heading"] for e in open_spec_changes(pkg)]
+        specs += [e["heading"] for r in table for e in live_spec_changes(pkg, str(r["section"]))]
     for c in change_files():
         if str(c["status"]).startswith("open"):
             chg.append(str(c["slug"]))
