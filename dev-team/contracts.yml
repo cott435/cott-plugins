@@ -29,13 +29,13 @@ forbid:
       - 'scripts/status\.py'
       - 'plugin-dev/scripts'
 
-  - name: docs/api/<pkg>.md is never credited to finalize-project alone
-    # The implementer writes it in surface mode as each package ships; finalize-project
-    # regenerates index.md and fills gaps.
+  - name: the package API page is never credited to finalize-project alone
+    # The surface section's implementer writes it as each package ships; finalize-project
+    # lists a missing one under Known gaps and writes none.
     pattern: 'api/<pkg>\.md|api/\$pkg\.md|api/data\.md'
     near: 40
     all_of: ['finalize-project']
-    unless: ['finalize-package']
+    unless: ['surface section', 'the implementer', 'Known gaps']
 
   - name: no unprefixed plugin command is typeable
     # Plugin skills are always namespaced /dev-team:<name>, so a bare /<name> is a command

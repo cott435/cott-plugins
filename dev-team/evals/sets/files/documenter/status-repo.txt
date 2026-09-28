@@ -1,12 +1,14 @@
 packages:
-  report: no contract (docs/packages/report/contract.md missing)
+  - data: shipped
+  - analysis: building (1/2 DONE)
+  - report: no contract
 sections:
-  analysis/surface: DESIGN (no design at docs/packages/analysis/design/surface.md)
+  - analysis/surface: DESIGN
 decisions:
-  D2 open: do we keep raw vendor payloads after cleaning?
+  - D2: do we keep raw vendor payloads after cleaning?
 spec-changes:
-  none
+  - none
 changes:
-  none
+  - none
 backlog:
-  data/clean: 1 unchecked
+  - data/clean: 1

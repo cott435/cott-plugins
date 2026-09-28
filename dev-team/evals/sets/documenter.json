@@ -18,7 +18,7 @@
         "outputs/packages/data/README.md exists and lists the `data-daily` command with its entry point `data.cli:daily` and at least one of its two arguments, matching interface.md's CLI commands table",
         "No output file mentions a `Scripts` heading, and no Known gaps entry claims that `interface.md` is missing one",
         "Known gaps names the `data/clean` section as having no README",
-        "Known gaps names D2 as an open decision; D1 is not reported as decided-but-unbuilt, since it carries an Applied line",
+        "Known gaps names D2 as an open decision; D1 appears under Key decisions with its decision (the paid tier) and is not reported anywhere as decided-but-unbuilt, since it carries an Applied line",
         "The README's account of the daily pipeline's failure behavior matches interface.md's Pipelines wording \u2014 three retries on a vendor 429, then VendorUnavailable \u2014 rather than anything read out of the section's source"
       ],
       "added_in": "0.9-evals phase 6"

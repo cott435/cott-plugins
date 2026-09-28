@@ -106,3 +106,45 @@ trailer `Dev-Team-Run: finalize-project`); return.
 - `check-contracts` all PASS; `build-site` exits 0.
 - Logs for 9.1–9.3 in `evals/README.md`.
 - The ledger row for phase 9 reads `done`.
+
+## Deviations
+
+- **The evals 1–2 bar has no number to meet.** The note holds evals 1–2 to *the 2026-09-20
+  log's* pass rate. That log wrote `evals/sets/documenter.json` and never ran it, so it records
+  no documenter rate. What was done: the bar was taken against this iteration's own
+  `old_skill` baseline (`af08482`, the 0.6 documenter). Both evals matched it: 5/5 and 4/4.
+- **`status-repo.txt` needed more than the overlay to regenerate.** The note says to regenerate
+  it from the real `status.py --repo` over the `repo-gaps` overlay. Run over that union alone,
+  the script reads every package as `planned` and every section as PROBE or DESIGN. The union
+  has the documents the documenter reads but none of the loop's state: no designs, intent
+  trees, reviews, or git order. So it cannot give the `shipped` and `building (1/2 DONE)`
+  statuses eval 3 measures. What was done: a new `evals/sets/files/documenter/build_status_repo.py`
+  builds the union in a scratch git repo. It adds that state one commit per loop step (`data`
+  shipped, `analysis/features` DONE, `analysis/surface` undesigned), then writes the script's
+  real stdout. The file's format is now the script's (`  - <item>` under each group label),
+  and `report` reads `no contract`, which the documenter writes as `planned`, per this note's
+  decision. `repo-gaps/README.md` now names the builder.
+- **The Known gaps document checks gained three items.** The note lists five checks after the
+  script's block. A sixth, the unchecked `docs/followups.md` lines, is the script's `backlog:`
+  group, so it is a sentence under the script item rather than a separate check. Added, each
+  kept from the 0.6 documenter:
+  - *a section with no README*, beside *a README missing one of the seven headings*. Eval 1
+    checks it, and the script's `sections:` group gives a state, not the missing file.
+  - *a `decided` decision with no `Applied:` line*, which the unchanged decisions-ledger
+    paragraph already sends to Known gaps.
+  - *the docs build failing*, which step 4 of `finalize-project` lists there.
+- **The return starts `Result:`.** The note's specification does not say it. It follows the
+  design's *What must not break* rule that every agent's return begins `Result: <value>`.
+  Both files say it, and the 9.3 run returned `Result: done`.
+- **One fix to meet 9.2.** Iteration 1's eval 3 was 5/6. `report`'s Packages cell was
+  `planned (no contract yet)`, not `planned`. `agents/documenter.md`'s **Assembling** now says
+  the cell holds the script's word and nothing after it. Iteration 2 (eval 3, both
+  configurations) was 6/6 against 2/6.
+- **The `Home` nav entry is left undone.** The note says `finalize-project` makes no
+  `mkdocs.yml` edit, and the write guard (phase 2) refuses the documenter that file.
+  `workspace-scaffold` §4, as phase 4 left it, says `finalize-project` "writes `index.md`,
+  adds `Home` and keeps the nav in sync". The note was followed: `docs/index.md` is written
+  and the nav is not touched. A strict build does not fail on a page missing from the nav
+  (mkdocs reports it at INFO). The contradiction is a ledger *noticed* line for phase 11.
+- **Commit message** uses `(phase 9)`, not the note's `(phase 09)`, to match the ledger's
+  grep, as phases 4–8 did.
