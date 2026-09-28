@@ -14,8 +14,8 @@
     {
       "name": "dev-team",
       "source": "./dev-team",
-      "description": "Plan, implement, review and document Python monorepo packages section by section, through eight specialist subagents, a tester that writes tests from the design, and a driver that runs a package end to end.",
-      "version": "0.6.0"
+      "description": "Plan, build, review and document Python monorepo packages section by section: one driver over derived state, six specialist agents, hooks for every mechanical check.",
+      "version": "1.0.0"
     }
   ]
 }

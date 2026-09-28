@@ -12,7 +12,7 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
-## [Unreleased]
+## [1.0.0] - 2026-09-28
 
 The remake. One driver over derived state, six roles that each answer one question, and hooks
 for every mechanical check. The loop in 0.6 did not converge: a wrong contract left the
@@ -84,8 +84,8 @@ tests a machine could have run. Built in eleven phases on `dev-team-remake`
   colliding skill name instead of refusing it (31dbc61). `CLAUDE.md`'s three-file rule is two
   files.
 - `README.md`, `VERSIONING.md`, `site/flow.md` and the five workflow pages rewritten; the
-  manifest description updated.
-- Found by the end-to-end eval, fixed before release: an open `spec-change:design` or
+  manifest description updated (1a28944).
+- Found by the end-to-end eval, fixed before release (1a28944): an open `spec-change:design` or
   `spec-change:test` entry is answered by the next commit of the design or the intent tests,
   derived by `status.py` (nothing ever set its `Status:`, so the section re-opened forever); a
   tester run that finds no test to change still commits, stamping `conftest.py` with the design
@@ -95,7 +95,7 @@ tests a machine could have run. Built in eleven phases on `dev-team-remake`
   file.
 
 ### Removed
-- The skills `plan-change`, `sync-design`, `review-plan`, `map-project`, `finalize-package`,
+- The skills (b4dd3aa, 31dbc61, 1a28944) `plan-change`, `sync-design`, `review-plan`, `map-project`, `finalize-package`,
   `review-package`, `test-section`, `implement-section`, `review-section` and
   `reserved-skill-names`.
 - The `surface.md`, `integration.md` and `contract-delta.md` templates; `assessment.md`;
