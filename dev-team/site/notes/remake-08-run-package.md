@@ -183,3 +183,48 @@ recorded as this phase's edit to `agents/*.md`). The `plan-loop-exit` claim is r
 - `check-contracts` all PASS with seven new claims counted; `build-site` exits 0.
 - Logs for 8.1–8.3 in `evals/README.md`; 8.2 names its iteration directory.
 - The ledger row for phase 8 reads `done`.
+
+## Deviations
+
+- **Two agents had no `## Inputs` to convert.** The researcher's probe fields were a prose
+  sentence and the architect had none. The researcher gained `### Inputs` under **Probe mode**
+  (the seven fields plus `Run`); the architect gained `## Inputs` (`Package`, `Run`,
+  `Spec-change`). A driver spawn is a plain Agent call, so no skill body reaches the architect,
+  and the driver cannot chain a `disable-model-invocation` skill. The architect's **Inputs**
+  therefore says which procedure to run: with `Spec-change:`, package scope; without it,
+  close scope. It then reads that skill's `SKILL.md` itself and follows its **Spawned by
+  run-package** paragraph. The driver still points at no skill file (8.3 holds).
+- **`Run` is a numbered field in every Inputs list.** The designer, tester, reviewer and
+  researcher said only that "a `Run:` line may follow". The driver sends `Run:` on every block,
+  so the field claims need it owned.
+- **The field claims read the driver through `span`, not `cites`.** A `cites` list is checked
+  against the owner only, so no edit to the driver could fail it, and the note's plant goes in
+  the driver. Each role's block in the driver is a table whose bold first column lists the
+  fields it fills, and each claim's reader span is that role's `###` subsection.
+- **The note's plant cannot fail a field claim.** `Focus: correctnes` is a bad *value*, and a
+  headings claim compares names. Planted, it passed 36/36. A misspelled field name
+  (`**Focuss**`) fails the reviewer field claim. The note's plant is caught by an eighth new
+  claim, a `forbid` on any `Focus:` value outside the reviewer's four, which fails it at
+  `skills/run-package/SKILL.md:153`. That makes eight new claims, not seven: 37/37.
+- **Kinds are batched in a fixed order.** Step 4 says "all of one kind in one message" and
+  gives no order between kinds. Each iteration now spawns the first kind the ready set has, in
+  the order PLAN, PROBE, DESIGN, TEST, IMPLEMENT/FIX (the first row only), REVIEW, then
+  re-derives.
+- **A `spec-change` return is not relayed.** Per step 5, the architect's `Spec-change:` line
+  comes from `status.py`'s PLAN evidence (`open <heading>`), so the driver never reads past the
+  first line. The design's "relays the whole return for `spec-change`" is not followed.
+- **A return with no `Result:` first line is treated as `blocked`.** The researcher's probe
+  return has no such line (phase 3 noticed it); this sends it to **Asking**, not a hang.
+- **A cap's *one more round* is an in-run grant.** `status.py` checks the cap first, so a
+  section stays BLOCKED after the implementer's fix commit. The driver remembers the grant,
+  then spawns the implementer and a `full` reviewer for round `n+1`.
+- **Commit prefix `(phase 8)`**, not the note's `(phase 08)`, to match the ledger's grep.
+- **8.2 missed its bar after one fix.** The bar: every with_skill expectation passes. Iteration 1 was 18/20 against 11/20, with the eval-2 baseline contaminated because it read its own harness. It missed on two things: the round-1 reviewer pair went out in two messages (evals 2 and 3), and the tester's commit had no `Dev-Team-Run:` trailer (eval 2; `tester.md`, outside this phase's Files, logged in the ledger).
+  - **The fix.** One edit to `skills/run-package/SKILL.md`: the reviewer block and loop step 4.6 now say the pair is two Agent calls in the same assistant message.
+  - **Iteration 2.** 18/20 against 5/20, both plugin copies without `evals/`. The pair was batched in evals 1 and 2, but eval 3 again sent it one at a time: the driver announced both, emitted one, and said so afterwards. Eval 1's summary heading read `run-package data ingest:` instead of `run-package data:`.
+  - **Expectation corrected in the set.** The report-`Verdict:`-on-line-2 expectation was wrong, and correcting it changed one verdict.
+  - **Log.** `evals/2026-09-27-remake-phase8-run-package.md`.
+- **A second fix, on the user's call, and iteration 3.** The summary's first line now echoes the arguments as typed, `run-package <arguments as typed>:`. The note's `run-package <pkg>:` stays right for a whole-package run. The round-1 pair is still asked for in one message; when it goes out one at a time, the second must follow before any other spawn or `status.py` run, with the same round, neither handed the other's report. Three expectations were changed to match.
+  - **Iteration 3.** 18/20 against 6/20. Pair batched 3/3, heading 3/3.
+  - **Still missed.** The tester's trailer (eval 2 again; `tester.md`, outside the Files, logged), and the `uncommitted:` line, omitted once an implementer's commit had carried the driver's ledger edit (eval 3). The latter is kept as written: this note's **Decisions** list the file whenever the driver edited it.
+

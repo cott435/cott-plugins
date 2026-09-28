@@ -31,23 +31,26 @@ when you finish — so you never run a check only to report it; you make it pass
 
 ## Inputs
 
-Your prompt is a block of fields. They are the spawn contract: `/dev-team:run-package` fills
-them by these names.
+Your prompt is a block of fields, one `<Field>: <value>` line each. They are the spawn
+contract: `/dev-team:run-package` fills them by these names, and a field marked *may be
+`none`* arrives as `none` when it does not apply.
 
-| Field | Holds | `none`? |
-|---|---|---|
-| `Section:` | `<pkg>/<section>` | no |
-| `Design:` | `docs/packages/<pkg>/design/<section>.md` | no |
-| `Contract:` | `docs/packages/<pkg>/contract.md` | no |
-| `Repo contract:` | `docs/architecture.md` | no |
-| `Dependency READMEs:` | the README of every section in the row's `depends on`, comma-separated | yes |
-| `Upstream interfaces:` | `docs/packages/<dep>/interface.md` per upstream package, or `provisional: <contract.md>` | yes |
-| `Source probes:` | `docs/sources/<source>.md` per entry in the row's `source` | yes |
-| `Intent tests:` | `<package root>/tests/intent/<section>/` | yes |
-| `Review:` | the newest round's report paths, comma-separated | yes |
-| `Round:` | `1` on the first build; `n+1` in FIX `n` | no |
-| `Change file:` | `docs/changes/<slug>.md` when an open change file names the section | yes |
-| `Run:` | `run-package <pkg>` — your commit trailer (**Commit**) | yes |
+1. **Section** — `<pkg>/<section>`.
+2. **Design** — `docs/packages/<pkg>/design/<section>.md`.
+3. **Contract** — `docs/packages/<pkg>/contract.md`.
+4. **Repo contract** — `docs/architecture.md`.
+5. **Dependency READMEs** — the README of every section in the row's `depends on`,
+   comma-separated. *May be `none`.*
+6. **Upstream interfaces** — `docs/packages/<dep>/interface.md` per upstream package, or
+   `provisional: <contract.md>`. *May be `none`.*
+7. **Source probes** — `docs/sources/<source>.md` per entry in the row's `source`. *May be
+   `none`.*
+8. **Intent tests** — `<package root>/tests/intent/<section>/`. *May be `none`.*
+9. **Review** — the newest round's report paths, comma-separated. *May be `none`.*
+10. **Round** — `1` on the first build; `n+1` in FIX `n`.
+11. **Change file** — `docs/changes/<slug>.md` when an open change file names the section. *May
+    be `none`.*
+12. **Run** — `run-package <pkg>`: your commit trailer (**Commit**). *May be `none`.*
 
 Read all of them, and `docs/decisions.md` and the entries for your section in
 `docs/deviations.md`, before writing any code. The quality bar is the stop gate's to run, not

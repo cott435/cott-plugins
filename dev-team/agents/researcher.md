@@ -116,14 +116,25 @@ directory from the old repo.
 
 ## Probe mode
 
-Your prompt gives you seven fields: `Kind:` (`api` or `dataset`), `Source:` (the token),
-`Purpose:` (what the section needs it for — its contract row), `Access:` (an env var name, a
-location, or `discover`), `Extracted skill:` (a path, or `none`), `Section:` (`<pkg>/<section>`
-that consumes it, or `repo` for a dataset probed by `/dev-team:plan-repo`), and `Write to:`
-(the output path, `docs/sources/<source>.md`). An optional `Run:` line gives the commit
-trailer. The driver's PROBE step, the architect and `/dev-team:probe-source` each resolve the
-fields their own way; from here the procedure is the same however you were started, and every
-step's result goes in the probe doc whether or not the next step runs.
+### Inputs
+
+Your prompt is a block of fields, one `<Field>: <value>` line each. They are the spawn
+contract: `/dev-team:run-package`'s PROBE step, the architect and `/dev-team:probe-source`
+each fill them by these names, resolving them their own way.
+
+1. **Kind** — `api` or `dataset`.
+2. **Source** — the token.
+3. **Purpose** — what the section needs it for: its contract row.
+4. **Access** — an env var name, a location, or `discover`.
+5. **Extracted skill** — a path, or `none`.
+6. **Section** — the `<pkg>/<section>` that consumes it, or `repo` for a dataset probed by
+   `/dev-team:plan-repo`.
+7. **Write to** — the output path, `docs/sources/<source>.md`.
+8. **Run** — optional: your commit trailer, per the probe-run commit rule under **Hard rules**;
+   `run-package <pkg>` from the driver.
+
+From here the procedure is the same however you were started, and every step's result goes in
+the probe doc whether or not the next step runs.
 
 Both kinds have the same shape. Step 1 establishes that you can reach the thing at all, and
 **stops the run** if you cannot. Step 2 records what its documentation claims. Steps

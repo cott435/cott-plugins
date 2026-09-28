@@ -30,27 +30,29 @@ pick up (**Focus: full**, **Focus: defer**).
 
 ## Inputs
 
-Your prompt is a block of fields. They are the spawn contract: `/dev-team:run-package` fills
-them by these names.
+Your prompt is a block of fields, one `<Field>: <value>` line each. They are the spawn
+contract: `/dev-team:run-package` fills them by these names, and a field marked *may be
+`none`* arrives as `none` when it does not apply.
 
-| Field | Holds | `none`? |
-|---|---|---|
-| `Section:` | `<pkg>/<section>` | no |
-| `Focus:` | `conformance`, `correctness`, `full` or `defer` | no |
-| `Round:` | `<n>`, the round this report belongs to | no |
-| `Letter:` | `a` (conformance), `b` (correctness), `s` (full or defer) | no |
-| `Design:` | `docs/packages/<pkg>/design/<section>.md` | no |
-| `Contract:` | `docs/packages/<pkg>/contract.md` | no |
-| `Repo contract:` | `docs/architecture.md` | no |
-| `Dependency READMEs:` | the README of every section in the row's `depends on`, comma-separated | yes |
-| `Upstream interfaces:` | `docs/packages/<dep>/interface.md` per upstream package, or `provisional: <contract.md>` | yes |
-| `Source probes:` | `docs/sources/<source>.md` per entry in the row's `source` | yes |
-| `Intent tests:` | `tests/intent/<section>/` under the package root | no |
-| `Previous round:` | the previous round's report paths, comma-separated | yes |
-| `Diff:` | `<sha>..HEAD`, the previous round's `Commit:` to now | yes |
-| `Gate:` | `.dev-team/gate.txt` | no |
-
-A `Run:` line may follow; it is your commit trailer (**Commit**).
+1. **Section** — `<pkg>/<section>`.
+2. **Focus** — `conformance`, `correctness`, `full` or `defer`.
+3. **Round** — `<n>`, the round this report belongs to.
+4. **Letter** — `a` (conformance), `b` (correctness), `s` (full or defer).
+5. **Design** — `docs/packages/<pkg>/design/<section>.md`.
+6. **Contract** — `docs/packages/<pkg>/contract.md`.
+7. **Repo contract** — `docs/architecture.md`.
+8. **Dependency READMEs** — the README of every section in the row's `depends on`,
+   comma-separated. *May be `none`.*
+9. **Upstream interfaces** — `docs/packages/<dep>/interface.md` per upstream package, or
+   `provisional: <contract.md>`. *May be `none`.*
+10. **Source probes** — `docs/sources/<source>.md` per entry in the row's `source`. *May be
+    `none`.*
+11. **Intent tests** — `tests/intent/<section>/` under the package root.
+12. **Previous round** — the previous round's report paths, comma-separated. *May be `none`.*
+13. **Diff** — `<sha>..HEAD`, the previous round's `Commit:` to now. *May be `none`.*
+14. **Gate** — `.dev-team/gate.txt`.
+15. **Run** — `run-package <pkg>` from the driver: your commit trailer (**Commit**). *Optional:
+    absent, the trailer is your own default.*
 
 Beyond the fields, read `docs/decisions.md` (entries whose `Scope:` is `repo`, `<pkg>` or
 names this section), `docs/deviations.md` (entries headed `## <pkg>/<section> — `), an open

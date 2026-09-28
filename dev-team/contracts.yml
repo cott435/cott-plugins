@@ -116,19 +116,22 @@ forbid:
     unless: ['dev-team:architect', 'dev-team:researcher']
     files: ['agents/architect.md']
 
-  - name: the plan loop's exit is never bypassed by a bare next command
-    # review-plan once ended every `request changes` with plan-package, and plan-package ended
-    # with review-plan, with nothing counting rounds: six consecutive plan reviews on one
-    # package, each clearing the last and adding two. The reviewer's Rounds and convergence
-    # section is the exit; a sentence in either file that names plan-package as *the* next
-    # command on `request changes` without mentioning the loop bypasses it.
-    # The section and package loops have the same exit, so the same claim covers their
-    # fixing commands and their review skills.
-    pattern: 'on `request changes`, `/dev-team:(plan-package|implement-section|finalize-package)'
+  - name: the review loop's exit is never bypassed by a bare next command
+    # The cap lives in status.py (BLOCKED at round 3, or round 2 with a prior unfixed); a
+    # sentence in the driver or the reviewer that names the implementer as the next step on
+    # `request changes` without the cap bypasses it. Six consecutive plan reviews on one
+    # package, each clearing the last and adding two, is what an uncounted loop did in 0.5.
+    pattern: 'on `request changes`, (spawn|run) the implementer'
     near: 200
-    unless: ['Rounds and', 'converging', 'not converging', 'stop']
-    files: ['agents/reviewer.md', 'skills/review-plan/SKILL.md', 'skills/review-section/SKILL.md',
-            'skills/review-package/SKILL.md', 'skills/run-package/SKILL.md']
+    unless: ['cap', 'BLOCKED', 'status.py']
+    files: ['agents/reviewer.md', 'skills/run-package/SKILL.md']
+
+  - name: every Focus value the driver or the reviewer writes is one the reviewer runs
+    # The field claims check field names, not values: a `Focus: correctnes` line passes them
+    # and reaches a reviewer with no such section to follow. The four values are the
+    # reviewer's own `## Focus:` headings.
+    pattern: 'Focus: (?!(conformance|correctness|full|defer)\b)'
+    files: ['agents/*.md', 'skills/**/*.md']
 
   - name: every hook matcher and agent_type names an agent this plugin ships
     # A SubagentStop matcher or an agent_type test on a name with no agents/<name>.md never
@@ -313,6 +316,64 @@ headings:
         cites: ['Floor', 'Enforced', 'Guarded', 'Exceptions']
       - file: skills/workspace-scaffold/SKILL.md
         cites: ['Floor', 'Enforced']
+
+  - name: the driver's state names are the ones status.py derives
+    # run-package branches on the state column of status.py's rows. A renamed or dropped state
+    # leaves the driver's ready-set rule naming a state no row ever shows, and the section
+    # sits there. The owner is the module docstring's numbered rule list.
+    owner: skills/status/scripts/status.py
+    owner_span: ['1. **BLOCKED**', 'Ready:']
+    readers:
+      - file: skills/run-package/SKILL.md
+        cites: ['BLOCKED', 'PLAN', 'PROBE', 'DESIGN', 'TEST', 'IMPLEMENT', 'REVIEW', 'FIX n', 'DONE']
+
+  - name: every field the driver sends the researcher is one the researcher's Inputs defines
+    # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.
+    owner: agents/researcher.md
+    owner_span: ['### Inputs', 'From here the procedure is the same']
+    readers:
+      - file: skills/run-package/SKILL.md
+        span: ['### Researcher — PROBE', '### Designer — DESIGN']
+
+  - name: every field the driver sends the designer is one the designer's Inputs defines
+    # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.
+    owner: agents/designer.md
+    owner_span: ['## Inputs', '## Modes']
+    readers:
+      - file: skills/run-package/SKILL.md
+        span: ['### Designer — DESIGN', '### Tester — TEST']
+
+  - name: every field the driver sends the tester is one the tester's Inputs defines
+    # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.
+    owner: agents/tester.md
+    owner_span: ['## Inputs', 'What each document is for']
+    readers:
+      - file: skills/run-package/SKILL.md
+        span: ['### Tester — TEST', '### Implementer — IMPLEMENT']
+
+  - name: every field the driver sends the implementer is one the implementer's Inputs defines
+    # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.
+    owner: agents/implementer.md
+    owner_span: ['## Inputs', '## Order of authority']
+    readers:
+      - file: skills/run-package/SKILL.md
+        span: ['### Implementer — IMPLEMENT', '### Reviewer — REVIEW']
+
+  - name: every field the driver sends the reviewer is one the reviewer's Inputs defines
+    # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.
+    owner: agents/reviewer.md
+    owner_span: ['## Inputs', '## Order of authority']
+    readers:
+      - file: skills/run-package/SKILL.md
+        span: ['### Reviewer — REVIEW', '### Architect — PLAN']
+
+  - name: every field the driver sends the architect is one the architect's Inputs defines
+    # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.
+    owner: agents/architect.md
+    owner_span: ['## Inputs', '## Questions — the interview rule']
+    readers:
+      - file: skills/run-package/SKILL.md
+        span: ['### Architect — PLAN', '## Loop']
 
 # Every frontmatter key is one the platform documents and plugins honor. The key lists are
 # plugin-anatomy's `frontmatter-keys` blocks, not a copy here: a misspelled key (`allowed_tools`)

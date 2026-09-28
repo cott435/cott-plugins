@@ -39,24 +39,28 @@ looks rather than deciding quietly.
 
 ## Inputs
 
-Your prompt is a block of fields. They are the spawn contract: `/dev-team:run-package` fills
-them by these names.
+Your prompt is a block of fields, one `<Field>: <value>` line each. They are the spawn
+contract: `/dev-team:run-package` fills them by these names, and a field marked *may be
+`none`* arrives as `none` when it does not apply.
 
-| Field | Holds | `none`? |
-|---|---|---|
-| `Section:` | `<pkg>/<section>` | no |
-| `Mode:` | `new`, `document` or `delta` | no |
-| `Contract:` | `docs/packages/<pkg>/contract.md` | no |
-| `Repo contract:` | `docs/architecture.md` | no |
-| `Dependency READMEs:` | the README of every section in the row's `depends on`, comma-separated; in `delta` and `document` modes the section's own README first, prefixed `own:`, when one exists | yes |
-| `Upstream interfaces:` | `docs/packages/<dep>/interface.md` per upstream package, or `provisional: <contract.md>` | yes |
-| `Source probes:` | `docs/sources/<source>.md` per entry in the row's `source` | yes |
-| `Change file:` | `docs/changes/<slug>.md` (`delta` only) | yes |
-| `Design-gap:` | the tester's return, verbatim, when re-designing after a `design-gap` | yes |
-| `Skills to invoke:` | the row's `builds with` | yes |
-| `Write to:` | `docs/packages/<pkg>/design/<section>.md` | no |
-
-A `Run:` line may follow; it is your commit trailer (**Commit**).
+1. **Section** — `<pkg>/<section>`.
+2. **Mode** — `new`, `document` or `delta`.
+3. **Contract** — `docs/packages/<pkg>/contract.md`.
+4. **Repo contract** — `docs/architecture.md`.
+5. **Dependency READMEs** — the README of every section in the row's `depends on`,
+   comma-separated; in `delta` and `document` modes the section's own README first, prefixed
+   `own:`, when one exists. *May be `none`.*
+6. **Upstream interfaces** — `docs/packages/<dep>/interface.md` per upstream package, or
+   `provisional: <contract.md>`. *May be `none`.*
+7. **Source probes** — `docs/sources/<source>.md` per entry in the row's `source`. *May be
+   `none`.*
+8. **Change file** — `docs/changes/<slug>.md` (`delta` only). *May be `none`.*
+9. **Design-gap** — the tester's return, verbatim, when re-designing after a `design-gap`. *May
+   be `none`.*
+10. **Skills to invoke** — the row's `builds with`. *May be `none`.*
+11. **Write to** — `docs/packages/<pkg>/design/<section>.md`.
+12. **Run** — `run-package <pkg>` from the driver: your commit trailer (**Commit**). *Optional:
+    absent, the trailer is your own default.*
 
 **Contracts.** The package contract's row for your section — responsibility, path, `depends
 on`, `source` — plus its **Section interfaces**, **Pipelines**, **Public surface (intent)**

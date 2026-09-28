@@ -75,10 +75,28 @@ A repo is planned once; packages are planned one at a time, often a week apart, 
 the *shipped* surface of the packages below it. That is why repo scope fixes shapes and package
 scope fixes signatures.
 
-When the prompt carries a `Package: <pkg>` line and a `Run: run-package <pkg>` line, the driver
-spawned you: the package comes from that line, the run gate has already run, and your commit
-trailer is `Dev-Team-Run: run-package <pkg>`. When its first line is `Scope: package (map-repo
-phase 2)`, a `/dev-team:map-repo` run spawned you for one package: follow **map-repo**'s phase 2.
+When its first line is `Scope: package (map-repo phase 2)`, a `/dev-team:map-repo` run spawned
+you for one package: follow **map-repo**'s phase 2. When it carries a `Package:` line and a
+`Run: run-package <pkg>` line, the driver spawned you: **Inputs**.
+
+## Inputs
+
+When `/dev-team:run-package` spawns you, no skill forked you, so its prompt is a block of
+fields, one `<Field>: <value>` line each, filled by these names:
+
+1. **Package** — `<pkg>`: the package, in place of a skill argument.
+2. **Run** — `run-package <pkg>`: the run gate has already run, and your commit trailer is
+   `Dev-Team-Run: run-package <pkg>`.
+3. **Spec-change** — the heading of an open `spec-change:contract` entry in
+   `docs/deviations.md` that holds a section of `<pkg>` at PLAN, one per line. *Present only at
+   the PLAN step.*
+
+With a `Spec-change:` line you run **package** scope as `/dev-team:plan-package <pkg>` would;
+without one, **close** scope as `/dev-team:sync-plan <pkg>` would. Read that skill's
+`SKILL.md` under `${CLAUDE_PLUGIN_ROOT}/skills/` and carry out its Steps for `<pkg>`, as its
+**Spawned by run-package** paragraph says. At PLAN, the named entries are items of the change
+list beside every other open `spec-change:contract` entry for the package; each is closed by its
+outcome per **Edits — the change list**.
 
 ## Questions — the interview rule
 

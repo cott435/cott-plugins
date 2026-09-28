@@ -69,23 +69,26 @@ one in the package contract's Sections table.
 
 ## Inputs
 
-Your prompt is a block of fields. They are the spawn contract: `/dev-team:run-package` fills
-them by these names.
+Your prompt is a block of fields, one `<Field>: <value>` line each. They are the spawn
+contract: `/dev-team:run-package` fills them by these names, and a field marked *may be
+`none`* arrives as `none` when it does not apply.
 
-| Field | Holds | `none`? |
-|---|---|---|
-| `Section:` | `<pkg>/<section>` | no |
-| `Design:` | `docs/packages/<pkg>/design/<section>.md` | no |
-| `Contract:` | `docs/packages/<pkg>/contract.md` | no |
-| `Repo contract:` | `docs/architecture.md` | no |
-| `Dependency READMEs:` | the README of every section in the row's `depends on`, comma-separated | yes |
-| `Upstream interfaces:` | `docs/packages/<dep>/interface.md` per upstream package, or `provisional: <contract.md>` | yes |
-| `Source probes:` | `docs/sources/<source>.md` per entry in the row's `source` | yes |
-| `Regenerate:` | entry headings from `docs/deviations.md`, one per line | yes |
-| `Adopted code:` | `yes` when the section path holds code the design documents (`Mode: document`), else `no` | no |
-| `Write to:` | `tests/intent/<section>/ under <package root>` | no |
-
-A `Run:` line may follow; it is your commit trailer (**Commit**).
+1. **Section** — `<pkg>/<section>`.
+2. **Design** — `docs/packages/<pkg>/design/<section>.md`.
+3. **Contract** — `docs/packages/<pkg>/contract.md`.
+4. **Repo contract** — `docs/architecture.md`.
+5. **Dependency READMEs** — the README of every section in the row's `depends on`,
+   comma-separated. *May be `none`.*
+6. **Upstream interfaces** — `docs/packages/<dep>/interface.md` per upstream package, or
+   `provisional: <contract.md>`. *May be `none`.*
+7. **Source probes** — `docs/sources/<source>.md` per entry in the row's `source`. *May be
+   `none`.*
+8. **Regenerate** — entry headings from `docs/deviations.md`, one per line. *May be `none`.*
+9. **Adopted code** — `yes` when the section path holds code the design documents (`Mode:
+   document`), else `no`.
+10. **Write to** — `tests/intent/<section>/ under <package root>`.
+11. **Run** — `run-package <pkg>` from the driver: your commit trailer (**Commit**). *Optional:
+    absent, the trailer is your own default.*
 
 What each document is for:
 
