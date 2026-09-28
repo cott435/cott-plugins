@@ -22,7 +22,7 @@ rather than a copy. Installing this plugin is what makes the protocol apply.
 
 ## The skills
 
-Ten skills, in three groups by how they start. The table is the one list of them: a
+Eleven skills, in three groups by how they start. The table is the one list of them: a
 `contracts.yml` claim fails when a directory under `skills/` has no row here.
 
 | Skill | Starts | What it does |
@@ -36,12 +36,14 @@ Ten skills, in three groups by how they start. The table is the one list of them
 | `design-plugin` | when you type it | Turns an idea for a new plugin, or a change too big for one chat, into an approved design through discussion. Interviews you in rounds and composes the jobs into loops: each loop's unit of work, what makes that unit's output trustworthy, where every input it needs comes from (you, a file, or another cheaper loop), and the files where loops meet. Shows one flow chart per workflow plus a system chart for your approval, then the full writeup for your approval, and commits it as `site/notes/<slug>-design.md` on a new branch. |
 | `plan-phases` | when you type it, in a fresh chat | Splits the approved design into phases from the design file alone, without the discussion behind it. Asks about any decision the design did not take, shows the split for your yes, then writes an overview, one note per phase with its own evals table, and a progress ledger under `site/notes/`, and has one writer subagent per target write the eval sets in parallel. Commits all of it as phase 0. |
 | `run-phase` | when you type it, once per chat | Does the next unfinished phase: reads the design, the overview, the ledger and that one note; reads each component's `plugin-anatomy` reference before writing it; makes exactly the note's edits; runs the plugin's rules, `check-contracts`, `build-site` and the phase's evals; logs them and writes any proven platform fact back to `plugin-anatomy`; commits once; updates the ledger; stops. |
+| `audit-run` | when you type it, from the plugin under test | Audits a real run of the plugin's workflow from its session transcripts. `scripts/trace.py` rebuilds what ran: each agent spawned and the prompt it was sent, every tool call, hook block, commit and hand-back. One run-auditor agent per selected agent, one per driver segment, and one for cross-agent consistency then hold it against the agent and skill files at the version that ran. Every finding cites a trace step and a `file:line`, and is classed by fault: agent, driver, definition or platform. Each ERROR is spot-checked before it is reported. Writes the report under `evals/workspace/audit/` and logs the run with `log-eval`. `--units new` re-audits only newly finished agents, so it can watch a workflow still running in another chat. |
 | `bump-version` | only on your yes | Decides patch/minor/major from what changed, bumps `plugin.json` and the marketplace row, writes the CHANGELOG line, tags, pushes. Proposes itself in chat and waits. |
 
 ## The rest of the bundle
 
 | Path | What it is |
 |---|---|
+| `agents/run-auditor.md` | The one agent: audits one unit, one driver segment, or the whole run for cross-agent consistency, and writes a findings file. Spawned only by `audit-run`. |
 | `scripts/build_site.py` | The site builder. Fully generic — everything is discovered from the bundle. |
 | `scripts/contract_sweep.py` | The contracts checker. Its `frontmatter` check reads the allowed keys from `plugin-anatomy`'s references rather than its own copy. Shared, so a change to it gets a positive and a negative run before it is committed (this plugin's `CLAUDE.md`). |
 | `scripts/defaults/` | `mkdocs-base.yml` and `extra.css` used when a plugin doesn't override them. |

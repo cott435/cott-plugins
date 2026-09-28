@@ -62,3 +62,9 @@ frontmatter:
     # The allowed keys are plugin-anatomy's references/skills.md block, read by the checker.
     kind: skill
     files: 'skills/*/SKILL.md'
+
+  - name: every agent's frontmatter uses only documented agent fields, none plugins ignore
+    # Same check for the one agent, run-auditor. A plugin agent silently drops hooks,
+    # mcpServers, permissionMode and initialPrompt; the checker fails on them.
+    kind: agent
+    files: 'agents/*.md'

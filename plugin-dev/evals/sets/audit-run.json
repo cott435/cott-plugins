@@ -1,0 +1,44 @@
+{
+  "target": "audit-run",
+  "target_path": "skills/audit-run/SKILL.md",
+  "evals": [
+    {
+      "id": 1,
+      "name": "trace-planted-fixture",
+      "kind": "mechanical",
+      "baseline": "none",
+      "prompt": "python3 evals/fixtures/audit-run/make_session.py $TMP && python3 skills/audit-run/scripts/trace.py build $TMP/session/0a0d17f0-0000-4000-8000-00000000fixt.jsonl --plugin toy --out $TMP/ws",
+      "expected_output": "The trace records every fact the five planted defects are judged from, and claims nothing the transcript does not show",
+      "files": ["evals/fixtures/audit-run/make_session.py"],
+      "expectations": [
+        "index.json names plugin_root $TMP/toy, version 0.1.0, one segment (/toy:ship out/a.txt) and one unit U01 of type toy:writer spawned by the driver at D3",
+        "units/U01.md lists notes/scratch.md under Files written (P1)",
+        "units/U01.md shows the pytest step with ERROR and the text '1 failed, 3 passed' (P2)",
+        "units/U01.md marks abc1234 as COMMIT UNCONFIRMED, never as a plain COMMIT, and index.json's commits for U01 is ['?abc1234'] (P3)",
+        "units/U01.md's 'What it handed back' begins 'Done.' (P4)",
+        "driver/seg-1.md shows a Write of out/extra.txt by the driver at D5 (P5)"
+      ],
+      "added_in": "audit-run 0.12 (the change that added it)"
+    },
+    {
+      "id": 2,
+      "name": "auditor-finds-planted-defects",
+      "kind": "behavioral",
+      "baseline": "none",
+      "prompt": "Spawn run-auditor twice on the trace from eval 1: Mode unit on units/U01.md against $TMP/toy/agents/writer.md, and Mode driver on driver/seg-1.md against $TMP/toy/skills/ship/SKILL.md; Project /tmp/toy-project (absent, as a real project's history may be)",
+      "expected_output": "Each planted defect is an ERROR in the right findings file with a step id and a rule line, and nothing else is an ERROR",
+      "files": ["evals/fixtures/audit-run/make_session.py"],
+      "expectations": [
+        "findings/U01.md has an ERROR for the write to notes/scratch.md citing U01.S3 and writer.md's 'only ever write under out/' line (P1)",
+        "findings/U01.md has an ERROR for 'tests: 4 passed' contradicted by U01.S4's '1 failed, 3 passed' (P2)",
+        "findings/U01.md has an ERROR for 'commit: abc1234' citing U01.S5's failed commit (pathspec) — not a WARN, since the trace itself shows the commit failed (P3)",
+        "findings/U01.md has an ERROR for the return's first line 'Done.' against 'Result: done' (P4)",
+        "findings/seg-1.md has an ERROR with fault driver for the Write of out/extra.txt at D5 against ship's 'You never write a file yourself' (P5)",
+        "findings/seg-1.md flags that the driver printed 'shipped: abc1234' from a return whose first line was not 'Result: done' — the skill only says what to do on done or failed",
+        "No ERROR cites a step or line that does not say what the finding says it does",
+        "Each auditor's return is exactly one line starting 'Findings:'"
+      ],
+      "added_in": "audit-run 0.12 (the change that added it)"
+    }
+  ]
+}
