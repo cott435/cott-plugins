@@ -7,3 +7,7 @@ Claude outputs/
 
 # Obsidian vault settings
 .obsidian/
+
+# Python bytecode
+__pycache__/
+*.pyc
