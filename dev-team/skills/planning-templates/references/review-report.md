@@ -30,8 +30,11 @@ Then these headings, in order; an empty one is written with `- none`:
    can't-tell | file:line`, one row per contract clause and design item.
 5. **Carried** — round 2 and later: each prior CRITICAL as `fixed` or `unfixed`, worded as it
    was, with `file:line` where it stands.
-6. **Spec-change** — when that is the verdict: the level (`test | design | contract`) and the
-   evidence; the same content as the `docs/deviations.md` entry the reviewer appends.
+6. **Spec-change** — when that is the verdict: one bullet per spec-change, starting with its
+   level, `- design: …` (`test | design | contract`), then the evidence. `status.py` reads the
+   level from there: until a ledger entry records it, the report is the open spec-change and
+   re-opens that step. For a round-1 `b` report, which never writes the ledger, it is the only
+   record. An `a` or `s` reviewer also appends the matching entry to `docs/deviations/<pkg>/<section>.md`.
 7. **Deferred** — `defer` runs only: each standing CRITICAL and the `docs/followups.md` line it
    became.
 

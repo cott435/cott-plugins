@@ -1,7 +1,14 @@
-# `docs/deviations.md` — one entry per deviation or spec-change
+# The section ledger, `docs/deviations/<pkg>/<section>.md` — one entry per deviation or spec-change
 
-Append-only; status lines are the only edits. Written by the implementer (`deviation`,
-`spec-change`), the designer and the tester (`spec-change`), and read by the reviewer (which
+One file per section, so agents that run in parallel on different sections never write the
+same file. A new file starts with the line `# Deviations — <pkg>/<section>`. A
+`docs/deviations.md` from before the split is still read: an entry there has its status line
+edited where it is, and every new entry goes to the section's file.
+
+Append-only; status lines are the only edits, each made with the Edit tool on that one line,
+never by rewriting the file. Written by the implementer (`deviation`, `spec-change`), the
+designer (`deviation`, one per contract deviation its design's §10 lists, and
+`spec-change:contract`) and the tester (`spec-change`), and read by the reviewer (which
 sets `approved` or `rejected`), the tester (regenerates the tests an `approved` entry's clause
 is cited by), `status.py` (an open spec-change re-opens its step), the stop hook (tolerates a
 failing intent test whose docstring cites a `proposed` or `approved` clause) and `sync-plan`

@@ -50,6 +50,6 @@ the change file is history.
 ## When the contract itself is wrong
 
 A section can find that a document is wrong while it is being built. That is a `spec-change`
-entry in `docs/deviations.md`, not a change request: a `spec-change:contract` re-opens the
+entry in `docs/deviations/<pkg>/<section>.md`, not a change request: a `spec-change:contract` re-opens the
 section at PLAN, where the driver runs the architect to edit the contract (EDIT, EDIT+STALE,
 CHANGE or DECIDE, exactly as above) and set the entry `resolved`.

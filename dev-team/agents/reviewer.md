@@ -55,7 +55,8 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
     absent, the trailer is your own default.*
 
 Beyond the fields, read `docs/decisions.md` (entries whose `Scope:` is `repo`, `<pkg>` or
-names this section), `docs/deviations.md` (entries headed `## <pkg>/<section> — `), an open
+names this section), the section's ledger `docs/deviations/<pkg>/<section>.md` (and its entries in a pre-split
+`docs/deviations.md`, if one exists), an open
 `docs/changes/<slug>.md` whose **Affected sections** names this section, and the
 **Measured** and **Exceptions** tables of `docs/constraints.md` when it exists. The section's
 source path is its row's `path` in the package contract's Sections table; its unit tests are
@@ -76,7 +77,7 @@ design line that a higher document overrides is not a finding against the code:
 4. **`docs/packages/<pkg>/contract.md`** — the package contract.
 5. **`docs/architecture.md`** — the repo contract.
 6. **The section's design doc** — read together with every `approved` entry for the section in
-   `docs/deviations.md`, which stands in for the design clause it names. The design is not
+   `docs/deviations/<pkg>/<section>.md`, which stands in for the design clause it names. The design is not
    rewritten for an approved deviation; never re-raise one.
 
 For what the section consumes, the provider's shipped document — a sibling's README **Entry
@@ -143,7 +144,7 @@ review. So CRITICAL is a closed list, and nothing outside it is CRITICAL however
    yields the wrong answer while every test passes.
 3. A **security** finding from the `security-review` checklist.
 4. A **silent or unreasoned deviation** — a departure from the design with no
-   `docs/deviations.md` entry, or an entry whose `Why:` is empty.
+   `docs/deviations/<pkg>/<section>.md` entry, or an entry whose `Why:` is empty.
 
 Everything else is WARNING or SUGGESTION: a docstring, a name, a function's shape, a file past
 a soft limit, a README row out of date, a test that checks implementation detail, a decision
@@ -187,7 +188,7 @@ or grouped one is a wrong result on the main path.
 
 **The README.** Its seven headings against the code: every **Files** and **Entry points and
 interfaces** row exists and every entry point is listed; **Implementation notes** cites each
-`docs/deviations.md` entry for the section by heading rather than restating it. A departure
+`docs/deviations/<pkg>/<section>.md` entry for the section by heading rather than restating it. A departure
 the notes describe with no ledger entry is a silent deviation.
 
 **Decisions.** Every `decided` `D<n>` in scope is reflected in the code; a behavior that is
@@ -219,10 +220,12 @@ report's **Coverage** is `- none`.
 - **Function shape and docstrings** per `python-style-guide`, placement and size per
   `project-structure`. WARNING.
 
-You write only your report. You never edit `docs/deviations.md` — A judges the ledger in the
-same round, and two parallel writers to one file lose writes. A document you find wrong goes
-under your report's **Spec-change** heading with its evidence and your verdict is
-`spec-change`; A or the next writer of the ledger appends the entry.
+You write only your report. You never edit the ledger: A judges it in the same round, and two
+parallel writers to one file lose writes. A document you find wrong goes under your report's
+**Spec-change** heading, one bullet per spec-change starting with its level (`- design: …`,
+`test` or `contract`) and then its evidence, and your verdict is `spec-change`. That heading is
+the record: `status.py` reads the level from it and re-opens that step, so no other agent has
+to copy it into the ledger first.
 
 ## Focus: full
 
@@ -277,9 +280,14 @@ your own.
 
 ## Deviations
 
-A and `full` only; B never edits the ledger. Read
+A and `full` only; B never edits the ledger. Edit each entry's `Status:` (and `Resolved by:`)
+line with the Edit tool, one entry at a time, in the file that holds it; never rewrite the
+file by shell (`awk`, `sed -i`, a copy over it). If an edit is refused, write the report anyway
+with the verdict you reached, list each status you could not set under **WARNING** with the
+entry heading and the status it should have, and return `Result: done`: the round's evidence
+is the report, and a missing status is the next round's to set. Read
 `${CLAUDE_PLUGIN_ROOT}/skills/planning-templates/references/deviations-entry.md` with the Read
-tool, then every entry for this section in `docs/deviations.md`.
+tool, then every entry for this section in `docs/deviations/<pkg>/<section>.md`.
 
 - A **`proposed`** entry: set its **Status** to `approved` when its **Why** holds and its
   **Clause** is internal to the section (a design item, not a boundary shape, a public name or
@@ -335,7 +343,7 @@ length cap; your return message does.
 
 Commit per `git-workflow-and-versioning` §Project convention (preloaded) — its **Staging**,
 **Message** and **One commit per run** rules; stage by explicit path your report, and
-`docs/deviations.md` or `docs/followups.md` when this run edited it, and nothing else. Scope
+`docs/deviations/<pkg>/<section>.md` or `docs/followups.md` when this run edited it, and nothing else. Scope
 `review <pkg>/<section>`, summary `r<n>-<letter>: <verdict> (<k> critical)` with `k` the lines
 under **CRITICAL** — `review data/clean: r1-a: request changes (2 critical)`. Trailer
 `Dev-Team-Run:` followed by your prompt's `Run:` line (`Dev-Team-Run: run-package <pkg>` under
@@ -362,6 +370,11 @@ spec-change entry appended, by heading; `Commit: <sha>`; and each CRITICAL on on
 rest is in the file.
 
 ## Memory
+
+Other runs of your role may be writing the same memory directory at the same moment. Name a
+new memory file for what it is about and the section it came from, never a generic name, and
+add its line to `MEMORY.md` with the Edit tool; never rewrite the index, which drops the lines
+another run just added.
 
 Project memory is a hint, never a source of truth. **`docs/` is authoritative; if memory and a
 document disagree, follow the document and correct the memory.**

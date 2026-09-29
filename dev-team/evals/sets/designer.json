@@ -14,7 +14,7 @@
         "evals/sets/files/designer/repo/docs/architecture.md",
         "evals/sets/files/designer/repo/docs/packages/data/contract.md",
         "evals/sets/files/designer/repo/docs/decisions.md",
-        "evals/sets/files/designer/repo/docs/deviations.md",
+        "evals/sets/files/designer/repo/docs/deviations/data/storage.md",
         "evals/sets/files/designer/repo/packages/data/src/data/ingest/README.md"
       ],
       "expectations": [
@@ -70,25 +70,25 @@
       "baseline": "previous",
       "harness": "evals/sets/files/designer/eval-3-prices-spec-change.md",
       "prompt": "Repo root for this run: evals/sets/files/designer/repo (every path below is relative to it).\n\nSection: data/prices\nMode: new\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: packages/data/src/data/ingest/README.md\nUpstream interfaces: none\nSource probes: docs/sources/alpaca.md\nChange file: none\nDesign-gap: none\nSkills to invoke: none\nWrite to: docs/packages/data/design/prices.md\nRun: run-package data",
-      "expected_output": "No design is written; instead outputs/docs/deviations.md gains one appended `## data/prices — <date> — spec-change:contract` entry whose Clause cites the contract's prices interface row, whose Found cites the probe doc's Observed schema (no adjusted_close field; adjustment is a request parameter and `c` is the adjusted close), with Status open and Raised by the designer; outputs/commit.txt commits the ledger with scope data/prices and the run trailer; the return is `Result: spec-change`, then `Spec-change: contract — <one line>`, then the entry heading, ten lines or fewer.",
+      "expected_output": "No design is written; instead outputs/docs/deviations/data/prices.md gains one appended `## data/prices — <date> — spec-change:contract` entry whose Clause cites the contract's prices interface row, whose Found cites the probe doc's Observed schema (no adjusted_close field; adjustment is a request parameter and `c` is the adjusted close), with Status open and Raised by the designer; outputs/commit.txt commits the ledger with scope data/prices and the run trailer; the return is `Result: spec-change`, then `Spec-change: contract — <one line>`, then the entry heading, ten lines or fewer.",
       "files": [
         "evals/sets/files/designer/repo/docs/architecture.md",
         "evals/sets/files/designer/repo/docs/packages/data/contract.md",
-        "evals/sets/files/designer/repo/docs/deviations.md",
+        "evals/sets/files/designer/repo/docs/deviations/data/prices.md",
         "evals/sets/files/designer/repo/docs/sources/alpaca.md",
         "evals/sets/files/designer/repo/packages/data/src/data/ingest/README.md"
       ],
       "expectations": [
         "outputs/docs/packages/data/design/prices.md does not exist",
-        "outputs/docs/deviations.md exists, keeps the fixture's title line and note, and appends exactly one entry whose heading matches `## data/prices — <YYYY-MM-DD> — spec-change:contract`",
+        "outputs/docs/deviations/data/prices.md exists, keeps the fixture's title line and note, and appends exactly one entry whose heading matches `## data/prices — <YYYY-MM-DD> — spec-change:contract`",
         "The entry has lines beginning `Clause:`, `Said:`, `Found:`, `Why:`, `Status:` and `Raised by:`; `Status:` is `open`",
         "`Clause:` names the package contract's Section interfaces entry for prices (`fetch_bars`, the `adjusted_close` claim), and `Said:` quotes or paraphrases that the response carries an `adjusted_close` field",
         "`Found:` cites docs/sources/alpaca.md (its Observed schema or Quirks heading) and states that no `adjusted_close` field exists and that adjustment is the `adjustment` request parameter with `c` as the adjusted close",
         "`Raised by:` names the designer and the run (`run-package data`), and no `Resolved by:` line claims a resolution",
         "transcript.md records reading docs/sources/alpaca.md and docs/packages/data/contract.md, and reading the deviations entry template under skills/planning-templates/references/ (deviations-entry.md) before writing the entry",
-        "The final message in transcript.md is ten lines or fewer; its first line is exactly `Result: spec-change`, its second line begins `Spec-change: contract — `, and its third line is the entry heading written to outputs/docs/deviations.md",
-        "outputs/commit.txt exists, its first line begins `data/prices: ` and it has a trailer line `Dev-Team-Run: run-package data`; the commit stages docs/deviations.md and no design file",
-        "No file exists under outputs/ other than docs/deviations.md, commit.txt and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/; in particular outputs/docs/decisions.md does not exist and the return is not `stopped` or `done`",
+        "The final message in transcript.md is ten lines or fewer; its first line is exactly `Result: spec-change`, its second line begins `Spec-change: contract — `, and its third line is the entry heading written to outputs/docs/deviations/data/prices.md",
+        "outputs/commit.txt exists, its first line begins `data/prices: ` and it has a trailer line `Dev-Team-Run: run-package data`; the commit stages docs/deviations/data/prices.md and no design file",
+        "No file exists under outputs/ other than docs/deviations/data/prices.md, commit.txt and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/; in particular outputs/docs/decisions.md does not exist and the return is not `stopped` or `done`",
         "The transcript does not describe the contradiction as an Open questions entry, a Contract deviations entry or a Pitfalls and risks entry of a design; it is raised only as the ledger entry"
       ],
       "added_in": "remake phase 0, run from phase 3"

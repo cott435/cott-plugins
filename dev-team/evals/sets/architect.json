@@ -63,7 +63,7 @@
         "evals/sets/files/architect/sync/"
       ],
       "expectations": [
-        "outputs/docs/deviations.md exists; its `data/clean — 2026-09-24 — deviation` entry reads `Status: synced` and a `Resolved by:` that is no longer `—`; every other line of that entry is the fixture's",
+        "outputs/docs/deviations/data/clean.md exists (the section ledgers are `docs/deviations/data/<section>.md`); its `data/clean — 2026-09-24 — deviation` entry reads `Status: synced` and a `Resolved by:` that is no longer `—`; every other line of that entry is the fixture's",
         "outputs/docs/packages/data/contract.md's Section interfaces gives `dedupe` the return type `tuple[list[Trade], int]` — the verified deviation applied — and `clean_trades` still returns `list[Trade]`",
         "The `data/storage — 2026-09-25 — deviation` entry still reads `Status: approved` with `Resolved by: —`; the contract's `store_trades` signature has no `batch_size`; and the return lists that entry as left open because its `Did:` is not in `packages/data/src/data/storage/db.py`",
         "The `data/ingest — 2026-09-23 — deviation` entry (rejected) is unchanged, and the contract does not say a bad row is skipped",

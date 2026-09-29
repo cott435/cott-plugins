@@ -57,7 +57,7 @@ root. `status.py` exits 1 on a failing gate; that is the answer, not an error.
      `docs/packages/<pkg>/interface.md`);
    - the `docs/decisions.md` entries whose `Scope:` covers `repo`, the package or the
      section;
-   - the section's entries in `docs/deviations.md`, and its `docs/followups.md` lines.
+   - the section's entries in `docs/deviations/<pkg>/<section>.md`, and its `docs/followups.md` lines.
 
    Read the section's code as you need it, not all at once.
 6. **Brief.** Eight lines at most:
@@ -107,8 +107,8 @@ When the user says they are done, or asks to wrap up:
    `spec-change:test`. Show the list to the user and let them correct it before you write
    anything.
 3. **Ledger.** Read `${CLAUDE_PLUGIN_ROOT}/skills/planning-templates/references/deviations-entry.md`,
-   then append one entry per `deviation` or `spec-change` line to `docs/deviations.md` (create
-   it with a `# Deviations` title when it does not exist). Heading `## <pkg>/<section> —
+   then append one entry per `deviation` or `spec-change` line to `docs/deviations/<pkg>/<section>.md` (create
+   it with a `# Deviations — <pkg>/<section>` title when it does not exist). Heading `## <pkg>/<section> —
    <ISO date> — <kind>`. The fields:
    - **Clause**: the design item exactly as the intent tests cite it, `design §<n> <item>`.
      The gate tolerates a failing intent test only when its docstring matches this.
@@ -138,7 +138,7 @@ When the user says they are done, or asks to wrap up:
    Stop when it passes, or when the user says to leave the rest. The `result:` line then
    records it, and the reviewer quotes it.
 6. **Commit.** One commit of every path changed since the start commit and not yet committed:
-   the code, the unit tests, the README, `docs/deviations.md`, and `docs/decisions.md` if you
+   the code, the unit tests, the README, `docs/deviations/<pkg>/<section>.md`, and `docs/decisions.md` if you
    edited it. Follow `git-workflow-and-versioning` §Project convention: stage by explicit
    path, commit with the same pathspec, and write the message
    `<pkg>/<section>: pair — <what changed>` with the trailer `Dev-Team-Run: pair

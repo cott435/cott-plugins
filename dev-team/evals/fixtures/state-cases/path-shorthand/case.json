@@ -1,0 +1,18 @@
+{
+  "note": "ingest's path cell is `…/ingest/`: it resolves to packages/data/src/data/ingest/, so the built section is DONE",
+  "steps": [
+    {
+      "do": "base",
+      "shorthand": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "DONE"
+  }
+}

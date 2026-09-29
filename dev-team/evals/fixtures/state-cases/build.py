@@ -201,7 +201,10 @@ def m_base(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
     files = {"docs/architecture.md": ARCHITECTURE}
     contract = step.get("contract", "dataset")
     if contract:
-        files["docs/packages/data/contract.md"] = CONTRACT.format(source="api:polygon" if contract == "api" else "dataset:trades")
+        text = CONTRACT.format(source="api:polygon" if contract == "api" else "dataset:trades")
+        if step.get("shorthand"):  # path cells as `…/<name>/`, the shorthand a preamble explains
+            text = text.replace("| packages/data/src/data/ingest/ |", "| …/ingest/ |")
+        files["docs/packages/data/contract.md"] = text
     if step.get("sources", True):
         if contract == "api":
             files["docs/sources/polygon.md"] = POLYGON
@@ -246,6 +249,7 @@ def m_review(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
         if n > 1:
             head += [f"Convergence: {step.get('convergence', '0 prior unfixed, 0 new')}", "Diff: {HEAD}..HEAD"]
         body = "\n\n## CRITICAL\n\n" + ("- none" if verdict == "approve" else f"- src:1 — finding — fix it") + "\n\n## WARNING\n\n- none\n"
+        body += "\n## Spec-change\n\n" + (f"- {step['spec'][suffix]}\n" if suffix in step.get("spec", {}) else "- none\n")
         files[f"docs/reviews/{DATE}-{PKG}-{s}-r{n}-{suffix}.md"] = "\n".join(head) + body
     return [(files, f"{PKG}/{s}: review r{n}")]
 
@@ -275,8 +279,8 @@ def m_regenerate(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
 
 def m_deviation(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
     s, kind = step["section"], step["kind"]
-    rel = "docs/deviations.md"
-    old = (dest / rel).read_text() if (dest / rel).exists() else "# Deviations\n"
+    rel = "docs/deviations.md" if step.get("legacy") else f"docs/deviations/{PKG}/{s}.md"
+    old = (dest / rel).read_text() if (dest / rel).exists() else ("# Deviations\n" if step.get("legacy") else f"# Deviations — {PKG}/{s}\n")
     evidence = "Did: built it the other way" if kind == "deviation" else "Found: src/x.py:1"
     entry = (f"\n## {PKG}/{s} — {DATE} — {kind}\n\nClause: {step.get('clause', 'design §5 load_trades')}\n"
              f"Said: \"one thing\"\n{evidence}\nWhy: the data says otherwise\nStatus: {step['status']}\n"

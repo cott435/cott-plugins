@@ -261,7 +261,7 @@ headings:
       - file: agents/reviewer.md
         span: ['design line that a higher document overrides', 'read together with']
 
-  - name: deviations.md entry fields its readers parse are ones planning-templates defines
+  - name: ledger entry fields its readers parse are ones planning-templates defines
     # One ledger for "the document and the code disagree": the designer and the tester append
     # spec-change entries, the tester regenerates the tests an approved entry's Clause is cited
     # by, and status.py and the stop gate parse the same fields (mechanical, their own evals).

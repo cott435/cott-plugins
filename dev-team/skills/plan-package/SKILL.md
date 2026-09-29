@@ -49,7 +49,7 @@ contract invents its own shapes and conventions, and the next package invents th
      shipped (`status.py <dep>` reads `shipped: yes`); else its `contract.md` if it exists,
      else the repo contract's Boundaries — and every name consumed from it is **provisional**.
    - `docs/packages/$pkg/contract.md` if it exists, and the package's code directory if any.
-   - `docs/deviations.md`: open `spec-change:contract` entries naming a `$pkg/<section>`.
+   - `docs/deviations/$pkg/*.md`: open `spec-change:contract` entries.
    - `docs/changes/*.md` with `Status: open` naming a `$pkg/<section>`.
    - The project skills, per your **Project skills**; the repo contract's `candidate skills`
      column for `$pkg` is the starting point.

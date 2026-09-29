@@ -10,7 +10,9 @@
 line-length = 88
 # docs/ is planning documents and researcher probe scripts, never package source. ruff 0.16
 # formats Python blocks inside Markdown, and no run may edit a design to satisfy a formatter.
-extend-exclude = ["docs"]
+# .claude/ holds project skills, whose reference code is extracted from an old repo as it was;
+# the repo-wide `ruff check` would hold every implementer to its style.
+extend-exclude = ["docs", ".claude"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "C901", "PLR0913", "PLR0915", "S", "D"]

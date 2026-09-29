@@ -29,12 +29,18 @@ Your prompt names a mode. Everything below the shared rules applies to one mode 
 - **Personal data.** A dataset probe writes statistics, never records — the full rule is in
   **Kind: `dataset`** step 5. It applies to anything you put on disk, including a scratch file
   you meant to delete.
-- Bash runs things — imports, probe scripts, a scratch venv — in the scratch directory, or
-  read-only against the old repo. It never edits the new repo's source and never installs into
+- Bash runs things — imports, probe scripts, a scratch venv — in your own subdirectory of the
+  scratch directory, `<scratch>/<source>-<pkg>-<section>/`, or read-only against the old repo.
+  Researchers run in parallel and share the scratch directory, so a generic name
+  (`stats.json`, `probe.err`, a `venv` at its root) is another probe's file. It never edits the new repo's source and never installs into
   the new repo's environment.
 - You cannot ask the user questions. A gap becomes a stated line in the document you write
   (`unverified`, `unset`, `not probed`), never a guess presented as fact.
-- Return ten lines or fewer. Your content is on disk.
+- Return ten lines or fewer. Your content is on disk. The first line of every return is
+  `Result: done` or `Result: blocked`, and nothing comes before it: the driver branches on that
+  line alone, and a return without it stops the whole run to ask the user. `blocked` is a
+  probe that could not reach its source (an unset or rejected credential, an unreachable
+  host) or an extraction that could not run; its second line is `Blocked: <the reason>`.
 - **A probe run always commits**, whoever spawned it — the driver, the architect or
   `/dev-team:probe-source`. Commit your `docs/sources/<source>.*` files per
   `git-workflow-and-versioning` §Project convention (invoke it with the Skill tool) — its
@@ -74,7 +80,7 @@ decides where the code lives and what it is called. Your skill never says.
 6. Write `SKILL.md` per the template below. No `disable-model-invocation` in the frontmatter:
    designers and implementers invoke this skill through the Skill tool, and that flag would
    block them.
-7. Return: row id, skill path, verification level, fixture count, one line on anything you
+7. Return, after `Result: done`: row id, skill path, verification level, fixture count, one line on anything you
    left out and why.
 
 ### Skill template
@@ -153,9 +159,9 @@ and one unmarked line spends that trust on every other line.
 1. **Access.** Name the env var — from your prompt, the extracted skill, or the API's
    documentation. Load `.env` at the repo root if one exists (`set -a; . ./.env; set +a`),
    without printing. If the variable is unset, write the doc with **Access** as `unset`
-   and every later heading as `not probed`, then return a blocker naming the variable. If
+   and every later heading as `not probed`, then return `Result: blocked` naming the variable. If
    set, make the cheapest authenticated call the docs offer. 401 or 403 → `set, rejected
-   (<status>)`, same blocker. Success → `valid`, plus whatever the response reveals about
+   (<status>)`, same `Result: blocked`. Success → `valid`, plus whatever the response reveals about
    tier, plan, or quota. Record the auth *mechanism* you actually used: a static key in a
    header or a query parameter, or an OAuth2 exchange — and for that, the token endpoint, the
    grant type, the lifetime of the token you were issued, and the scopes the response
@@ -167,14 +173,15 @@ and one unmarked line spends that trust on every other line.
    **webhook** or callback the service offers: step 4 may not exercise those, so what you
    record here is all the doc will ever have for them. This is the research a designer would
    otherwise do alone with no way to check it; do it once, here, and write it down.
-3. **Scratch venv.** `uv venv` under the scratch directory — never inside the repo — with
+3. **Scratch venv.** `uv venv` in your own scratch subdirectory — never inside the repo — with
    `httpx` and the vendor's client library if the docs recommend one. Write the probe as a
    re-runnable program, `docs/sources/<source>.probe.py`, kept beside the doc so a re-probe
    makes the same calls and **Changes since last probe** is a real diff. It reads credentials
    from env and prints nothing secret.
 4. **Call — reads only.** One real request per relevant read endpoint with realistic params —
    a known symbol, a short date range. Then one deliberately bad request per endpoint —
-   unknown symbol, out-of-range date, missing required param — to record the error envelope
+   unknown symbol, out-of-range date, missing required param; for a fixed-path file (an index,
+   a bulk listing) a path that does not exist — to record the error envelope
    and status codes the parser will meet. Capture every raw response. Scrub. Save as
    `<source>.sample.json` keyed by endpoint, error cases under `errors`. Cap each response at
    200 KB, truncated with a `"_truncated": true` marker.
@@ -198,7 +205,7 @@ and one unmarked line spends that trust on every other line.
 6. **Re-verify** — only with an extracted skill: load its `fixtures/`, diff against today's
    responses, write **Differs from the extracted skill's fixtures**.
 7. **Write** the probe doc per **The probe doc** below — whole when it does not exist,
-   extended per **When the doc already exists** when it does. Commit. Return: access status,
+   extended per **When the doc already exists** when it does. Commit. Return, after `Result: done`: access status,
    endpoints called, discrepancy count, path, `Commit: <sha>`.
 
 ### Kind: `dataset`
@@ -213,7 +220,7 @@ settles them.
    credential names its env var exactly as the API kind's step 1 does, loading `.env`
    without printing. Confirm you can actually read it: list it, stat it, read the header or
    the footer metadata. Absent or unreadable → write the doc with **Access** as `missing` or
-   `unreadable (<error>)`, every later heading `not probed`, and return a blocker naming the
+   `unreadable (<error>)`, every later heading `not probed`, and return `Result: blocked` naming the
    location. Readable → record format, size on disk, file count or partitioning, and
    compression. **Do not load the contents yet**; a probe that dies pulling 90 GB into memory
    has told the planning run nothing.
@@ -223,7 +230,7 @@ settles them.
    beside it for a private one. **`none found` is an answer**, and an important one — it means
    your **Observed schema** is the only description of this data that exists anywhere, and
    every consumer is reading it. This is the baseline step 5 diffs against.
-3. **Scratch venv.** `uv venv` under the scratch directory — never inside the repo — with
+3. **Scratch venv.** `uv venv` in your own scratch subdirectory — never inside the repo — with
    `pandas` and `pyarrow`, plus the store's client library when the location needs one. Write
    the profile as a re-runnable program, `docs/sources/<source>.profile.py`, kept beside the
    doc so a re-profile computes the same statistics and **Changes since last probe** is a real
@@ -276,7 +283,7 @@ settles them.
    reason. A target with eleven positive rows does not support classification, and this is the
    cheapest that finding will ever be.
 7. **Write** the probe doc per **The probe doc** below — whole when it does not exist,
-   extended per **When the doc already exists** when it does. Commit. Return: access status,
+   extended per **When the doc already exists** when it does. Commit. Return, after `Result: done`: access status,
    rows and columns profiled, whether it was a sample, discrepancy count, path, `Commit:
    <sha>`.
 
@@ -318,6 +325,11 @@ changed and `/dev-team:probe-source` was run — keep the document and extend it
   modeling task`.
 
 ## Memory
+
+Other runs of your role may be writing the same memory directory at the same moment. Name a
+new memory file for what it is about and the section it came from, never a generic name, and
+add its line to `MEMORY.md` with the Edit tool; never rewrite the index, which drops the lines
+another run just added.
 
 Project memory is a hint, never a source of truth. **The skill or probe doc you wrote is
 authoritative; if memory disagrees, follow the file.**

@@ -1,6 +1,6 @@
 ---
 name: sync-plan
-description: Close a package - fold every approved deviation and every pending change file into the canonical contracts after verifying each against the shipped code, mark them synced, and recompute the consumers of any changed public name. run-package runs it when every section is DONE; run it by hand after editing deviations.md or a change file.
+description: Close a package - fold every approved deviation and every pending change file into the canonical contracts after verifying each against the shipped code, mark them synced, and recompute the consumers of any changed public name. run-package runs it when every section is DONE; run it by hand after editing a section ledger (docs/deviations/) or a change file.
 argument-hint: "<pkg>"
 arguments: [pkg]
 context: fork
@@ -24,7 +24,7 @@ lines comes from `/dev-team:run-package` at the package close: use that package,
 (the driver ran the run gate), and use `Dev-Team-Run: run-package <pkg>` as the trailer.
 
 Until this runs, a package's contract describes the code as it was planned, not as it was
-built: an approved deviation lives only in `docs/deviations.md`, and an open change file only
+built: an approved deviation lives only in its section's ledger, `docs/deviations/<pkg>/<section>.md`, and an open change file only
 under `docs/changes/`. Those contracts are what the next `/dev-team:plan-package` reads as its
 upstream. This is the step that stops the drift.
 
@@ -54,7 +54,7 @@ upstream. This is the step that stops the drift.
 ## Constraints
 
 - Edit only `docs/architecture.md`, `docs/packages/*/contract.md`, the `Status:` and
-  `Resolved by:` lines of `docs/deviations.md` entries, the `Status:` line of a change file, a
+  `Resolved by:` lines of ledger entries (`docs/deviations/$pkg/*.md`, or a pre-split `docs/deviations.md`), the `Status:` line of a change file, a
   new change file for a shipped consumer, and the archive copies under `docs/history/`.
 - Never edit `interface.md` — its **Consumers (computed)** is the implementer's, rewritten when
   the `surface` section is next built — nor a design, a review, or code.

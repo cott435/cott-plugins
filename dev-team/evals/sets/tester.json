@@ -25,7 +25,7 @@
         "`transcript.md` records reading the plugin's `skills/test-driven-development/SKILL.md` by path with the Read tool (for its RED paragraph) and records no invocation of `test-driven-development` through the Skill tool.",
         "The return (the final message recorded in `transcript.md`) begins with the line `Result: done`; contains lines starting `Tests:`, `Not written:`, `Deleted for passing:` and `Commit:`; is twenty lines or fewer; has no `Mode:` line; and names no next command (no `/dev-team:implement-section`, `/dev-team:test-section` or any other `/dev-team:` command).",
         "`outputs/commit.txt`'s first line is `data/ingest: <n> intent tests from design` where `<n>` equals the number of test functions left under `outputs/tests/intent/ingest/` after deletions, and its trailer line is exactly `Dev-Team-Run: run-package data` (not `test-section`); `outputs/staged.txt` lists only paths under `tests/intent/ingest/` and `tests/fixtures/`.",
-        "Nothing under `outputs/docs/` (no design edit, no `deviations.md`, no `followups.md`), and no file under `outputs/` outside `tests/` other than `commit.txt`, `staged.txt`, `interview.md` if present, and tool caches (`.ruff_cache/`, `__pycache__/`)."
+        "Nothing under `outputs/docs/` (no design edit, no ledger under `docs/deviations/`, no `followups.md`), and no file under `outputs/` outside `tests/` other than `commit.txt`, `staged.txt`, `interview.md` if present, and tool caches (`.ruff_cache/`, `__pycache__/`)."
       ],
       "added_in": "remake phase 0, run from phase 3"
     },
@@ -70,7 +70,7 @@
         "`outputs/commit.txt`'s first line is exactly `data/ingest: regenerate 1 intent tests` and its trailer line is exactly `Dev-Team-Run: run-package data`; `outputs/staged.txt` lists only `tests/intent/ingest/test_parse_bars.py`.",
         "The return (the final message recorded in `transcript.md`) begins with the line `Result: done`, has a line `Regenerated: 1`, has a `Commit:` line, is twenty lines or fewer, has no `Mode:` line, and does not mention `reconcile`, `README item 7` or `docs/followups.md`.",
         "The section's source was never read: `transcript.md` records no Read, Grep, Glob, `cat`, `ls`, `find`, `tree` or `python -c` against any file under `packages/data/src/data/ingest/` other than `README.md`, and no listing or search whose output names a file there other than `README.md`; the strings `heron-3350` and `_coerce_row` appear nowhere under `outputs/` or in `transcript.md`.",
-        "Nothing under `outputs/docs/`: the design is not rewritten, `docs/deviations.md` is not edited (its entry stays `Status: approved` for the architect to sync), and no `docs/followups.md` is created."
+        "Nothing under `outputs/docs/`: the design is not rewritten, `docs/deviations/data/ingest.md` is not edited (its entry stays `Status: approved` for the architect to sync), and no `docs/followups.md` is created."
       ],
       "added_in": "remake phase 0, run from phase 3"
     }

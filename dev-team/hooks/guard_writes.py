@@ -11,7 +11,9 @@ carve-outs from those exclusions (`**` any depth, `*` one segment). `**/tests/in
 own memory, `.claude/agent-memory/**`, is allowed to all (the agents run with `memory:
 project`). A refusal exits 2 with the rule on stderr. Malformed stdin: exit 0.
 
-`<pkg>` in the design's paths is `*` here: the guard knows the role, not the section.
+`<pkg>` in the design's paths is `*` here: the guard knows the role, not the section. The
+ledger is `docs/deviations/<pkg>/<section>.md`; the pre-split `docs/deviations.md` stays
+writable wherever the ledger is, so an entry is edited in the file that holds it.
 """
 
 from __future__ import annotations
@@ -27,16 +29,16 @@ MEMORY = ".claude/agent-memory/**"
 
 # agent_type → (allowed, excluded, carved back out of the exclusions).
 ALLOWED: dict[str, tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]] = {
-    "dev-team:architect": (("docs/**",), ("docs/packages/*/design/**", "docs/reviews/**"), ("docs/deviations.md",)),
-    "dev-team:designer": (("docs/packages/*/design/**", "docs/deviations.md", "docs/decisions.md"), (), ()),
+    "dev-team:architect": (("docs/**",), ("docs/packages/*/design/**", "docs/reviews/**"), ("docs/deviations.md", "docs/deviations/**")),
+    "dev-team:designer": (("docs/packages/*/design/**", "docs/deviations.md", "docs/deviations/**", "docs/decisions.md"), (), ()),
     "dev-team:researcher": (("docs/sources/**", ".claude/skills/*/**"), (), ()),
-    "dev-team:tester": ((INTENT, "**/tests/fixtures/**", "docs/deviations.md"), (), ()),
-    "dev-team:reviewer": (("docs/reviews/**", "docs/deviations.md", "docs/followups.md"), (), ()),
+    "dev-team:tester": ((INTENT, "**/tests/fixtures/**", "docs/deviations.md", "docs/deviations/**"), (), ()),
+    "dev-team:reviewer": (("docs/reviews/**", "docs/deviations.md", "docs/deviations/**", "docs/followups.md"), (), ()),
     "dev-team:documenter": (("README.md", "packages/*/README.md", "docs/index.md", "docs/readme-previous.md",
                              "docs/packages/*/readme-previous.md"), (), ()),
     "dev-team:curator": (("docs/legacy/**", ".claude/skills/*/**"), (), ()),
     "dev-team:implementer": (("**",), ("docs/**",),
-                             ("docs/deviations.md", "docs/decisions.md", "docs/packages/*/interface.md", "docs/api/*.md")),
+                             ("docs/deviations.md", "docs/deviations/**", "docs/decisions.md", "docs/packages/*/interface.md", "docs/api/*.md")),
 }
 
 

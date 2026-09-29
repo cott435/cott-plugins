@@ -42,7 +42,7 @@
         "evals/sets/files/run-package/seed/eval-2/docs/packages/data/contract.md"
       ],
       "expectations": [
-        "outputs/spawns.md shows the first `dev-team:designer` spawn for data/ingest returning `Result: spec-change`, and outputs/repo/docs/deviations.md holds an entry headed `## data/ingest — <date> — spec-change:contract` with `Clause:`, `Found:` (citing `docs/sources/trades.md` or `docs/architecture.md` for the absent `venue` column), `Why:`, `Status:` and `Raised by:` lines",
+        "outputs/spawns.md shows the first `dev-team:designer` spawn for data/ingest returning `Result: spec-change`, and outputs/repo/docs/deviations/data/ingest.md holds an entry headed `## data/ingest — <date> — spec-change:contract` with `Clause:`, `Found:` (citing `docs/sources/trades.md` or `docs/architecture.md` for the absent `venue` column), `Why:`, `Status:` and `Raised by:` lines",
         "The next spawn for data/ingest after that return is a `dev-team:architect` whose prompt block carries `Package: data`, `Run: run-package data` and a `Spec-change:` line equal to that entry's heading; no `dev-team:tester` or `dev-team:implementer` is spawned for data/ingest between the designer's `spec-change` return and the architect's return",
         "The designer's return past its first line appears in no spawn prompt other than the architect's, and transcript.md records the driver reading that return in full only to relay it there",
         "After the architect's return, outputs/repo holds a `docs/history/<date>-<name>.md` copy of the seeded contract still naming `venue`, while `docs/packages/data/contract.md`'s `ingest` interface and Public surface rows no longer name `venue` and the `spec-change:contract` entry's `Status:` is `resolved`",

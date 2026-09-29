@@ -21,7 +21,8 @@ looks rather than deciding quietly.
 
 ## Hard rules
 
-- **Write only** the design document at `Write to:`; `docs/deviations.md`, one appended
+- **Write only** the design document at `Write to:`; the section's ledger, `docs/deviations/<pkg>/<section>.md`:
+  one `deviation` entry per item of your design's **Contract deviations** (§10), or one
   `spec-change:contract` entry (**Spec-change**); and `docs/decisions.md`, appended `D<n>`
   stubs when you stop (**Return**). Never source, config, tests, or another section's design.
 - **You commit your own run** (**Commit**), whatever it ends in.
@@ -55,11 +56,14 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
 7. **Source probes** — `docs/sources/<source>.md` per entry in the row's `source`. *May be
    `none`.*
 8. **Change file** — `docs/changes/<slug>.md` (`delta` only). *May be `none`.*
-9. **Design-gap** — the tester's return, verbatim, when re-designing after a `design-gap`. *May
+9. **Spec-change** — the open `spec-change:design` that re-opened this design (`delta` only):
+   a ledger entry heading, or `<report path> — spec-change:design` when a review report raised
+   it, whose **Spec-change** heading holds it. *May be `none`.*
+10. **Design-gap** — the tester's return, verbatim, when re-designing after a `design-gap`. *May
    be `none`.*
-10. **Skills to invoke** — the row's `builds with`. *May be `none`.*
-11. **Write to** — `docs/packages/<pkg>/design/<section>.md`.
-12. **Run** — `run-package <pkg>` from the driver: your commit trailer (**Commit**). *Optional:
+11. **Skills to invoke** — the row's `builds with`. *May be `none`.*
+12. **Write to** — `docs/packages/<pkg>/design/<section>.md`.
+13. **Run** — `run-package <pkg>` from the driver: your commit trailer (**Commit**). *Optional:
     absent, the trailer is your own default.*
 
 **Contracts.** The package contract's row for your section — responsibility, path, `depends
@@ -139,9 +143,14 @@ cited the same way.
   should be. Anything that looks wrong goes under **Pitfalls and risks**, not silently
   corrected — the tester will test your document against this code, so a correction written
   as fact is a red test nobody asked for.
-- **`delta`** — an open change file names the section. Read the existing design at `Write
-  to:`, the `own:` README and the change file; apply the change file's **Contract changes** to
-  the design and rewrite the whole document. Everything the change does not touch carries
+- **`delta`** — an open change file names the section, or an open `spec-change:design` does
+  (`Spec-change:`). Read the existing design at `Write to:`, the `own:` README, and the change
+  file or the spec-change: the ledger entry's **Clause**, **Said** and **Found**, or the
+  report's **Spec-change** line and the findings it cites. Apply the change file's **Contract
+  changes**, or answer the spec-change, and rewrite the whole document. A spec-change says a
+  clause of this design is wrong; the rewrite states what is right, and the section's
+  standing CRITICALs that the same report raised are answered in the design where they touch
+  it. Everything the change does not touch carries
   over. No changelog is stapled on, and no heading lists only the differences: the next
   reader needs the section as it will be, not the history of how it got there.
 
@@ -156,7 +165,7 @@ a name you design into existence.
 1. Read the contracts, highest first, and note every shape, signature, name and convention
    touching your section. Read every document in `Dependency READMEs:`, `Upstream
    interfaces:` and `Source probes:` and note the exact names and fields you will consume.
-   Read `docs/decisions.md`. In `delta` mode read the change file and the existing design; in
+   Read `docs/decisions.md`. In `delta` mode read the change file or the spec-change, and the existing design; in
    `document` mode the code at the section path.
 2. **Check the contract before designing against it.** A boundary shape, a public name, a
    consumed signature or a nullable column the contracts get wrong — contradicted by a shipped
@@ -212,7 +221,14 @@ it truly does not apply, and say so in a line.
     wording, with the reason and which contract: a helper the row does not name, a pipeline
     step split in two. If none, write "None". In `delta` mode the change file's **Contract
     changes** are the spec and are not listed here; this heading holds only departures the
-    change file does not sanction. A boundary shape, public name, consumed signature or
+    change file does not sanction. Each item is also a ledger entry, which is how it reaches
+    the contract: append one `deviation` entry per item to the section's ledger — **Clause**
+    the contract row or heading, **Said** its words, **Did** what the design does instead,
+    **Why** the reason, `Status: proposed`, `Raised by: designer — <Run:>`, `Resolved by: —` —
+    and cite each here by its heading. The round-1 conformance reviewer approves or rejects
+    it, and `sync-plan` folds an approved one into the contract when the package closes. An
+    item already in the ledger from an earlier run of this design is cited, not appended
+    again. A boundary shape, public name, consumed signature or
     nullable column the contracts get wrong is never a deviation: it is a spec-change.
 11. **Open questions** — numbered `OQ-<pkg>-<section>-<k>`, e.g. `OQ-data-ingest-1`, each with
     the assumption you designed against, so an unanswered question does not stop the
@@ -237,7 +253,7 @@ questions** entry with an assumption.
 
 1. Read `${CLAUDE_PLUGIN_ROOT}/skills/planning-templates/references/deviations-entry.md` with
    the Read tool.
-2. Append one entry to `docs/deviations.md`, heading `## <pkg>/<section> — <date> —
+2. Append one entry to `docs/deviations/<pkg>/<section>.md`, heading `## <pkg>/<section> — <date> —
    spec-change:contract`, and its lines in the template's order: `Clause:` (the contract row
    or heading it cites), `Said:` (what the contract says, quoted), `Found:` (the evidence: the
    README row, the `interface.md` name, or the probe doc heading, by path), `Why:` (why the
@@ -272,13 +288,18 @@ entry heading as written, then `Commit: <sha>`.
 
 Commit per `git-workflow-and-versioning` §Project convention (preloaded) — its **Staging**,
 **Message** and **One commit per run** rules; stage the design, and `docs/decisions.md` or
-`docs/deviations.md` when this run wrote to it, by explicit path and nothing else. Scope
+`docs/deviations/<pkg>/<section>.md` when this run wrote to it, by explicit path and nothing else. Scope
 `<pkg>/<section>`. Summary `design`, `design (delta)` or `design (document)` for a design;
 `spec-change (contract)` for a spec-change; `stopped for D<n>` for a stop. Trailer
 `Dev-Team-Run:` followed by your prompt's `Run:` line (`Dev-Team-Run: run-package <pkg>` under
 the driver); with no `Run:` line, `Dev-Team-Run: designer <pkg>/<section>`.
 
 ## Memory
+
+Other runs of your role may be writing the same memory directory at the same moment. Name a
+new memory file for what it is about and the section it came from, never a generic name, and
+add its line to `MEMORY.md` with the Edit tool; never rewrite the index, which drops the lines
+another run just added.
 
 Project memory is a hint, never a source of truth. **`docs/` is authoritative; if memory and
 a document disagree, follow the document and correct the memory.**

@@ -148,7 +148,7 @@ last, then closes the package. It runs in your conversation and spawns every age
 4. **Branch** on each return's first line, `Result: done | blocked | stopped | spec-change |
    design-gap`. A tester's `design-gap` goes back to the designer with the tester's reasons
    (three for one section in one run is a question for you). A `spec-change` needs no relay:
-   its entry is in `docs/deviations.md`, and the next `status.py` re-opens the step it names.
+   its entry is in `docs/deviations/<pkg>/<section>.md`, and the next `status.py` re-opens the step it names.
    `blocked` and `stopped` are asked.
 5. **Re-derive** and loop.
 6. **The close.** When every section is DONE, the architect runs as `sync-plan`: approved
@@ -202,7 +202,7 @@ unfinished step.
 
 When you say you are done, it wraps up: sorts every change by the clause it touches — none,
 `deviation` or `spec-change:<level>`, by the implementer's own table — shows you the list,
-writes the entries to `docs/deviations.md`, updates the section README, runs the stop gate's
+writes the entries to `docs/deviations/<pkg>/<section>.md`, updates the section README, runs the stop gate's
 checks by hand (`gate_on_stop.py --report --base <start>`, so the next reviewer reads a gate
 record of *this* code), commits once, and prints the `next:` command. From there it is the
 ordinary loop: one review round for changes inside the design, a verdict on each deviation, or
@@ -286,7 +286,9 @@ you) fill `Decision:` and `Status:`; the implementer adds `Applied:`.
 
 ## Deviations and spec-changes
 
-`docs/deviations.md` is the one ledger for "the document and the code disagree", one entry per
+`docs/deviations/<pkg>/<section>.md` is a section's ledger for "the document and the code disagree", one
+file per section so agents running in parallel on different sections never write the same file
+(a `docs/deviations.md` from before 2.0 is still read, and its entries are edited in place), one entry per
 item, `## <pkg>/<section> — <date> — <kind>`, with **Clause**, **Said**, **Did** or **Found**,
 **Why**, **Status**, **Raised by** and **Resolved by**. Append-only; the status line is the
 only edit.
@@ -389,7 +391,7 @@ docs/
 ├── constraints.md                   the bar: Floor, Enforced, Measured, Guarded, Exceptions (set-constraints / you)
 ├── architecture.md                  THE REPO CONTRACT                              (plan-repo, map-repo, sync-plan)
 ├── decisions.md                     D<n> ledger                                    (architect, designer stubs · you · implementer Applied:)
-├── deviations.md                    deviations and spec-changes                    (implementer, designer, tester, reviewer, architect)
+├── deviations/<pkg>/<section>.md    one ledger per section: deviations, spec-changes (implementer, designer, tester, reviewer, architect)
 ├── followups.md                     the backlog, `- [ ] <pkg>/<section>: …`, never a gate (reviewer, architect)
 ├── changes/<slug>.md                a change to built or shipped code, until sync-plan (architect)
 ├── legacy/inventory.md              what to salvage from an old repo              (curator / you mark keep)
