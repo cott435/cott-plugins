@@ -29,8 +29,10 @@
     "exit": 2,
     "stderr_contains": [
       "ruff check left these in packages/data/tests/intent/ingest/test_wide.py",
-      "PLR0913",
       "E501"
+    ],
+    "stderr_lacks": [
+      "PLR0913"
     ]
   }
 }

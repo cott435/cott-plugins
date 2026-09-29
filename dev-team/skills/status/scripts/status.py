@@ -37,7 +37,8 @@ A section is in exactly one state, decided in this order, first match wins:
 
 The **ledger** is one file per section, `docs/deviations/<pkg>/<section>.md`, so agents that
 run in parallel on different sections never write the same file; a `docs/deviations.md` from
-before that split is still read. An **open spec-change** is an entry `spec-change:<level>`
+before that split is still read, and an entry moved out of it into its section's file keeps
+the commit that first added it, so a move answers nothing and re-opens nothing. An **open spec-change** is an entry `spec-change:<level>`
 with `Status: open`, or a review report of the newest round whose verdict is `spec-change`:
 each level its **Spec-change** heading names counts as open until a ledger entry of that level
 for the section is committed with or after the report (then the entry speaks), or the
@@ -494,8 +495,10 @@ def entry_rev(entry: dict[str, str]) -> str | None:
     not yet committed."""
     if entry.get("source") == "report":
         return entry["rev"]
+    # Every ledger path, not only the entry's file: an entry moved from the pre-split
+    # docs/deviations.md into its section file keeps the commit that first added it.
     heading = f"## {entry['heading']}"
-    sha = (git("log", "--reverse", "--format=%H", "-S", heading, "--", entry.get("file", "docs/deviations.md")) or "").split("\n")[0]
+    sha = (git("log", "--reverse", "--format=%H", "-S", heading, "--", "docs/deviations.md", "docs/deviations") or "").split("\n")[0]
     return sha or UNCOMMITTED
 
 
