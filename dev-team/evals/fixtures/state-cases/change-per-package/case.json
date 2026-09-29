@@ -1,0 +1,25 @@
+{
+  "note": "an open per-package change file docs/packages/<pkg>/changes/<slug>.md newer than the design re-opens DESIGN",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "change",
+      "slug": "vwap-window",
+      "sections": [
+        "data/ingest"
+      ]
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "DESIGN",
+    "evidence": "^change vwap-window"
+  }
+}

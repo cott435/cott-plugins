@@ -28,12 +28,17 @@ section depends on all of them. Nothing is counted from `docs/followups.md`.
 `--run-gate [pkg]` prints `run gate: PASS` or `run gate: FAIL` with one reason per line and
 exits 1 on FAIL: not a git repository; on `main` or `master`; uncommitted changes outside the
 user-edited files (`docs/decisions.md`, `docs/brief.md`, `docs/constraints.md`,
-`.claude/agent-memory/`); and, with a package, no `docs/packages/<pkg>/contract.md`. It is the
+`.claude/agent-memory/`); an inbox `docs/packages/<pkg>/decisions/<section>.md` holding a
+`D?` stub, a `D<n>` or an `Applied:` line that `docs/decisions.md` does not (the sync hook did
+not run; `python3 <plugin>/hooks/sync_decisions.py --all` repairs it); and, with a package, no
+`docs/packages/<pkg>/contract.md`. It is the
 check a run makes once, before its first agent.
 
 `--rounds <pkg>/<section>` prints `rounds: <n>` — the newest review round, from the
-`-r<n>-` in the report filenames, 0 with none — and `next round: <n+1>`. Nothing else runs; the
-reviewer names its report from it.
+`-r<n>-` in the report filenames, 0 with none — `next round: <n+1>`, and `commit: <short sha>`
+— the newest commit touching the section's code, unit tests, intent tests and README, or
+`none`; the reviewer copies it as its report's `Commit:`. Nothing else runs; the reviewer names
+its report from it.
 
 `--surface <pkg>` prints `surface: PASS` or `surface: FAIL` with reasons: every name must be in
 all three of `__all__` in the package's `__init__.py`, the **Public names** table of
@@ -54,7 +59,7 @@ step reads it.
 
 `--inputs <pkg>/<section>` prints the implementer's spawn block — twelve `<Field>: <value>`
 lines, `none` where a field has nothing to hold — resolved from the contract, the Packages
-table, the review reports and the open change files. `/dev-team:run-package` sends it verbatim
+table, and the review reports and open change files at either location. `/dev-team:run-package` sends it verbatim
 to the implementer, and `/dev-team:pair` reads the files it names. The script's docstring lists
 the fields and how each resolves. A section the contract lacks prints one line and exits 2.
 

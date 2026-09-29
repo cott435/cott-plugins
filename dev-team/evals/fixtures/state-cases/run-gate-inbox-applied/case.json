@@ -1,0 +1,32 @@
+{
+  "note": "--run-gate fails on an inbox Applied: line the central D<n> lacks",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "files": {
+        "docs/decisions.md": "# Decisions\n\n## D3 — Which timestamp parser?\n\nScope: data/ingest\nRaised by: OQ-data-ingest-1\nRecommendation: pandas\nAssumption if unanswered: pandas\nDecision: pandas\nStatus: answered\n"
+      },
+      "message": "docs: decisions"
+    },
+    {
+      "do": "inbox",
+      "section": "ingest",
+      "entries": [
+        "## D3\n\nApplied: data/ingest, 2026-09-27, packages/data/src/data/ingest/__init__.py"
+      ]
+    }
+  ],
+  "args": [
+    "--run-gate",
+    "data"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "run gate: FAIL",
+      "docs/packages/data/decisions/ingest.md: D3 Applied: line not in docs/decisions.md"
+    ]
+  }
+}

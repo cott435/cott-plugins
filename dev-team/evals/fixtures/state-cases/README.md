@@ -19,10 +19,23 @@ macro, `{"do": "<macro>", ...}`: `base` (architecture, the `data` contract with 
 row, the `trades` probe doc; `contract: false | "api"`, `sources: false`), `design`, `tests`,
 `build`, `review` (one report per suffix, `Commit:` the code reviewed), `done` (all four,
 round 1 `a` and `b` approving), `fix`, `edit`, `regenerate` (a
-`<pkg>/<section>: regenerate 1 intent tests` commit) and `deviation` (one entry in the
-section's ledger, `docs/deviations/<pkg>/<section>.md`, or with `"legacy": true` in the
-pre-split `docs/deviations.md`). `review` takes `spec` (letter → the line under its
-**Spec-change** heading); `base` takes `shorthand` (ingest's path cell as `…/ingest/`). `{HEAD}` in any file content is the commit the step starts from.
+`<pkg>/<section>: regenerate 1 intent tests` commit), `deviation` (one entry in the
+section's ledger, `docs/packages/<pkg>/deviations/<section>.md` with the heading's `— <k>`, or
+with `"legacy": true` in the pre-split `docs/deviations.md`), `change` (`slug`, `sections`,
+`status`, `pkg`: a change file at `docs/packages/<pkg>/changes/<slug>.md`) and `inbox`
+(`section`, `entries`: the section's decisions inbox, entries verbatim). `review`,
+`deviation` and `change` take `"layout": "old"` for the 2.0 paths (`docs/reviews/…`,
+`docs/deviations/<pkg>/<section>.md` with no `— <k>`, `docs/changes/<slug>.md`); the
+default is the 2.2 layout, so every case that sets no layout runs under it. `review` takes
+`spec` (letter → the line under its **Spec-change** heading); `base` takes `shorthand`
+(ingest's path cell as `…/ingest/`). `{HEAD}` in any file content is the commit the step
+starts from.
+
+The 2.2 cases (phase 1 of `site/notes/2.2-01-status-paths.md`) are the last fifteen rows. Six
+older cases whose expectations spell a 2.0 path or heading (`inputs-fix-round`,
+`inputs-spec-change-review`, `report-spec-change-b`, `report-spec-change-recorded`,
+`test-regenerate`, `test-spec-change-test`) set `"layout": "old"`, so they keep pinning the old
+layout; the rest run under the new one.
 
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
@@ -77,3 +90,18 @@ optional flag).
 | `test-spec-change-test` | an open spec-change:test after the build (remake phase 11) | `—` | `ingest · TEST`, evidence `/^open data/ingest — 2026-09-27 — spec-change:test$/` |
 | `test-spec-change-answered` | the same, then a regeneration commit (remake phase 11) | `—` | `ingest · REVIEW`, evidence `/^no review$/`; no `spec-change:test` |
 | `test-design-newer-tests-current` | a delta design after the build, then a tester stamp commit `intent tests current with design` (remake phase 11) | `—` | `ingest · REVIEW`, evidence `/^no review$/` |
+| `ledger-old-layout` | approved deviation at the 2.0 `docs/deviations/data/ingest.md`, untagged citing test | `—` | `ingest · TEST`, evidence `/^regenerate: data\/ingest — 2026-09-27 — deviation$/` |
+| `ledger-heading-k` | a proposed entry, then an approved one: heading `… — deviation — 2` in the new file | `—` | `ingest · TEST`, evidence `/— deviation — 2$/` |
+| `ledger-moved-new` | an open `spec-change:design` first committed at the 2.0 path, the design answering it, then the entry moved under `docs/packages/data/deviations/` | `—` | `ingest · TEST` (still answered); no `spec-change:design` |
+| `review-old-layout` | round 1 reports at the 2.0 `docs/reviews/…` | `—` | `ingest · DONE`, round 1 |
+| `review-both-layouts` | round 1 at the old path, round 2 at the new | `--rounds data/ingest` | `rounds: 2`; `next round: 3` |
+| `rounds-commit` | built section, one review | `--rounds data/ingest` | `rounds: 1`; a line matching `/^commit: [0-9a-f]{7}$/`; not `commit: none` |
+| `rounds-commit-none` | contract only | `--rounds data/ingest` | `rounds: 0`; `commit: none` |
+| `change-per-package` | DONE, then an open `docs/packages/data/changes/vwap-window.md` naming `data/ingest` | `—` | `ingest · DESIGN`, evidence `/^change vwap-window/` |
+| `change-per-package-other-pkg` | an open `docs/packages/analysis/changes/x.md` naming `data/ingest` | `—` | `ingest · IMPLEMENT` (a per-package file names only its own package's sections) |
+| `inputs-new-layout` | FIX 1 with reports at the new path and a per-package change file | `--inputs data/ingest` | `Review: docs/packages/data/reviews/ingest/2026-09-27-r1-a.md, docs/packages/data/reviews/ingest/2026-09-27-r1-b.md`; `Change file: docs/packages/data/changes/vwap-window.md` |
+| `run-gate-inbox-stub` | inbox with a `## D? — Which parser?` stub | `--run-gate data` | `run gate: FAIL`; `unsynced inbox — docs/packages/data/decisions/ingest.md: D? stub not yet numbered`; exit 1 |
+| `run-gate-inbox-applied` | inbox `## D3` with an `Applied:` line the central D3 lacks | `--run-gate data` | `run gate: FAIL`; `D3 Applied: line not in docs/decisions.md`; exit 1 |
+| `run-gate-inbox-synced` | inbox `## D3` whose `Applied:` line is in the central D3 | `--run-gate data` | `run gate: PASS`; exit 0 |
+| `clause-full-name` | approved deviation `Clause: design §5 load trades from csv`; one test cites it, another cites `load trades count` | `—` | `ingest · TEST`, evidence `/^regenerate: data\/ingest — 2026-09-27 — deviation — 1$/` |
+| `clause-full-name-no-match` | the same clause (at the 2.0 path), only the `load trades count` test | `—` | `ingest · REVIEW`, evidence `/^no review$/` (no match on the first word alone) |

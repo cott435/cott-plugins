@@ -1,0 +1,36 @@
+{
+  "note": "no match on the first word alone (W3): a test citing `load trades count` does not cite the clause `load trades from csv`, so no regeneration; the entry sits at the 2.0 path so the 2.1 parser reads it too and the case isolates the name match",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "files": {
+        "packages/data/tests/intent/ingest/test_ingest.py": "def test_0():\n    \"\"\"Design §5 load trades count: the row count.\"\"\"\n    assert True\n"
+      },
+      "message": "data/ingest: intent tests"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "deviation",
+      "section": "ingest",
+      "kind": "deviation",
+      "status": "approved",
+      "clause": "design §5 load trades from csv",
+      "layout": "old"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "REVIEW",
+    "evidence": "^no review$"
+  }
+}

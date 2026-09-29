@@ -1,0 +1,47 @@
+{
+  "note": "--inputs at FIX 1 names the round's reports and the open change file at their 2.2 paths",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 1,
+      "reports": {
+        "a": "approve",
+        "b": "request changes"
+      }
+    },
+    {
+      "do": "change",
+      "slug": "vwap-window",
+      "sections": [
+        "data/ingest"
+      ]
+    }
+  ],
+  "args": [
+    "--inputs",
+    "data/ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "Review: docs/packages/data/reviews/ingest/2026-09-27-r1-a.md, docs/packages/data/reviews/ingest/2026-09-27-r1-b.md\n",
+      "Change file: docs/packages/data/changes/vwap-window.md\n"
+    ]
+  }
+}

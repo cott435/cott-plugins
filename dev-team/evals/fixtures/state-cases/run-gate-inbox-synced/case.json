@@ -1,0 +1,31 @@
+{
+  "note": "--run-gate passes when every inbox entry and Applied: line is in docs/decisions.md",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "files": {
+        "docs/decisions.md": "# Decisions\n\n## D3 — Which timestamp parser?\n\nScope: data/ingest\nRaised by: OQ-data-ingest-1\nRecommendation: pandas\nAssumption if unanswered: pandas\nDecision: pandas\nStatus: answered\nApplied: data/ingest, 2026-09-27, packages/data/src/data/ingest/__init__.py\n"
+      },
+      "message": "docs: decisions"
+    },
+    {
+      "do": "inbox",
+      "section": "ingest",
+      "entries": [
+        "## D3\n\nApplied: data/ingest, 2026-09-27, packages/data/src/data/ingest/__init__.py"
+      ]
+    }
+  ],
+  "args": [
+    "--run-gate",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "run gate: PASS"
+    ]
+  }
+}

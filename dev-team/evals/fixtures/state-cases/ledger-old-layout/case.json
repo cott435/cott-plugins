@@ -1,5 +1,5 @@
 {
-  "note": "approved deviation whose clause an untagged intent test cites",
+  "note": "a 2.0 ledger at docs/deviations/<pkg>/<section>.md is still read: an approved deviation there, cited by an untagged test, regenerates",
   "steps": [
     {
       "do": "base"

@@ -1,5 +1,5 @@
 {
-  "note": "approved deviation whose clause an untagged intent test cites",
+  "note": "round 1 reports at the 2.0 path docs/reviews/<date>-<pkg>-<section>-r<n>-<letter>.md are still read",
   "steps": [
     {
       "do": "base"
@@ -17,17 +17,20 @@
       "section": "ingest"
     },
     {
-      "do": "deviation",
+      "do": "review",
       "section": "ingest",
-      "kind": "deviation",
-      "status": "approved",
-      "layout": "old"
+      "round": 1,
+      "layout": "old",
+      "reports": {
+        "a": "approve",
+        "b": "approve"
+      }
     }
   ],
   "args": [],
   "expect": {
     "section": "ingest",
-    "state": "TEST",
-    "evidence": "^regenerate: data/ingest — 2026-09-27 — deviation$"
+    "state": "DONE",
+    "rounds": 1
   }
 }
