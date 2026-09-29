@@ -170,4 +170,4 @@ upstream `interface.md`, a probe doc — wins over every plan-time document abou
 | `docs/followups.md` | reviewer (out-of-diff WARNINGs, defer), architect (map-repo defects) | the fix-round implementer (entries for its section), documenter, you | never counted, never a gate |
 | `docs/history/<date>-<name>.md` | architect, before every contract edit | you | never |
 | `docs/index.md`, `packages/*/README.md`, root `README.md` | documenter | you | a shipped document changed after it |
-| `.dev-team/gate.txt` | the stop gate; `gate_on_stop.py --report` (`pair` at wrap-up) | reviewer (its evidence) | the next implementer stop or `--report` run |
+| `.dev-team/gate/<pkg>/<section>.txt` | the stop gate; `gate_on_stop.py --report` (`pair` at wrap-up) | reviewer (its evidence) | the next implementer stop or `--report` run |

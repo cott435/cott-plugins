@@ -126,8 +126,9 @@ When the user says they are done, or asks to wrap up:
    `docs/packages/<pkg>/interface.md`; when its **Public names** change, the entry is a
    spec-change, and `docs/api/<pkg>.md` follows it.
 5. **Gate.** `gate --report --base <start>`. It runs the stop gate's checks over everything
-   since the start commit and writes `.dev-team/gate.txt`, which the next reviewer reads as
-   its evidence. Go through each FAIL line with the user:
+   since the start commit and writes the section's record, `.dev-team/gate/<pkg>/<section>.txt`,
+   which the next reviewer reads as its evidence. Go through each FAIL line with the user
+   (an `ELSEWHERE` line is another section's intent tests, not this one's to fix):
    - lint, format, type, coverage or a unit test: fix it, then run the gate again;
    - an intent test whose clause a `spec-change` entry names: expected. The tests are
      regenerated before the section is reviewed, so leave it;

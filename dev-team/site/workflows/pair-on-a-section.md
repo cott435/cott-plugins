@@ -47,7 +47,7 @@ When you say you are done:
 3. **README.** The section README is brought in line with the code, and its **Implementation
    notes** cite the new entries.
 4. **Gate.** `gate_on_stop.py --report --base <start>` runs the stop gate's checks over
-   everything since the start commit and writes `.dev-team/gate.txt`. The next reviewer reads
+   everything since the start commit and writes the section's record, `.dev-team/gate/<pkg>/<section>.txt`. The next reviewer reads
    that file as its evidence, so it describes this code, not the last implementer's. You fix
    the FAIL lines together. A failing intent test whose clause a spec-change names is expected,
    because the tests are regenerated before the review.

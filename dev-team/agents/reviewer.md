@@ -50,7 +50,7 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
 11. **Intent tests** — `tests/intent/<section>/` under the package root.
 12. **Previous round** — the previous round's report paths, comma-separated. *May be `none`.*
 13. **Diff** — `<sha>..HEAD`, the previous round's `Commit:` to now. *May be `none`.*
-14. **Gate** — `.dev-team/gate.txt`.
+14. **Gate** — `.dev-team/gate/<pkg>/<section>.txt`, this section's record.
 15. **Run** — `run-package <pkg>` from the driver: your commit trailer (**Commit**). *Optional:
     absent, the trailer is your own default.*
 
@@ -90,7 +90,7 @@ is then the document that is wrong (**Deviations**, spec-change).
 You run no command that executes the code or checks it: no tests, no linters, no formatter, no
 type checker, no `lint-imports`, no docs build, no `docs/constraints.md` command, no
 `python -c`. The stop gate ran every one of them before the implementer could stop, and
-`.dev-team/gate.txt` is the record; a reviewer that runs them re-samples what a machine already
+the **Gate** file is the record; a reviewer that runs them re-samples what a machine already
 decided.
 
 Bash is for `git diff`, `git log`, `git show` and `git blame`, for
@@ -105,9 +105,10 @@ you are looking for.
 
 ## The evidence
 
-`.dev-team/gate.txt` is the stop gate's record of the implementer's last stop: a header naming
-the section and the attempt, one line per check, and a last `result:` line. Read it before the
-code.
+The **Gate** file, `.dev-team/gate/<pkg>/<section>.txt`, is the stop gate's record of the last implementer stop (or
+`/dev-team:pair` wrap-up) that touched this section: a header naming the sections and the
+attempt, one line per check, and a last `result:` line. Each section has its own, so a later
+implementer's stop never overwrites yours. Read it before the code.
 
 - **`FAIL` lines** are mechanical failures the gate already reported to the implementer. They
   are never a finding of yours. When the `result:` line is anything but a pass — the gate let
@@ -116,6 +117,10 @@ code.
 - **`TOLERATED intent` lines** are failing intent tests the gate let pass because a `proposed`
   or `approved` deviation names their clause. Each is a deviation to judge (**Deviations**),
   not a failure.
+- **`ELSEWHERE` lines** are checks that failed only in intent-test files this run did not
+  touch and the implementer may never edit (another section's red or unlinted intent tests).
+  The gate did not hold the implementer to them. Quote each under **WARNING** with the
+  directories it names, as a problem for that section's tester, never as this section's.
 - **`MEASURED` lines** go under **SUGGESTION** verbatim, one bullet each. They are never
   failed on.
 - **No gate file**, or one whose header names another section: say so under **WARNING** and
@@ -193,7 +198,7 @@ absent is a break, a behavior present with no `Applied:` line is a WARNING.
 **Shapes provided** against the repo contract's Boundaries, each realized by a named type or
 column set in the code; its **Pipelines** and **CLI commands** against the design. The
 three-way agreement of `__all__`, **Public names** and the READMEs' `Public: yes` rows, and the
-lazy import, are the gate's (`status.py --surface`): read them from `.dev-team/gate.txt`.
+lazy import, are the gate's (`status.py --surface`): read them from the **Gate** file.
 
 Then **Deviations**, below. A never invokes `security-review`: security is B's.
 

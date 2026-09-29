@@ -30,6 +30,10 @@ convention = "google"        # python-style-guide: docstrings on everything, Goo
 "**/tests/intent/**" = ["S101", "D", "B017", "PT011"]
 "scripts/**" = ["D"]
 "**/scripts/**" = ["D"]
+# project-structure: every nested `__init__.py` is empty, so D104 (a docstring in every
+# package) is off below `src/<pkg>/`. The package's own `src/<pkg>/__init__.py` is its public
+# surface and keeps the rule.
+"**/src/*/*/**/__init__.py" = ["D104"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10          # project-structure §2 hard limit

@@ -3,7 +3,7 @@
   "repo": "arch",
   "setup": {
     "files": {
-      "packages/data/src/data/ingest/extra.py": "\"\"\"One constant.\"\"\"\n\nimport os\n\nVALUE = 1\n"
+      "packages/data/src/data/ingest/__init__.py": ""
     }
   },
   "event": {
@@ -14,7 +14,7 @@
     "hook_event_name": "PostToolUse",
     "tool_name": "Write",
     "tool_input": {
-      "file_path": "packages/data/src/data/ingest/extra.py",
+      "file_path": "{cwd}/packages/data/src/data/ingest/__init__.py",
       "content": "…"
     },
     "tool_response": {
@@ -29,7 +29,7 @@
     "exit": 0,
     "stderr": "",
     "file_equals": {
-      "packages/data/src/data/ingest/extra.py": "\"\"\"One constant.\"\"\"\n\nVALUE = 1\n"
+      "packages/data/src/data/ingest/__init__.py": ""
     }
   }
 }

@@ -22,7 +22,7 @@
     "exit": 0,
     "stderr": "",
     "absent": [
-      ".dev-team/gate.txt"
+      ".dev-team/gate"
     ]
   }
 }

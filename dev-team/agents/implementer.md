@@ -341,7 +341,9 @@ run gate checked them before you were spawned.
 13. **Finish.** End with your return message; the stop gate runs. When it exits 2 you are not
     done: fix what it names, stage the fix, `git commit --amend --no-edit -- <paths>` with
     every path this run has written, and finish again — ending with your **full return message
-    again**, first line `Result:`, because the caller receives only your last turn.
+    again**, first line `Result:`, sent through your hand-back tool if you have one
+    (`SubagentHandback`). The caller receives the last hand-back, not your last turn: a report
+    handed back before a retry is stale, and only the new one says what the gate found.
 
 ## Files outside your section
 
@@ -519,6 +521,9 @@ until it is green:
   commands; **Measured** rows are printed, never failed on;
 - the section's intent suite, a failing test tolerated only when its `Design §<n> <item>`
   docstring matches the `Clause:` of a `proposed` or `approved` deviation for this section;
+- a check that fails only in intent-test files this run did not touch — another section's
+  red or unlinted intent tests — is marked `ELSEWHERE`, not `FAIL`, and does not hold you:
+  you may never edit `tests/intent/`. List each under **Needed from elsewhere**;
 - a **Guarded** grep of the run's diff: an added `# noqa`, `# type: ignore`, `# pragma: no
   cover`, skip, or an xfail naming no `D<n>`; a removed assert or `pytest.raises`; a lowered
   threshold — unless an unexpired **Exceptions** row pardons it;
@@ -529,8 +534,8 @@ the fix, `git commit --amend --no-edit -- <paths>`, and finish again (attempt n 
 the FAIL lines; from attempt 2 it tells you to invoke `debugging-and-error-recovery` first.
 Fix the code — never lower a bar, never add a Guarded item, never edit `docs/constraints.md`
 or its Exceptions — then amend and finish again with your full return message. On the third
-attempt it lets you stop whatever it finds; the reviewer reads the failures in
-`.dev-team/gate.txt`, which the gate writes on every attempt.
+attempt it lets you stop whatever it finds; the reviewer reads the failures in the section's
+record, `.dev-team/gate/<pkg>/<section>.txt`, which the gate writes on every attempt.
 
 The marker `.dev-team/stop` lets you stop without the checks. It has two lines: `blocked` or
 `spec-change`, then the blocker or the entry heading. Write it only on those two returns; the
@@ -539,8 +544,9 @@ gate deletes it. It is never staged.
 ## Return message
 
 The first line of every return is `Result: done`, `Result: blocked` or `Result: spec-change`.
-`/dev-team:run-package` branches on that line and on nothing else. After a gate retry, write
-the whole message again: the caller receives only your last turn.
+`/dev-team:run-package` branches on that line and on nothing else. After a gate retry, send the
+whole message again, through your hand-back tool if you have one: the caller receives the last
+hand-back, not your last turn, so every finish re-sends it.
 
 Under 25 lines:
 
@@ -548,7 +554,8 @@ Under 25 lines:
 - Test command and result (pass/fail counts); `lint-imports` result
 - `Intent tests: <pass>/<total>` at the end (`—` when `Intent tests:` is `none`)
 - `Gate: PASS` on a first return (the gate stops you if it fails); `passed after <n> attempts`
-  after `n-1` exit-2s; `let through after 3 attempts` when you are finishing a third time;
+  after `n-1` exit-2s; `let through after 3 attempts` when you are finishing a third time with
+  anything still red (the gate lets that finish end the run, so this return is the last word);
   `not run` when no stop hook runs (a harness that says so)
 - Deviations: the entry headings; Spec-change: the entry heading
 - `D<n>` applied this run, and `TODO(decision D<n>)` markers resolved

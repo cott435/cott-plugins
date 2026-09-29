@@ -28,7 +28,7 @@
     "exit": 0,
     "absent": [
       ".dev-team/stop",
-      ".dev-team/gate.txt"
+      ".dev-team/gate"
     ],
     "counter": null
   }

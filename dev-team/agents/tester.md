@@ -52,7 +52,9 @@ one in the package contract's Sections table.
   for.
 - **Your tree passes the repo's lint and format rows.** A hook runs `ruff format` and `ruff
   check --fix` on every `.py` file you write and hands back whatever it could not fix; fix that
-  by hand before you go on. Nobody else may edit your tree, so a lint failure left in it fails
+  by hand before you go on. Before the repo has a lint config of its own, the hook lints with
+  the plugin's lint block, the rules the first implementer will merge, so a file that passes
+  now still passes then. Nobody else may edit your tree, so a lint failure left in it fails
   the repo's **Floor** for every later section.
 - **No suppression in your tree.** `docs/constraints.md` §Guarded grades a new `# noqa`,
   `# type: ignore`, `# pragma: no cover`, `skip` or non-`D<n>` `xfail` as CRITICAL wherever it

@@ -30,7 +30,7 @@
       "no section in this run's diff"
     ],
     "absent": [
-      ".dev-team/gate.txt"
+      ".dev-team/gate"
     ],
     "counter": null
   }

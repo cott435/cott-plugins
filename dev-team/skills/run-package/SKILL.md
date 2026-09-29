@@ -166,7 +166,7 @@ code, and neither may be handed the other's report. Round 2 and later is one: `F
 | **Intent tests** | `tests/intent/<section>/` |
 | **Previous round** | from round 2: round `r-1`'s report paths, comma-separated; else `none` |
 | **Diff** | from round 2: `<sha>..HEAD`, `<sha>` the `Commit:` line of round `r-1`'s `-s` report, or its `-a` report when `r-1` is 1 (the one report when it has no letter); else `none` |
-| **Gate** | `.dev-team/gate.txt` |
+| **Gate** | `.dev-team/gate/<pkg>/<section>.txt` |
 | **Run** | `run-package <pkg>` |
 
 ### Architect — PLAN and the close

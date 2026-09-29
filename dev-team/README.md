@@ -214,18 +214,22 @@ the spec-change's level re-opened first.
 
 - **`format_on_edit.py`** (`PostToolUse` on `Write|Edit`) — for the implementer and the tester,
   on a `.py` file: `ruff format`, `ruff check --fix`, `ruff format`, then `ruff check`. What
-  remains is shown to the agent; the edit stands.
+  remains is shown to the agent; the edit stands. Until the repo has a ruff config of its own,
+  it lints with `pyproject-lint-config.toml`, so intent tests written before the first
+  implementer merges that block already meet it.
 - **`gate_on_stop.py`** (`SubagentStop`, `^dev-team:implementer$`) — the implementer may not
   finish while its section is red. It runs the **Floor** and **Enforced** rows of
   `docs/constraints.md` (else the Toolchain commands of `docs/architecture.md`), the section's
   intent suite — a failure tolerated only when the test cites the clause of a `proposed` or
   `approved` deviation — a **Guarded** grep of the run's diff, and `status.py --surface` for the
-  `surface` section. Every line goes to `.dev-team/gate.txt`, which the reviewer reads as its
+  `surface` section. A check that fails only in intent-test files the run did not touch is
+  `ELSEWHERE`, not `FAIL`: the implementer may never edit them. Every line goes to the
+  section's own record, `.dev-team/gate/<pkg>/<section>.txt`, which the reviewer reads as its
   evidence. It lets the agent stop on a green run, on a `.dev-team/stop` marker (the
   implementer writes it when it returns `blocked` or `spec-change`), or on the third attempt,
   counted per agent under `${CLAUDE_PLUGIN_DATA}/gate/`; from the second it names
   `debugging-and-error-recovery`. By hand, `gate_on_stop.py --report [--base <rev>]` runs the
-  same checks over `<rev>`..working tree with no counter and no marker, writes the same file,
+  same checks over `<rev>`..working tree with no counter and no marker, writes the same records,
   and exits 1 on a FAIL; `/dev-team:pair` runs it at wrap-up.
 - **`guard_writes.py`** (`PreToolUse` on `Write|Edit`) — each role writes only where its job
   is: the architect under `docs/` but not designs or reviews; the designer to designs and the
@@ -407,7 +411,7 @@ docs/
 
 Outside `docs/`: each section's code and `README.md` (the implementer's), its
 `tests/unit/<section>/` (the implementer's) and `tests/intent/<section>/` (the tester's alone),
-and `.dev-team/gate.txt`, the stop gate's last output.
+and `.dev-team/gate/<pkg>/<section>.txt`, the stop gate's last output for each section.
 
 **Canonical contracts describe code that exists.** An edit to a contract that touches a built
 or shipped package becomes a change file instead; `sync-plan` applies it to the contracts once
