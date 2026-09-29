@@ -16,10 +16,14 @@ Usage:
       Which units to audit, one per line with the reason, from DIR/index.json. `risk`
       (the default) is the first unit of each type plus every unit that stands out; `new`
       is every finished unit with no DIR/findings/U<nn>.md yet.
+  trace.py flow DIR
+      Re-render DIR/flow.html from DIR/index.json, adding a badge for every unit that has a
+      findings file. `build` renders it too, before any audit.
   trace.py build SESSION --plugin NAME --out DIR [--full]
       SESSION is a .jsonl path, a session id (or unique prefix), or `latest`.
       Writes DIR/run.md, DIR/index.json, DIR/driver/seg-<n>.md, DIR/units/U<nn>.md and
-      DIR/units/U<nn>.system.md (the system prompt the agent actually ran with).
+      DIR/units/U<nn>.system.md (the system prompt the agent actually ran with), and
+      DIR/flow.html, the run as a chart (see flow.py).
       --full raises every truncation limit fivefold.
 
 Step ids are stable across rebuilds of the same transcript: `D<n>` in the main thread,
@@ -35,6 +39,9 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import flow  # noqa: E402
 
 PROJECTS = Path.home() / ".claude" / "projects"
 LIMITS = {"text": 600, "cmd": 500, "err": 800, "out": 400, "arg": 200}
@@ -198,7 +205,8 @@ def events_of(records: list[dict]) -> tuple[list[dict], dict]:
                 elif b.get("type") == "thinking" and b.get("thinking", "").strip():
                     add("think", rec, text=b["thinking"])
                 elif b.get("type") == "tool_use":
-                    ev = add("call", rec, id=b.get("id"), name=b.get("name"), input=b.get("input") or {})
+                    ev = add("call", rec, id=b.get("id"), name=b.get("name"), input=b.get("input") or {},
+                             mid=msg.get("id"))
                     by_tool_id[b.get("id")] = ev
 
         elif t == "user":
@@ -388,6 +396,42 @@ def render_events(events: list[dict], prefix: str, units_by_agent: dict, start: 
     return lines
 
 
+SECTION_RE = re.compile(r"^Section:\s*(\S+)", re.M)
+PATHLIKE_RE = re.compile(r"\b([a-z][\w-]*/[a-z][\w.-]*[\w])\b")
+
+
+def lane_of(prompt: str, description: str) -> str | None:
+    """What a unit worked on: a `Section:` input, else the first `a/b` name in its description or prompt."""
+    if m := SECTION_RE.search(prompt or ""):
+        return m.group(1)
+    for text in (description, prompt):
+        if m := PATHLIKE_RE.search(text or ""):
+            return m.group(1)
+    return None
+
+
+def outcome(ret: str, description: str) -> dict:
+    """The `Result:` of a return and, for a review, its verdict, counts and round. Heuristic, by design."""
+    first = one_line(ret).split(" ⏎ ")[0] if ret else ""
+    res = re.match(r"\W*Result:\W*([\w-]+)", first)
+    out: dict = {"result": res.group(1).lower() if res else None, "verdict": None,
+                 "critical": None, "warning": None, "round": None}
+    v = re.search(r"Verdict:\W*(approve|request changes|spec-change|reject|blocked|defer)", ret or "", re.I)
+    if v:
+        out["verdict"] = v.group(1).lower()
+        # "round-1 CRITICAL" is not a count: a count is a bare number, preferably beside its warnings
+        both = re.search(r"(?<![\w-])(\d+)\s+critical\b[^.\n]{0,20}?(?<![\w-])(\d+)\s+warnings?", ret, re.I)
+        crit = both or re.search(r"(?<![\w-])(\d+)\s+critical", ret, re.I)
+        warn = re.search(r"(?<![\w-])(\d+)\s+warnings?", ret, re.I)
+        out["critical"] = int(crit.group(1)) if crit else None
+        out["warning"] = int(both.group(2)) if both else int(warn.group(1)) if warn else None
+    if out["result"] in ("blocked", "stopped"):  # it wrote no review, whatever its text says it would have
+        out["verdict"] = out["result"]
+    if m := re.search(r"\bRound:?\W*(\d+)", ret or "") or re.search(r"\br(\d+)\b", description or ""):
+        out["round"] = int(m.group(1))
+    return out
+
+
 def unit_return(events: list[dict]) -> str:
     for ev in reversed(events):
         if ev["kind"] == "call" and ev["name"] == "SubagentHandback":
@@ -541,6 +585,10 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
             "finished": any(e["kind"] == "call" and e["name"] == "SubagentHandback" for e in u["events"])
                         or bool(u["spawn_call"] and "result" in u["spawn_call"]),
             "return_first_line": one_line(u["return"]).split(" ⏎ ")[0][:200] if u["return"] else "",
+            "wave_key": f"{u['spawner']}:{(u['spawn_call'] or {}).get('mid') or u['agent']}",
+            "lane": lane_of(u["prompt"], u["description"]),
+            "role": u["type"].split(":")[-1],
+            **outcome(u["return"], u["description"]),
         })
 
     # Driver: the main thread, split into segments at each command of this plugin.
@@ -596,13 +644,24 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
     for iu in index_units:
         iu["segment"] = seg_of.get(iu["unit"])
 
+    interventions = []
+    for ev in main_events:
+        if ev["kind"] == "call" and ev["name"] == "AskUserQuestion":
+            interventions.append({"step": ev.get("step"), "ts": ev["ts"], "kind": "asked",
+                                  "text": summarize_call("AskUserQuestion", ev["input"]),
+                                  "answer": "; ".join(re.findall(r'"="(.*?)"(?=[.,;]|\s|$)', ev.get("result", "")))
+                                            or one_line(ev.get("result", ""))[:300]})
+        elif ev["kind"] == "user":
+            interventions.append({"step": ev.get("step"), "ts": ev["ts"], "kind": "said",
+                                  "text": one_line(ev["text"])[:300], "answer": ""})
+
     index = {
         "session": session_path.stem, "transcript": str(session_path), "plugin": plugin,
         "plugin_root": root, "plugin_root_exists": bool(root and Path(root).exists()), "version": version,
         "project": main_facts["cwd"], "branch": main_facts["branch"],
         "models": sorted(set(main_facts["models"]) | {m for u in raw_units for m in u["facts"]["models"]}),
         "first_ts": main_events[0]["ts"] if main_events else "", "last_ts": main_events[-1]["ts"] if main_events else "",
-        "segments": index_segments, "units": index_units,
+        "segments": index_segments, "units": index_units, "interventions": interventions,
     }
     (out / "index.json").write_text(json.dumps(index, indent=2), encoding="utf-8")
 
@@ -634,8 +693,10 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
         *driver_lines,
         "",
     ]
+    run[run.index("## Driver (whole main thread)"):run.index("## Driver (whole main thread)")] = flow.text(index) + [""]
     (out / "run.md").write_text("\n".join(run), encoding="utf-8")
-    print(f"trace: {out}")
+    flow.write_html(out)
+    print(f"trace: {out}  (flow chart: {out / 'flow.html'})")
     print(f"  plugin root: {root} (version {version}){'' if index['plugin_root_exists'] else ' — MISSING on disk'}")
     print(f"  segments: {len(index_segments)} · units: {len(index_units)} · driver steps: {len(main_events)}")
     for s in index_segments:
@@ -700,6 +761,8 @@ def main() -> int:
     f = sub.add_parser("find")
     f.add_argument("--plugin", required=True)
     f.add_argument("--limit", type=int, default=8)
+    fl = sub.add_parser("flow")
+    fl.add_argument("out")
     se = sub.add_parser("select")
     se.add_argument("out")
     se.add_argument("--units", default="risk")
@@ -722,6 +785,10 @@ def main() -> int:
             when = dt.datetime.fromtimestamp(s["mtime"]).strftime("%Y-%m-%d %H:%M")
             cmds = ", ".join(dict.fromkeys(c.split(":", 1)[1] for c in s["commands"])) or "—"
             print(f"{s['id']}  {when}  spawns={s['spawns']:<3}  {s['cwd']}  commands: {cmds}")
+        return 0
+
+    if a.cmd == "flow":
+        print(flow.write_html(Path(a.out)))
         return 0
 
     if a.cmd == "select":

@@ -1,6 +1,6 @@
 ---
 name: audit-run
-description: Audit a real run of this plugin's workflow from its session transcripts - which agents were spawned with what, every tool call, hook block, commit and hand-back - against the plugin's own agent and skill files at the version that ran, and report every error with evidence on both sides. Checks each agent's inputs, procedure, write scope, error recovery and whether its claims are backed by its tool calls, the driver's branching on each return, and consistency across agents. Writes the report under evals/workspace/audit/ and logs the run with log-eval. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), after or during a workflow run in another project.
+description: Audit a real run of this plugin's workflow from its session transcripts - which agents were spawned with what, every tool call, hook block, commit and hand-back - against the plugin's own agent and skill files at the version that ran, and report every error with evidence on both sides. Draws the run as a flow chart showing what ran in parallel and what in series, how many runs and review rounds each section took, and what each review found. Checks each agent's inputs, procedure, write scope, error recovery and whether its claims are backed by its tool calls, the driver's branching on each return, and consistency across agents. Writes the report under evals/workspace/audit/ and logs the run with log-eval. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), after or during a workflow run in another project.
 argument-hint: "[session-id | path.jsonl | latest] [--units risk|all|new|seg:N|U01,U05] [--full]"
 disable-model-invocation: true
 ---
@@ -40,7 +40,25 @@ own directory, the one under test.
 writes `run.md` (segments, a unit table, the whole main thread), `index.json`,
 `driver/seg-<n>.md` (the main thread from each typed command of **P** to the next), and
 `units/U<nn>.md` (one per spawned agent: the prompt it was sent, every step, what it handed
-back), with `units/U<nn>.system.md` holding the system prompt it ran with.
+back), with `units/U<nn>.system.md` holding the system prompt it ran with, and `flow.html`.
+
+`flow.html` is the run as a chart, and the first thing to show the user. Time runs down.
+- **Rows:** each row is a wave, the agents one spawner started in one message. A shaded row
+  ran in parallel; an unshaded row ran one agent alone.
+- **Columns:** each column is one section's history, with every agent that touched it, its
+  run and review-round counts, and arrows joining its runs in order.
+- **Reviews:** a review box is coloured by its verdict and shows its critical and warning
+  counts.
+- **Bands:** a full-width band marks each time the driver stopped to ask the user, with the
+  answer.
+- **Summary:** above the chart, a table gives each section's runs, review rounds and
+  reviews in order, and lists every review that found issues.
+
+`run.md`'s **Flow** section is the same in text, for the auditors. The lanes and verdicts
+are read heuristically: the lane is a `Section:` input, else the first `a/b` name in the
+description, and the verdict is a `Verdict:` line in the return. So a plugin whose returns
+say neither gets a chart of waves without review colours, which is still correct about
+parallel and series.
 
 Print the script's summary lines. Then settle **which version ran**, since every rule is
 checked against that version:
@@ -105,7 +123,8 @@ one once. If it fails a second time, list it under **Not audited**.
 
 ## 5. The report
 
-Read every findings file. Then:
+Run `T flow <workspace>`. It re-renders `flow.html` with a badge on every audited box: that
+unit's ERROR count, or ✓. Then read every findings file, and:
 
 1. **Merge.** When `cross` wrote a systemic finding covering units' findings, keep the
    systemic one and list the units under it. Otherwise keep every finding as written. Never
@@ -124,6 +143,7 @@ Read every findings file. Then:
 
 **Run:** <project> · <branch> · <span> · <models> · <n> units, <n> audited
 **Rules checked against:** <plugin root> (<the version that ran | working tree — see note>)
+**Flow chart:** `flow.html`, beside this report
 **Totals:** <n> ERROR · <n> WARN · <n> NOTE
 
 ## Errors
@@ -166,7 +186,9 @@ Invoke `log-eval` before saying anything about the results. The entry is
 
 Then tell the user, in this order and briefly:
 
-1. One line: the run, the version, the totals.
+1. One line: the run, the version, the totals, and the path to `flow.html`. Offer to open it.
+   A local page opens in the browser pane only when it is served, e.g. `python3 -m http.server`
+   from the workspace.
 2. Each ERROR: what happened, its evidence step and its rule, as a clickable `file:line`
    into the working tree when it is still at HEAD.
 3. How many WARN and NOTE findings there are, plus the report's path.

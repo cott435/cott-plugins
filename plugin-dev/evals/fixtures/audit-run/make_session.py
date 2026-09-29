@@ -14,7 +14,17 @@ The planted defects, which the auditor must find:
   P4  shape     its return starts "Done." where the definition requires "Result: done"
   P5  driver    the ship skill never writes files, and the driver writes out/extra.txt
 
-Usage: make_session.py OUT   -> OUT/toy (the plugin), OUT/session/<id>.jsonl (+ subagents/)
+A second session, OUT/flow-session/, has no defects and exists for the flow chart. Its known
+shape, which `trace.py`'s Flow section and flow.html must reproduce:
+  W1  ∥ 2   writer a/x and writer a/y, spawned in one message
+  W2  → 1   reviewer a/x: request changes, 1 critical, 2 warnings, round 1
+  band      the driver asks the user; the answer is "Fix it"
+  W3  → 1   writer a/x again
+  W4  → 1   reviewer a/x: approve, round 2
+So lane a/x has 4 runs and 2 review rounds; a/y has 1 run and none.
+
+Usage: make_session.py OUT   -> OUT/toy (the plugin), OUT/session/<id>.jsonl (+ subagents/),
+                                OUT/flow-session/<id>.jsonl (+ subagents/)
 """
 
 import json
@@ -152,6 +162,66 @@ def main(out: Path) -> None:
     (sub / f"agent-{A}.meta.json").write_text(json.dumps(
         {"agentType": "toy:writer", "description": "Write out/a.txt", "toolUseId": "toolu_m1", "spawnDepth": 1}))
     print(sess / f"{SESSION}.jsonl")
+    flow_session(out, root)
+
+
+FLOW = "0a0d17f0-0000-4000-8000-0000000flow0"
+FLOW_SPAWNS = [  # tool id, message id, agent id, type, description, prompt, return, start min, end min
+    ("f1", "msg_w1", "af1", "toy:writer", "Write a/x", "Section: a/x\nTarget: out/x.txt",
+     "Result: done\ncommit: 1111111\ntests: 1 passed, 0 failed", 1, 5),
+    ("f2", "msg_w1", "af2", "toy:writer", "Write a/y", "Section: a/y\nTarget: out/y.txt",
+     "Result: done\ncommit: 2222222\ntests: 1 passed, 0 failed", 1, 4),
+    ("f3", "msg_w2", "af3", "toy:reviewer", "Review a/x r1", "Section: a/x",
+     "Result: done\nVerdict: request changes\nRound: 1\nCounts: 1 critical, 2 warnings", 6, 7),
+    ("f5", "msg_w3", "af4", "toy:writer", "Fix a/x", "Section: a/x\nTarget: out/x.txt",
+     "Result: done\ncommit: 3333333\ntests: 2 passed, 0 failed", 9, 12),
+    ("f6", "msg_w4", "af5", "toy:reviewer", "Review a/x r2", "Section: a/x",
+     "Result: done\nVerdict: approve\nRound: 2\nCounts: 0 critical, 1 warning", 13, 14),
+]
+
+
+def flow_session(out: Path, root: Path) -> None:
+    """Five agents in four waves with one question between them, no defects."""
+    def at(r: dict, minute: int, sec: int = 0) -> dict:
+        r["timestamp"] = f"2026-09-28T11:{minute:02d}:{sec:02d}.000Z"
+        r["sessionId"] = FLOW
+        return r
+
+    main_recs = [
+        at(user(1, "<command-message>toy:ship</command-message>\n<command-name>/toy:ship</command-name>\n"
+                   "<command-args>a</command-args>"), 0),
+        at(user(2, [{"type": "text", "text": f"Base directory for this skill: {root}/skills/ship\n\n# Ship"}],
+                isMeta=True), 0, 1),
+    ]
+    sub = out / "flow-session" / FLOW / "subagents"
+    sub.mkdir(parents=True, exist_ok=True)
+    n = 3
+    for tid, mid, aid, typ, desc, prompt, ret, start, end in FLOW_SPAWNS:
+        if tid == "f5":  # the driver stops to ask before the fix
+            ask = asst(n, use("f4", "AskUserQuestion", questions=[{"question": "Fix a/x or defer?"}]))
+            ask["message"]["id"] = "msg_ask"
+            main_recs += [at(ask, 8), at(user(n + 1, result("f4", 'User has answered your questions: '
+                                                                 '"Fix a/x or defer?"="Fix it". You can now continue '
+                                                                 'with these answers in mind.')), 8, 30)]
+            n += 2
+        call = asst(n, use(tid, "Agent", subagent_type=typ, description=desc, prompt=prompt))
+        call["message"]["id"] = mid
+        main_recs.append(at(call, start))
+        n += 1
+        recs = [at(user(n, prompt, agent=aid), start, 1),
+                at(asst(n + 1, use(f"{aid}h", "SubagentHandback", message=ret), agent=aid), end),
+                at(user(n + 2, result(f"{aid}h", '{"success":true}'), agent=aid), end, 1)]
+        (sub / f"agent-{aid}.jsonl").write_text("\n".join(json.dumps(r) for r in recs) + "\n")
+        (sub / f"agent-{aid}.meta.json").write_text(json.dumps(
+            {"agentType": typ, "description": desc, "toolUseId": f"toolu_{tid}", "spawnDepth": 1}))
+        n += 3
+    # every Agent call's result arrives when its agent ends, after all spawns of its message
+    for tid, mid, aid, typ, desc, prompt, ret, start, end in FLOW_SPAWNS:
+        main_recs.append(at(user(n, result(tid, "report delivered"),
+                                 toolUseResult={"status": "completed", "agentId": aid}), end, 2))
+        n += 1
+    main_recs.sort(key=lambda r: r["timestamp"])
+    (out / "flow-session" / f"{FLOW}.jsonl").write_text("\n".join(json.dumps(r) for r in main_recs) + "\n")
 
 
 if __name__ == "__main__":

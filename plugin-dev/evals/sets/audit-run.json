@@ -9,7 +9,9 @@
       "baseline": "none",
       "prompt": "python3 evals/fixtures/audit-run/make_session.py $TMP && python3 skills/audit-run/scripts/trace.py build $TMP/session/0a0d17f0-0000-4000-8000-00000000fixt.jsonl --plugin toy --out $TMP/ws",
       "expected_output": "The trace records every fact the five planted defects are judged from, and claims nothing the transcript does not show",
-      "files": ["evals/fixtures/audit-run/make_session.py"],
+      "files": [
+        "evals/fixtures/audit-run/make_session.py"
+      ],
       "expectations": [
         "index.json names plugin_root $TMP/toy, version 0.1.0, one segment (/toy:ship out/a.txt) and one unit U01 of type toy:writer spawned by the driver at D3",
         "units/U01.md lists notes/scratch.md under Files written (P1)",
@@ -27,7 +29,9 @@
       "baseline": "none",
       "prompt": "Spawn run-auditor twice on the trace from eval 1: Mode unit on units/U01.md against $TMP/toy/agents/writer.md, and Mode driver on driver/seg-1.md against $TMP/toy/skills/ship/SKILL.md; Project /tmp/toy-project (absent, as a real project's history may be)",
       "expected_output": "Each planted defect is an ERROR in the right findings file with a step id and a rule line, and nothing else is an ERROR",
-      "files": ["evals/fixtures/audit-run/make_session.py"],
+      "files": [
+        "evals/fixtures/audit-run/make_session.py"
+      ],
       "expectations": [
         "findings/U01.md has an ERROR for the write to notes/scratch.md citing U01.S3 and writer.md's 'only ever write under out/' line (P1)",
         "findings/U01.md has an ERROR for 'tests: 4 passed' contradicted by U01.S4's '1 failed, 3 passed' (P2)",
@@ -39,6 +43,26 @@
         "Each auditor's return is exactly one line starting 'Findings:'"
       ],
       "added_in": "audit-run 0.12 (the change that added it)"
+    },
+    {
+      "id": 3,
+      "name": "flow-chart-fixture",
+      "kind": "mechanical",
+      "baseline": "none",
+      "prompt": "python3 evals/fixtures/audit-run/make_session.py $TMP && python3 skills/audit-run/scripts/trace.py build $TMP/flow-session/0a0d17f0-0000-4000-8000-0000000flow0.jsonl --plugin toy --out $TMP/fws",
+      "expected_output": "The Flow section and flow.html reproduce the fixture's known shape: what ran in parallel, what in series, the question between waves, runs and review rounds per lane, and each review's outcome",
+      "files": [
+        "evals/fixtures/audit-run/make_session.py"
+      ],
+      "expectations": [
+        "run.md's Flow section lists exactly four waves: W1 '∥ 2' with U01 writer a/x and U02 writer a/y; W2, W3 and W4 each '→' with one agent",
+        "W2 is U03 reviewer a/x marked [request changes, 1 crit]; W4 is U05 reviewer a/x marked [approve]",
+        "An 'asked the user' line sits between W2 and W3, reading 'Fix a/x or defer? → Fix it'",
+        "The lane table gives a/x 4 runs, 2 review rounds, 'U03 request changes (1C) → U05 approve', and a/y 1 run with no reviews",
+        "flow.html exists, has lane headers a/x and a/y, shows '∥ 2' on W1, a '✗ changes' badge with '1C 2W', a '✓ approve' badge, and the band text 'Fix it'",
+        "flow.html lists U03 under 'Reviews that found issues' and not U05"
+      ],
+      "added_in": "audit-run 0.12, when the flow chart was added"
     }
   ]
 }
