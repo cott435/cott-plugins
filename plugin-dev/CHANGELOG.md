@@ -6,6 +6,15 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [0.14.0] - 2026-09-29
+
+### Added
+- **`run-phases`** (fa3e6a7): `/plugin-dev:run-phases <slug> [--through N]` drives a plan from one chat. It runs one fresh agent per unfinished phase, in series, each doing `run-phase`, relays every review stop, question and bump proposal to you, resumes the same agent with your answer, and checks each phase's commit, clean tree and `done` row before the next. The agent is a subagent reading `run-phase`'s file, or, where `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` is below 2 (cloud sessions set 1), a headless `claude -p` session with its own `--session-id`, resumed with `--resume`. Eval: 8/8 vs 3/8 (`evals/2026-09-29-run-phases.md`).
+- **`plugin-anatomy` facts** (fa3e6a7): the spawn-depth variable and that cloud sessions cap it at 1; a headless child needs its own `--session-id` to be resumed. Both `[proven]`.
+
+### Fixed
+- **skill-creator in a cloud session** (fa3e6a7): `run-evals`' `locate-skill-creator` also searches `~/.claude/skills/synced/*/skill-creator` and `/mnt/skills/*/skill-creator`, so a claude.ai/code session gets the grader, benchmark and viewer instead of inline grading.
+
 ## [0.13.0] - 2026-09-29
 
 ### Added
