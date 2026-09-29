@@ -123,6 +123,8 @@ an API changed, a dataset was refreshed     → /dev-team:probe-source <pkg>/<se
 rebuilding from an old, messy repo          → /dev-team:extract-legacy <old repo> (twice), then /dev-team:plan-repo
 human-facing docs                           → /dev-team:finalize-project (safe any time; lists what is still open)
 lost track                                  → /dev-team:status
+check what a run's agents actually did      → plugin-dev's audit-run skill, typed in a fresh chat opened on this
+                                              folder (plugin-dev's site: Workflows → Checking a run)
 ```
 
 Each pipeline has its own page in `site/workflows/`, rendered under **Workflows** on the

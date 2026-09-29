@@ -49,14 +49,15 @@ Eleven skills, in three groups by how they start. The table is the one list of t
 | `scripts/defaults/` | `mkdocs-base.yml` and `extra.css` used when a plugin doesn't override them. |
 | `templates/` | The files a new plugin subdirectory starts with. |
 | `templates/phases/` | The design shape `design-plugin` writes, and the overview, phase-note and ledger shapes `plan-phases` writes. |
-| `site/workflows/` | The three workflows below, one page each, rendered on the reading site. |
+| `site/workflows/` | The four workflows below, one page each, rendered on the reading site. |
 | `evals/sets/` | Every skill's committed eval set, and trigger set for the model-invoked ones, that `run-evals` runs. |
 | `evals/fixtures/` | What those sets run against: a toy plugin for `run-phase`, a written design for `plan-phases`. |
 
 ## Workflows
 
-Three ways work reaches a plugin. Each is a page under `site/workflows/`; the summaries
-here say which skills run, in what order, and which of them wait for you.
+Three ways work reaches a plugin, and one way to check what a plugin did once it ran. Each is
+a page under `site/workflows/`; the summaries here say which skills run, in what order, and
+which of them wait for you.
 
 **[A new plugin](site/workflows/new-plugin.md).** Three kinds of chat. First, from the
 repo root, `/plugin-dev:design-plugin --new <name>`: it reads the closest existing plugin for
@@ -88,7 +89,18 @@ chat per phase, each opened with nothing but `/plugin-dev:run-phase <slug>`, whi
 phase's evals through `run-evals` and stops for your review of the viewer before it commits,
 until the ledger's last row is `done` and the last phase has proposed the bump.
 
-What is the same in all three: which component a responsibility belongs in, and every
+**[Checking a run](site/workflows/audit-a-run.md).** A workflow ran in some project's chat,
+maybe for hours, and you want to know whether it did what the plugin says. Open a fresh chat
+on the plugin's folder (`dev-team/`, not the project) and type `/plugin-dev:audit-run`. It
+lists recent sessions that used the plugin and asks which one. It rebuilds the run from the
+transcripts on disk and draws it as `flow.html`. It proposes up to 12 agents to audit and asks
+before more. The skill runs in your chat: it asks, selects, merges and spot-checks. The
+`run-auditor` agents it spawns each judge one agent's trace in a fresh context, then one
+more checks consistency across them. The report stays in the gitignored
+`evals/workspace/audit/`; the findings are logged by `log-eval`. Definition faults are offered
+as fixes, never made. `--units new` watches a run that is still going.
+
+What is the same in the three that change a plugin: which component a responsibility belongs in, and every
 platform fact a design relies on, come from `plugin-anatomy`, and a fact proven by an eval is
 written back to it; every eval is a file before it is a sentence in chat; evals
 run through `run-evals` from committed sets in `evals/sets/`; the site is rebuilt after
