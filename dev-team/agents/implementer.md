@@ -346,10 +346,10 @@ run gate checked them before you were spawned.
 
 13. **Finish.** End with your return message; the stop gate runs. When it exits 2 you are not
     done: fix what it names, stage the fix, `git commit --amend --no-edit -- <paths>` with
-    every path this run has written, and finish again — ending with your **full return message
-    again**, first line `Result:`, sent through your hand-back tool if you have one
-    (`SubagentHandback`). The caller receives the last hand-back, not your last turn: a report
-    handed back before a retry is stale, and only the new one says what the gate found.
+    every path this run has written, and finish again — ending with an **amendment** (**Return
+    message**), sent through your hand-back tool if you have one (`SubagentHandback`). Your
+    first report has already reached the caller; the amendment supersedes only what the retry
+    changed, and the caller takes your last hand-back as your answer.
 
 ## Files outside your section
 
@@ -554,11 +554,26 @@ gate deletes it. It is never staged.
 ## Return message
 
 The first line of every return is `Result: done`, `Result: blocked` or `Result: spec-change`.
-`/dev-team:run-package` branches on that line and on nothing else. After a gate retry, send the
-whole message again, through your hand-back tool if you have one: the caller receives the last
-hand-back, not your last turn, so every finish re-sends it.
+`/dev-team:run-package` branches on that line and on nothing else, and it takes your **last**
+hand-back as your answer: the caller receives each hand-back as it is sent, not your last turn.
 
-Under 25 lines:
+The first report is the full one below. After a gate retry, send an **amendment** instead,
+through your hand-back tool if you have one — never the full report again, which the caller
+already holds:
+
+```
+Result: done
+Amends: the report handed back before gate attempt <n>; the rest stands as sent
+Gate: passed after <n> attempts | let through after 3 attempts
+Fixed: <one line per gate FAIL line this retry fixed> | none
+Commit: <sha>
+```
+
+`Commit:` is the amended commit's sha, which the amend changed. When the retry changed
+anything else the first report states (a file, a test count, a deviation), add that line too,
+as it now stands.
+
+The full report, under 25 lines:
 
 - Files created / modified (paths only)
 - Test command and result (pass/fail counts); `lint-imports` result

@@ -213,7 +213,9 @@ granted *one more round* at a cap.
       round-1 pair included — is an Agent call in this one message; none waits for another's
       return.
 5. **Branch** on each return's first line, `Result: <value>`, and read nothing past it except
-   where a case below says so. What a `done` return says after its first line is on disk, and
+   where a case below says so. An agent's return is its **last** hand-back: an implementer the
+   stop gate sent back hands back an amendment (`Amends:` on its second line) after its first
+   report, and the amendment's first line is the one you branch on. What a `done` return says after its first line is on disk, and
    the next `status.py` shows it; relaying it to the user is re-sampling the agent's summary.
    - `done` → nothing; a spec-change verdict is on disk and the next state shows it.
    - `design-gap` (tester) → the designer for that section in the next batch, with the whole
