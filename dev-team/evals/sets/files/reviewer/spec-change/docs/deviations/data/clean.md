@@ -1,6 +1,4 @@
-# Deviations and spec-changes
-
-Append-only; status lines are the only edits.
+# Deviations — data/clean
 
 ## data/clean — 2026-09-24 — deviation
 

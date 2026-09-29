@@ -58,6 +58,14 @@ ignored_in_plugins: [hooks, mcpServers, permissionMode, initialPrompt]
 - **No plugin path variables in Bash.** `${CLAUDE_PLUGIN_ROOT}` is substituted in the agent
   file's Markdown body when it loads, but it is not in the environment of the agent's Bash
   commands. [docs]
+- **What reaches its caller.** With a `SubagentHandback` tool in its session, the caller
+  receives the message of the agent's **last hand-back**, not its last turn: the Agent tool's
+  result says the report "was delivered … as a message" and repeats nothing. An agent that
+  hands back and then keeps working (a stop hook sent it back, say) must hand back again, or
+  the caller acts on the stale report. A `SubagentStop` hook that exits 0 ends the agent with
+  no further turn, so its stderr never reaches the agent. [proven:
+  dev-team/evals/2026-09-28-audit-run-package-1493ed56.md, 9 of 9 implementer runs, Claude
+  Code 2.1.281 in the desktop app; a CLI session without the tool is unconfirmed]
 - **Its scoped name** is `<plugin>:<file>`; subfolders of `agents/` add segments
   (`agents/review/security.md` → `my-plugin:review:security`). [docs]
 

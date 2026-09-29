@@ -1,4 +1,4 @@
-# .dev-team/gate.txt — written by gate_on_stop.py
+# .dev-team/gate/data/clean.txt — written by gate_on_stop.py
 # run 2026-09-26T18:42:10Z · agent dev-team:implementer · section data/clean · attempt 1
 PASS Floor lint `uv run ruff check packages/data` — 0 errors
 PASS Floor format `uv run ruff format --check packages/data` — 0 files would be reformatted

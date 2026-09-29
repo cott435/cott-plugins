@@ -17,12 +17,23 @@ Input: the hook JSON on stdin (`cwd`, `agent_id`, `agent_type`, `stop_hook_activ
    section would take counts only once `docs/packages/<pkg>/design/surface.md` exists. No
    section: exit 0.
 5. Checks, every one run: the Floor and Enforced rows of `docs/constraints.md` per package (a
-   `repo` row once), else the Toolchain commands; Measured rows, printed and never failed on;
+   `repo` row once), else the Toolchain commands; Measured rows, printed and never failed on.
+   A row whose every located failure (a `path:line` or `path::test` its output names) is in an
+   intent-test file the run did not touch is ELSEWHERE, not FAIL: the implementer may never
+   edit `tests/intent/`, so blocking on another section's red or unlinted intent tests only
+   burns its attempts. The line stays in the record for the reviewer. The section's own checks
+   run first; the Floor/Enforced or Toolchain rows then share what is left of a time budget
+   below the hook's 600 s timeout (`DEV_TEAM_GATE_BUDGET`, default 540 s; each row at most
+   `DEV_TEAM_GATE_TIMEOUT`, default 240 s). A row that runs out of time, or never starts because
+   the budget is spent, is TIMEOUT, not FAIL: nothing the implementer edits makes a package-wide
+   suite faster, and a hang in its own code still fails its own intent suite;
    each section's intent suite, a failure tolerated when its `Design §<n> <item>` docstring
    matches the `Clause:` of a `proposed` or `approved` deviation entry for the section; the
    Guarded grep of the diff, pardoned by an unexpired Exceptions row; `status.py --surface`
    for the `surface` section.
-6. Every line goes to `<cwd>/.dev-team/gate.txt`.
+6. Every line goes to `<cwd>/.dev-team/gate/<pkg>/<section>.txt` for each section in the run,
+   so the reviewer of a section reads that section's last record, whichever implementer ran
+   after it.
 7. No FAIL: delete the counter, exit 0. A FAIL before attempt 3: the FAIL lines to stderr,
    exit 2 (from attempt 2 naming `debugging-and-error-recovery`). Attempt 3: the FAIL lines to
    stderr, delete the counter, exit 0.
@@ -30,7 +41,8 @@ Input: the hook JSON on stdin (`cwd`, `agent_id`, `agent_type`, `stop_hook_activ
 
 By hand, `python3 gate_on_stop.py --report [--base <rev>]` from the repo root runs the same
 checks of step 5 over the diff from `<rev>` (default `HEAD`) to the working tree, with no
-counter and no marker, and writes `.dev-team/gate.txt` with `report` where the attempt goes.
+counter and no marker, and writes the same per-section files with `report` where the attempt
+goes.
 It prints the file and exits 1 on a FAIL line, 2 on a bad argument. The pair skill runs it at
 wrap-up, so the reviewer of hand-made code reads a gate record of that code, not of the last
 implementer's.
@@ -59,7 +71,8 @@ AGENT = "dev-team:implementer"
 MARKER_REASONS = ("blocked", "spec-change")
 MAX_ATTEMPTS = 3
 EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
-TIMEOUT = 240
+TIMEOUT = int(os.environ.get("DEV_TEAM_GATE_TIMEOUT") or 240)
+BUDGET = int(os.environ.get("DEV_TEAM_GATE_BUDGET") or 540)  # below hooks.json's 600 s
 
 # Guarded items on added lines: (the name a FAIL line prints, pattern). .py files only, so a
 # README that quotes one is not a hit.
@@ -180,8 +193,70 @@ def gated_sections(paths: list[str]) -> list[tuple[str, str]]:
 # ---------------------------------------------------------------------------------------------
 
 
-def check_rows(pkgs: list[str]) -> list[str]:
-    """Floor and Enforced rows as PASS/FAIL, Measured rows as MEASURED; else the Toolchain."""
+LOCATED = re.compile(r"([\w./-]+\.pyi?)(?=:\d|::|\s+-\s)|(?:ERROR collecting|Would reformat:) ([\w./-]+\.pyi?)")
+
+
+def _located(out: str) -> set[str]:
+    """Repo-relative paths of the files a check's output names at a line or test, in the repo."""
+    roots = [status.ROOT, *(path for _, path in status.packages())]
+    found: set[str] = set()
+    for m in LOCATED.finditer(out):
+        raw = (m.group(1) or m.group(2)).removeprefix("./")
+        for base in roots:
+            path = base / raw
+            if path.is_file():
+                try:
+                    found.add(path.resolve().relative_to(status.ROOT.resolve()).as_posix())
+                except ValueError:
+                    pass
+                break
+    return found
+
+
+def _elsewhere(out: str, touched: set[str]) -> list[str]:
+    """The intent-test directories a failure lies in, when every located file is an untouched
+    intent test; else [] (the failure is the run's to fix, or cannot be placed)."""
+    located = _located(out)
+    if not located or any("/tests/intent/" not in f"/{p}" or p in touched for p in located):
+        return []
+    return sorted({re.sub(r"(^|.*/)(tests/intent/[^/]+)/.*$", r"\1\2/", p) for p in located})
+
+
+def _row(label: str, cmd: str, code: int, out: str, touched: set[str], timeout: int = TIMEOUT) -> str:
+    if code == 0:
+        return f"PASS {label}: {cmd}"
+    if code == 124 and out.startswith("timed out"):
+        return f"TIMEOUT {label}: {cmd} did not finish in {timeout}s"
+    where = _elsewhere(out, touched)
+    if where:
+        return (f"ELSEWHERE {label}: {cmd} exited {code}, every failure in intent tests this run may not "
+                f"edit ({', '.join(where)}): {_tail(out)}")
+    return f"FAIL {label}: {cmd} exited {code}: {_tail(out)}"
+
+
+def _timed(cmd: str, deadline: float) -> tuple[int, str, int]:
+    """(code, output, the timeout it ran under); (125, "", 0) when the budget is spent."""
+    import time
+
+    left = int(deadline - time.monotonic())
+    if left < 5:
+        return 125, "", 0
+    limit = min(TIMEOUT, left)
+    code, out = _run(cmd, status.ROOT, limit)
+    return code, out, limit
+
+
+def _unrun(label: str, cmd: str) -> str:
+    return f"TIMEOUT {label}: {cmd} not run: the gate's {BUDGET}s budget was spent"
+
+
+def check_rows(pkgs: list[str], touched: set[str] | None = None, deadline: float | None = None) -> list[str]:
+    """Floor and Enforced rows as PASS/FAIL/ELSEWHERE/TIMEOUT, Measured rows as MEASURED; else the
+    Toolchain. Every row shares what is left of the budget until deadline."""
+    import time
+
+    touched = touched or set()
+    deadline = deadline if deadline is not None else time.monotonic() + BUDGET
     lines: list[str] = []
     seen: set[str] = set()
     if (status.DOCS / "constraints.md").exists():
@@ -191,15 +266,15 @@ def check_rows(pkgs: list[str]) -> list[str]:
                 if key in seen:
                     continue
                 seen.add(key)
-                code, out = _run(cmd, status.ROOT)
+                code, out, limit = _timed(cmd, deadline)
                 what = dim or cmd
-                if heading == "Measured":
+                if code == 125:
+                    lines.append(_unrun(f"{what} ({pkg})", cmd))
+                elif heading == "Measured":
                     last = [ln for ln in out.strip().splitlines() if ln.strip()]
                     lines.append(f"MEASURED {what}: {last[-1].strip() if last else 'no output'}")
-                elif code == 0:
-                    lines.append(f"PASS {what} ({pkg}): {cmd}")
                 else:
-                    lines.append(f"FAIL {what} ({pkg}): {cmd} exited {code}: {_tail(out)}")
+                    lines.append(_row(f"{what} ({pkg})", cmd, code, out, touched, limit))
         return lines
     for pkg in pkgs:
         for cmd in status.toolchain_commands():
@@ -207,8 +282,8 @@ def check_rows(pkgs: list[str]) -> list[str]:
             if cmd in seen:
                 continue
             seen.add(cmd)
-            code, out = _run(cmd, status.ROOT)
-            lines.append(f"PASS toolchain: {cmd}" if code == 0 else f"FAIL toolchain: {cmd} exited {code}: {_tail(out)}")
+            code, out, limit = _timed(cmd, deadline)
+            lines.append(_unrun("toolchain", cmd) if code == 125 else _row("toolchain", cmd, code, out, touched, limit))
     return lines
 
 
@@ -371,21 +446,46 @@ def run_checks(base: str | None) -> tuple[list[tuple[str, str]], list[str]]:
     targets = gated_sections(paths)
     if not targets or base is None:
         return targets, []
+    import time
+
+    start = time.monotonic()
     pkgs = sorted({pkg for pkg, _ in targets})
-    lines = check_rows(pkgs)
+    # The section's own checks first: they are what the implementer can fix, and they must run.
+    own: list[str] = []
     for pkg, section in targets:
-        lines += check_intent(pkg, section)
-    lines += check_guarded(base, paths)
+        own += check_intent(pkg, section)
+    own += check_guarded(base, paths)
     for pkg in sorted({pkg for pkg, section in targets if section == "surface"}):
-        lines += check_surface(pkg)
-    return targets, lines
+        own += check_surface(pkg)
+    lines = check_rows(pkgs, set(paths), start + BUDGET)
+    return targets, lines + own
+
+
+def write_records(cwd: Path, targets: list[tuple[str, str]], text: str) -> list[Path]:
+    """The record, once per section in the run: `.dev-team/gate/<pkg>/<section>.txt`."""
+    out = []
+    for pkg, section in targets:
+        path = cwd / ".dev-team" / "gate" / pkg / f"{section}.txt"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+        out.append(path)
+    return out
+
+
+def _outcome_note(lines: list[str]) -> str:
+    notes = []
+    for word, what in (("ELSEWHERE", "failing elsewhere"), ("TIMEOUT", "out of time")):
+        n = sum(1 for ln in lines if ln.startswith(word))
+        if n:
+            notes.append(f"{n} check{'s' * (n != 1)} {what}")
+    return f" ({'; '.join(notes)})" if notes else ""
 
 
 def report(cwd: Path, base: str) -> int:
     """`--report [--base <rev>]`: the same checks over base..working tree, run by hand.
 
-    No counter and no marker: nothing is stopped. Writes `.dev-team/gate.txt` exactly as a stop
-    does, with `report` in the header's attempt slot, prints it, and exits 1 on a FAIL line.
+    No counter and no marker: nothing is stopped. Writes the per-section records exactly as a
+    stop does, with `report` in the header's attempt slot, prints it, and exits 1 on a FAIL line.
     """
     if not (cwd / "docs" / "architecture.md").exists():
         print("dev-team gate: no docs/architecture.md here — run from the repo root", file=sys.stderr)
@@ -401,11 +501,10 @@ def report(cwd: Path, base: str) -> int:
     fails = [ln for ln in lines if ln.startswith("FAIL")]
     names = ", ".join(f"{p}/{s}" for p, s in targets)
     stamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    outcome = "result: pass" if not fails else f"result: fail ({len(fails)} failure{'s' * (len(fails) != 1)}, report since {base})"
+    outcome = ("result: pass" + _outcome_note(lines) if not fails
+               else f"result: fail ({len(fails)} failure{'s' * (len(fails) != 1)}, report since {base})")
     text = "\n".join([f"dev-team gate — report — {stamp} — sections {names}", *lines, outcome]) + "\n"
-    out = cwd / ".dev-team" / "gate.txt"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(text)
+    write_records(cwd, targets, text)
     print(text, end="")
     return 1 if fails else 0
 
@@ -441,14 +540,14 @@ def gate(event: dict) -> int:
     names = ", ".join(f"{p}/{s}" for p, s in targets)
     stamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if not fails:
-        outcome = "result: pass"
+        outcome = "result: pass" + _outcome_note(lines)
     elif n < MAX_ATTEMPTS:
         outcome = f"result: not done (attempt {n} of {MAX_ATTEMPTS})"
     else:
         outcome = f"result: letting the run stop after {MAX_ATTEMPTS} attempts with {len(fails)} failure{'s' * (len(fails) != 1)}"
-    report = cwd / ".dev-team" / "gate.txt"
-    report.parent.mkdir(parents=True, exist_ok=True)
-    report.write_text("\n".join([f"dev-team gate — attempt {n} — {stamp} — sections {names}", *lines, outcome]) + "\n")
+    records = write_records(cwd, targets, "\n".join(
+        [f"dev-team gate — attempt {n} — {stamp} — sections {names}", *lines, outcome]) + "\n")
+    where = ", ".join(p.relative_to(cwd).as_posix() for p in records)
 
     if not fails:
         _clear(counter)
@@ -458,12 +557,15 @@ def gate(event: dict) -> int:
                f"and finish again (attempt {n} of {MAX_ATTEMPTS}):", *fails]
         if n == 2:
             msg.append("Two attempts: invoke `debugging-and-error-recovery` with the Skill tool before the third.")
-        msg.append("When you finish, end with your full return message again, first line `Result:` — "
-                   "the caller receives only your last turn.")
+        msg.append("When you finish, send your full return message again, first line `Result:`, through "
+                   "your hand-back tool if you have one (SubagentHandback): the caller receives the last "
+                   "hand-back, not your last turn, so a report sent before this retry is stale."
+                   + (" This is your last retry: the next finish ends the run whatever the checks find, so "
+                      "if anything is still red, write `Gate: let through after 3 attempts`." if n == 2 else ""))
         print("\n".join(msg), file=sys.stderr)
         return 2
     print("\n".join([f"dev-team gate: letting the run stop after {MAX_ATTEMPTS} attempts with these failures — "
-                     "the reviewer will see them in .dev-team/gate.txt:", *fails]), file=sys.stderr)
+                     f"the reviewer will see them in {where}:", *fails]), file=sys.stderr)
     _clear(counter)
     return 0
 

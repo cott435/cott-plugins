@@ -42,12 +42,12 @@ When you say you are done:
    open (layout, styling, copy) needs no entry. The rest are a `deviation` (inside the
    section) or a `spec-change:<level>` (a boundary, or a test that asserts what no document
    says), by the implementer's own table. You see the list and correct it.
-2. **Ledger.** One entry per deviation or spec-change in `docs/deviations.md`, with your
+2. **Ledger.** One entry per deviation or spec-change in `docs/deviations/<pkg>/<section>.md`, with your
    reason as its **Why**.
 3. **README.** The section README is brought in line with the code, and its **Implementation
    notes** cite the new entries.
 4. **Gate.** `gate_on_stop.py --report --base <start>` runs the stop gate's checks over
-   everything since the start commit and writes `.dev-team/gate.txt`. The next reviewer reads
+   everything since the start commit and writes the section's record, `.dev-team/gate/<pkg>/<section>.txt`. The next reviewer reads
    that file as its evidence, so it describes this code, not the last implementer's. You fix
    the FAIL lines together. A failing intent test whose clause a spec-change names is expected,
    because the tests are regenerated before the review.

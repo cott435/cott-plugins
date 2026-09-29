@@ -30,9 +30,12 @@ run from the repo root. It exits 1 on a failing gate; that is the answer, not an
   `spec-change` return is not relayed: its entry is on disk, and `status.py` names it.
 - Open the files the agents wrote to check their work. You read only what resolves a spawn
   field: the Sections table of `docs/packages/<pkg>/contract.md`, the `<pkg>` row of
-  `docs/architecture.md`'s Packages table, the first line of a design (`Mode:`), the `Commit:`
-  line of a review report, and file names under `docs/reviews/`, `docs/sources/` and
-  `docs/changes/`. Judging the work is the reviewer's.
+  `docs/architecture.md`'s Packages table and its **Shared conventions** (a source's access
+  variable), the `docs/legacy/inventory.md` row for a source token, the first line of a design
+  (`Mode:`), the `Commit:` line of a review report, and file names under `docs/reviews/`,
+  `docs/sources/` and `docs/changes/`. Judging the work is the reviewer's. `status.py`'s
+  source is not yours to read either: a state you do not understand is **Asking**, with the
+  row.
 - Spawn anything in the background. Every Agent call is `run_in_background: false`; the next
   batch needs the last one's commits.
 - Spawn with a bare agent name. `architect` does not resolve to the plugin agent; it silently
@@ -84,7 +87,7 @@ take turns, since both extend one file.
 | **Kind** | `api` or `dataset`, from the token |
 | **Source** | the token |
 | **Purpose** | the section's row, its `responsibility` cell verbatim |
-| **Access** | the env var or location the repo contract's Shared conventions names for the token, else `discover` |
+| **Access** | the env var or location the repo contract's Shared conventions names for the token; `none` when they say the source needs no credential; else `discover` |
 | **Extracted skill** | the `.claude/skills/<name>/` a `docs/legacy/inventory.md` row names for the token, else `none` |
 | **Section** | `<pkg>/<section>` |
 | **Write to** | `docs/sources/<token>.md` |
@@ -97,13 +100,14 @@ take turns, since both extend one file.
 | Field | Value |
 |---|---|
 | **Section** | `<pkg>/<section>` |
-| **Mode** | `delta` when an open change file names the section; `document` when `<path>` holds code and there is no design; else `new` |
+| **Mode** | `delta` when an open change file names the section, or the row's evidence is `open <heading>` for a `spec-change:design`; `document` when `<path>` holds code and there is no design; else `new` |
 | **Contract** | `docs/packages/<pkg>/contract.md` |
 | **Repo contract** | `docs/architecture.md` |
 | **Dependency READMEs** | `<dep path>/README.md` per dependency, comma-separated; in `delta` and `document` modes `own: <path>/README.md` first when it exists |
 | **Upstream interfaces** | per upstream package, as resolved above |
 | **Source probes** | `docs/sources/<token>.md` per source |
 | **Change file** | the open change file (`delta` only) |
+| **Spec-change** | the heading from the row's evidence when it reads `open <heading>` and names `spec-change:design`; else `none` |
 | **Design-gap** | the tester's `design-gap` return, verbatim, when this run's tester returned one for the section |
 | **Skills to invoke** | the row's `builds with` |
 | **Write to** | `docs/packages/<pkg>/design/<section>.md` |
@@ -130,7 +134,7 @@ take turns, since both extend one file.
 ### Implementer — IMPLEMENT and FIX n
 
 `subagent_type: "dev-team:implementer"`, one at a time: implementers never run in parallel,
-since they share `pyproject.toml`, the workspace and `docs/deviations.md`.
+since they share `pyproject.toml` and the workspace.
 
 The prompt is the output of `status.py --inputs <pkg>/<section>`, verbatim: the script
 resolves every field of the implementer's **Inputs** — the review reports at FIX `n` and at a
@@ -166,7 +170,7 @@ code, and neither may be handed the other's report. Round 2 and later is one: `F
 | **Intent tests** | `tests/intent/<section>/` |
 | **Previous round** | from round 2: round `r-1`'s report paths, comma-separated; else `none` |
 | **Diff** | from round 2: `<sha>..HEAD`, `<sha>` the `Commit:` line of round `r-1`'s `-s` report, or its `-a` report when `r-1` is 1 (the one report when it has no letter); else `none` |
-| **Gate** | `.dev-team/gate.txt` |
+| **Gate** | `.dev-team/gate/<pkg>/<section>.txt` |
 | **Run** | `run-package <pkg>` |
 
 ### Architect — PLAN and the close
@@ -208,16 +212,21 @@ granted *one more round* at a cap.
       granted *defer* gets its `defer` reviewer here. Every reviewer of the batch — both of a
       round-1 pair included — is an Agent call in this one message; none waits for another's
       return.
-5. **Branch** on each return's first line, `Result: <value>`:
+5. **Branch** on each return's first line, `Result: <value>`, and read nothing past it except
+   where a case below says so. What a `done` return says after its first line is on disk, and
+   the next `status.py` shows it; relaying it to the user is re-sampling the agent's summary.
    - `done` → nothing; a spec-change verdict is on disk and the next state shows it.
    - `design-gap` (tester) → the designer for that section in the next batch, with the whole
      return as `Design-gap:`. The third `design-gap` for one section in this run is a block
      instead: **Asking**, with the return's `Gap:` lines as the question.
-   - `spec-change` → nothing to relay: the entry is in `docs/deviations.md` and `status.py`
+   - `spec-change` → nothing to relay: the entry is in `docs/deviations/<pkg>/<section>.md` and `status.py`
      re-opens the step it names (PLAN, DESIGN or TEST), where the next block carries it.
    - `blocked` or `stopped`, or a first line that is not `Result:` → **Asking**, with the
      return as the question.
-6. **Re-derive.** `status.py <pkg>`; print only the rows whose state changed. Back to step 2.
+6. **Re-derive.** `status.py <pkg>`; print only the rows whose state changed. A row whose
+   agent returned `done` this batch and whose state and evidence are exactly what they were
+   before it ran did not move: spawning the same step again would repeat the same run. Send
+   it to **Asking** instead, with the row and the agent's first two lines. Back to step 2.
 7. **Close.** When every section of the package is DONE, the architect with `Package:` and
    `Run:` only — the close. A `<section>` walk skips this unless its section was the last one
    not DONE. Then **Summary**.
@@ -246,7 +255,10 @@ One `AskUserQuestion` per block, its text built from what stopped:
   *fixed, retry* and *stop here* as the options;
 - a review cap: the row's evidence, with *one more round* and *defer* as the options;
 - a third `design-gap`: the tester's `Gap:` lines, with the designer's options where the return
-  names them.
+  names them;
+- a row that did not move after its agent returned `done` (**Loop** step 6): the row and the
+  agent's first two lines, with *run it again*, *stop here* and, when the evidence names a
+  document, *I will fix it by hand* as the options.
 
 Record the answer, then re-run **Loop** step 2:
 

@@ -1,0 +1,42 @@
+{
+  "note": "an answered spec-change:design moved from the pre-split docs/deviations.md into its section file keeps its first commit: still answered, so TEST, not DESIGN",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "deviation",
+      "section": "ingest",
+      "kind": "spec-change:design",
+      "status": "open",
+      "legacy": true
+    },
+    {
+      "do": "edit",
+      "path": "docs/packages/data/design/ingest.md",
+      "append": "\n- answered\n",
+      "message": "data/ingest: design answers the spec-change"
+    },
+    {
+      "files": {
+        "docs/deviations.md": "# Deviations\n",
+        "docs/deviations/data/ingest.md": "# Deviations — data/ingest\n\n## data/ingest — 2026-09-27 — spec-change:design\n\nClause: design §5 load_trades\nSaid: \"one thing\"\nFound: src/x.py:1\nWhy: the data says otherwise\nStatus: open\nRaised by: implementer — run-package data\nResolved by: —\n"
+      },
+      "message": "docs: split the deviations ledger per section"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "TEST",
+    "evidence": "^design [0-9a-f]{7} newer than tests [0-9a-f]{7}$"
+  }
+}

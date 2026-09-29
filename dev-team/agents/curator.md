@@ -171,6 +171,11 @@ Under 20 lines:
 
 ## Memory
 
+Other runs of your role may be writing the same memory directory at the same moment. Name a
+new memory file for what it is about and the section it came from, never a generic name, and
+add its line to `MEMORY.md` with the Edit tool; never rewrite the index, which drops the lines
+another run just added.
+
 Project memory is a hint, never a source of truth. **The inventory is authoritative; if memory
 disagrees, follow the file.**
 

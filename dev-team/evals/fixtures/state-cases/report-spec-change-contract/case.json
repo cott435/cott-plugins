@@ -1,0 +1,38 @@
+{
+  "note": "b's spec-change names the contract: PLAN, until the contract is committed after it",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 1,
+      "reports": {
+        "a": "approve",
+        "b": "spec-change"
+      },
+      "spec": {
+        "b": "contract: §2 row ingest names one entry point; the probe doc shows two"
+      }
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "PLAN",
+    "evidence": "spec-change:contract$"
+  }
+}

@@ -51,7 +51,7 @@ them is through a file.
   current API shape, a protocol's requirements, a service's limits. A wrong contract costs N
   designs plus N implementations, so it is worth a minute to check rather than freezing a
   signature you half-remember.
-- Invoke `planning-templates` before writing a contract, a change file or a `docs/deviations.md`
+- Invoke `planning-templates` before writing a contract, a change file or a ledger entry
   status, and read the one reference for that document. Every downstream reader parses these
   files by heading, so the headings are a contract; the templates carry them and this prompt
   does not.
@@ -87,9 +87,10 @@ fields, one `<Field>: <value>` line each, filled by these names:
 1. **Package** — `<pkg>`: the package, in place of a skill argument.
 2. **Run** — `run-package <pkg>`: the run gate has already run, and your commit trailer is
    `Dev-Team-Run: run-package <pkg>`.
-3. **Spec-change** — the heading of an open `spec-change:contract` entry in
-   `docs/deviations.md` that holds a section of `<pkg>` at PLAN, one per line. *Present only at
-   the PLAN step.*
+3. **Spec-change** — the heading of an open `spec-change:contract` entry in a section ledger of
+   `<pkg>` (`docs/deviations/<pkg>/<section>.md`), or `<report path> — spec-change:contract`
+   when a review report raised it (read that report's **Spec-change** line), at PLAN, one per
+   line. *Present only at the PLAN step.*
 
 With a `Spec-change:` line you run **package** scope as `/dev-team:plan-package <pkg>` would;
 without one, **close** scope as `/dev-team:sync-plan <pkg>` would. Read that skill's
@@ -199,7 +200,7 @@ Canonical documents describe the system as it actually is. Each has one writer.
 | `docs/decisions.md` | the decision ledger, `D<n>` entries | you and the designer (stubs); the user or the driver (answers); the implementer (`Applied:`) |
 | `docs/followups.md` | the backlog: work no loop step will pick up; never a gate | the reviewer; you in `map-repo` |
 | `docs/changes/<slug>.md` | a change to a built or shipped package, open until `sync-plan` applies it | you (CHANGE) |
-| `docs/deviations.md` | deviations and spec-changes, one entry each | the implementer, designer, tester and reviewer append; you set `resolved` on a `spec-change:contract` you answer and `synced` at the close |
+| `docs/deviations/<pkg>/<section>.md` | the section's ledger: deviations and spec-changes, one entry each (a pre-split `docs/deviations.md` is still read and edited in place) | the implementer, designer, tester and reviewer append; you set `resolved` on a `spec-change:contract` you answer and `synced` at the close |
 | `docs/packages/<pkg>/contract.md` | the **package contract** | you, package scope and close |
 | `docs/packages/<pkg>/design/<section>.md` | one design per section | the designer |
 | `docs/packages/<pkg>/interface.md` | the public surface **as shipped** — the `surface` section's README | the implementer |
@@ -308,7 +309,7 @@ Read `Sections:` as a `Scope:` whose section names are unqualified. You may appe
 A contract that does not exist yet is WRITTEN from its template. A contract that exists is
 never rewritten; it is edited item by item. The skill names where the items come from — the
 argument, the brief's diff against `docs/history/brief-contracted.md`, open
-`spec-change:contract` entries in `docs/deviations.md`, the repo contract's diff since its
+`spec-change:contract` entries in the package's ledgers (`docs/deviations/<pkg>/*.md`), and a review report's **Spec-change** line naming `contract` that no entry records, the repo contract's diff since its
 last archive copy. List them first, one line each, before you touch any file.
 
 Classify each item by the sections it touches, against the package state table in **The
@@ -331,7 +332,9 @@ An item that came from an open `spec-change:contract` entry is closed by its out
 EDIT, EDIT+STALE or CHANGE, set the entry's **Status** to `resolved` and its **Resolved by** to
 this run's trailer value (`plan-package data`), plus the change file's path after a CHANGE.
 Those two lines are your only edits to the entry. After a DECIDE it stays `open` — the section
-stays at PLAN until the answer lets a re-run classify it.
+stays at PLAN until the answer lets a re-run classify it. An item a review report raised has no
+entry to close: committing the contract answers it, so after a DECIDE commit nothing to the
+contract for it.
 
 **Archive before every edit.** Before the first edit to a canonical file in a run, copy it
 verbatim to `docs/history/<date>-<name>.md` — `<date>-architecture.md`,
@@ -394,7 +397,7 @@ The **Observed schema** is for the designers; do not read it into your context.
 nothing it has not verified against the code, and it never edits `interface.md` (the
 implementer's), a design, a review, or code.
 
-1. **Collect.** Every `docs/deviations.md` entry for a `<pkg>/<section>` with kind `deviation`
+1. **Collect.** Every entry in `docs/deviations/<pkg>/*.md` (and a pre-split `docs/deviations.md`) for a `<pkg>/<section>` with kind `deviation`
    and `Status: approved`, and every `docs/changes/<slug>.md` with `Status: open` whose
    **Affected sections** names a section of `<pkg>`. `proposed` and `rejected` entries are not
    applied, and a spec-change entry is not yours to close here.
@@ -412,7 +415,7 @@ implementer's), a design, a review, or code.
 5. **Close.** A synced deviation gets `Status: synced` and `Resolved by: <sha>` — the commit of
    the section's latest approving review (`Commit:`), since this run's own commit does not exist
    yet. A synced change file gets `Status: synced`, its only edit. Those status lines are the
-   only edits you make to `docs/deviations.md` or a change file.
+   only edits you make to a ledger or a change file.
 6. **Consumers.** For every public name the applied items changed, recompute its consumers with
    the shared grep:
 
@@ -605,6 +608,11 @@ commits what it wrote, `docs/decisions.md` included, so the stop is a clean poin
 from.
 
 ## Memory
+
+Other runs of your role may be writing the same memory directory at the same moment. Name a
+new memory file for what it is about and the section it came from, never a generic name, and
+add its line to `MEMORY.md` with the Edit tool; never rewrite the index, which drops the lines
+another run just added.
 
 Your project memory is a hint, never a source of truth. **`docs/` is authoritative; if memory
 and a document disagree, follow the document and correct the memory.**

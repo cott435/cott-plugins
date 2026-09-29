@@ -39,9 +39,9 @@ one in the package contract's Sections table.
   case is not written and your return says so. Reading the code would make you a second copy
   of the implementer's test suite, which the section already has.
 - **You write only** `tests/intent/<section>/`, fixture files you add under `tests/fixtures/`,
-  and `docs/deviations.md` (a `spec-change:design` entry, adopted code only). Never
+  and `docs/deviations/<pkg>/<section>.md` (a `spec-change:design` entry, adopted code only). Never
   `tests/unit/`, never source, never `conftest.py` outside your tree, never any other
-  document under `docs/`, and never a status line in `docs/deviations.md`.
+  document under `docs/`, and never a status line in `docs/deviations/<pkg>/<section>.md`.
 - **Bash** is for the Toolchain's one-package test command pointed at
   `tests/intent/<section>` (`uv run pytest tests/intent/<section> -q` in a uv workspace), `git`
   per **Commit**, the Toolchain's formatter and linter pointed at your tree, and read-only
@@ -52,7 +52,9 @@ one in the package contract's Sections table.
   for.
 - **Your tree passes the repo's lint and format rows.** A hook runs `ruff format` and `ruff
   check --fix` on every `.py` file you write and hands back whatever it could not fix; fix that
-  by hand before you go on. Nobody else may edit your tree, so a lint failure left in it fails
+  by hand before you go on. Before the repo has a lint config of its own, the hook lints with
+  the plugin's lint block, the rules the first implementer will merge, so a file that passes
+  now still passes then. Nobody else may edit your tree, so a lint failure left in it fails
   the repo's **Floor** for every later section.
 - **No suppression in your tree.** `docs/constraints.md` §Guarded grades a new `# noqa`,
   `# type: ignore`, `# pragma: no cover`, `skip` or non-`D<n>` `xfail` as CRITICAL wherever it
@@ -83,7 +85,9 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
    `provisional: <contract.md>`. *May be `none`.*
 7. **Source probes** — `docs/sources/<source>.md` per entry in the row's `source`. *May be
    `none`.*
-8. **Regenerate** — entry headings from `docs/deviations.md`, one per line. *May be `none`.*
+8. **Regenerate** — entry headings from the section's ledger `docs/deviations/<pkg>/<section>.md`, one per
+   line; or `<report path> — spec-change:test` when a review report raised it, whose
+   **Spec-change** heading holds it. *May be `none`.*
 9. **Adopted code** — `yes` when the section path holds code the design documents (`Mode:
    document`), else `no`.
 10. **Write to** — `tests/intent/<section>/ under <package root>`.
@@ -101,7 +105,7 @@ What each document is for:
 | Source probes + `<source>.sample.json` / `<source>.stats.json` | the fixture for any parser or loader; a sample is copied to `tests/fixtures/<source>.sample.json` if not already there; a dataset's rows come from the path the probe doc names |
 | Dependency READMEs (**Entry points and interfaces**) and upstream `interface.md` | the real signatures of what the section consumes, for fixtures and fakes |
 | `docs/constraints.md`, when it exists | the **Enforced** coverage row: the intent suite is sized to contribute to that floor beside the implementer's unit tests, not to reach it alone — never pad it with cases the documents do not support. And **Guarded**, which binds your tree like any other |
-| `docs/deviations.md` | on a regenerate run, the entries `Regenerate:` names: their **Clause**, **Did** (a deviation) or **Found** (a `spec-change:test`), and **Status** |
+| `docs/deviations/<pkg>/<section>.md` | the section's `approved` deviations, on every run (**Tags**); on a regenerate run, the entries `Regenerate:` names: their **Clause**, **Did** (a deviation) or **Found** (a `spec-change:test`), and **Status**. A report-raised `spec-change:test` is its report's **Spec-change** line instead |
 
 ## Design gaps
 
@@ -150,11 +154,16 @@ For a first run (`Regenerate: none`):
      path (an aborted run's scaffold): the design says `Mode: new`, so nothing there counts.
    - `Adopted code: yes` — the code shipped before its design was written, and every test
      should pass. Each failing test stays as written and becomes one `spec-change:design`
-     entry in `docs/deviations.md` (**Found:** the failing assertion and its output line),
+     entry in `docs/deviations/<pkg>/<section>.md` (**Found:** the failing assertion and its output line),
      written per `${CLAUDE_PLUGIN_ROOT}/skills/planning-templates/references/deviations-entry.md`
      with **Clause** the test's docstring citation, **Status** `open`, and **Raised by** `tester
      — <Run:>`. The return is still `done`.
-6. **Commit** your tree, any fixtures you added and, with adopted code, `docs/deviations.md`.
+6. **Tags.** Before committing, any run — first or regenerate — tags every test whose docstring
+   cites the **Clause** of an `approved` deviation in the ledger: append ` (deviation <date>)`
+   to its docstring's first line (**Regenerate**, step 3), and write it to assert **Did**. A
+   test asserting **Did** already needs only the tag. An untagged test that cites an approved
+   clause re-opens TEST, so leaving the tag for a later run costs a whole run for one line.
+7. **Commit** your tree, any fixtures you added and, with adopted code, `docs/deviations/<pkg>/<section>.md`.
    Summary `<n> intent tests from design`, where `<n>` is the number of test functions left.
 7. **Return.**
 
@@ -170,12 +179,14 @@ summary `intent tests current with design`, and return `Tests: 0 written (unchan
 
 ## Regenerate
 
-`Regenerate:` names entries in `docs/deviations.md` whose clause your tests cite: an
+`Regenerate:` names entries in `docs/deviations/<pkg>/<section>.md` whose clause your tests cite: an
 `approved` deviation (the code does what **Did** says, and the reviewer accepted it) or a
 `spec-change:test` (a test asserted something the documents, as corrected, do not say).
 
 1. Read each named entry. A deviation that is not `approved`, or a spec-change that is not
-   `open`, is not regenerated; say so in the return.
+   `open`, is not regenerated; say so in the return. A `<report path> — spec-change:test` is
+   that report's **Spec-change** line: its evidence is the **Found**, and the test clauses it
+   names are the **Clause**.
 2. Find the tests whose docstring cites the entry's **Clause**: the docstring's `§<n>` and
    the first word of its item match the clause's, case-insensitive, with or without a leading
    `design`. This is the same match the stop gate uses to tolerate the failing test.
@@ -204,7 +215,7 @@ Result: done
 Tests: <n> written (<count by design heading>)
 Not written: <each case the documents do not support, one line each> | none
 Deleted for passing: <n>
-Spec-change: <entry headings written to docs/deviations.md> | none
+Spec-change: <entry headings written to docs/deviations/<pkg>/<section>.md> | none
 Commit: <sha>
 ```
 
@@ -230,13 +241,18 @@ Commit: none
 
 Commit per `git-workflow-and-versioning` §Project convention (preloaded) — its **Staging**,
 **Message** and **One commit per run** rules; stage by explicit path only the files this run
-wrote under `tests/intent/<section>/` and `tests/fixtures/`, and `docs/deviations.md` when it
+wrote under `tests/intent/<section>/` and `tests/fixtures/`, and `docs/deviations/<pkg>/<section>.md` when it
 appended an entry. Scope `<pkg>/<section>`, summary as **Procedure** or **Regenerate** gives
 it. Trailer `Dev-Team-Run:` followed by your prompt's `Run:` line (`Dev-Team-Run: run-package
 <pkg>` under the driver); with no `Run:` line, `Dev-Team-Run: tester <pkg>/<section>`. A
 `design-gap` commits nothing.
 
 ## Memory
+
+Other runs of your role may be writing the same memory directory at the same moment. Name a
+new memory file for what it is about and the section it came from, never a generic name, and
+add its line to `MEMORY.md` with the Edit tool; never rewrite the index, which drops the lines
+another run just added.
 
 Project memory is a hint, never a source of truth. **`docs/` is authoritative; if memory and a
 document disagree, follow the document and correct the memory.**

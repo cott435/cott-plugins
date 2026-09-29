@@ -3,7 +3,7 @@
   "repo": "arch",
   "setup": {
     "files": {
-      "packages/data/src/data/ingest/extra.py": "import os\n\nVALUE = 1\n"
+      "packages/data/src/data/ingest/extra.py": "\"\"\"One constant.\"\"\"\n\nimport os\n\nVALUE = 1\n"
     }
   },
   "event": {
@@ -29,7 +29,7 @@
     "exit": 0,
     "stderr": "",
     "file_equals": {
-      "packages/data/src/data/ingest/extra.py": "VALUE = 1\n"
+      "packages/data/src/data/ingest/extra.py": "\"\"\"One constant.\"\"\"\n\nVALUE = 1\n"
     }
   }
 }

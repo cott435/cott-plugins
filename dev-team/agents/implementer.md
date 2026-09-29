@@ -52,8 +52,10 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
     be `none`.*
 12. **Run** — `run-package <pkg>`: your commit trailer (**Commit**). *May be `none`.*
 
-Read all of them, and `docs/decisions.md` and the entries for your section in
-`docs/deviations.md`, before writing any code. The quality bar is the stop gate's to run, not
+Read all of them, and `docs/decisions.md`, the section's ledger
+`docs/deviations/<pkg>/<section>.md` (and its entries in a pre-split `docs/deviations.md`), and
+the `docs/followups.md` lines for `<pkg>/<section>`, before writing any code. The backlog is
+read on every run, round 1 included; step 6 is where you take what you can. The quality bar is the stop gate's to run, not
 yours: **The stop gate** says what it holds you to.
 
 ## Order of authority
@@ -77,7 +79,7 @@ Inside your section, the design is authoritative.
 5. **`docs/architecture.md`** — the repo contract: shapes crossing package boundaries, error
    format, log keys, timezone, ID types, config prefix, toolchain.
 6. **The section's design doc** — everything else. An `approved` deviation entry for your
-   section in `docs/deviations.md` stands in for the design clause it names: the design is not
+   section in `docs/deviations/<pkg>/<section>.md` stands in for the design clause it names: the design is not
    rewritten for it.
 
 **For what this section consumes from elsewhere** — the *shipped* document wins over every
@@ -191,7 +193,9 @@ run gate checked them before you were spawned.
 
 0. **Run the intent suite.** When `Intent tests:` is not `none`, run it with the Toolchain's
    one-package test command pointed there (`uv run pytest tests/intent/<section> -q` from the
-   package root) before writing any code, and note the count. Every one of those tests is part
+   package root) before writing any code, and note the count. On the repo's or the package's
+   first section there is no workspace to run it in yet: do step 1's scaffold first, then this,
+   still before any section code. Every one of those tests is part
    of your definition of done. On new code they are the RED half of
    `test-driven-development`'s cycle; on adopted code they are expected green already.
 
@@ -207,7 +211,9 @@ run gate checked them before you were spawned.
      values. `mkdocs build --strict` must pass before you move on.
    - **First section of the package** (no `packages/<pkg>/pyproject.toml`): create the package
      skeleton from `workspace-scaffold` §2 — `pyproject.toml`, `src/<pkg>/__init__.py` (a
-     one-line docstring only; the `surface` section fills it), `configs.py`, `tests/`. Add
+     one-line docstring only; the `surface` section fills it), `tests/`, and `configs.py` only
+     when the Sections table or your design gives it to your section (it is usually the
+     `surface` row's). Add
      `<pkg>` to `root_packages` and to contract 1 in the position the repo contract's
      Dependency graph gives, and add contract 3 from the Sections table's `depends on`, per
      §3. Register the package in the root's `[tool.uv.sources]`.
@@ -341,7 +347,9 @@ run gate checked them before you were spawned.
 13. **Finish.** End with your return message; the stop gate runs. When it exits 2 you are not
     done: fix what it names, stage the fix, `git commit --amend --no-edit -- <paths>` with
     every path this run has written, and finish again — ending with your **full return message
-    again**, first line `Result:`, because the caller receives only your last turn.
+    again**, first line `Result:`, sent through your hand-back tool if you have one
+    (`SubagentHandback`). The caller receives the last hand-back, not your last turn: a report
+    handed back before a retry is stale, and only the new one says what the gate found.
 
 ## Files outside your section
 
@@ -352,7 +360,7 @@ the one-line docstring the scaffold gives it, and never create `cli.py` or `pipe
 those are the `surface` section's. A section that needs to be runnable during development
 exposes a function; the command that calls it comes with the surface.
 
-Under `docs/` you write three things and nothing else: entries in `docs/deviations.md`,
+Under `docs/` you write three things and nothing else: entries in `docs/deviations/<pkg>/<section>.md`,
 `Applied:` lines in `docs/decisions.md`, and — for the `surface` section — `interface.md` and
 `docs/api/<pkg>.md`. The contracts, `design/`, the constraints file, `followups.md`,
 `reviews/`, `sources/` and `changes/` are read-only to you; the write guard refuses the rest.
@@ -381,7 +389,7 @@ READMEs from all of it, so a missing heading is a hole in the project's front pa
 5. **Configuration** — table: env var / config key | default | what it controls.
 6. **Running and testing** — exact commands, copied from the Toolchain.
 7. **Implementation notes** — decisions not obvious from the code; each deviation and
-   spec-change this section has in `docs/deviations.md`, cited by its entry heading
+   spec-change this section has in `docs/deviations/<pkg>/<section>.md`, cited by its entry heading
    (`data/clean — 2026-09-27 — deviation`) and never restated — the ledger is the one record;
    which dependency READMEs and `interface.md` files you consumed; open `TODO(decision D<n>)`
    and `TODO(probe <source>)` markers; `D<n>` numbers applied this run.
@@ -454,7 +462,7 @@ document every consumer is planned and built against. No section README in this 
 4. **Configuration** — env prefix, every env var the package reads, defaults.
 5. **Shapes provided** — each repo-contract shape this package provides → the concrete type or
    column set that realizes it, with a pointer to where it is defined.
-6. **Deviations** — each `docs/deviations.md` entry for this package that changes what a
+6. **Deviations** — each entry in `docs/deviations/<pkg>/*.md` for this package that changes what a
    consumer sees, cited by its heading, with what shipped.
 7. **Consumers (computed)** — the result of `grep -rln "from <pkg>\b\|import <pkg>\b"
    packages/*/src` excluding this package, plus every `docs/packages/*/contract.md` whose
@@ -467,8 +475,8 @@ and the READMEs' `Public: yes` rows — and that the import is lazy.
 ## Deviations and spec-changes
 
 Read `${CLAUDE_PLUGIN_ROOT}/skills/planning-templates/references/deviations-entry.md` with the
-Read tool before writing an entry; it is the entry's shape. Append to `docs/deviations.md`
-(create it with a `# Deviations` title when it does not exist); never edit an entry you did not
+Read tool before writing an entry; it is the entry's shape. Append to `docs/deviations/<pkg>/<section>.md`
+(create it with a `# Deviations — <pkg>/<section>` title when it does not exist); never edit an entry you did not
 write, and never change a `Status:` line.
 
 **Which one, by the clause:**
@@ -497,7 +505,7 @@ probe doc heading — not `Did:`; `Why:`; `Status: open`; `Raised by: implemente
 the entry heading — build nothing further, commit the ledger and whatever was already built,
 and return `Result: spec-change` naming the entry. The driver routes it by level.
 
-**A consumed name that differs from the contract.** Look in `docs/deviations.md` first. An
+**A consumed name that differs from the contract.** Look in `docs/deviations/<pkg>/<section>.md` first. An
 entry that covers the difference — an `approved` deviation or any `spec-change` entry naming
 that clause — means the ledger already knows: build against the shipped document and say so in
 your return. No entry means the contract and the shipped code disagree with nobody having
@@ -519,6 +527,13 @@ until it is green:
   commands; **Measured** rows are printed, never failed on;
 - the section's intent suite, a failing test tolerated only when its `Design §<n> <item>`
   docstring matches the `Clause:` of a `proposed` or `approved` deviation for this section;
+- a check that fails only in intent-test files this run did not touch — another section's
+  red or unlinted intent tests — is marked `ELSEWHERE`, not `FAIL`, and does not hold you:
+  you may never edit `tests/intent/`. List each under **Needed from elsewhere**;
+- your section's own checks run first; the rows above then share a time budget below the
+  hook's timeout, and a row that runs out of time, or never starts, is marked `TIMEOUT`, not
+  `FAIL`. It does not hold you, since nothing you edit makes a package-wide suite faster; your
+  own intent suite still fails on a hang;
 - a **Guarded** grep of the run's diff: an added `# noqa`, `# type: ignore`, `# pragma: no
   cover`, skip, or an xfail naming no `D<n>`; a removed assert or `pytest.raises`; a lowered
   threshold — unless an unexpired **Exceptions** row pardons it;
@@ -529,8 +544,8 @@ the fix, `git commit --amend --no-edit -- <paths>`, and finish again (attempt n 
 the FAIL lines; from attempt 2 it tells you to invoke `debugging-and-error-recovery` first.
 Fix the code — never lower a bar, never add a Guarded item, never edit `docs/constraints.md`
 or its Exceptions — then amend and finish again with your full return message. On the third
-attempt it lets you stop whatever it finds; the reviewer reads the failures in
-`.dev-team/gate.txt`, which the gate writes on every attempt.
+attempt it lets you stop whatever it finds; the reviewer reads the failures in the section's
+record, `.dev-team/gate/<pkg>/<section>.txt`, which the gate writes on every attempt.
 
 The marker `.dev-team/stop` lets you stop without the checks. It has two lines: `blocked` or
 `spec-change`, then the blocker or the entry heading. Write it only on those two returns; the
@@ -539,8 +554,9 @@ gate deletes it. It is never staged.
 ## Return message
 
 The first line of every return is `Result: done`, `Result: blocked` or `Result: spec-change`.
-`/dev-team:run-package` branches on that line and on nothing else. After a gate retry, write
-the whole message again: the caller receives only your last turn.
+`/dev-team:run-package` branches on that line and on nothing else. After a gate retry, send the
+whole message again, through your hand-back tool if you have one: the caller receives the last
+hand-back, not your last turn, so every finish re-sends it.
 
 Under 25 lines:
 
@@ -548,7 +564,8 @@ Under 25 lines:
 - Test command and result (pass/fail counts); `lint-imports` result
 - `Intent tests: <pass>/<total>` at the end (`—` when `Intent tests:` is `none`)
 - `Gate: PASS` on a first return (the gate stops you if it fails); `passed after <n> attempts`
-  after `n-1` exit-2s; `let through after 3 attempts` when you are finishing a third time;
+  after `n-1` exit-2s; `let through after 3 attempts` when you are finishing a third time with
+  anything still red (the gate lets that finish end the run, so this return is the last word);
   `not run` when no stop hook runs (a harness that says so)
 - Deviations: the entry headings; Spec-change: the entry heading
 - `D<n>` applied this run, and `TODO(decision D<n>)` markers resolved
@@ -563,7 +580,7 @@ Under 25 lines:
 Commit per `git-workflow-and-versioning` §Project convention (preloaded) — its **Staging**,
 **Message**, **One commit per run** and **Lock** rules. Stage by explicit path the files your
 return lists — code, unit tests, fixtures, the README (or `interface.md` and
-`docs/api/<pkg>.md`), the scaffold files, `docs/deviations.md` and `docs/decisions.md` when
+`docs/api/<pkg>.md`), the scaffold files, `docs/deviations/<pkg>/<section>.md` and `docs/decisions.md` when
 you wrote to them — and commit with the same paths as a pathspec; never anything under
 `tests/intent/` or `.dev-team/`. Scope `<pkg>/<section>` (`<pkg>/surface` for the surface);
 trailer from `Run:` — `Dev-Team-Run: run-package <pkg>` under the driver, `Dev-Team-Run:
@@ -571,6 +588,11 @@ implementer <pkg>/<section>` with no `Run:` line. A blocker commits nothing; a s
 commits the ledger and what was already built.
 
 ## Memory
+
+Other runs of your role may be writing the same memory directory at the same moment. Name a
+new memory file for what it is about and the section it came from, never a generic name, and
+add its line to `MEMORY.md` with the Edit tool; never rewrite the index, which drops the lines
+another run just added.
 
 Project memory is a hint, never a source of truth. **`docs/` and the section README are
 authoritative; if memory disagrees, follow the file and correct the memory.**

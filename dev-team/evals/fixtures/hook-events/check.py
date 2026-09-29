@@ -9,15 +9,20 @@ Each case is `events/<case>.json`:
   guard_writes.py).
 - `repo`: `built` (build.py: one built section, one proposed deviation), `arch` (a directory
   holding only `docs/architecture.md`) or `plain` (an empty directory: out of scope).
-- `setup`: `files` written into the repo (uncommitted unless `commit` names a message, which
-  commits everything), and `counter`, the gate's attempt count before this stop.
+- `setup`: `prior`, files committed just before the run's commit (so they are in the repo
+  but not in the run's diff); `files` written into the repo (uncommitted unless `commit` names
+  a message, which commits everything); and `counter`, the gate's attempt count before this
+  stop.
 - `event`: the hook input as Claude Code sends it, `{cwd}` standing for the repo; or `raw`,
   stdin sent verbatim. `args`: command-line arguments, for the gate's `--report` mode, which
   reads no stdin.
+- `env`: extra environment for the script (the gate's `DEV_TEAM_GATE_TIMEOUT` and
+  `DEV_TEAM_GATE_BUDGET`, say).
 - `expect`: `exit`; `stdout_contains`; `stderr` (exact), `stderr_contains`, `stderr_lacks`, `stderr_startswith`;
   `file_equals`, `file_contains`, `file_lacks` (repo-relative); `absent` (paths that must not
-  exist); `gate_contains`, `gate_lacks`, and `gate_only` (every line of `.dev-team/gate.txt`
-  between the header and the `result:` line starts with one of these); `counter` (the attempt
+  exist); `gate_contains`, `gate_lacks`, and `gate_only` (every line of the gate's record for
+  `gate_section`, default `data/ingest`, at `.dev-team/gate/<pkg>/<section>.txt`, between the
+  header and the `result:` line starts with one of these); `counter` (the attempt
   count after, `null` for no counter file).
 
 The script runs with `CLAUDE_PLUGIN_ROOT` set to this plugin and `CLAUDE_PLUGIN_DATA` to a
@@ -60,6 +65,18 @@ def check(case: Path) -> list[str]:
         tmp_path = Path(tmp).resolve()
         repo = _repo(spec["repo"], tmp_path / "repo")
         data = tmp_path / "plugin-data"
+        if "prior" in setup:  # slip a commit in under the run's: undo it, commit these, redo it
+            git = ["git", "-c", "user.name=fixture", "-c", "user.email=fixture@example.invalid"]
+            msg = subprocess.run([*git, "log", "-1", "--format=%B"], cwd=repo, check=True,
+                                 capture_output=True, text=True).stdout
+            subprocess.run([*git, "reset", "-q", "--soft", "HEAD~1"], cwd=repo, check=True)
+            for rel, text in setup["prior"].items():
+                (repo / rel).parent.mkdir(parents=True, exist_ok=True)
+                (repo / rel).write_text(text)
+            subprocess.run([*git, "add", *setup["prior"]], cwd=repo, check=True)
+            subprocess.run([*git, "commit", "-q", "-m", "fixture: before the run", "--", *setup["prior"]],
+                           cwd=repo, check=True)
+            subprocess.run([*git, "commit", "-q", "-m", msg], cwd=repo, check=True)
         for rel, text in setup.get("files", {}).items():
             (repo / rel).parent.mkdir(parents=True, exist_ok=True)
             (repo / rel).write_text(text)
@@ -74,7 +91,7 @@ def check(case: Path) -> list[str]:
             counter.parent.mkdir(parents=True, exist_ok=True)
             counter.write_text(f"{setup['counter']}\n")
         stdin = spec["raw"] if "raw" in spec else "" if event is None else json.dumps(event).replace("{cwd}", str(repo))
-        env = {**os.environ, "CLAUDE_PLUGIN_ROOT": str(PLUGIN), "CLAUDE_PLUGIN_DATA": str(data)}
+        env = {**os.environ, "CLAUDE_PLUGIN_ROOT": str(PLUGIN), "CLAUDE_PLUGIN_DATA": str(data), **spec.get("env", {})}
         res = subprocess.run(["python3", str(PLUGIN / "hooks" / SCRIPTS[spec["script"]]), *spec.get("args", [])],
                              input=stdin, capture_output=True, text=True, cwd=repo, env=env)
         problems = []
@@ -96,10 +113,11 @@ def check(case: Path) -> list[str]:
         for rel, subs in exp.get("file_lacks", {}).items():
             problems += [f"{rel} has {s!r}" for s in subs if s in (repo / rel).read_text()]
         problems += [f"{rel} exists" for rel in exp.get("absent", []) if (repo / rel).exists()]
-        gate_file = repo / ".dev-team" / "gate.txt"
+        gate_rel = f".dev-team/gate/{exp.get('gate_section', 'data/ingest')}.txt"
+        gate_file = repo / gate_rel
         gate = gate_file.read_text() if gate_file.exists() else ""
         if any(k in exp for k in ("gate_contains", "gate_lacks", "gate_only")) and not gate:
-            problems.append("no .dev-team/gate.txt")
+            problems.append(f"no {gate_rel}")
         problems += [f"gate.txt lacks {s!r}" for s in exp.get("gate_contains", []) if s not in gate]
         problems += [f"gate.txt has {s!r}" for s in exp.get("gate_lacks", []) if s in gate]
         if "gate_only" in exp and gate:

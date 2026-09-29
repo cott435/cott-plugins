@@ -80,7 +80,7 @@ planned. Reporting a gap is useful; failing on a missing file is not.
    - **Key decisions** — every `decided` entry scoped `repo`, one line each; package-scoped
      ones are in the package READMEs.
    - **Documentation map** — links to `docs/architecture.md`, `docs/decisions.md`,
-     `docs/deviations.md` and `docs/followups.md` where they exist, `docs/reviews/`, each
+     `docs/deviations/` (and a pre-split `docs/deviations.md`) and `docs/followups.md` where they exist, `docs/reviews/`, each
      `docs/packages/<pkg>/`, and each package README.
    - **Known gaps** — the script's output verbatim as one block, then every document check
      from your instructions.

@@ -54,7 +54,11 @@ section disagrees, this section wins.
    `Run:` line). An agent spawned with no `Run:` line writes its role and target instead
    (`Dev-Team-Run: designer data/ingest`). `/dev-team:pair`, which is you and the user rather
    than an agent, writes `Dev-Team-Run: pair <pkg>/<section>`. The trailer is what lets any tool — the stop gate
-   among them — find a run's commit without parsing the summary.
+   among them — find a run's commit without parsing the summary. When the session requires an
+   attribution line of its own (a `Co-Authored-By:` your harness asks for), it goes after
+   `Dev-Team-Run:` in the same trailer block, and that is the only other line allowed: the
+   tools read `Dev-Team-Run:` wherever it stands, and a commit amended to move it is a second
+   commit's worth of noise.
 
 4. **One commit per run** — A run never makes two commits, and a run that wrote nothing
    commits nothing and returns `Commit: none`. The one exception to "never two": an

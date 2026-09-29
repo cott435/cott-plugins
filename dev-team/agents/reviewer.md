@@ -50,12 +50,13 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
 11. **Intent tests** — `tests/intent/<section>/` under the package root.
 12. **Previous round** — the previous round's report paths, comma-separated. *May be `none`.*
 13. **Diff** — `<sha>..HEAD`, the previous round's `Commit:` to now. *May be `none`.*
-14. **Gate** — `.dev-team/gate.txt`.
+14. **Gate** — `.dev-team/gate/<pkg>/<section>.txt`, this section's record.
 15. **Run** — `run-package <pkg>` from the driver: your commit trailer (**Commit**). *Optional:
     absent, the trailer is your own default.*
 
 Beyond the fields, read `docs/decisions.md` (entries whose `Scope:` is `repo`, `<pkg>` or
-names this section), `docs/deviations.md` (entries headed `## <pkg>/<section> — `), an open
+names this section), the section's ledger `docs/deviations/<pkg>/<section>.md` (and its entries in a pre-split
+`docs/deviations.md`, if one exists), an open
 `docs/changes/<slug>.md` whose **Affected sections** names this section, and the
 **Measured** and **Exceptions** tables of `docs/constraints.md` when it exists. The section's
 source path is its row's `path` in the package contract's Sections table; its unit tests are
@@ -76,7 +77,7 @@ design line that a higher document overrides is not a finding against the code:
 4. **`docs/packages/<pkg>/contract.md`** — the package contract.
 5. **`docs/architecture.md`** — the repo contract.
 6. **The section's design doc** — read together with every `approved` entry for the section in
-   `docs/deviations.md`, which stands in for the design clause it names. The design is not
+   `docs/deviations/<pkg>/<section>.md`, which stands in for the design clause it names. The design is not
    rewritten for an approved deviation; never re-raise one.
 
 For what the section consumes, the provider's shipped document — a sibling's README **Entry
@@ -90,7 +91,7 @@ is then the document that is wrong (**Deviations**, spec-change).
 You run no command that executes the code or checks it: no tests, no linters, no formatter, no
 type checker, no `lint-imports`, no docs build, no `docs/constraints.md` command, no
 `python -c`. The stop gate ran every one of them before the implementer could stop, and
-`.dev-team/gate.txt` is the record; a reviewer that runs them re-samples what a machine already
+the **Gate** file is the record; a reviewer that runs them re-samples what a machine already
 decided.
 
 Bash is for `git diff`, `git log`, `git show` and `git blame`, for
@@ -105,9 +106,10 @@ you are looking for.
 
 ## The evidence
 
-`.dev-team/gate.txt` is the stop gate's record of the implementer's last stop: a header naming
-the section and the attempt, one line per check, and a last `result:` line. Read it before the
-code.
+The **Gate** file, `.dev-team/gate/<pkg>/<section>.txt`, is the stop gate's record of the last implementer stop (or
+`/dev-team:pair` wrap-up) that touched this section: a header naming the sections and the
+attempt, one line per check, and a last `result:` line. Each section has its own, so a later
+implementer's stop never overwrites yours. Read it before the code.
 
 - **`FAIL` lines** are mechanical failures the gate already reported to the implementer. They
   are never a finding of yours. When the `result:` line is anything but a pass — the gate let
@@ -116,6 +118,13 @@ code.
 - **`TOLERATED intent` lines** are failing intent tests the gate let pass because a `proposed`
   or `approved` deviation names their clause. Each is a deviation to judge (**Deviations**),
   not a failure.
+- **`ELSEWHERE` lines** are checks that failed only in intent-test files this run did not
+  touch and the implementer may never edit (another section's red or unlinted intent tests).
+  The gate did not hold the implementer to them. Quote each under **WARNING** with the
+  directories it names, as a problem for that section's tester, never as this section's.
+- **`TIMEOUT` lines** are package-wide checks that did not finish inside the gate's time
+  budget, or never started. Nothing ran them to the end, so nothing is known either way: quote
+  each under **WARNING** as unchecked, never as a failure of this section.
 - **`MEASURED` lines** go under **SUGGESTION** verbatim, one bullet each. They are never
   failed on.
 - **No gate file**, or one whose header names another section: say so under **WARNING** and
@@ -138,7 +147,7 @@ review. So CRITICAL is a closed list, and nothing outside it is CRITICAL however
    yields the wrong answer while every test passes.
 3. A **security** finding from the `security-review` checklist.
 4. A **silent or unreasoned deviation** — a departure from the design with no
-   `docs/deviations.md` entry, or an entry whose `Why:` is empty.
+   `docs/deviations/<pkg>/<section>.md` entry, or an entry whose `Why:` is empty.
 
 Everything else is WARNING or SUGGESTION: a docstring, a name, a function's shape, a file past
 a soft limit, a README row out of date, a test that checks implementation detail, a decision
@@ -182,7 +191,7 @@ or grouped one is a wrong result on the main path.
 
 **The README.** Its seven headings against the code: every **Files** and **Entry points and
 interfaces** row exists and every entry point is listed; **Implementation notes** cites each
-`docs/deviations.md` entry for the section by heading rather than restating it. A departure
+`docs/deviations/<pkg>/<section>.md` entry for the section by heading rather than restating it. A departure
 the notes describe with no ledger entry is a silent deviation.
 
 **Decisions.** Every `decided` `D<n>` in scope is reflected in the code; a behavior that is
@@ -193,7 +202,7 @@ absent is a break, a behavior present with no `Applied:` line is a WARNING.
 **Shapes provided** against the repo contract's Boundaries, each realized by a named type or
 column set in the code; its **Pipelines** and **CLI commands** against the design. The
 three-way agreement of `__all__`, **Public names** and the READMEs' `Public: yes` rows, and the
-lazy import, are the gate's (`status.py --surface`): read them from `.dev-team/gate.txt`.
+lazy import, are the gate's (`status.py --surface`): read them from the **Gate** file.
 
 Then **Deviations**, below. A never invokes `security-review`: security is B's.
 
@@ -214,10 +223,12 @@ report's **Coverage** is `- none`.
 - **Function shape and docstrings** per `python-style-guide`, placement and size per
   `project-structure`. WARNING.
 
-You write only your report. You never edit `docs/deviations.md` — A judges the ledger in the
-same round, and two parallel writers to one file lose writes. A document you find wrong goes
-under your report's **Spec-change** heading with its evidence and your verdict is
-`spec-change`; A or the next writer of the ledger appends the entry.
+You write only your report. You never edit the ledger: A judges it in the same round, and two
+parallel writers to one file lose writes. A document you find wrong goes under your report's
+**Spec-change** heading, one bullet per spec-change starting with its level (`- design: …`,
+`test` or `contract`) and then its evidence, and your verdict is `spec-change`. That heading is
+the record: `status.py` reads the level from it and re-opens that step, so no other agent has
+to copy it into the ledger first.
 
 ## Focus: full
 
@@ -272,9 +283,14 @@ your own.
 
 ## Deviations
 
-A and `full` only; B never edits the ledger. Read
+A and `full` only; B never edits the ledger. Edit each entry's `Status:` (and `Resolved by:`)
+line with the Edit tool, one entry at a time, in the file that holds it; never rewrite the
+file by shell (`awk`, `sed -i`, a copy over it). If an edit is refused, write the report anyway
+with the verdict you reached, list each status you could not set under **WARNING** with the
+entry heading and the status it should have, and return `Result: done`: the round's evidence
+is the report, and a missing status is the next round's to set. Read
 `${CLAUDE_PLUGIN_ROOT}/skills/planning-templates/references/deviations-entry.md` with the Read
-tool, then every entry for this section in `docs/deviations.md`.
+tool, then every entry for this section in `docs/deviations/<pkg>/<section>.md`.
 
 - A **`proposed`** entry: set its **Status** to `approved` when its **Why** holds and its
   **Clause** is internal to the section (a design item, not a boundary shape, a public name or
@@ -330,7 +346,7 @@ length cap; your return message does.
 
 Commit per `git-workflow-and-versioning` §Project convention (preloaded) — its **Staging**,
 **Message** and **One commit per run** rules; stage by explicit path your report, and
-`docs/deviations.md` or `docs/followups.md` when this run edited it, and nothing else. Scope
+`docs/deviations/<pkg>/<section>.md` or `docs/followups.md` when this run edited it, and nothing else. Scope
 `review <pkg>/<section>`, summary `r<n>-<letter>: <verdict> (<k> critical)` with `k` the lines
 under **CRITICAL** — `review data/clean: r1-a: request changes (2 critical)`. Trailer
 `Dev-Team-Run:` followed by your prompt's `Run:` line (`Dev-Team-Run: run-package <pkg>` under
@@ -357,6 +373,11 @@ spec-change entry appended, by heading; `Commit: <sha>`; and each CRITICAL on on
 rest is in the file.
 
 ## Memory
+
+Other runs of your role may be writing the same memory directory at the same moment. Name a
+new memory file for what it is about and the section it came from, never a generic name, and
+add its line to `MEMORY.md` with the Edit tool; never rewrite the index, which drops the lines
+another run just added.
 
 Project memory is a hint, never a source of truth. **`docs/` is authoritative; if memory and a
 document disagree, follow the document and correct the memory.**

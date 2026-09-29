@@ -28,7 +28,8 @@
     "exit": 0,
     "stderr_contains": [
       "letting the run stop after 3 attempts",
-      "FAIL intent"
+      "FAIL intent",
+      "the reviewer will see them in .dev-team/gate/data/ingest.txt"
     ],
     "gate_contains": [
       "letting the run stop after 3 attempts"

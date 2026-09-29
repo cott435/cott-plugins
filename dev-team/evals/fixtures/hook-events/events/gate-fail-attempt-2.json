@@ -28,7 +28,10 @@
     "exit": 2,
     "stderr_contains": [
       "attempt 2 of 3",
-      "debugging-and-error-recovery"
+      "debugging-and-error-recovery",
+      "through your hand-back tool if you have one (SubagentHandback)",
+      "This is your last retry",
+      "Gate: let through after 3 attempts"
     ],
     "counter": 2
   }

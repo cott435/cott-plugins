@@ -16,7 +16,7 @@ the headings, the budget, and what goes under each heading.
 | `docs/architecture.md` — the repo contract | `references/repo-contract.md` |
 | `docs/packages/<pkg>/contract.md` — the package contract | `references/package-contract.md` |
 | `docs/changes/<slug>.md` — a change file | `references/change.md` |
-| an entry in `docs/deviations.md` — a deviation or a spec-change | `references/deviations-entry.md` |
+| an entry in `docs/deviations/<pkg>/<section>.md` — a deviation or a spec-change | `references/deviations-entry.md` |
 | `docs/reviews/<date>-<pkg>-<section>-r<n>-<a, b or s>.md` — a review report | `references/review-report.md` |
 | `docs/sources/<source>.md` — a source probe, either kind | `references/source-probe.md` |
 

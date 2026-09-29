@@ -19,8 +19,10 @@ macro, `{"do": "<macro>", ...}`: `base` (architecture, the `data` contract with 
 row, the `trades` probe doc; `contract: false | "api"`, `sources: false`), `design`, `tests`,
 `build`, `review` (one report per suffix, `Commit:` the code reviewed), `done` (all four,
 round 1 `a` and `b` approving), `fix`, `edit`, `regenerate` (a
-`<pkg>/<section>: regenerate 1 intent tests` commit) and `deviation` (one
-`docs/deviations.md` entry). `{HEAD}` in any file content is the commit the step starts from.
+`<pkg>/<section>: regenerate 1 intent tests` commit) and `deviation` (one entry in the
+section's ledger, `docs/deviations/<pkg>/<section>.md`, or with `"legacy": true` in the
+pre-split `docs/deviations.md`). `review` takes `spec` (letter → the line under its
+**Spec-change** heading); `base` takes `shorthand` (ingest's path cell as `…/ingest/`). `{HEAD}` in any file content is the commit the step starts from.
 
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming

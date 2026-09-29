@@ -5,7 +5,8 @@ Usage:  python3 build.py <dest>
 
 Copies two-package/'s brief and dataset into dest (which must not exist), runs `git init`,
 commits an empty root on `main`, and works on branch `build`. Commit 1 holds the contracts,
-`docs/constraints.md` (Floor rows that pass with `ruff` on PATH), a `docs/deviations.md` with
+`docs/constraints.md` (Floor rows that pass with `ruff` on PATH), a section ledger
+`docs/deviations/data/ingest.md` with
 one `proposed` entry whose `Clause:` is `design §5 load_trades`, and the package skeleton.
 Commit 2 holds `data/ingest` — code, README, and `tests/intent/ingest/` with two tests, one
 green and one red that cites `Design §5 load_trades` — and carries the trailer
@@ -111,7 +112,7 @@ FILES_BASE = {
     "docs/architecture.md": ARCHITECTURE,
     "docs/packages/data/contract.md": CONTRACT,
     "docs/constraints.md": CONSTRAINTS,
-    "docs/deviations.md": DEVIATIONS,
+    "docs/deviations/data/ingest.md": DEVIATIONS,
     "packages/data/pyproject.toml": PYPROJECT,
     "packages/data/src/data/__init__.py": '"""The data package."""\n',
 }

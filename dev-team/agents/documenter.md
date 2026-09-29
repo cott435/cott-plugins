@@ -133,6 +133,11 @@ return the run gate's FAIL lines if it fails. At the end, stage the package READ
 
 ## Memory
 
+Other runs of your role may be writing the same memory directory at the same moment. Name a
+new memory file for what it is about and the section it came from, never a generic name, and
+add its line to `MEMORY.md` with the Edit tool; never rewrite the index, which drops the lines
+another run just added.
+
 Project memory is a hint, never a source of truth. **`docs/`, the `interface.md` files, and the
 section READMEs are authoritative.** There is little worth recording here; the documents are
 the memory.

@@ -61,7 +61,7 @@ flowchart TB
   GATE --> REVIEW["reviewer ×2, round 1: A conformance and seams (coverage table) · B correctness and security<br/>reviewer ×1, round 2+: diff-scoped, prior findings fixed/unfixed, count only shrinks"]
   REVIEW -->|"docs/reviews/date-pkg-section-rN-a, -b or -s .md"| STATE
   REVIEW -->|"request changes, round below cap"| IMPL
-  IMPL -->|"proposed"| DEV[("docs/deviations.md<br/>internal deviations · spec-changes")]
+  IMPL -->|"proposed"| DEV[("docs/deviations/ · one ledger per section<br/>internal deviations · spec-changes")]
   REVIEW -->|"approved / rejected"| DEV
   DESIGN -->|"spec-change"| LEVEL
   IMPL -->|"spec-change"| LEVEL
@@ -83,7 +83,7 @@ flowchart TB
 The driver branches on each return's first line only. It relays a whole return in two cases:
 a tester's `design-gap` goes to the designer, and a `blocked` or `stopped` return is the
 question it asks. A `spec-change` is never relayed: its entry is on disk in
-`docs/deviations.md`, and the next `status.py` re-opens the step its level names. Every state
+`docs/deviations/<pkg>/<section>.md`, and the next `status.py` re-opens the step its level names. Every state
 the driver acts on is derived, so a re-run after a crash, a hand edit or a week away behaves
 exactly as the uninterrupted run would have.
 
@@ -163,11 +163,11 @@ upstream `interface.md`, a probe doc — wins over every plan-time document abou
 | `tests/intent/<section>/` | tester | implementer, reviewer, the stop gate, `status.py` | the design is newer than the tree |
 | section `README.md`; the `surface` section's is `docs/packages/<pkg>/interface.md` | implementer; `pair` at wrap-up | dependents' designer, tester and implementer, reviewer, documenter, architect, `status.py` | the code is newer than it |
 | `docs/reviews/<date>-<pkg>-<section>-r<n>-<a, b or s>.md` | reviewer | `status.py`, the fix-round implementer, the next reviewer | the code is newer than its `Commit:` |
-| `docs/deviations.md` | implementer, designer, tester, reviewer, architect; `pair` at wrap-up | reviewer, tester, architect, `status.py`, the stop gate | never; entries close by status |
+| `docs/deviations/<pkg>/<section>.md` (one per section) | implementer, designer, tester, reviewer, architect; `pair` at wrap-up | reviewer, tester, architect, `status.py`, the stop gate | never; entries close by status |
 | `docs/changes/<slug>.md` | architect (a CHANGE outcome) | `status.py`, designer (delta), implementer, reviewer, architect (sync-plan) | its sections are DONE and `sync-plan` has not run |
 | `docs/decisions.md` | architect and designer (stubs); you, the driver or `pair` (`Decision:`, `Status:`); implementer (`Applied:`) | every agent; `status.py`; documenter | never; retired by `superseded` |
 | `docs/constraints.md` | `set-constraints`, you | the stop gate, `status.py --run-gate`, CI, reviewer (Measured, Exceptions), tester (coverage) | you change the bar |
 | `docs/followups.md` | reviewer (out-of-diff WARNINGs, defer), architect (map-repo defects) | the fix-round implementer (entries for its section), documenter, you | never counted, never a gate |
 | `docs/history/<date>-<name>.md` | architect, before every contract edit | you | never |
 | `docs/index.md`, `packages/*/README.md`, root `README.md` | documenter | you | a shipped document changed after it |
-| `.dev-team/gate.txt` | the stop gate; `gate_on_stop.py --report` (`pair` at wrap-up) | reviewer (its evidence) | the next implementer stop or `--report` run |
+| `.dev-team/gate/<pkg>/<section>.txt` | the stop gate; `gate_on_stop.py --report` (`pair` at wrap-up) | reviewer (its evidence) | the next implementer stop or `--report` run |
