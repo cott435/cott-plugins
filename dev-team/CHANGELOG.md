@@ -12,6 +12,44 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [2.0.0] - 2026-09-29
+
+The audit fixes. `/plugin-dev:audit-run` held a real 105-agent `run-package` (the quant
+`data` package) against 1.0.0's own files. It found nine faults in the plugin and a dozen
+smaller gaps, and a whole-package health check found one more. Evidence for each is under
+`evals/2026-09-28-audit-run-package-1493ed56.md` and the 2026-09-29 logs.
+
+### Breaking
+
+| Change | What to do |
+|---|---|
+| The ledger is one file per section, `docs/deviations/<pkg>/<section>.md`, not `docs/deviations.md` (ff5776a) | nothing to start: the old file is still read, and its entries are edited in place. Before a run with parallel reviewers, split it by section; a moved entry keeps its first commit (508d664), so the split re-opens nothing |
+| The gate's record is `.dev-team/gate/<pkg>/<section>.txt`, not `.dev-team/gate.txt` (eda16c0) | nothing; a section implemented under 1.0.0 has no record, and its reviewer says so under WARNING. `gate_on_stop.py --report --base <rev>` writes one |
+
+### Added
+- **`/dev-team:pair <pkg>/<section>`** (4def96d): edit one built section with the user turn by turn, then sort the diff into deviations and spec-changes, run the gate by hand and commit once. With it come `status.py --inputs` (the implementer's spawn block) and `gate_on_stop.py --report`.
+- **`ELSEWHERE` gate lines** (eda16c0): a check whose every located failure is in an intent-test file the run did not touch no longer blocks the implementer, who may never edit `tests/intent/`. In the audited run, 9 of 9 implementers had burned all three attempts on another section's intent-test lint.
+- **`TIMEOUT` gate lines and a time budget** (5ef4b86): the section's own checks run first; package-wide rows share a budget under the hook's 600 s; a row out of time no longer blocks.
+- **A spec-change can come from a review report** (ff5776a): a `spec-change` report re-opens the level its **Spec-change** heading names until the ledger records it, so a round-1 `b` reviewer's finding is no longer lost.
+- **Designer `delta` mode for a spec-change** (ff5776a), with a `Spec-change:` field.
+
+### Changed
+- **The format hook lints with the plugin's lint block** until the repo has a ruff config (eda16c0), so intent tests meet the rules before the first implementer merges them.
+- **Round 1 needs both reports** (ff5776a): one approval no longer ships a section.
+- **Design §10 contract deviations are ledger entries** (ff5776a), approved by A and folded in by `sync-plan`.
+- **Researcher returns start `Result: done | blocked`** (ff5776a).
+- **The implementer re-sends its return through the hand-back** after a gate retry (eda16c0): the caller receives the last hand-back, not the last turn.
+- **`…/<name>/` path cells resolve** to the package default (ff5776a); `--inputs` gives a post-spec-change implementer its round's reports.
+- **Lint block:** D104 off for nested `__init__.py` (eda16c0); `.claude/` excluded (ff5776a); PLR0913 off under `tests/` (508d664).
+- **Smaller rules** (ff5776a):
+  - the driver's reads, and a route for a row that did not move after `done`;
+  - one-line ledger edits, and a refused ledger edit still gets a report;
+  - the implementer reads the backlog before coding, and runs step 0 after the first scaffold;
+  - testers tag approved clauses on every run;
+  - a per-run scratch directory for researchers;
+  - parallel-safe memory;
+  - `Co-Authored-By` is allowed after the trailer.
+
 ## [1.0.0] - 2026-09-28
 
 The remake. One driver over derived state, six roles that each answer one question, and hooks

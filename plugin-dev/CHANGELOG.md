@@ -6,6 +6,11 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [0.12.1] - 2026-09-29
+
+### Changed
+- **`plugin-anatomy` records what reaches an agent's caller** (eda16c0): with a `SubagentHandback` tool, the caller receives the last hand-back, not the last turn, and a `SubagentStop` hook that exits 0 ends the agent with no further turn. It is marked proven by dev-team's audit of a real run.
+
 ## [0.12.0] - 2026-09-29
 
 ### Added
