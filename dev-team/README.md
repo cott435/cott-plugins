@@ -138,6 +138,11 @@ last, then closes the package. It runs in your conversation and spawns every age
 `dev-team:<agent>`, one layer deep; no state is kept anywhere but on disk.
 
 1. **Run gate.** `status.py --run-gate <pkg>`: the branch, the clean tree, the contract exists.
+   Then **scaffold**: when `status.py --scaffold <pkg>` says the workspace is missing (no root
+   `pyproject.toml`, or no package `pyproject.toml` in a uv workspace), one implementer builds
+   it first — the root with the plugin's lint rules, the package skeleton, `uv sync`, one
+   commit with `uv.lock`. Every tester then writes and runs its intent tests inside the
+   workspace, under the repo's own lint rules.
 2. **State.** `status.py <pkg>` derives one state per section from the documents, the code and
    git (**The states**, below). A re-run a week later, after hand edits or a crash, picks up
    exactly where the files say.

@@ -43,12 +43,17 @@ flowchart LR
 
 ## The loop
 
-`/dev-team:run-package <pkg>` derives every section's state from disk, runs the ready set, and
-loops until every section is DONE; then it closes the package.
+`/dev-team:run-package <pkg>` first builds the package's workspace when it has none, so every
+test is written and run inside it under the repo's own lint rules; then it derives every
+section's state from disk, runs the ready set, and loops until every section is DONE; then it
+closes the package.
 
 ```mermaid
 flowchart TB
-  CMD(["/dev-team:run-package pkg [section] [--step]"]) --> STATE["status.py: derive each section's state from disk<br/>PROBE · DESIGN · TEST · IMPLEMENT · REVIEW · FIX n · PLAN · DONE · BLOCKED"]
+  CMD(["/dev-team:run-package pkg [section] [--step]"]) --> SCAF{"workspace exists?<br/>status.py --scaffold pkg"}
+  SCAF -->|"no"| SCAFFOLD["implementer (scaffold)<br/>root pyproject with the lint rules · package skeleton · uv sync · one commit"]
+  SCAFFOLD --> STATE
+  SCAF -->|"yes"| STATE["status.py: derive each section's state from disk<br/>PROBE · DESIGN · TEST · IMPLEMENT · REVIEW · FIX n · PLAN · DONE · BLOCKED"]
   STATE --> READY{"ready set: in-package deps DONE?"}
   READY -->|"none ready, some BLOCKED"| ASK
   READY -->|"all DONE"| SYNC["architect: sync-plan pkg<br/>apply approved deviations and change files, verified against code"]

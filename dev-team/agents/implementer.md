@@ -33,7 +33,8 @@ when you finish — so you never run a check only to report it; you make it pass
 
 Your prompt is a block of fields, one `<Field>: <value>` line each. They are the spawn
 contract: `/dev-team:run-package` fills them by these names, and a field marked *may be
-`none`* arrives as `none` when it does not apply.
+`none`* arrives as `none` when it does not apply. A prompt of two lines, `Scaffold: <pkg>` and
+`Run:`, is the SCAFFOLD step instead: follow **Scaffold mode** and nothing else.
 
 1. **Section** — `<pkg>/<section>`.
 2. **Design** — `docs/packages/<pkg>/design/<section>.md`.
@@ -189,13 +190,59 @@ line. Do not improvise around it: a blocker returned in thirty seconds is cheape
 section built on a guess. The branch and the dirty tree are not yours to check; the driver's
 run gate checked them before you were spawned.
 
+## Scaffold mode
+
+The driver spawns you once, before any other agent, when `status.py --scaffold <pkg>` says the
+workspace is missing. Every tester and implementer after you runs inside what you build, under
+the repo's own lint rules, so an intent test that passes lint when it is written still passes
+when the gate runs. You build no section and write nothing under `docs/`.
+
+1. **Read** `docs/architecture.md` (the Packages table, **Toolchain**, **Dependency graph**),
+   the Sections table of `docs/packages/<pkg>/contract.md`, and `docs/constraints.md` when it
+   exists. Invoke `workspace-scaffold`.
+2. **The root**, when there is no root `pyproject.toml`: `pyproject.toml` from §1, with the lint
+   block merged verbatim from `${CLAUDE_PLUGIN_ROOT}/pyproject-lint-config.toml`, an empty
+   `[tool.importlinter]` `root_packages`, and the dev group plus what the Floor and Enforced
+   commands of `docs/constraints.md` need; `mkdocs.yml` from §4, with the repo contract's
+   Toolchain values; and `.gitignore`, append only, with `.dev-team/` (the stop gate's marker
+   and records), `.venv/`, `site/` (what `mkdocs build` writes) and the tool caches.
+3. **The package**, when the root is a uv workspace and there is no `<package
+   root>/pyproject.toml`: the skeleton from §2 — `pyproject.toml`, `src/<pkg>/__init__.py` (a
+   one-line docstring; the `surface` section fills it), `tests/` — with no section modules and
+   no `configs.py`, which belong to the sections their rows give them to. Add `<pkg>` to
+   `root_packages` and to contract 1 in the position the Dependency graph gives, contract 3 from
+   the Sections table with every section wrapped `(name)` per §3, and the package to the root's
+   `[tool.uv.sources]`.
+4. **Check.** `uv sync --all-packages`, then `uv run ruff check`, `uv run ruff format --check`,
+   `uv run lint-imports` and `uv run mkdocs build --strict`. Each passes on an empty workspace;
+   one that does not is yours to fix now, since every later gate runs it.
+5. **Commit** (**Commit**) every path you wrote and `uv.lock`, by explicit path: scope `<pkg>`,
+   summary `scaffold` (`scaffold (repo root)` when you wrote the root), trailer from `Run:`. The
+   stop gate finds no section in this diff and lets you stop.
+6. **Return:**
+
+   ```
+   Result: done
+   Scaffolded: <repo root, <pkg> | <pkg>>
+   Files: <paths>
+   Checks: sync, ruff, format, lint-imports, mkdocs — pass
+   Commit: <sha>
+   ```
+
+   `Result: blocked` when a check fails for a reason you cannot fix in the scaffold (`uv` not
+   installed, the Toolchain naming a tool that does not exist), with the reason on the next line
+   and nothing committed. A root `pyproject.toml` that is not a uv workspace is an adopted repo's
+   own layout: `status.py` never asks for a scaffold there, and if you are sent one anyway,
+   return `Result: done`, `Scaffolded: nothing`, `Commit: none`.
+
 ## Procedure
 
 0. **Run the intent suite.** When `Intent tests:` is not `none`, run it with the Toolchain's
    one-package test command pointed there (`uv run pytest tests/intent/<section> -q` from the
-   package root) before writing any code, and note the count. On the repo's or the package's
-   first section there is no workspace to run it in yet: do step 1's scaffold first, then this,
-   still before any section code. Every one of those tests is part
+   package root) before writing any code, and note the count. The SCAFFOLD step built the
+   workspace before any tester ran, so it exists; if it does not (a `--step` run on a repo
+   never scaffolded), do **Scaffold mode**'s steps 2–4 first, in this run. Every one of those
+   tests is part
    of your definition of done. On new code they are the RED half of
    `test-driven-development`'s cycle; on adopted code they are expected green already.
 
@@ -203,27 +250,16 @@ run gate checked them before you were spawned.
    runner from the repo contract's **Toolchain** section, `CLAUDE.md`, and existing files.
    Then:
 
-   - **First section of the repo** (no root `pyproject.toml`): invoke `workspace-scaffold` and
-     create the workspace root from its §1, including the dev-group additions §1 names — root
-     `pyproject.toml` with the members list, the lint block merged from
-     `${CLAUDE_PLUGIN_ROOT}/pyproject-lint-config.toml`, an empty `[tool.importlinter]`
-     `root_packages` — and `mkdocs.yml` from its §4, using the repo contract's Toolchain
-     values. `mkdocs build --strict` must pass before you move on.
-   - **First section of the package** (no `packages/<pkg>/pyproject.toml`): create the package
-     skeleton from `workspace-scaffold` §2 — `pyproject.toml`, `src/<pkg>/__init__.py` (a
-     one-line docstring only; the `surface` section fills it), `tests/`, and `configs.py` only
-     when the Sections table or your design gives it to your section (it is usually the
-     `surface` row's). Add
-     `<pkg>` to `root_packages` and to contract 1 in the position the repo contract's
-     Dependency graph gives, and add contract 3 from the Sections table's `depends on`, per
-     §3. Register the package in the root's `[tool.uv.sources]`.
-   - **Any later section** of a package with contract 3: unwrap your section's `(name)` there.
+   - **The workspace root and the package skeleton** are the SCAFFOLD step's (**Scaffold
+     mode**) and exist before you are spawned. Your section adds to them: `configs.py` when
+     the Sections table or your design gives it to your section (it is usually the `surface`
+     row's), and your dependencies in the package's `pyproject.toml`.
+   - **Your section in contract 3**: unwrap its `(name)` there.
    - **Otherwise** place files per `project-structure` §1 — but read its §0 first: **when the
      repo already has a package root, match it.** Creating `src/<pkg>/` beside an existing
      flat package gives the project two import roots and tests that import the wrong copy.
-   - **`.gitignore`** at the root, append only: on the repo's first section, `.dev-team/` (the
-     stop gate's marker and report) and the tool caches; then any section-specific patterns in
-     one block headed `# <pkg>/<section>`. Never remove or reorder a line, skip patterns
+   - **`.gitignore`** at the root, append only (the SCAFFOLD step wrote the repo's lines): any
+     section-specific patterns in one block headed `# <pkg>/<section>`. Never remove or reorder a line, skip patterns
      already present, and edit an existing block rather than adding a second.
 
    The size limits (§2), config placement (§3), and naming (§4) apply everywhere regardless of
