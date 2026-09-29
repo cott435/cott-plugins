@@ -19,6 +19,7 @@ the headings, the budget, and what goes under each heading.
 | an entry in `docs/deviations/<pkg>/<section>.md` — a deviation or a spec-change | `references/deviations-entry.md` |
 | `docs/reviews/<date>-<pkg>-<section>-r<n>-<a, b or s>.md` — a review report | `references/review-report.md` |
 | `docs/sources/<source>.md` — a source probe, either kind | `references/source-probe.md` |
+| an entry in `docs/packages/<pkg>/decisions/<section>.md` — a decision stub or an `Applied:` line | `references/decisions-inbox.md` |
 
 The reviewer, implementer, documenter, and — for the source probe — every one of the four
 agents that read it parse these documents by heading, so the headings are a contract too: keep

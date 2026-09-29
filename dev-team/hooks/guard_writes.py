@@ -30,7 +30,8 @@ MEMORY = ".claude/agent-memory/**"
 # agent_type → (allowed, excluded, carved back out of the exclusions).
 ALLOWED: dict[str, tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]] = {
     "dev-team:architect": (("docs/**",), ("docs/packages/*/design/**", "docs/reviews/**"), ("docs/deviations.md", "docs/deviations/**")),
-    "dev-team:designer": (("docs/packages/*/design/**", "docs/deviations.md", "docs/deviations/**", "docs/decisions.md"), (), ()),
+    "dev-team:designer": (("docs/packages/*/design/**", "docs/deviations.md", "docs/deviations/**", "docs/decisions.md",
+                           "docs/packages/*/decisions/**"), (), ()),
     "dev-team:researcher": (("docs/sources/**", ".claude/skills/*/**"), (), ()),
     "dev-team:tester": ((INTENT, "**/tests/fixtures/**", "docs/deviations.md", "docs/deviations/**"), (), ()),
     "dev-team:reviewer": (("docs/reviews/**", "docs/deviations.md", "docs/deviations/**", "docs/followups.md"), (), ()),
@@ -38,7 +39,8 @@ ALLOWED: dict[str, tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]] = {
                              "docs/packages/*/readme-previous.md"), (), ()),
     "dev-team:curator": (("docs/legacy/**", ".claude/skills/*/**"), (), ()),
     "dev-team:implementer": (("**",), ("docs/**",),
-                             ("docs/deviations.md", "docs/deviations/**", "docs/decisions.md", "docs/packages/*/interface.md", "docs/api/*.md")),
+                             ("docs/deviations.md", "docs/deviations/**", "docs/decisions.md", "docs/packages/*/decisions/**",
+                              "docs/packages/*/interface.md", "docs/api/*.md")),
 }
 
 

@@ -299,6 +299,21 @@ headings:
       - file: agents/designer.md
         cites: ['Contract changes']
 
+  - name: decisions inbox fields its readers parse are ones planning-templates defines
+    # The designer writes stubs and the implementer `Applied:` lines into the inbox; the sync
+    # hook parses both by field name and copies `Applied:` lines only, and the run gate fails on
+    # an entry the central ledger lacks. A renamed field is a stub the hook merges without its
+    # assumption, or an `Applied:` line that never reaches the ledger.
+    owner: skills/planning-templates/references/decisions-inbox.md
+    owner_span: ['1. **Scope**', null]
+    readers:
+      - file: agents/designer.md
+        cites: ['Scope', 'Raised by', 'Recommendation', 'Assumption if unanswered', 'Status']
+      - file: agents/implementer.md
+        cites: ['Applied']
+      - file: hooks/sync_decisions.py
+        cites: ['Applied', 'Status']
+
   - name: review report headings its readers parse are ones planning-templates defines
     # status.py reads the header lines, the fix-round implementer reads CRITICAL and WARNING,
     # the next reviewer reads Carried; a renamed heading leaves each reading nothing.

@@ -1,0 +1,45 @@
+{
+  "script": "sync",
+  "repo": "arch",
+  "setup": {
+    "stale_lock": "decisions",
+    "files": {
+      "docs/decisions.md": "# Decisions\n\n## D1 — Timestamps in UTC?\nScope: repo\nRaised by: architect\nRecommendation: UTC.\nAssumption if unanswered: UTC.\nDecision: UTC.\nStatus: decided\n\n## D2 — Session store?\nScope: data\nRaised by: OQ-data-ingest-1\nRecommendation: SQLite.\nAssumption if unanswered: SQLite.\nDecision:\nStatus: open\n\n## D3 — Retry failed downloads?\nScope: data/ingest\nRaised by: OQ-data-ingest-2\nRecommendation: Three times.\nAssumption if unanswered: Three times.\nDecision: Three times, then raise.\nStatus: decided\n",
+      "docs/packages/data/decisions/ingest.md": "# Decisions — data/ingest\n\n## D? — Which parser?\nScope: data/ingest\nRaised by: OQ-data-ingest-1\nRecommendation: Use the stdlib csv module.\nAssumption if unanswered: The stdlib csv module.\nStatus: open\n"
+    }
+  },
+  "event": {
+    "session_id": "9b1f0c52-3d4e-4a7b-8c21-5e6f7a8b9c0d",
+    "transcript_path": "{cwd}/../transcript.jsonl",
+    "cwd": "{cwd}",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "{cwd}/docs/packages/data/decisions/ingest.md",
+      "content": "…"
+    },
+    "tool_response": {
+      "filePath": "{cwd}/docs/packages/data/decisions/ingest.md",
+      "success": true
+    },
+    "tool_use_id": "toolu_01SyNcDe",
+    "agent_id": "a7c2e91f04b3d5a68",
+    "agent_type": "dev-team:designer"
+  },
+  "expect": {
+    "exit": 0,
+    "stderr": "",
+    "stdout_contains": [
+      "D? → D4"
+    ],
+    "file_contains": {
+      "docs/decisions.md": [
+        "## D4 — Which parser?"
+      ]
+    },
+    "absent": [
+      ".dev-team/locks/decisions"
+    ]
+  }
+}

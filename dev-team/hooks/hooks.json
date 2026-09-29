@@ -1,11 +1,17 @@
 {
-  "description": "dev-team: ruff after every .py edit by the implementer or tester; a stop gate the implementer must pass; a per-role write guard. Every script exits 0 outside a repo that has docs/architecture.md.",
+  "description": "dev-team: ruff after every .py edit by the implementer or tester; a stop gate the implementer must pass; a per-role write guard; the decisions inbox folded into docs/decisions.md after every inbox write. Every script exits 0 outside a repo that has docs/architecture.md.",
   "hooks": {
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
         "hooks": [
           { "type": "command", "command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/format_on_edit.py"], "timeout": 120 }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/sync_decisions.py"], "timeout": 60 }
         ]
       }
     ],
