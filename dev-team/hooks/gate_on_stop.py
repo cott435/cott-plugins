@@ -6,37 +6,52 @@ Input: the hook JSON on stdin (`cwd`, `agent_id`, `agent_type`, `stop_hook_activ
 
 1. Scope: exit 0 unless `agent_type` is `dev-team:implementer` and `<cwd>/docs/architecture.md`
    exists.
-2. Marker: `<cwd>/.dev-team/stop` whose first line is `blocked` or `spec-change` (the
-   implementer writes it before returning either) is deleted with the counter; exit 0 with
-   nothing run.
-3. Counter: `${CLAUDE_PLUGIN_DATA}/gate/<agent_id>` (else `<cwd>/.dev-team/gate-attempts/
+2. Section: `agent_transcript_path` → the first `user` record's lines (status.py's
+   `section_from_transcript`, the spawn prompt verbatim): `Section: <pkg>/<section>` names the
+   one section this run is gated on; `Scaffold:` runs nothing (the marker
+   `.dev-team/stop/scaffold` is deleted if present, the counter cleared, exit 0); an unreadable
+   transcript or no `Section:` line falls back to 2.1's discovery — `HEAD~1..HEAD` when `HEAD`
+   carries a `Dev-Team-Run:` trailer, plus the working tree, mapped to sections through
+   status.py's `section_for_path` (a path the `surface` section would take counts only once
+   `docs/packages/<pkg>/design/surface.md` exists; no section: exit 0) — with ` (from diff)`
+   in the record header.
+3. Marker: `<cwd>/.dev-team/stop/<pkg>/<section>` whose first line is `blocked` or
+   `spec-change` (the implementer writes it before returning either) is deleted with the
+   counter; exit 0 with nothing run. A sibling's marker is never read.
+   Counter: `${CLAUDE_PLUGIN_DATA}/gate/<agent_id>` (else `<cwd>/.dev-team/gate-attempts/
    <agent_id>`) holds the attempt number; this stop adds one.
-4. The run's diff: `HEAD~1..HEAD` when `HEAD`'s body carries a `Dev-Team-Run:` trailer, plus
-   the working tree, untracked files counted as added in full. Its paths map to sections
-   through status.py's `section_for_path`, longest section path first; a path the `surface`
-   section would take counts only once `docs/packages/<pkg>/design/surface.md` exists. No
-   section: exit 0.
-5. Checks, every one run: the Floor and Enforced rows of `docs/constraints.md` per package (a
-   `repo` row once), else the Toolchain commands; Measured rows, printed and never failed on.
-   A row whose every located failure (a `path:line` or `path::test` its output names) is in an
-   intent-test file the run did not touch is ELSEWHERE, not FAIL: the implementer may never
-   edit `tests/intent/`, so blocking on another section's red or unlinted intent tests only
-   burns its attempts. The line stays in the record for the reviewer. The section's own checks
-   run first; the Floor/Enforced or Toolchain rows then share what is left of a time budget
-   below the hook's 600 s timeout (`DEV_TEAM_GATE_BUDGET`, default 540 s; each row at most
+4. The run's diff: the section's paths (its code, `tests/unit/<section>`,
+   `tests/intent/<section>`, its README; for `surface` also `interface.md` and
+   `docs/api/<pkg>.md`) since the section's newest review round's `Commit:`
+   (`status.newest_round`, when it is an ancestor of `HEAD`), else since the empty tree — so
+   Guarded sees only what was added since the last review, and no commit ordering is assumed.
+   Untracked files under those paths count as added in full.
+5. Checks, every one run: the section's intent suite and its unit suite (`tests/unit/<section>`)
+   first, then the Guarded grep of the diff, then `status.py --surface` for `surface`; then
+   the Floor and Enforced rows of `docs/constraints.md` for the section's package — a `repo`
+   row once, except a `repo` row whose command runs `pytest`, which is CI's and is written
+   `SKIPPED <row>: … repo-scope pytest is CI's` (never run: it never finished inside any
+   audited gate) — else the Toolchain commands; Measured rows printed, never failed on.
+   An intent failure is tolerated when its `Design §<n> <item>` docstring matches the
+   `Clause:` of a `proposed` or `approved` deviation entry for the section (the full item name,
+   status.py's `clause_key`). The Guarded grep is pardoned by an unexpired Exceptions row.
+   ELSEWHERE: a row whose every located failure (a `path:line` or `path::test` its output
+   names) lies outside the section's paths is `ELSEWHERE`, not `FAIL`: the package-wide rows
+   also lint and test sibling sections, often half-built under parallel implementers, and the
+   implementer writes only inside its own section. The line stays in the record for the
+   reviewer. The rows share what is left of a time budget below
+   the hook's 600 s timeout (`DEV_TEAM_GATE_BUDGET`, default 540 s; each row at most
    `DEV_TEAM_GATE_TIMEOUT`, default 240 s). A row that runs out of time, or never starts because
    the budget is spent, is TIMEOUT, not FAIL: nothing the implementer edits makes a package-wide
-   suite faster, and a hang in its own code still fails its own intent suite;
-   each section's intent suite, a failure tolerated when its `Design §<n> <item>` docstring
-   matches the `Clause:` of a `proposed` or `approved` deviation entry for the section; the
-   Guarded grep of the diff, pardoned by an unexpired Exceptions row; `status.py --surface`
-   for the `surface` section.
-6. Every line goes to `<cwd>/.dev-team/gate/<pkg>/<section>.txt` for each section in the run,
-   so the reviewer of a section reads that section's last record, whichever implementer ran
-   after it.
+   suite faster, and a hang in its own code still fails its own suites.
+6. Every line goes to `<cwd>/.dev-team/gate/<pkg>/<section>.txt`, header `dev-team gate —
+   attempt n — <stamp> — section <pkg>/<section>`, the stamp the time the record is written.
+   The fallback writes the same record for each section it found.
 7. No FAIL: delete the counter, exit 0. A FAIL before attempt 3: the FAIL lines to stderr,
-   exit 2 (from attempt 2 naming `debugging-and-error-recovery`). Attempt 3: the FAIL lines to
-   stderr, delete the counter, exit 0.
+   exit 2, the text naming the 2.2 retry rule (§Project convention rule 4: amend when
+   `git log -1 --format=%s` starts with the section's scope, else a second commit with the same
+   summary and trailer; from attempt 2 naming `debugging-and-error-recovery`). Attempt 3: the
+   FAIL lines to stderr, delete the counter, exit 0.
 8. Malformed stdin or any exception: report it on stderr and exit 0 (fail open, reported).
 
 By hand, `python3 gate_on_stop.py --report [--base <rev>]` from the repo root runs the same
@@ -131,25 +146,30 @@ def _base() -> str | None:
     return "HEAD~1" if status.git("rev-parse", "--verify", "-q", "HEAD~1") else EMPTY_TREE
 
 
-def _untracked() -> list[str]:
-    raw = status.git("ls-files", "--others", "--exclude-standard", "-z") or ""
+def _untracked(paths: list[str] | None = None) -> list[str]:
+    """Untracked, unignored files; under paths (git pathspecs) when given."""
+    spec = ["--", *paths] if paths else []
+    raw = status.git("ls-files", "--others", "--exclude-standard", "-z", *spec) or ""
     return [p for p in raw.split("\0") if p]
 
 
-def diff_paths(base: str) -> list[str]:
-    """Every path the run touched: changed since base, staged or not, and untracked."""
-    changed = (status.git("diff", "--name-only", "-z", base) or "").split("\0")
-    return sorted({p for p in changed + _untracked() if p})
+def diff_paths(base: str, paths: list[str] | None = None) -> list[str]:
+    """Every path changed since base, staged or not, and untracked; under paths when given."""
+    spec = ["--", *paths] if paths else []
+    changed = (status.git("diff", "--name-only", "-z", base, *spec) or "").split("\0")
+    return sorted({p for p in changed + _untracked(paths) if p})
 
 
-def diff_lines(base: str) -> list[tuple[str, str, int, str]]:
-    """(path, '+' or '-', line number, text) for every added and removed line since base.
+def diff_lines(base: str, paths: list[str] | None = None) -> list[tuple[str, str, int, str]]:
+    """(path, '+' or '-', line number, text) for every added and removed line since base, under
+    paths when given.
 
     Added lines carry their new line number, removed lines their old one. An untracked file
     counts as added in full.
     """
     out: list[tuple[str, str, int, str]] = []
-    raw = status.git("diff", "-U0", "--no-color", "--no-ext-diff", base) or ""
+    spec = ["--", *paths] if paths else []
+    raw = status.git("diff", "-U0", "--no-color", "--no-ext-diff", base, *spec) or ""
     path, old, new = "", 0, 0
     for line in raw.splitlines():
         if line.startswith("+++ "):
@@ -165,13 +185,56 @@ def diff_lines(base: str) -> list[tuple[str, str, int, str]]:
         elif path and line.startswith("-"):
             out.append((path, "-", old, line[1:]))
             old += 1
-    for rel in _untracked():
+    for rel in _untracked(paths):
         try:
             text = (status.ROOT / rel).read_text()
         except (OSError, UnicodeDecodeError):
             continue
         out += [(rel, "+", i, t) for i, t in enumerate(text.splitlines(), 1)]
     return out
+
+
+def section_paths(pkg: str, section: str) -> list[str]:
+    """The section's paths as git pathspecs: its code (nested sections excluded), unit and intent
+    trees and README; for `surface` also `interface.md` and `docs/api/<pkg>.md`."""
+    p = status._paths(pkg, section)
+    out = [*map(status._rel, p["code"]), status._rel(p["unit"]), status._rel(p["intent"]), status._rel(p["readme"])]  # type: ignore[arg-type]
+    if section == "surface":
+        out += [status._rel(status.DOCS / "packages" / pkg / "interface.md"), status._rel(status.DOCS / "api" / f"{pkg}.md")]
+    return list(dict.fromkeys(out))
+
+
+def _in_section(path: str, pkg: str, section: str) -> bool:
+    """True when a repo-relative path lies under the section's paths."""
+    if status.section_for_path(status.ROOT / path) == (pkg, section):
+        return True
+    return path in {s for s in section_paths(pkg, section) if not s.startswith(":(")}
+
+
+def _own_head(pkg: str, section: str) -> bool:
+    """True when `HEAD`'s summary starts with the section's scope: the run's own commit."""
+    return (status.git("log", "-1", "--format=%s") or "").startswith(f"{pkg}/{section}:")
+
+
+def touched_paths(pkg: str, section: str, diff: list[str]) -> set[str]:
+    """What the run touched: the section diff's paths, the tracked files changed in the working
+    tree (staged or not), and `HEAD`'s files when `HEAD` is the run's own commit. The Guarded
+    threshold check reads it for `docs/constraints.md`."""
+    out = set(diff)
+    if status.git("rev-parse", "--verify", "-q", "HEAD") is not None:
+        out |= {p for p in (status.git("diff", "--name-only", "-z", "HEAD") or "").split("\0") if p}
+        if _own_head(pkg, section):
+            files = status.git("show", "--name-only", "-z", "--format=", "HEAD") or ""
+            out |= {p for p in files.split("\0") if p.strip()}
+    return {p.strip() for p in out}
+
+
+def review_base(pkg: str, section: str) -> str:
+    """The newest review round's `Commit:` when it is an ancestor of `HEAD`, else the empty tree."""
+    sha = status.newest_round(pkg, section)[2]
+    if sha and status.git("merge-base", "--is-ancestor", sha, "HEAD") is not None:
+        return sha
+    return EMPTY_TREE
 
 
 def gated_sections(paths: list[str]) -> list[tuple[str, str]]:
@@ -213,21 +276,33 @@ def _located(out: str) -> set[str]:
     return found
 
 
-def _elsewhere(out: str, touched: set[str]) -> list[str]:
-    """The intent-test directories a failure lies in, when every located file is an untouched
-    intent test; else [] (the failure is the run's to fix, or cannot be placed)."""
+def _elsewhere(out: str, touched: set[str], section: tuple[str, str] | None = None) -> list[str]:
+    """Where a failure lies when it is not the run's to fix; else [] (it is, or cannot be placed).
+
+    With a section: the sorted located files, when none is under the section's paths. Without
+    one (the 2.1 discovery and `--report`): the intent-test directories, when every located
+    file is an intent test the run did not touch.
+    """
     located = _located(out)
-    if not located or any("/tests/intent/" not in f"/{p}" or p in touched for p in located):
+    if not located:
+        return []
+    if section is not None:
+        return [] if any(_in_section(p, *section) for p in located) else sorted(located)
+    if any("/tests/intent/" not in f"/{p}" or p in touched for p in located):
         return []
     return sorted({re.sub(r"(^|.*/)(tests/intent/[^/]+)/.*$", r"\1\2/", p) for p in located})
 
 
-def _row(label: str, cmd: str, code: int, out: str, touched: set[str], timeout: int = TIMEOUT) -> str:
+def _row(label: str, cmd: str, code: int, out: str, touched: set[str], timeout: int = TIMEOUT,
+         section: tuple[str, str] | None = None) -> str:
     if code == 0:
         return f"PASS {label}: {cmd}"
     if code == 124 and out.startswith("timed out"):
         return f"TIMEOUT {label}: {cmd} did not finish in {timeout}s"
-    where = _elsewhere(out, touched)
+    where = _elsewhere(out, touched, section)
+    if where and section is not None:
+        return (f"ELSEWHERE {label}: {cmd} exited {code}, every failure outside {'/'.join(section)} "
+                f"({', '.join(where)}): {_tail(out)}")
     if where:
         return (f"ELSEWHERE {label}: {cmd} exited {code}, every failure in intent tests this run may not "
                 f"edit ({', '.join(where)}): {_tail(out)}")
@@ -250,9 +325,11 @@ def _unrun(label: str, cmd: str) -> str:
     return f"TIMEOUT {label}: {cmd} not run: the gate's {BUDGET}s budget was spent"
 
 
-def check_rows(pkgs: list[str], touched: set[str] | None = None, deadline: float | None = None) -> list[str]:
+def check_rows(pkgs: list[str], touched: set[str] | None = None, deadline: float | None = None,
+               section: tuple[str, str] | None = None) -> list[str]:
     """Floor and Enforced rows as PASS/FAIL/ELSEWHERE/TIMEOUT, Measured rows as MEASURED; else the
-    Toolchain. Every row shares what is left of the budget until deadline."""
+    Toolchain. Every row shares what is left of the budget until deadline. A `repo` row whose
+    command runs pytest is SKIPPED when gating a section: CI's, never run here."""
     import time
 
     touched = touched or set()
@@ -266,15 +343,18 @@ def check_rows(pkgs: list[str], touched: set[str] | None = None, deadline: float
                 if key in seen:
                     continue
                 seen.add(key)
-                code, out, limit = _timed(cmd, deadline)
                 what = dim or cmd
+                if section is not None and scope.startswith("repo") and "pytest" in cmd:
+                    lines.append(f"SKIPPED {what}: {cmd} not run: repo-scope pytest is CI's")
+                    continue
+                code, out, limit = _timed(cmd, deadline)
                 if code == 125:
                     lines.append(_unrun(f"{what} ({pkg})", cmd))
                 elif heading == "Measured":
                     last = [ln for ln in out.strip().splitlines() if ln.strip()]
                     lines.append(f"MEASURED {what}: {last[-1].strip() if last else 'no output'}")
                 else:
-                    lines.append(_row(f"{what} ({pkg})", cmd, code, out, touched, limit))
+                    lines.append(_row(f"{what} ({pkg})", cmd, code, out, touched, limit, section))
         return lines
     for pkg in pkgs:
         for cmd in status.toolchain_commands():
@@ -283,7 +363,8 @@ def check_rows(pkgs: list[str], touched: set[str] | None = None, deadline: float
                 continue
             seen.add(cmd)
             code, out, limit = _timed(cmd, deadline)
-            lines.append(_unrun("toolchain", cmd) if code == 125 else _row("toolchain", cmd, code, out, touched, limit))
+            lines.append(_unrun("toolchain", cmd) if code == 125
+                         else _row("toolchain", cmd, code, out, touched, limit, section))
     return lines
 
 
@@ -344,6 +425,20 @@ def check_intent(pkg: str, section: str) -> list[str]:
     return lines
 
 
+def check_unit(pkg: str, section: str) -> list[str]:
+    """The section's unit suite (`tests/unit/<section>`), one line."""
+    root = status.package_root(pkg)
+    tree = root / "tests" / "unit" / section
+    if not tree.is_dir():
+        return [f"FAIL unit {pkg}/{section}: no {status._rel(tree)}/ to run"]
+    runner = ["uv", "run"] if (status.ROOT / "uv.lock").exists() else ["python3", "-m"]
+    code, out = _run([*runner, "pytest", tree.relative_to(root).as_posix(), "-q", "-p", "no:cacheprovider", "--tb=line"], root, 300)
+    if code == 0:
+        m = re.search(r"(\d+) passed", out)
+        return [f"PASS unit {pkg}/{section}: {m.group(1) if m else 0} passed"]
+    return [f"FAIL unit {pkg}/{section}: pytest exited {code}: {_tail(out)}"]
+
+
 def _glob(pattern: str, path: str) -> bool:
     """fnmatch, `*` crossing `/`; a bare directory also covers everything under it."""
     return fnmatch(path, pattern) or path.startswith(pattern.rstrip("/") + "/")
@@ -377,10 +472,13 @@ def _thresholds(text: str) -> dict[str, list[float]]:
     return out
 
 
-def check_guarded(base: str, paths: list[str]) -> list[str]:
+def check_guarded(base: str, paths: list[str], pathspec: list[str] | None = None, before: str | None = None) -> list[str]:
+    """Guarded items on the lines added or removed since base (under pathspec when given); a
+    lowered threshold when `docs/constraints.md` is in paths, compared with its text at before
+    (default base)."""
     exceptions = status.exceptions_rows()
     today = dt.date.today()
-    lines = diff_lines(base)
+    lines = diff_lines(base, pathspec)
     hits: list[tuple[str, str, int]] = []
     added_by_file: dict[str, set[str]] = {}
     for path, sign, _, text in lines:
@@ -399,10 +497,11 @@ def check_guarded(base: str, paths: list[str]) -> list[str]:
             elif "pytest.raises" in text:
                 hits.append(("removed pytest.raises", path, n))
     if "docs/constraints.md" in paths:
-        before = status.git("show", f"{base}:docs/constraints.md") if base != EMPTY_TREE else None
+        rev = before or base
+        prior = status.git("show", f"{rev}:docs/constraints.md") if rev != EMPTY_TREE else None
         after_file = status.DOCS / "constraints.md"
-        if before and after_file.exists():
-            old, new = _thresholds(before), _thresholds(after_file.read_text())
+        if prior and after_file.exists():
+            old, new = _thresholds(prior), _thresholds(after_file.read_text())
             for name, nums in old.items():
                 if name in new and any(b < a for a, b in zip(nums, new[name])):
                     hits.append((f"lowered threshold {name}", "docs/constraints.md", 0))
@@ -440,8 +539,30 @@ def _clear(counter: Path) -> None:
         pass
 
 
-def run_checks(base: str | None) -> tuple[list[tuple[str, str]], list[str]]:
-    """(sections in the diff since base, one line per check); no sections, no checks."""
+def run_checks(base: str, section: tuple[str, str]) -> tuple[list[tuple[str, str]], list[str]]:
+    """([section], one line per check) for the one section this run is gated on, over its paths
+    since base."""
+    import time
+
+    start = time.monotonic()
+    pkg, sec = section
+    spec = section_paths(pkg, sec)
+    diff = diff_paths(base, spec)
+    touched = touched_paths(pkg, sec, diff)
+    # The section's own checks first: they are what the implementer can fix, and they must run.
+    own = check_intent(pkg, sec) + check_unit(pkg, sec)
+    before = base if base != EMPTY_TREE else ("HEAD~1" if _own_head(pkg, sec) and status.git(
+        "rev-parse", "--verify", "-q", "HEAD~1") else "HEAD")
+    own += check_guarded(base, sorted(touched), spec, before)
+    if sec == "surface":
+        own += check_surface(pkg)
+    lines = check_rows([pkg], touched, start + BUDGET, section)
+    return [section], lines + own
+
+
+def run_checks_legacy(base: str | None) -> tuple[list[tuple[str, str]], list[str]]:
+    """2.1's discovery: (sections in the diff since base, one line per check); no sections, no
+    checks. The fallback when the transcript names no section, and `--report`."""
     paths = diff_paths(base) if base else []
     targets = gated_sections(paths)
     if not targets or base is None:
@@ -474,7 +595,7 @@ def write_records(cwd: Path, targets: list[tuple[str, str]], text: str) -> list[
 
 def _outcome_note(lines: list[str]) -> str:
     notes = []
-    for word, what in (("ELSEWHERE", "failing elsewhere"), ("TIMEOUT", "out of time")):
+    for word, what in (("ELSEWHERE", "failing elsewhere"), ("TIMEOUT", "out of time"), ("SKIPPED", "skipped")):
         n = sum(1 for ln in lines if ln.startswith(word))
         if n:
             notes.append(f"{n} check{'s' * (n != 1)} {what}")
@@ -494,7 +615,7 @@ def report(cwd: Path, base: str) -> int:
     if status.git("rev-parse", "--verify", "-q", f"{base}^{{commit}}") is None:
         print(f"dev-team gate: --base {base} is not a commit", file=sys.stderr)
         return 2
-    targets, lines = run_checks(base)
+    targets, lines = run_checks_legacy(base)
     if not targets:
         print(f"dev-team gate: no section in the diff since {base}", file=sys.stderr)
         return 0
@@ -509,15 +630,57 @@ def report(cwd: Path, base: str) -> int:
     return 1 if fails else 0
 
 
+def _stop_reason(marker: Path) -> bool:
+    """True when the marker file's first line is `blocked` or `spec-change`."""
+    if not marker.is_file():
+        return False
+    first = (marker.read_text().strip().splitlines() or [""])[0].strip().lower()
+    return first in MARKER_REASONS
+
+
+def _retry_message(n: int, targets: list[tuple[str, str]], fails: list[str]) -> str:
+    scope = ", ".join(f"`{p}/{s}:`" for p, s in targets)
+    msg = [f"dev-team gate: not done — fix these, stage the fix, then commit per §Project convention rule 4: "
+           f"when `git log -1 --format=%s` starts with {scope} run `git commit --amend --no-edit -- <paths>`, "
+           f"otherwise make a second commit with the same summary and trailer — and finish again "
+           f"(attempt {n} of {MAX_ATTEMPTS}):", *fails]
+    if n == 2:
+        msg.append("Two attempts: invoke `debugging-and-error-recovery` with the Skill tool before the third.")
+    msg.append("When you finish, hand back an amendment, not the full report again: `Result:`, `Amends:`, "
+               "`Gate:`, `Fixed:` and the amended `Commit:` (implementer.md, Return message), through your "
+               "hand-back tool if you have one (SubagentHandback). The caller already holds your first "
+               "report and takes your last hand-back as your answer."
+               + (" This is your last retry: the next finish ends the run whatever the checks find, so "
+                  "if anything is still red, write `Gate: let through after 3 attempts`." if n == 2 else ""))
+    return "\n".join(msg)
+
+
 def gate(event: dict) -> int:
     cwd = Path(event["cwd"]).resolve()
     if event.get("agent_type") != AGENT or not (cwd / "docs" / "architecture.md").exists():
         return 0
     counter = _counter(cwd, str(event.get("agent_id") or ""))
-    marker = cwd / ".dev-team" / "stop"
-    if marker.exists():
-        first = (marker.read_text().strip().splitlines() or [""])[0].strip().lower()
-        if first in MARKER_REASONS:
+    status.set_root(cwd)
+    transcript = status.subagent_transcript(event)
+    target = status._transcript_target(transcript) if transcript else None
+    stop = cwd / ".dev-team" / "stop"
+    if target == "scaffold":
+        if (stop / "scaffold").is_file():
+            (stop / "scaffold").unlink()
+        _clear(counter)
+        print("dev-team gate: scaffold run — no section in this run's diff", file=sys.stderr)
+        return 0
+    section = status.section_from_transcript(transcript) if isinstance(target, tuple) else None
+
+    base: str | None = None
+    if section is not None:
+        markers = [stop / section[0] / section[1]]
+    else:
+        base = _base()
+        paths = diff_paths(base) if base else []
+        markers = [stop / pkg / sec for pkg, sec in gated_sections(paths)]
+    for marker in markers:
+        if _stop_reason(marker):
             marker.unlink()
             _clear(counter)
             return 0
@@ -528,42 +691,34 @@ def gate(event: dict) -> int:
     counter.parent.mkdir(parents=True, exist_ok=True)
     counter.write_text(f"{n}\n")
 
-    status.set_root(cwd)
-    base = _base()
-    targets, lines = run_checks(base)
+    if section is not None:
+        targets, lines = run_checks(review_base(*section), section)
+        names = f"section {'/'.join(section)}"
+    else:
+        targets, lines = run_checks_legacy(base)
+        names = f"section{'s' * (len(targets) != 1)} {', '.join(f'{p}/{s}' for p, s in targets)} (from diff)"
     if not targets:
         _clear(counter)
         print("dev-team gate: no section in this run's diff", file=sys.stderr)
         return 0
     fails = [ln for ln in lines if ln.startswith("FAIL")]
 
-    names = ", ".join(f"{p}/{s}" for p, s in targets)
-    stamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if not fails:
         outcome = "result: pass" + _outcome_note(lines)
     elif n < MAX_ATTEMPTS:
         outcome = f"result: not done (attempt {n} of {MAX_ATTEMPTS})"
     else:
         outcome = f"result: letting the run stop after {MAX_ATTEMPTS} attempts with {len(fails)} failure{'s' * (len(fails) != 1)}"
+    stamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     records = write_records(cwd, targets, "\n".join(
-        [f"dev-team gate — attempt {n} — {stamp} — sections {names}", *lines, outcome]) + "\n")
+        [f"dev-team gate — attempt {n} — {stamp} — {names}", *lines, outcome]) + "\n")
     where = ", ".join(p.relative_to(cwd).as_posix() for p in records)
 
     if not fails:
         _clear(counter)
         return 0
     if n < MAX_ATTEMPTS:
-        msg = [f"dev-team gate: not done — fix these, stage the fix, `git commit --amend --no-edit -- <paths>`, "
-               f"and finish again (attempt {n} of {MAX_ATTEMPTS}):", *fails]
-        if n == 2:
-            msg.append("Two attempts: invoke `debugging-and-error-recovery` with the Skill tool before the third.")
-        msg.append("When you finish, hand back an amendment, not the full report again: `Result:`, `Amends:`, "
-                   "`Gate:`, `Fixed:` and the amended `Commit:` (implementer.md, Return message), through your "
-                   "hand-back tool if you have one (SubagentHandback). The caller already holds your first "
-                   "report and takes your last hand-back as your answer."
-                   + (" This is your last retry: the next finish ends the run whatever the checks find, so "
-                      "if anything is still red, write `Gate: let through after 3 attempts`." if n == 2 else ""))
-        print("\n".join(msg), file=sys.stderr)
+        print(_retry_message(n, targets, fails), file=sys.stderr)
         return 2
     print("\n".join([f"dev-team gate: letting the run stop after {MAX_ATTEMPTS} attempts with these failures — "
                      f"the reviewer will see them in {where}:", *fails]), file=sys.stderr)

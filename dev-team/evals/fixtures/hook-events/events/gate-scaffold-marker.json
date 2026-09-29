@@ -1,6 +1,12 @@
 {
   "script": "gate",
   "repo": "built",
+  "setup": {
+    "transcript": "Scaffold: data\nRun: run-package data",
+    "files": {
+      ".dev-team/stop/scaffold": "blocked\n"
+    }
+  },
   "event": {
     "session_id": "9b1f0c52-3d4e-4a7b-8c21-5e6f7a8b9c0d",
     "transcript_path": "{cwd}/../transcript.jsonl",
@@ -20,15 +26,10 @@
   },
   "expect": {
     "exit": 0,
-    "gate_contains": [
-      "TOLERATED intent tests/intent/ingest/test_loader.py::test_load_trades_price_is_float (data/ingest — 2026-09-27 — deviation)"
-    ],
-    "gate_lacks": [
-      "FAIL"
-    ],
-    "counter": null
-  },
-  "setup": {
-    "transcript": "Section: data/ingest\nDesign: docs/packages/data/design/ingest.md\nRun: run-package data"
+    "counter": null,
+    "absent": [
+      ".dev-team/stop/scaffold",
+      ".dev-team/gate"
+    ]
   }
 }

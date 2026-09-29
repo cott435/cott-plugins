@@ -2,6 +2,7 @@
   "script": "gate",
   "repo": "built",
   "setup": {
+    "transcript": "Section: data/ingest\nDesign: docs/packages/data/design/ingest.md\nRun: run-package data",
     "files": {
       "packages/data/src/data/ingest/loader.py": "\"\"\"Read the trade export.\"\"\"\n\nimport csv\nfrom pathlib import Path\n\n\ndef load_trades(path: str | Path) -> list[dict[str, object]]:\n    \"\"\"Return one dict per row of the CSV at ``path``, price as a float.\"\"\"\n    with Path(path).open(newline=\"\") as handle:\n        return [{**row, \"price\": float(row[\"price\"])} for row in csv.DictReader(handle)]\n",
       "packages/data/tests/intent/other/test_other.py": "\"\"\"Intent tests for data/other, written before its code.\"\"\"\n\nimport os\n\n\ndef test_other():\n    \"\"\"Design §1 other: exists.\"\"\"\n    assert True\n"
@@ -25,13 +26,15 @@
     "session_crons": []
   },
   "expect": {
-    "exit": 2,
-    "counter": 1,
-    "stderr_contains": [
-      "FAIL lint (data)"
+    "exit": 0,
+    "counter": null,
+    "gate_contains": [
+      "ELSEWHERE lint (data)",
+      "packages/data/tests/intent/other/test_other.py",
+      "result: pass (1 check failing elsewhere)"
     ],
     "gate_lacks": [
-      "ELSEWHERE"
+      "FAIL lint"
     ]
   }
 }

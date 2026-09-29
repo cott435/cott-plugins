@@ -2,6 +2,7 @@
   "script": "gate",
   "repo": "built",
   "setup": {
+    "transcript": "Repo: .\nRun: run-package data",
     "files": {
       "packages/data/src/data/__init__.py": "\"\"\"The data package.\"\"\"\n\nfrom data.ingest import load_trades\n\n__all__ = [\"load_trades\"]\n"
     },

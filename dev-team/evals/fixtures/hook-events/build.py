@@ -8,9 +8,13 @@ commits an empty root on `main`, and works on branch `build`. Commit 1 holds the
 `docs/constraints.md` (Floor rows that pass with `ruff` on PATH), a section ledger
 `docs/deviations/data/ingest.md` with
 one `proposed` entry whose `Clause:` is `design §5 load_trades`, and the package skeleton.
-Commit 2 holds `data/ingest` — code, README, and `tests/intent/ingest/` with two tests, one
-green and one red that cites `Design §5 load_trades` — and carries the trailer
-`Dev-Team-Run: run-package data`, so the gate reads it as the run's commit. Prints dest.
+Commit 2 holds `data/ingest` — code, README, `tests/intent/ingest/` with two tests, one
+green and one red that cites `Design §5 load_trades`, and `tests/unit/ingest/` with one green
+test — under the summary `data/ingest: …` and the trailer `Dev-Team-Run: run-package data`, so
+the gate reads it as the run's own commit. Prints dest.
+
+`run_sha(dest)` is the short sha of `HEAD`: check.py substitutes it for `{RUN_SHA}` in a
+case's files, so a review report can name the run's commit.
 """
 
 from __future__ import annotations
@@ -153,11 +157,26 @@ def test_load_trades_price_is_float(tmp_path: Path) -> None:
     assert load_trades(csv_file)[0]["price"] == 49.74
 '''
 
+UNIT_TESTS = '''"""Unit tests for data/ingest."""
+
+from pathlib import Path
+
+from data.ingest.loader import load_trades
+
+
+def test_load_trades_empty_file_has_no_rows(tmp_path: Path) -> None:
+    """A header with no rows reads as no trades."""
+    csv_file = tmp_path / "trades.csv"
+    csv_file.write_text("ts,symbol,price,size,side\\n")
+    assert load_trades(csv_file) == []
+'''
+
 FILES_RUN = {
     "packages/data/src/data/ingest/__init__.py": '"""Ingest."""\n\nfrom data.ingest.loader import load_trades\n\n__all__ = ["load_trades"]\n',
     "packages/data/src/data/ingest/loader.py": LOADER,
     "packages/data/src/data/ingest/README.md": "# ingest\n\n## Purpose\n\nRead the trade export.\n",
     "packages/data/tests/intent/ingest/test_loader.py": TESTS,
+    "packages/data/tests/unit/ingest/test_loader_unit.py": UNIT_TESTS,
 }
 
 
@@ -171,6 +190,12 @@ def _write(dest: Path, files: dict[str, str]) -> None:
         f = dest / rel
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_text(text)
+
+
+def run_sha(dest: Path) -> str:
+    """The short sha of `HEAD` in dest."""
+    return subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=dest, check=True,
+                          capture_output=True, text=True).stdout.strip()
 
 
 def build(dest: Path) -> Path:

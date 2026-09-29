@@ -15,18 +15,37 @@ python3 evals/fixtures/hook-events/build.py <dest>     # build the gate's repo t
 ```
 
 `events/<case>.json` holds the script, the repo it runs in (`built`, `arch` or `plain`), the
-files to write first, the attempt counter to preset, the event (`{cwd}` stands for the repo),
-and what must hold after: exit code, stderr, files, `.dev-team/gate.txt`, the counter.
+files to write first, the attempt counter to preset, the transcript, the event (`{cwd}` stands for
+the repo), and what must hold after: exit code, stderr, files, `.dev-team/gate/<pkg>/<section>.txt`,
+the counter.
 `check.py`'s docstring lists every key.
 
 `build.py` makes the gate's repo: the brief and dataset from `two-package/`, the `data`
 contract (`ingest` and `surface` rows), a `docs/constraints.md` whose Floor and Enforced rows
-pass with `ruff` on PATH, and a `docs/deviations.md` with one `proposed` entry citing
-`design §5 load_trades`; then one commit carrying `Dev-Team-Run: run-package data` with
-`data/ingest`'s code, README and two intent tests, one green and one red that cites that
-clause. So the unmodified repo is the tolerated case, and every other gate case is one edit
+pass with `ruff` on PATH, and a `docs/deviations/data/ingest.md` with one `proposed` entry
+citing `design §5 load_trades`; then one commit, summary `data/ingest: …`, carrying
+`Dev-Team-Run: run-package data` with `data/ingest`'s code, README, one green unit test and two
+intent tests, one green and one red that cites that clause. So the unmodified repo is the tolerated case, and every other gate case is one edit
 on top of it. The coverage case stands a failing one-line command in for a coverage tool,
 since `pytest-cov` is not assumed installed.
+
+Since 2.2 (`site/notes/2.2-03-gate.md`) the gate is gated on one section, read from the
+implementer's spawn prompt: a case's `setup.transcript` is written as the first `user` record
+of the JSONL the event's `agent_transcript_path` names, and `setup.transcript_file` copies a
+recorded one instead (`transcripts/agent-implementer-ingest.jsonl`, recorded in 2.2's phase 0;
+`gate-recorded-transcript` reads it). Every gate case carries `Section: data/ingest` but these:
+`gate-surface` (`data/surface`), `gate-scaffold` and `gate-scaffold-marker` (`Scaffold: data`),
+and the four that exercise 2.1's diff-based discovery, the fallback — `gate-fallback-no-transcript`
+(no file), `gate-fallback-no-section-line`, `gate-no-section` and `gate-surface-before-design`
+(no `Section:` line). The built section carries one unit test, so every section run shows
+`PASS unit data/ingest`. The 2.2 cases: the section from the transcript with a sibling's
+half-built file `ELSEWHERE`; a sibling's marker ignored and the section's own marker and the
+scaffold marker honoured; the diff since the newest review's `Commit:` (`{RUN_SHA}` in a
+case's files) with the same `# noqa` caught after the review and not before it; the unit
+suite red and missing (`setup.remove`); a `repo` pytest row `SKIPPED`; a failure in another
+section's file `ELSEWHERE` whether committed or dirty; and the retry message's commit rule. A
+failure outside the section is `ELSEWHERE` whether or not the run touched the file, so
+`gate-elsewhere-touched`, a FAIL under 2.1, expects `ELSEWHERE` since 2.2.
 
 The four `gate-report-*` cases run the gate by hand (`--report`, `args` in the case, no
 stdin), as `/dev-team:pair` does at wrap-up: a pass over `--base HEAD~1`, a fail over the

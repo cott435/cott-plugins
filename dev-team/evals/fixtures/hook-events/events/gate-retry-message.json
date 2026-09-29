@@ -3,10 +3,10 @@
   "repo": "built",
   "setup": {
     "transcript": "Section: data/ingest\nDesign: docs/packages/data/design/ingest.md\nRun: run-package data",
+    "counter": 0,
     "files": {
       "packages/data/tests/intent/ingest/test_bad_row.py": "\"\"\"A second red intent test that no deviation entry covers.\"\"\"\n\nfrom pathlib import Path\n\nimport pytest\n\nfrom data.ingest import load_trades\n\n\ndef test_load_trades_rejects_missing_field(tmp_path: Path) -> None:\n    \"\"\"Design §6 bad row: a row with a missing field raises ValueError naming the field.\"\"\"\n    csv_file = tmp_path / \"trades.csv\"\n    csv_file.write_text(\"ts,symbol,price,size,side\\n2026-09-01T13:30:20Z,AAA,49.74,,sell\\n\")\n    with pytest.raises(ValueError, match=\"size\"):\n        load_trades(csv_file)\n"
-    },
-    "counter": 1
+    }
   },
   "event": {
     "session_id": "9b1f0c52-3d4e-4a7b-8c21-5e6f7a8b9c0d",
@@ -27,15 +27,13 @@
   },
   "expect": {
     "exit": 2,
+    "counter": 1,
     "stderr_contains": [
-      "attempt 2 of 3",
-      "debugging-and-error-recovery",
-      "This is your last retry",
-      "Gate: let through after 3 attempts",
-      "hand back an amendment, not the full report again",
-      "This is your last retry",
-      "Gate: let through after 3 attempts"
-    ],
-    "counter": 2
+      "§Project convention rule 4",
+      "`git log -1 --format=%s` starts with `data/ingest:`",
+      "git commit --amend --no-edit -- <paths>",
+      "second commit with the same summary and trailer",
+      "attempt 1 of 3"
+    ]
   }
 }
