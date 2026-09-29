@@ -65,7 +65,10 @@ Exceptions table pardons that path for that check:
 The headings readers cite, and who runs what under each:
 
 1. **Floor** — the checks every package clears whatever the user answered. The implementer
-   (step 8), the reviewer (axis 0), `status.py --gate` and CI run every row.
+   (step 8), the reviewer (axis 0), `status.py --gate` and CI run every row. A `repo`-scope row
+   that runs `pytest` is CI's: the stop gate writes it `SKIPPED` and runs the section's own
+   suites and the `package` rows instead, since a repo-wide suite never finished inside the
+   gate's budget.
 2. **Enforced** — the configured thresholds, run by the same four. A FAIL is a CRITICAL review
    finding and a finalize-gate failure. The tester reads the coverage row only to size its
    suite.

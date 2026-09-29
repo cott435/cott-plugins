@@ -27,7 +27,10 @@ section disagrees, this section wins.
    the driver spawned does not run it again. Agents never create, switch or delete branches.
 
 2. **Staging** — Stage by explicit path — the paths the run wrote, which are the paths its
-   return message lists. Never `git add -A`, `git add .`, or `git commit -a`. A file the run
+   return message lists. The section's decisions inbox
+   `docs/packages/<pkg>/decisions/<section>.md` joins them when the run wrote to it, and so does
+   `docs/decisions.md`, which the sync hook merged it into: a `D<n>` a committed design cites
+   must exist in a commit. Never `git add -A`, `git add .`, or `git commit -a`. A file the run
    did not write is never staged, even if it is modified. Commit with the same paths as a
    pathspec: `git add <paths>`, then `git commit -m "<message>" -- <paths>`. A plain `git
    commit` after `git add` takes whatever is staged, including a parallel agent's `git add`,
@@ -41,7 +44,7 @@ section disagrees, this section wins.
    | designer | `<pkg>/<section>` | `design` · `design (delta)` · `design (document)` · `spec-change (contract)` · `stopped for D<n>` — `data/ingest: design` |
    | tester | `<pkg>/<section>` | `<n> intent tests from design` · `regenerate <k> intent tests` · `intent tests current with design` — `data/ingest: 14 intent tests from design` |
    | implementer | `<pkg>/<section>` · `<pkg>/surface` | what was built — `data/ingest: parse trades.csv into Trade rows` |
-   | reviewer | `review <pkg>/<section>` | the round and verdict — `review data/ingest r1-a: request changes (2 critical)` |
+   | reviewer | `review <pkg>/<section>` | `r<n>-<letter>: <verdict> (<k> critical)` — `review data/ingest: r1-a: request changes (2 critical)`; the report is under `docs/packages/<pkg>/reviews/<section>/` |
    | researcher | `probe <source>` | what was probed, for whom — `probe polygon: aggregates for data/ingest` |
    | architect | `plan <target>` | `plan data: contract with surface row` |
    | curator | `legacy` | `legacy: inventory of ../old-repo` |
@@ -62,9 +65,12 @@ section disagrees, this section wins.
 
 4. **One commit per run** — A run never makes two commits, and a run that wrote nothing
    commits nothing and returns `Commit: none`. The one exception to "never two": an
-   implementer whose stop gate exits 2 stages its fix and runs `git commit --amend --no-edit
-   -- <paths>` on its own, unpushed commit, the paths being every path the run has written.
-   A run that stops on a blocker commits nothing unless its agent says otherwise.
+   implementer whose stop gate exits 2 stages its fix and then looks at
+   `git log -1 --format=%s`. When the summary starts with its own scope (`<pkg>/<section>:`),
+   `HEAD` is its commit and it runs `git commit --amend --no-edit -- <paths>`, the paths being every path the
+   run has written. Otherwise `HEAD` is a parallel run's commit, and amending it would rewrite
+   another agent's work: it makes a second commit with the same summary and the same trailer
+   instead. A run that stops on a blocker commits nothing unless its agent says otherwise.
 
 5. **Lock** — Agents run in parallel and commit concurrently. When `git add` or `git commit`
    fails on `.git/index.lock`, wait two seconds and retry, up to ten times; a failure after
