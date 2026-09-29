@@ -1,0 +1,24 @@
+{
+  "note": "a uv workspace root but no packages/data/pyproject.toml",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "files": {
+        "pyproject.toml": "[project]\nname = \"repo\"\nversion = \"0.0.0\"\n\n[tool.uv.workspace]\nmembers = [\"packages/*\"]\n"
+      },
+      "message": "scaffold: workspace root"
+    }
+  ],
+  "args": [
+    "--scaffold",
+    "data"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "scaffold: needed (no packages/data/pyproject.toml)"
+    ]
+  }
+}

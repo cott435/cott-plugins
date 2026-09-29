@@ -1,6 +1,6 @@
 ---
 name: run-package
-description: Drive one package to shipped - derive every section's state from disk, run the ready set (probes, designs and tests in parallel, implementers one at a time, two reviewers in round 1), route design-gap and spec-change, ask you on a block and record the answer, close the package with sync-plan, and end with a summary and the exact next command. Optional section and --step run one section or one step by hand; --defer moves a stuck review's findings to the backlog instead of asking.
+description: Drive one package to shipped - scaffold its workspace first when it has none, derive every section's state from disk, run the ready set (probes, designs and tests in parallel, implementers one at a time, two reviewers in round 1), route design-gap and spec-change, ask you on a block and record the answer, close the package with sync-plan, and end with a summary and the exact next command. Optional section and --step run one section or one step by hand; --defer moves a stuck review's findings to the backlog instead of asking.
 argument-hint: "<pkg> [<section>] [--step PROBE|DESIGN|TEST|IMPLEMENT|REVIEW] [--defer]"
 arguments: [pkg, rest]
 disable-model-invocation: true
@@ -143,6 +143,19 @@ list of them. `/dev-team:pair` reads the files the same block names, so a sectio
 and a section paired on by hand start from the same documents. Do not add, drop or rewrite a
 line of it.
 
+### Implementer — SCAFFOLD
+
+`subagent_type: "dev-team:implementer"`, once, before any other spawn, when `status.py
+--scaffold <pkg>` prints `scaffold: needed`. It builds the workspace root (when the repo has
+none) and the package skeleton, runs `uv sync` and the empty workspace's checks, and commits
+them with `uv.lock`, so every tester after it runs inside the workspace under the repo's own
+lint rules.
+
+| Field | Value |
+|---|---|
+| **Scaffold** | `<pkg>` |
+| **Run** | `run-package <pkg>` |
+
 ### Reviewer — REVIEW
 
 `subagent_type: "dev-team:reviewer"`. The round is `r`, the row's round plus one. Round 1 is
@@ -191,6 +204,11 @@ your own memory only: agent runs per role; `design-gap` returns per section; and
 granted *one more round* at a cap.
 
 1. **Run gate.** `status.py --run-gate <pkg>`. FAIL → **Summary** with its lines.
+   Then **scaffold**: `status.py --scaffold <pkg>`. On `scaffold: needed`, spawn the SCAFFOLD
+   implementer and branch on its return (step 5) before anything else: `done` → re-run the
+   check, which must now print `scaffold: done` (a second `needed` is **Asking**, with both
+   lines); `blocked` → **Asking**. This holds for a `<section>` walk and `--step` too: no agent
+   runs in a package whose workspace does not exist.
 2. **State.** `status.py <pkg>`; keep the rows. With `--step`, go to **One step**. With a
    `<section>`, only that row counts from here on; if one of its in-package dependencies is not
    DONE, print which and why, and go to **Summary**. When every row that counts is DONE → step
@@ -213,7 +231,9 @@ granted *one more round* at a cap.
       round-1 pair included — is an Agent call in this one message; none waits for another's
       return.
 5. **Branch** on each return's first line, `Result: <value>`, and read nothing past it except
-   where a case below says so. What a `done` return says after its first line is on disk, and
+   where a case below says so. An agent's return is its **last** hand-back: an implementer the
+   stop gate sent back hands back an amendment (`Amends:` on its second line) after its first
+   report, and the amendment's first line is the one you branch on. What a `done` return says after its first line is on disk, and
    the next `status.py` shows it; relaying it to the user is re-sampling the agent's summary.
    - `done` → nothing; a spec-change verdict is on disk and the next state shows it.
    - `design-gap` (tester) → the designer for that section in the next batch, with the whole
@@ -237,7 +257,8 @@ or round 2 with a prior unfixed — and a cap goes to **Asking**, never to anoth
 
 ### One step
 
-`--step <STEP>` runs that step for the named section once, against whatever is on disk and
+After the run gate and the scaffold (**Loop** step 1), `--step <STEP>` runs that step for the
+named section once, against whatever is on disk and
 whatever its derived state, and then **Summary**. A BLOCKED row does not stop it: no question
 is asked, which is how *one more round* is typed by hand. PROBE spawns a researcher for every
 source in the row; REVIEW is round `r` = the row's round plus one — two reviewers at round 1,

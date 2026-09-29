@@ -1,0 +1,14 @@
+{
+  "note": "the package block names the scaffold before shipped:",
+  "steps": [
+    {
+      "do": "base"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "contains": [
+      "scaffold: needed (no root pyproject.toml)\nshipped: no"
+    ]
+  }
+}

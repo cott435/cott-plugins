@@ -1,0 +1,24 @@
+{
+  "note": "a root pyproject.toml that is not a uv workspace is an adopted repo's own layout: nothing to scaffold",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "files": {
+        "pyproject.toml": "[project]\nname = \"legacy\"\nversion = \"1.0\"\n"
+      },
+      "message": "legacy root"
+    }
+  ],
+  "args": [
+    "--scaffold",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "scaffold: done"
+    ]
+  }
+}

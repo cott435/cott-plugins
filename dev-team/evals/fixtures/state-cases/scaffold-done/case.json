@@ -1,0 +1,25 @@
+{
+  "note": "the workspace root and the package pyproject exist",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "files": {
+        "pyproject.toml": "[project]\nname = \"repo\"\nversion = \"0.0.0\"\n\n[tool.uv.workspace]\nmembers = [\"packages/*\"]\n",
+        "packages/data/pyproject.toml": "[project]\nname = \"data\"\nversion = \"0.0.0\"\n"
+      },
+      "message": "data: scaffold"
+    }
+  ],
+  "args": [
+    "--scaffold",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "scaffold: done"
+    ]
+  }
+}

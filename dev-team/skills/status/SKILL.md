@@ -1,7 +1,7 @@
 ---
 name: status
 description: Print where every package and section stands — one state per section (PROBE, DESIGN, TEST, IMPLEMENT, REVIEW, FIX n, PLAN, DONE, BLOCKED), the ready set, whether the package shipped, and the exact next command — derived from docs/ and the code every time, never from a status file. Use whenever you have lost track, before planning the next package, or to see why run-package stopped.
-argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--repo] [--inputs <pkg>/<section>]"
+argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--repo] [--inputs <pkg>/<section>] [--scaffold <pkg>]"
 disable-model-invocation: true
 ---
 
@@ -45,6 +45,12 @@ points and interfaces** tables; and `import <pkg>` must load no section module. 
 `sections:` (every section not DONE), `decisions:` (every `D<n>` open or deferred),
 `spec-changes:`, `changes:` (open change files) and `backlog:` (unchecked `docs/followups.md`
 lines per target), each item on a `  - ` line, `  - none` for an empty group.
+
+`--scaffold <pkg>` prints `scaffold: done` (exit 0) or `scaffold: needed (<reasons>)` (exit 1):
+no root `pyproject.toml`, or a uv workspace root with no `pyproject.toml` at the package root.
+A root that is not a uv workspace is an adopted repo's own layout and needs nothing. The
+package block shows the same `scaffold: needed` line, before `shipped:`. run-package's SCAFFOLD
+step reads it.
 
 `--inputs <pkg>/<section>` prints the implementer's spawn block — twelve `<Field>: <value>`
 lines, `none` where a field has nothing to hold — resolved from the contract, the Packages

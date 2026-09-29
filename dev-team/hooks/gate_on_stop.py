@@ -557,9 +557,10 @@ def gate(event: dict) -> int:
                f"and finish again (attempt {n} of {MAX_ATTEMPTS}):", *fails]
         if n == 2:
             msg.append("Two attempts: invoke `debugging-and-error-recovery` with the Skill tool before the third.")
-        msg.append("When you finish, send your full return message again, first line `Result:`, through "
-                   "your hand-back tool if you have one (SubagentHandback): the caller receives the last "
-                   "hand-back, not your last turn, so a report sent before this retry is stale."
+        msg.append("When you finish, hand back an amendment, not the full report again: `Result:`, `Amends:`, "
+                   "`Gate:`, `Fixed:` and the amended `Commit:` (implementer.md, Return message), through your "
+                   "hand-back tool if you have one (SubagentHandback). The caller already holds your first "
+                   "report and takes your last hand-back as your answer."
                    + (" This is your last retry: the next finish ends the run whatever the checks find, so "
                       "if anything is still red, write `Gate: let through after 3 attempts`." if n == 2 else ""))
         print("\n".join(msg), file=sys.stderr)

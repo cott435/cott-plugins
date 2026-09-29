@@ -1,14 +1,14 @@
 ---
 name: workspace-scaffold
-description: The skeleton files a new repository or package starts from — root and package pyproject.toml for a uv workspace, the import-linter contracts that enforce dependency direction, mkdocs.yml, and the CI commands. Invoke when planning a repo's Toolchain section, when scaffolding the first section of a repo or package, or when building a package's surface section. Values come from docs/architecture.md and the package contract's Sections table; this skill supplies the shapes.
+description: The skeleton files a new repository or package starts from — root and package pyproject.toml for a uv workspace, the import-linter contracts that enforce dependency direction, mkdocs.yml, and the CI commands. Invoke when planning a repo's Toolchain section, at run-package's SCAFFOLD step (the implementer builds the workspace root and a package skeleton before any tester runs), or when building a package's surface section. Values come from docs/architecture.md and the package contract's Sections table; this skill supplies the shapes.
 ---
 
 # Workspace scaffold
 
 The shapes a repo starts from. Kept out of the always-loaded path because only two runs ever
 need them: the architect writing the repo contract's **Toolchain** section, and the implementer
-— scaffolding the first section of a repo or a package, or building a package's `surface`
-section. Everything repo-specific — package names, dependency order, env prefixes — comes from
+— at `/dev-team:run-package`'s SCAFFOLD step, which builds the workspace root and a package's
+skeleton before any tester runs, or building a package's `surface` section. Everything repo-specific — package names, dependency order, env prefixes — comes from
 `docs/architecture.md`, and a package's section order from the **Sections** table of
 `docs/packages/<pkg>/contract.md`; copy shapes from here and values from there.
 
@@ -49,8 +49,7 @@ root_packages = []          # grown by the scaffold step as packages are first b
 
 When `docs/constraints.md` exists, the `dev` group also carries what its **Floor** and
 **Enforced** commands run that the list above lacks — `pytest-cov` for `--cov`, `mypy`,
-`interrogate`. The implementer adds them at the first section's scaffold; nobody else edits
-this file for them.
+`interrogate`. The SCAFFOLD step adds them; nobody else edits this file for them.
 
 The root is itself a workspace member (uv requires it), so it needs a `[project]` table even
 though it holds no code. One lockfile, one virtual environment, shared by every package.
@@ -130,12 +129,13 @@ layers = ["storage", "audit | clean", "ingest"]
 `pipelines` and `configs` are container-level modules, not layers, so a pipeline that imports
 every section is legal. `lint-imports` is the command; it exits non-zero on any broken contract.
 
-**Growing the block.** The implementer of a package's first section adds the package to
+**Growing the block.** The SCAFFOLD step adds the package to
 `root_packages` and to contract 1 in the position `docs/architecture.md` gives, and adds
 contract 3 for that package with every section of the Sections table placed by its `depends
-on`, the unbuilt ones wrapped `(name)`; each later section's implementer unwraps its own name.
+on`, every one wrapped `(name)` since none is built yet; each section's implementer unwraps its
+own name.
 The implementer of the package's `surface` section adds contract 2, once every other section
-is built. Never list a package that has no code yet.
+is built. A scaffolded package has code — its `__init__.py` — so it is importable and listed.
 
 ## 4. `mkdocs.yml`
 

@@ -2,7 +2,7 @@
 """Derive where every package and section stands from docs/ and the code. Nothing is stored.
 
 Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--repo]
-                          [--inputs <pkg>/<section>]
+                          [--inputs <pkg>/<section>] [--scaffold <pkg>]
 
 A section is in exactly one state, decided in this order, first match wins:
 
@@ -58,6 +58,15 @@ on` is DONE. The `surface` row depends on every other row whatever its cell says
 Shipped: the `surface` section is DONE. Rounds: the highest `n` over
 `docs/reviews/<date>-<pkg>-<section>-r<n>-<a|b|s>.md`; a round's verdict is the worst of its
 reports (request changes > spec-change > approve); a report with no `-r<n>-` is round 1.
+
+**Scaffold.** A package is ready to be built in when its workspace exists: a root
+`pyproject.toml`, and, when that root is a uv workspace (`[tool.uv.workspace]`), a
+`pyproject.toml` at the package root. `--scaffold <pkg>` prints `scaffold: done` and exits 0,
+or `scaffold: needed (<reasons>)` and exits 1: `no root pyproject.toml`, `no <package
+root>/pyproject.toml`. A root `pyproject.toml` that is not a uv workspace is an adopted repo's
+own layout and needs nothing. The package block prints the same `scaffold: needed` line, before
+`shipped:`, when it applies. run-package runs the SCAFFOLD step on it before any other spawn,
+so every tester runs inside the workspace, under the repo's own lint rules.
 
 `--inputs <pkg>/<section>` prints the implementer's spawn block, the one place its values are
 resolved: run-package sends it verbatim as the implementer's prompt, and pair reads the files
@@ -924,6 +933,21 @@ def next_command(pkg: str, table: list[dict[str, object]] | None = None) -> str:
     return "/dev-team:finalize-project"
 
 
+def scaffold_needed(pkg: str) -> list[str]:
+    """What the SCAFFOLD step must create before pkg is built in: [] when nothing."""
+    root_py = ROOT / "pyproject.toml"
+    if not root_py.exists():
+        return ["no root pyproject.toml"]
+    try:
+        is_workspace = "[tool.uv.workspace]" in root_py.read_text()
+    except OSError:
+        return []
+    pkg_py = package_root(pkg) / "pyproject.toml"
+    if is_workspace and not pkg_py.exists():
+        return [f"no {_rel(pkg_py)}"]
+    return []
+
+
 def package_report(pkg: str) -> list[str]:
     lines = [f"## {pkg}", "section · state · evidence · ready · round · open spec-change · last commit"]
     if not contract_path(pkg).exists():
@@ -934,6 +958,8 @@ def package_report(pkg: str) -> list[str]:
         lines.append(" · ".join([str(r["section"]), str(r["state"]), str(r["evidence"]),
                                  "yes" if r["ready"] else "no", str(r["round"] or "—"),
                                  str(r["spec"]), str(r["commit"])]))
+    if needed := scaffold_needed(pkg):
+        lines.append(f"scaffold: needed ({', '.join(needed)})")
     surface = next((r for r in table if r["section"] == "surface"), None)
     if surface is None:
         lines.append("shipped: no (no surface row)")
@@ -1194,6 +1220,7 @@ def main() -> int:
     has_surface, surface_pkg = _flag_value(argv, "--surface")
     has_gate, gate_pkg = _flag_value(argv, "--run-gate")
     has_inputs, inputs_target = _flag_value(argv, "--inputs")
+    has_scaffold, scaffold_pkg = _flag_value(argv, "--scaffold")
     has_repo = "--repo" in argv
     argv = [a for a in argv if a != "--repo"]
     unknown = [a for a in argv if a.startswith("--")]
@@ -1239,7 +1266,14 @@ def main() -> int:
             print(f"no section {sec} in {_rel(contract_path(pkg))}")
             return 2
         print("\n".join(implementer_inputs(pkg, sec)))
-    if has_rounds or has_gate or has_surface or has_repo or has_inputs:
+    if has_scaffold:
+        if not scaffold_pkg:
+            print("--scaffold needs a package: status.py --scaffold <pkg>")
+            return 2
+        needed = scaffold_needed(scaffold_pkg)
+        print(f"scaffold: needed ({', '.join(needed)})" if needed else "scaffold: done")
+        code |= 1 if needed else 0
+    if has_rounds or has_gate or has_surface or has_repo or has_inputs or has_scaffold:
         return code
     if not DOCS.exists():
         print("no docs/ directory here — run from the repo root")

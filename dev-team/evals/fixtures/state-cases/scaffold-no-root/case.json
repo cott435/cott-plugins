@@ -1,0 +1,18 @@
+{
+  "note": "no root pyproject.toml: the repo and the package need scaffolding",
+  "steps": [
+    {
+      "do": "base"
+    }
+  ],
+  "args": [
+    "--scaffold",
+    "data"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "scaffold: needed (no root pyproject.toml)"
+    ]
+  }
+}

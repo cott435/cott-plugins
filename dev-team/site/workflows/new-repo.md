@@ -78,7 +78,10 @@ section at a time, when the section is ready.
 /dev-team:run-package data
 ```
 
-The driver runs in your conversation and spawns every agent itself. Each iteration it runs
+The driver runs in your conversation and spawns every agent itself. On a new repo its first
+spawn is the SCAFFOLD step: one implementer builds the workspace — the root `pyproject.toml`
+with the plugin's lint rules, the `data` package skeleton, `uv sync` — and commits it with
+`uv.lock`, before any tester runs. Each iteration after that it runs
 `status.py data`, takes the ready set — the sections whose in-package dependencies are DONE —
 and spawns one kind of step for all of them in one message:
 
