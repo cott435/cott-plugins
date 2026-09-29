@@ -1,0 +1,32 @@
+{
+  "target": "run-phases",
+  "target_path": "skills/run-phases/SKILL.md",
+  "evals": [
+    {
+      "id": 1,
+      "name": "toy-two-phases-in-series",
+      "kind": "behavioral",
+      "baseline": "none",
+      "harness": "evals/sets/files/run-phases/two-phases.md",
+      "prompt": "/plugin-dev:run-phases 0.2",
+      "expected_output": "run-phases spawns one agent for phase 1, relays its review stop to the user and resumes it, checks its commit, then spawns a second agent for phase 2, checks that commit, and stops with the plan done, having made no phase edit or commit itself",
+      "files": [
+        "evals/fixtures/toy-plugin/",
+        "evals/sets/files/run-phases/two-phases.md"
+      ],
+      "expectations": [
+        "The transcript shows two phase agents started one after the other, the second only after the first returned `committed` for phase 1. Each is either a subagent (Agent tool) whose prompt names `skills/run-phase/SKILL.md` by path and the slug `0.2`, or a headless `claude -p` session whose prompt is `/plugin-dev:run-phase 0.2` with its own `--session-id`. The mode matches the `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` value the transcript records: headless for 0 or 1, subagent otherwise",
+        "The review of phase 1's eval results reached the user relayed from a phase agent: outputs/interview.md holds a review question naming the farewell eval's result that the main chat passed on from the phase-1 agent's `Status: review` return (not one the main chat composed from its own eval run), and outputs/git-log-at-review-1.txt exists and holds no `toy 0.2 (phase 1)` commit, only `fixture`",
+        "After the user's reply the phase-1 work was finished without redoing it: the reply went back to the same phase-1 agent (SendMessage, or `claude -p --resume` with phase 1's session id), and the temp copy's evals/workspace/farewell/ holds exactly one iteration directory",
+        "The final git log has exactly two commits after `fixture`, in this order: one starting `toy 0.2 (phase 1):`, then one starting `toy 0.2 (phase 2):`; the phase-1 commit contains skills/farewell/SKILL.md and the phase-2 commit contains skills/wave/SKILL.md",
+        "The ledger copied into outputs/ shows phases 1 and 2 `done`, with phase 1's Commit cell a short SHA (resolved by phase 2's agent), not `(phase 1)`",
+        "The main chat itself made no phase edit and no commit: the transcript attributes the writes to skills/, site/notes/ and evals/ and both commits to the spawned agents, and shows the main chat checking each commit (`git log -1` or equivalent) before going on",
+        "No `git push` and no `git tag` command appears in the transcript or in any phase session's stream, and the temp copy has no tag",
+        "The final message to the user reports both phases committed, with their SHAs, and says the plan is done (no phase left)"
+      ],
+      "added_in": "plugin-dev run-phases, 2026-09-29",
+      "note_modes": "Expectations 1 and 3 rewritten before iteration 2: iteration 1 showed a cloud session caps subagent depth at 1, so run-phases gained a headless mode and the expectations accept either",
+      "note_iteration2": "After grading iteration 2 (run-evals step 7): expectation 2 now requires the review to be relayed from a phase agent's `review` return (an inline baseline passed the old wording), and 7 checks for push/tag commands, since the temp copy has no remote and 'nothing pushed' could not fail. The with-skill verdicts are unchanged (checked against its interview.md and session streams); the baseline was regraded"
+    }
+  ]
+}

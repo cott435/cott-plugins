@@ -19,10 +19,16 @@ this order (the newest match wins within one pattern), and exits 1 when none doe
    the files are usable either way, since `run-evals` reads them rather than invoking the
    skill.
 4. `~/.claude/skills/skill-creator` — a user-level skill.
-5. `~/Library/Application Support/Claude/**/skills/skill-creator` — the Claude desktop
+5. `~/.claude/skills/synced/*/skill-creator` — a Claude Code cloud session: the claude.ai
+   organization's skills, synced in as `<org-id>_<id>/` (listed in the session as
+   `anthropic-skills:skill-creator`).
+6. `/mnt/skills/*/skill-creator` — the same cloud container's bundled copy, under
+   `examples/`.
+7. `~/Library/Application Support/Claude/**/skills/skill-creator` — the Claude desktop
    app's own copy, under `local-agent-mode-sessions/skills-plugin/<id>/<id>/`.
 
-On 2026-09-19 (0.9-evals E0.1) this machine had 3 and 5, not 2.
+On 2026-09-19 (0.9-evals E0.1) this machine had 3 and 7, not 2. On 2026-09-29 a cloud
+session had 5 and 6 and none of the others (`evals/2026-09-29-run-phases.md`).
 
 ## What is used
 

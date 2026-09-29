@@ -17,6 +17,8 @@ the log as the source.
 | A settings key in the plugin's `settings.json` does nothing | Only `agent` and `subagentStatusLine` take effect. | `other.md` |
 | A trigger phrase at the end of a long description never matches | The listing truncates `description` + `when_to_use` at 1,536 characters. Put triggers first. | `skills.md` |
 | A load check says a typed skill is missing | `claude -p` does not list `disable-model-invocation` skills; invoke it by name instead. | `skills.md` |
+| A subagent that should delegate does the work itself, or stops for want of an `Agent` tool | `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` caps nesting; cloud sessions set `1`. Check it before relying on a subagent that spawns. | `agents.md` |
+| Resuming a headless child session reaches the wrong conversation | Inside a cloud session every `claude -p` child reports the parent's session id. Give each child its own `--session-id <uuid>`, and `--resume` that id. [proven: evals/2026-09-29-run-phases.md] | `edge-cases.md` |
 
 ## Fails open
 
