@@ -21,7 +21,12 @@ Input: the hook JSON on stdin (`cwd`, `agent_id`, `agent_type`, `stop_hook_activ
    A row whose every located failure (a `path:line` or `path::test` its output names) is in an
    intent-test file the run did not touch is ELSEWHERE, not FAIL: the implementer may never
    edit `tests/intent/`, so blocking on another section's red or unlinted intent tests only
-   burns its attempts. The line stays in the record for the reviewer;
+   burns its attempts. The line stays in the record for the reviewer. The section's own checks
+   run first; the Floor/Enforced or Toolchain rows then share what is left of a time budget
+   below the hook's 600 s timeout (`DEV_TEAM_GATE_BUDGET`, default 540 s; each row at most
+   `DEV_TEAM_GATE_TIMEOUT`, default 240 s). A row that runs out of time, or never starts because
+   the budget is spent, is TIMEOUT, not FAIL: nothing the implementer edits makes a package-wide
+   suite faster, and a hang in its own code still fails its own intent suite;
    each section's intent suite, a failure tolerated when its `Design §<n> <item>` docstring
    matches the `Clause:` of a `proposed` or `approved` deviation entry for the section; the
    Guarded grep of the diff, pardoned by an unexpired Exceptions row; `status.py --surface`
@@ -66,7 +71,8 @@ AGENT = "dev-team:implementer"
 MARKER_REASONS = ("blocked", "spec-change")
 MAX_ATTEMPTS = 3
 EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
-TIMEOUT = 240
+TIMEOUT = int(os.environ.get("DEV_TEAM_GATE_TIMEOUT") or 240)
+BUDGET = int(os.environ.get("DEV_TEAM_GATE_BUDGET") or 540)  # below hooks.json's 600 s
 
 # Guarded items on added lines: (the name a FAIL line prints, pattern). .py files only, so a
 # README that quotes one is not a hit.
@@ -216,9 +222,11 @@ def _elsewhere(out: str, touched: set[str]) -> list[str]:
     return sorted({re.sub(r"(^|.*/)(tests/intent/[^/]+)/.*$", r"\1\2/", p) for p in located})
 
 
-def _row(label: str, cmd: str, code: int, out: str, touched: set[str]) -> str:
+def _row(label: str, cmd: str, code: int, out: str, touched: set[str], timeout: int = TIMEOUT) -> str:
     if code == 0:
         return f"PASS {label}: {cmd}"
+    if code == 124 and out.startswith("timed out"):
+        return f"TIMEOUT {label}: {cmd} did not finish in {timeout}s"
     where = _elsewhere(out, touched)
     if where:
         return (f"ELSEWHERE {label}: {cmd} exited {code}, every failure in intent tests this run may not "
@@ -226,9 +234,29 @@ def _row(label: str, cmd: str, code: int, out: str, touched: set[str]) -> str:
     return f"FAIL {label}: {cmd} exited {code}: {_tail(out)}"
 
 
-def check_rows(pkgs: list[str], touched: set[str] | None = None) -> list[str]:
-    """Floor and Enforced rows as PASS/FAIL/ELSEWHERE, Measured rows as MEASURED; else the Toolchain."""
+def _timed(cmd: str, deadline: float) -> tuple[int, str, int]:
+    """(code, output, the timeout it ran under); (125, "", 0) when the budget is spent."""
+    import time
+
+    left = int(deadline - time.monotonic())
+    if left < 5:
+        return 125, "", 0
+    limit = min(TIMEOUT, left)
+    code, out = _run(cmd, status.ROOT, limit)
+    return code, out, limit
+
+
+def _unrun(label: str, cmd: str) -> str:
+    return f"TIMEOUT {label}: {cmd} not run: the gate's {BUDGET}s budget was spent"
+
+
+def check_rows(pkgs: list[str], touched: set[str] | None = None, deadline: float | None = None) -> list[str]:
+    """Floor and Enforced rows as PASS/FAIL/ELSEWHERE/TIMEOUT, Measured rows as MEASURED; else the
+    Toolchain. Every row shares what is left of the budget until deadline."""
+    import time
+
     touched = touched or set()
+    deadline = deadline if deadline is not None else time.monotonic() + BUDGET
     lines: list[str] = []
     seen: set[str] = set()
     if (status.DOCS / "constraints.md").exists():
@@ -238,13 +266,15 @@ def check_rows(pkgs: list[str], touched: set[str] | None = None) -> list[str]:
                 if key in seen:
                     continue
                 seen.add(key)
-                code, out = _run(cmd, status.ROOT)
+                code, out, limit = _timed(cmd, deadline)
                 what = dim or cmd
-                if heading == "Measured":
+                if code == 125:
+                    lines.append(_unrun(f"{what} ({pkg})", cmd))
+                elif heading == "Measured":
                     last = [ln for ln in out.strip().splitlines() if ln.strip()]
                     lines.append(f"MEASURED {what}: {last[-1].strip() if last else 'no output'}")
                 else:
-                    lines.append(_row(f"{what} ({pkg})", cmd, code, out, touched))
+                    lines.append(_row(f"{what} ({pkg})", cmd, code, out, touched, limit))
         return lines
     for pkg in pkgs:
         for cmd in status.toolchain_commands():
@@ -252,8 +282,8 @@ def check_rows(pkgs: list[str], touched: set[str] | None = None) -> list[str]:
             if cmd in seen:
                 continue
             seen.add(cmd)
-            code, out = _run(cmd, status.ROOT)
-            lines.append(_row("toolchain", cmd, code, out, touched))
+            code, out, limit = _timed(cmd, deadline)
+            lines.append(_unrun("toolchain", cmd) if code == 125 else _row("toolchain", cmd, code, out, touched, limit))
     return lines
 
 
@@ -416,14 +446,19 @@ def run_checks(base: str | None) -> tuple[list[tuple[str, str]], list[str]]:
     targets = gated_sections(paths)
     if not targets or base is None:
         return targets, []
+    import time
+
+    start = time.monotonic()
     pkgs = sorted({pkg for pkg, _ in targets})
-    lines = check_rows(pkgs, set(paths))
+    # The section's own checks first: they are what the implementer can fix, and they must run.
+    own: list[str] = []
     for pkg, section in targets:
-        lines += check_intent(pkg, section)
-    lines += check_guarded(base, paths)
+        own += check_intent(pkg, section)
+    own += check_guarded(base, paths)
     for pkg in sorted({pkg for pkg, section in targets if section == "surface"}):
-        lines += check_surface(pkg)
-    return targets, lines
+        own += check_surface(pkg)
+    lines = check_rows(pkgs, set(paths), start + BUDGET)
+    return targets, lines + own
 
 
 def write_records(cwd: Path, targets: list[tuple[str, str]], text: str) -> list[Path]:
@@ -438,8 +473,12 @@ def write_records(cwd: Path, targets: list[tuple[str, str]], text: str) -> list[
 
 
 def _outcome_note(lines: list[str]) -> str:
-    n = sum(1 for ln in lines if ln.startswith("ELSEWHERE"))
-    return f" ({n} failing check{'s' * (n != 1)} elsewhere)" if n else ""
+    notes = []
+    for word, what in (("ELSEWHERE", "failing elsewhere"), ("TIMEOUT", "out of time")):
+        n = sum(1 for ln in lines if ln.startswith(word))
+        if n:
+            notes.append(f"{n} check{'s' * (n != 1)} {what}")
+    return f" ({'; '.join(notes)})" if notes else ""
 
 
 def report(cwd: Path, base: str) -> int:

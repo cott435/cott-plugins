@@ -16,6 +16,8 @@ Each case is `events/<case>.json`:
 - `event`: the hook input as Claude Code sends it, `{cwd}` standing for the repo; or `raw`,
   stdin sent verbatim. `args`: command-line arguments, for the gate's `--report` mode, which
   reads no stdin.
+- `env`: extra environment for the script (the gate's `DEV_TEAM_GATE_TIMEOUT` and
+  `DEV_TEAM_GATE_BUDGET`, say).
 - `expect`: `exit`; `stdout_contains`; `stderr` (exact), `stderr_contains`, `stderr_lacks`, `stderr_startswith`;
   `file_equals`, `file_contains`, `file_lacks` (repo-relative); `absent` (paths that must not
   exist); `gate_contains`, `gate_lacks`, and `gate_only` (every line of the gate's record for
@@ -89,7 +91,7 @@ def check(case: Path) -> list[str]:
             counter.parent.mkdir(parents=True, exist_ok=True)
             counter.write_text(f"{setup['counter']}\n")
         stdin = spec["raw"] if "raw" in spec else "" if event is None else json.dumps(event).replace("{cwd}", str(repo))
-        env = {**os.environ, "CLAUDE_PLUGIN_ROOT": str(PLUGIN), "CLAUDE_PLUGIN_DATA": str(data)}
+        env = {**os.environ, "CLAUDE_PLUGIN_ROOT": str(PLUGIN), "CLAUDE_PLUGIN_DATA": str(data), **spec.get("env", {})}
         res = subprocess.run(["python3", str(PLUGIN / "hooks" / SCRIPTS[spec["script"]]), *spec.get("args", [])],
                              input=stdin, capture_output=True, text=True, cwd=repo, env=env)
         problems = []

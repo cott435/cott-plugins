@@ -32,7 +32,7 @@
     "gate_contains": [
       "ELSEWHERE format (data)",
       "PASS lint (data)",
-      "result: pass (1 failing check elsewhere)"
+      "result: pass (1 check failing elsewhere)"
     ]
   }
 }

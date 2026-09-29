@@ -223,7 +223,9 @@ the spec-change's level re-opened first.
   intent suite — a failure tolerated only when the test cites the clause of a `proposed` or
   `approved` deviation — a **Guarded** grep of the run's diff, and `status.py --surface` for the
   `surface` section. A check that fails only in intent-test files the run did not touch is
-  `ELSEWHERE`, not `FAIL`: the implementer may never edit them. Every line goes to the
+  `ELSEWHERE`, not `FAIL`: the implementer may never edit them. The section's own checks run
+  first, and the package-wide rows share a time budget under the hook's timeout: a row that
+  runs out of time is `TIMEOUT`, not `FAIL`. Every line goes to the
   section's own record, `.dev-team/gate/<pkg>/<section>.txt`, which the reviewer reads as its
   evidence. It lets the agent stop on a green run, on a `.dev-team/stop` marker (the
   implementer writes it when it returns `blocked` or `spec-change`), or on the third attempt,

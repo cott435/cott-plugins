@@ -2,12 +2,9 @@
   "script": "gate",
   "repo": "built",
   "setup": {
-    "prior": {
-      "packages/data/tests/intent/other/test_other.py": "\"\"\"Intent tests for data/other, written before its code.\"\"\"\n\nimport os\n\n\ndef test_other():\n    \"\"\"Design §1 other: exists.\"\"\"\n    assert True\n"
-    },
     "files": {
       "packages/data/src/data/ingest/loader.py": "\"\"\"Read the trade export.\"\"\"\n\nimport csv\nfrom pathlib import Path\n\n\ndef load_trades(path: str | Path) -> list[dict[str, object]]:\n    \"\"\"Return one dict per row of the CSV at ``path``, price as a float.\"\"\"\n    with Path(path).open(newline=\"\") as handle:\n        return [{**row, \"price\": float(row[\"price\"])} for row in csv.DictReader(handle)]\n",
-      ".dev-team/gate/data/clean.txt": "previous record\n"
+      "docs/constraints.md": "# Constraints\n\n## Floor\n\n| check | threshold | command | scope |\n|---|---|---|---|\n| lint | 0 errors | `ruff check packages/<pkg>` | package |\n| format | clean | `ruff format --check packages/<pkg>` | package |\n\n## Enforced\n\n| dimension | threshold | command | scope |\n|---|---|---|---|\n| coverage | 90 | `python3 -c \"import time; time.sleep(30)\"` | package |\n| docstrings | 80% | `python3 -c \"print('docstrings: 100%')\"` | package |\n\n## Measured\n\n| dimension | current | target | command | scope |\n|---|---|---|---|---|\n\n## Guarded\n\n- a new `# noqa`, `# type: ignore`, `# pragma: no cover`\n- a new `@pytest.mark.skip` or `@pytest.mark.xfail` whose reason does not cite a `D<n>`\n- a deleted or weakened assertion in an existing test\n- a threshold in this file edited down\n\n## Exceptions\n\n| path or glob | check | reason | expires |\n|---|---|---|---|\n"
     }
   },
   "event": {
@@ -31,21 +28,16 @@
     "exit": 0,
     "counter": null,
     "gate_contains": [
-      "ELSEWHERE lint (data)",
-      "packages/data/tests/intent/other/",
-      "PASS format (data)",
+      "TIMEOUT coverage (data)",
+      "did not finish in 2s",
       "PASS intent",
-      "result: pass (1 check failing elsewhere)"
+      "result: pass (1 check out of time)"
     ],
-    "gate_only": [
-      "PASS",
-      "ELSEWHERE"
-    ],
-    "file_equals": {
-      ".dev-team/gate/data/clean.txt": "previous record\n"
-    },
-    "absent": [
-      ".dev-team/gate.txt"
+    "gate_lacks": [
+      "FAIL"
     ]
+  },
+  "env": {
+    "DEV_TEAM_GATE_TIMEOUT": "2"
   }
 }

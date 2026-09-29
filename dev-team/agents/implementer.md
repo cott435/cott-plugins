@@ -530,6 +530,10 @@ until it is green:
 - a check that fails only in intent-test files this run did not touch — another section's
   red or unlinted intent tests — is marked `ELSEWHERE`, not `FAIL`, and does not hold you:
   you may never edit `tests/intent/`. List each under **Needed from elsewhere**;
+- your section's own checks run first; the rows above then share a time budget below the
+  hook's timeout, and a row that runs out of time, or never starts, is marked `TIMEOUT`, not
+  `FAIL`. It does not hold you, since nothing you edit makes a package-wide suite faster; your
+  own intent suite still fails on a hang;
 - a **Guarded** grep of the run's diff: an added `# noqa`, `# type: ignore`, `# pragma: no
   cover`, skip, or an xfail naming no `D<n>`; a removed assert or `pytest.raises`; a lowered
   threshold — unless an unexpired **Exceptions** row pardons it;

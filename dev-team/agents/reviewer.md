@@ -122,6 +122,9 @@ implementer's stop never overwrites yours. Read it before the code.
   touch and the implementer may never edit (another section's red or unlinted intent tests).
   The gate did not hold the implementer to them. Quote each under **WARNING** with the
   directories it names, as a problem for that section's tester, never as this section's.
+- **`TIMEOUT` lines** are package-wide checks that did not finish inside the gate's time
+  budget, or never started. Nothing ran them to the end, so nothing is known either way: quote
+  each under **WARNING** as unchecked, never as a failure of this section.
 - **`MEASURED` lines** go under **SUGGESTION** verbatim, one bullet each. They are never
   failed on.
 - **No gate file**, or one whose header names another section: say so under **WARNING** and
