@@ -47,7 +47,13 @@ ignored_in_plugins: [hooks, mcpServers, permissionMode, initialPrompt]
   its output, and the workflow skill that spawned it asks.
 - **The `Agent` tool, down to a depth.** Subagents can spawn subagents up to three layers
   below the main conversation; at the limit the `Agent` tool is withheld and the agent does
-  the work itself. [docs] Default concurrency is 20 running subagents
+  the work itself. [docs] The limit is the environment variable
+  `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`, inherited by child processes. A Claude Code cloud
+  session (claude.ai/code, 2.1.285) sets it to `1`: its subagents have no `Agent` tool at
+  all, and neither do the subagents of a `claude -p` started inside it, unless that child
+  is started with the variable raised (`=3` gave a nested reply). [proven:
+  evals/2026-09-29-run-phases.md] A design that needs a subagent to delegate checks it
+  first. Default concurrency is 20 running subagents
   (`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`) [unconfirmed: from a docs summary, not re-read].
 - **Skills.** Preloaded ones (full content) plus any skill it invokes through the `Skill`
   tool, which it may do for unlisted plugin, project and user skills when `Skill` is in its

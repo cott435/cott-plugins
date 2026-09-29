@@ -29,13 +29,16 @@ REQUIRED_TOP = ("target", "target_path", "evals")
 REQUIRED_EVAL = ("id", "name", "kind", "baseline", "prompt", "expected_output",
                  "files", "expectations", "added_in")
 
-# Search order for skill-creator, established by 0.9-evals E0.1. The first directory
+# Search order for skill-creator, established by 0.9-evals E0.1 (the two cloud-session
+# paths added 2026-09-29). The first directory
 # holding both agents/grader.md and scripts/aggregate_benchmark.py wins.
 SKILL_CREATOR_GLOBS = (
     "$SKILL_CREATOR_DIR",
     "~/.claude/plugins/cache/*/skill-creator/*/skills/skill-creator",
     "~/.claude/plugins/marketplaces/*/plugins/skill-creator/skills/skill-creator",
     "~/.claude/skills/skill-creator",
+    "~/.claude/skills/synced/*/skill-creator",
+    "/mnt/skills/*/skill-creator",
     "~/Library/Application Support/Claude/**/skills/skill-creator",
 )
 

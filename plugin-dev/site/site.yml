@@ -13,4 +13,5 @@ workflow_skills_order:
   - design-plugin
   - plan-phases
   - run-phase
+  - run-phases
   - audit-run
