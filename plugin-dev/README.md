@@ -91,8 +91,9 @@ until the ledger's last row is `done` and the last phase has proposed the bump.
 
 **[Checking a run](site/workflows/audit-a-run.md).** A workflow ran in some project's chat,
 maybe for hours, and you want to know whether it did what the plugin says. Open a fresh chat
-on the plugin's folder (`dev-team/`, not the project) and type `/plugin-dev:audit-run`. It
-lists recent sessions that used the plugin and asks which one. It rebuilds the run from the
+on the plugin's folder (`dev-team/`, not the project) and type `/plugin-dev:audit-run` with
+words from the chat's title, as the sidebar shows it. With several matches, or none given, it
+lists the candidates by title, span, agent count and fork, and asks. It rebuilds the run from the
 transcripts on disk and draws it as `flow.html`. It proposes up to 12 agents to audit and asks
 before more. The skill runs in your chat: it asks, selects, merges and spot-checks. The
 `run-auditor` agents it spawns each judge one agent's trace in a fresh context, then one

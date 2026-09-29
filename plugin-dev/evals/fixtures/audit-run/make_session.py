@@ -14,6 +14,12 @@ The planted defects, which the auditor must find:
   P4  shape     its return starts "Done." where the definition requires "Result: done"
   P5  driver    the ship skill never writes files, and the driver writes out/extra.txt
 
+The planted session carries the title the app would show, "Ship the toy file", and a fork of
+it sits beside it (OUT/session/<FORK>.jsonl): the same records under a new session id, then
+one more typed command, and no subagents directory of its own, as Claude Code leaves a forked
+or resumed chat. `trace.py find` must name the title and the fork, a title must resolve to a
+session, and a trace of the fork must still find U01's transcript under the original.
+
 A second session, OUT/flow-session/, has no defects and exists for the flow chart. Its known
 shape, which `trace.py`'s Flow section and flow.html must reproduce:
   W1  ∥ 2   writer a/x and writer a/y, spawned in one message
@@ -24,6 +30,7 @@ shape, which `trace.py`'s Flow section and flow.html must reproduce:
 So lane a/x has 4 runs and 2 review rounds; a/y has 1 run and none.
 
 Usage: make_session.py OUT   -> OUT/toy (the plugin), OUT/session/<id>.jsonl (+ subagents/),
+                                OUT/session/<fork id>.jsonl,
                                 OUT/flow-session/<id>.jsonl (+ subagents/)
 """
 
@@ -162,7 +169,23 @@ def main(out: Path) -> None:
     (sub / f"agent-{A}.meta.json").write_text(json.dumps(
         {"agentType": "toy:writer", "description": "Write out/a.txt", "toolUseId": "toolu_m1", "spawnDepth": 1}))
     print(sess / f"{SESSION}.jsonl")
+    fork_session(sess, main_recs)
     flow_session(out, root)
+
+
+FORK = "f0a0d17f-0000-4000-8000-00000000fork"
+TITLE = "Ship the toy file"
+
+
+def fork_session(sess: Path, main_recs: list) -> None:
+    """The planted session's title, and a fork of it with no agent transcripts of its own."""
+    title = {"type": "custom-title", "customTitle": TITLE, "sessionId": SESSION}
+    with (sess / f"{SESSION}.jsonl").open("a") as f:
+        f.write(json.dumps(title) + "\n")
+    copied = [dict(r, sessionId=FORK) for r in main_recs] + [dict(title, sessionId=FORK)]
+    copied.append(dict(user(30, "<command-message>toy:ship</command-message>\n<command-name>/toy:ship</command-name>\n"
+                                "<command-args>out/b.txt</command-args>"), sessionId=FORK))
+    (sess / f"{FORK}.jsonl").write_text("\n".join(json.dumps(r) for r in copied) + "\n")
 
 
 FLOW = "0a0d17f0-0000-4000-8000-0000000flow0"

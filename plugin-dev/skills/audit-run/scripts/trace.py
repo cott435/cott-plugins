@@ -11,7 +11,8 @@ It judges nothing. The auditor does that; this is the evidence.
 
 Usage:
   trace.py find --plugin NAME [--limit N]
-      Sessions that used NAME's skills or agents, newest first.
+      Sessions that used NAME's skills or agents, newest first, each with the chat's title
+      as the app shows it, its project, its span and the commands it ran.
   trace.py select DIR [--units risk|all|new|seg:N|U01,U05] [--cap N]
       Which units to audit, one per line with the reason, from DIR/index.json. `risk`
       (the default) is the first unit of each type plus every unit that stands out; `new`
@@ -20,7 +21,8 @@ Usage:
       Re-render DIR/flow.html from DIR/index.json, adding a badge for every unit that has a
       findings file. `build` renders it too, before any audit.
   trace.py build SESSION --plugin NAME --out DIR [--full]
-      SESSION is a .jsonl path, a session id (or unique prefix), or `latest`.
+      SESSION is a .jsonl path, a session id (or unique prefix), `latest`, or words from
+      the chat's title (case-insensitive, must match one session that used NAME).
       Writes DIR/run.md, DIR/index.json, DIR/driver/seg-<n>.md, DIR/units/U<nn>.md and
       DIR/units/U<nn>.system.md (the system prompt the agent actually ran with), and
       DIR/flow.html, the run as a chart (see flow.py).
@@ -34,7 +36,9 @@ session is still running appends new units and steps without renumbering old one
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
+import os
 import re
 import subprocess
 import sys
@@ -43,7 +47,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import flow  # noqa: E402
 
-PROJECTS = Path.home() / ".claude" / "projects"
+PROJECTS = Path(os.environ.get("AUDIT_RUN_PROJECTS") or Path.home() / ".claude" / "projects")
 LIMITS = {"text": 600, "cmd": 500, "err": 800, "out": 400, "arg": 200}
 
 CMD_RE = re.compile(r"<command-name>/?([^<]+)</command-name>")
@@ -94,7 +98,53 @@ def result_text(content) -> str:
 # ---------------------------------------------------------------- session discovery
 
 
-def sessions_for(plugin: str) -> list[dict]:
+TS_RE = re.compile(r'"timestamp":\s*"(\d{4}-\d\d-\d\dT[^"]+)"')
+
+
+def title_of(text: str) -> str:
+    """The chat's name as the app shows it: the last title set by hand or by the app, else the
+    last title Claude generated, else the first thing typed."""
+    for key in ("customTitle", "aiTitle"):
+        hits = re.findall(rf'"{key}":\s*"((?:[^"\\]|\\.)*)"', text)
+        if hits:
+            return json.loads(f'"{hits[-1]}"')
+    m = re.search(r'"lastPrompt":\s*"((?:[^"\\]|\\.)*)"', text)
+    return json.loads(f'"{m.group(1)}"')[:60] if m else "(untitled)"
+
+
+def local(ts: str) -> dt.datetime | None:
+    try:
+        return dt.datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone()
+    except ValueError:
+        return None
+
+
+def describe(s: dict) -> str:
+    """Two lines per session: id and title, then where, when, how long, how big."""
+    start, end = local(s["first_ts"]), local(s["last_ts"])
+    if start and end:
+        mins = int((end - start).total_seconds() // 60)
+        same_day = start.date() == end.date()
+        span = (f"{start:%Y-%m-%d %H:%M} → {end:%H:%M}" if same_day else f"{start:%Y-%m-%d %H:%M} → {end:%m-%d %H:%M}")
+        span += f" ({mins // 60}h{mins % 60:02d}m)"
+    else:
+        span = dt.datetime.fromtimestamp(s["mtime"]).strftime("%Y-%m-%d %H:%M")
+    live = " · still active" if dt.datetime.now().timestamp() - s["mtime"] < 120 else ""
+    cmds = ", ".join(dict.fromkeys(c.split(":", 1)[1] for c in s["commands"])) or "—"
+    where = s["cwd"].replace(str(Path.home()), "~")
+    at = local(s.get("fork_at", ""))
+    fork = (f"\n    fork of {s['fork_of'][:8]}: its history up to {at:%m-%d %H:%M} is a copy of that chat's"
+            if s.get("fork_of") and at else "")
+    return (f"{s['id']}  \"{s['title']}\"\n"
+            f"    {where} · {span} · {s['spawns']} agent{'' if s['spawns'] == 1 else 's'} · commands: {cmds}{live}{fork}")
+
+
+def headless(cwd: str) -> bool:
+    """Eval harnesses run Claude headless in temp dirs; those runs never appear in the app."""
+    return cwd.startswith(("/private/tmp/", "/tmp/", "/private/var/folders/", "/var/folders/"))
+
+
+def sessions_for(plugin: str, include_headless: bool = False) -> list[dict]:
     needle_a, needle_b = f'"{plugin}:', f"/{plugin}:"
     found = []
     for f in PROJECTS.glob("*/*.jsonl"):
@@ -104,13 +154,27 @@ def sessions_for(plugin: str) -> list[dict]:
             continue
         if needle_a not in text and needle_b not in text:
             continue
-        cmds = [
-            m.group(1)
-            for m in CMD_RE.finditer(text)
-            if m.group(1).startswith(f"{plugin}:")
-        ]
-        spawns = len(re.findall(rf'"subagent_type":\s*"{re.escape(plugin)}:', text))
+        cmds, spawns, uuids = [], 0, []
+        for line in text.splitlines():
+            if '"uuid"' in line and (m := re.search(r'"uuid":\s*"([^"]+)"', line)):
+                t = TS_RE.search(line)
+                uuids.append((m.group(1), t.group(1) if t else ""))
+            if f"/{plugin}:" not in line and "subagent_type" not in line:
+                continue
+            try:
+                r = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            content = (r.get("message") or {}).get("content")
+            if r.get("type") == "user" and isinstance(content, str) and (m := CMD_RE.search(content)):
+                if m.group(1).startswith(f"{plugin}:"):
+                    cmds.append(m.group(1))  # typed, not quoted inside a tool's output
+            elif r.get("type") == "assistant" and isinstance(content, list):
+                spawns += sum(1 for b in content if isinstance(b, dict) and b.get("type") == "tool_use"
+                              and b.get("name") in ("Agent", "Task")
+                              and str((b.get("input") or {}).get("subagent_type", "")).startswith(f"{plugin}:"))
         cwd = re.search(r'"cwd":\s*"([^"]+)"', text)
+        stamps = TS_RE.findall(text)
         found.append(
             {
                 "path": f,
@@ -119,10 +183,38 @@ def sessions_for(plugin: str) -> list[dict]:
                 "mtime": f.stat().st_mtime,
                 "commands": cmds,
                 "spawns": spawns,
+                "title": title_of(text),
+                "first_ts": min(stamps) if stamps else "",
+                "last_ts": max(stamps) if stamps else "",
+                "uuids": uuids,
+                "born": getattr(f.stat(), "st_birthtime", f.stat().st_mtime),
+                "own_agents": len(list((f.with_suffix("") / "subagents").glob("agent-*.jsonl"))),
             }
         )
-    found = [s for s in found if s["commands"] or s["spawns"]]
+    found = [s for s in found if (s["commands"] or s["spawns"]) and (include_headless or not headless(s["cwd"]))]
+    mark_forks(found)
     return sorted(found, key=lambda s: -s["mtime"])
+
+
+def mark_forks(sessions: list[dict]) -> None:
+    """A fork or resumed copy shares its parent's record ids up to the point it split off.
+    The older file of a pair is the parent (on a tie, the one holding more agent transcripts,
+    which a fork leaves behind); the fork records where the two diverge."""
+    by_project: dict[Path, list[dict]] = {}
+    for s in sessions:
+        by_project.setdefault(s["path"].parent, []).append(s)
+    for group in by_project.values():
+        for s in group:
+            ids = [u for u, _ in s["uuids"]]
+            for other in group:
+                theirs = {u for u, _ in other["uuids"]}
+                older = (other["born"], -other["own_agents"]) < (s["born"], -s["own_agents"])
+                if other is s or not older or not ids or ids[0] not in theirs:
+                    continue
+                split = next((i for i, u in enumerate(ids) if u not in theirs), len(ids))
+                s["fork_of"] = other["id"]
+                s["fork_at"] = s["uuids"][split][1] if split < len(ids) else s["last_ts"]
+                break
 
 
 def resolve(session: str, plugin: str) -> Path:
@@ -134,10 +226,21 @@ def resolve(session: str, plugin: str) -> Path:
         if not hits:
             sys.exit(f"no session under {PROJECTS} used {plugin}")
         return hits[0]["path"]
-    hits = list(PROJECTS.glob(f"*/{session}*.jsonl"))
-    if len(hits) != 1:
-        sys.exit(f"session {session!r}: {len(hits)} matches under {PROJECTS}")
-    return hits[0]
+    hits = list(PROJECTS.glob(f"*/{session}*.jsonl")) if re.fullmatch(r"[\w-]{4,}", session) else []
+    if len(hits) == 1:
+        return hits[0]
+    if len(hits) > 1:
+        sys.exit(f"session id {session!r} matches {len(hits)} sessions; give more of it")
+    words = session.lower().split()
+    titled = [s for s in sessions_for(plugin) if all(w in s["title"].lower() for w in words)] or \
+             [s for s in sessions_for(plugin, include_headless=True) if all(w in s["title"].lower() for w in words)]
+    if len(titled) == 1:
+        return titled[0]["path"]
+    if not titled:
+        sys.exit(f"no session id or {plugin} chat title matches {session!r}; run `find --plugin {plugin}`")
+    more = f"\n… and {len(titled) - 8} older; add words from the title, or use the id" if len(titled) > 8 else ""
+    sys.exit(f"{len(titled)} {plugin} chats match {session!r}; pick one by id:\n"
+             + "\n".join(describe(s) for s in titled[:8]) + more)
 
 
 # ---------------------------------------------------------------- one transcript → events
@@ -481,13 +584,48 @@ def definition_for(agent_type: str, first_base: str | None, plugin: str, root: s
 # ---------------------------------------------------------------- build
 
 
+def agent_files(session_path: Path, main_events: list[dict]) -> list[Path]:
+    """Every spawned agent's transcript: the session's own, plus any a fork left behind.
+
+    A forked or resumed chat copies its parent's history into a new session file, but the
+    transcripts of agents spawned before the fork stay under the parent's directory. Those
+    are found in the project's other sessions by the spawning call's tool_use id, which the
+    copy keeps; nested spawns are followed until nothing new turns up.
+    """
+    own = sorted((session_path.with_suffix("") / "subagents").glob("agent-*.jsonl"))
+    wanted = {e["id"] for e in main_events if e["kind"] == "call" and e["name"] in ("Agent", "Task")}
+    have = {f.stem for f in own}
+    for f in own:
+        wanted |= set(re.findall(r'"type":\s*"tool_use",\s*"id":\s*"([^"]+)",\s*"name":\s*"(?:Agent|Task)"',
+                                 f.read_text(encoding="utf-8", errors="replace")))
+    elsewhere = [m for m in session_path.parent.glob("*/subagents/agent-*.meta.json")
+                 if m.parent.parent != session_path.with_suffix("")]
+    found = list(own)
+    grew = True
+    while grew:
+        grew = False
+        for m in elsewhere:
+            f = m.with_name(m.name.removesuffix(".meta.json") + ".jsonl")
+            if f.stem in have or not f.exists():
+                continue
+            try:
+                tid = json.loads(m.read_text()).get("toolUseId")
+            except (OSError, json.JSONDecodeError):
+                continue
+            if tid in wanted:
+                found.append(f)
+                have.add(f.stem)
+                wanted |= set(re.findall(r'"id":\s*"([^"]+)",\s*"name":\s*"(?:Agent|Task)"',
+                                         f.read_text(encoding="utf-8", errors="replace")))
+                grew = True
+    return found
+
+
 def build(session_path: Path, plugin: str, out: Path) -> None:
     main_records = load(session_path)
     main_events, main_facts = events_of(main_records)
-    sub_dir = session_path.with_suffix("") / "subagents"
-
     raw_units = []
-    for f in sorted(sub_dir.glob("agent-*.jsonl")) if sub_dir.exists() else []:
+    for f in agent_files(session_path, main_events):
         aid = f.stem.removeprefix("agent-")
         meta_p = f.with_suffix(".meta.json")
         meta = json.loads(meta_p.read_text()) if meta_p.exists() else {}
@@ -523,7 +661,10 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
         u["background"] = bool(site and site[1]["input"].get("run_in_background")) or meta.get("requestShape") == "background"
         first_base = u["events"][0]["base"] if u["events"] and u["events"][0]["kind"] == "skill-body" else None
         u["forked_skill"] = first_base
-        u["definition"] = definition_for(u["type"], first_base, plugin, root)
+        u_root, u["version"] = plugin_root(u["facts"]["bases"], plugin)
+        u["root"] = u_root or root
+        u["version"] = u["version"] or version
+        u["definition"] = definition_for(u["type"], first_base, plugin, u["root"])
         u["return"] = unit_return(u["events"])
         u["prompt"] = (site[1]["input"].get("prompt", "") if site else "") or next(
             (r["message"]["content"] for r in u["records"] if r.get("type") == "user"
@@ -577,7 +718,7 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
             (out / "units" / f"{u['unit']}.system.md").write_text(u["facts"]["system"], encoding="utf-8")
         index_units.append({
             "unit": u["unit"], "agent_id": u["agent"], "type": u["type"], "description": u["description"],
-            "spawner": u["spawner"], "background": u["background"], "definition": u["definition"],
+            "spawner": u["spawner"], "background": u["background"], "definition": u["definition"], "version": u["version"],
             "forked_skill": bool(u["forked_skill"]), "trace": f"units/{u['unit']}.md",
             "tool_calls": len(calls), "errors": errors, "hook_blocks": blocks, "commits": commits,
             "files_written": written, "first_ts": u["ts"],
@@ -615,7 +756,9 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
                              start=int(s["first"][1:]) if s["first"] else 1)
         spawned = [u["unit"] for u in raw_units if u["spawner"] == "driver"
                    and u["spawn_call"] is not None and u["spawn_call"] in s["events"]]
-        definition = str(Path(root) / "skills" / s["skill"] / "SKILL.md") if root else None
+        s_root, s_version = plugin_root([e["base"] for e in s["events"] if e["kind"] == "skill-body"], plugin)
+        s_root, s_version = s_root or root, s_version or version
+        definition = str(Path(s_root) / "skills" / s["skill"] / "SKILL.md") if s_root else None
         doc = [
             f"# Driver segment {s['seg']} · `{s['command']}`",
             "",
@@ -629,6 +772,7 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
         ]
         (out / "driver" / f"seg-{s['seg']}.md").write_text("\n".join(doc), encoding="utf-8")
         index_segments.append({"seg": s["seg"], "command": s["command"], "definition": definition,
+                               "plugin_root": s_root, "version": s_version,
                                "trace": f"driver/seg-{s['seg']}.md", "first": s["first"], "last": s["last"],
                                "units": spawned})
 
@@ -700,7 +844,11 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
     print(f"  plugin root: {root} (version {version}){'' if index['plugin_root_exists'] else ' — MISSING on disk'}")
     print(f"  segments: {len(index_segments)} · units: {len(index_units)} · driver steps: {len(main_events)}")
     for s in index_segments:
-        print(f"  seg {s['seg']}: {s['command']} — {len(s['units'])} units spawned directly")
+        print(f"  seg {s['seg']}: {s['command']} — {len(s['units'])} units spawned directly · {plugin} {s['version']}")
+    versions = sorted({s["version"] for s in index_segments} | {u["version"] for u in raw_units} - {None})
+    if len(versions) > 1:
+        print(f"  ⚠ the run spans {plugin} versions {', '.join(versions)}: each segment's and unit's "
+              f"definition in index.json points at the version it ran")
 
 
 def shape(first_line: str) -> str:
@@ -761,6 +909,7 @@ def main() -> int:
     f = sub.add_parser("find")
     f.add_argument("--plugin", required=True)
     f.add_argument("--limit", type=int, default=8)
+    f.add_argument("--all", action="store_true", help="include headless runs in temp dirs (eval harnesses)")
     fl = sub.add_parser("flow")
     fl.add_argument("out")
     se = sub.add_parser("select")
@@ -775,16 +924,12 @@ def main() -> int:
     a = ap.parse_args()
 
     if a.cmd == "find":
-        import datetime as dt
-
-        hits = sessions_for(a.plugin)[: a.limit]
+        hits = sessions_for(a.plugin, include_headless=a.all)[: a.limit]
         if not hits:
             print(f"no session under {PROJECTS} used {a.plugin}")
             return 1
         for s in hits:
-            when = dt.datetime.fromtimestamp(s["mtime"]).strftime("%Y-%m-%d %H:%M")
-            cmds = ", ".join(dict.fromkeys(c.split(":", 1)[1] for c in s["commands"])) or "—"
-            print(f"{s['id']}  {when}  spawns={s['spawns']:<3}  {s['cwd']}  commands: {cmds}")
+            print(describe(s))
         return 0
 
     if a.cmd == "flow":

@@ -42,16 +42,42 @@ the repo root and not `quant`. The skill reads the plugin's name from
 report and the eval log. Don't use the 8-hour chat itself: its folder is the project, and its
 context is already full of the run.
 
-**3. Type the command.**
+**3. Type the command, naming the chat by its title.** Use the words you see in the app's
+sidebar:
 
 ```
-/plugin-dev:audit-run
+/plugin-dev:audit-run architecture migration
 ```
 
-With no argument it lists the recent sessions that used dev-team, each with its date,
-project, commands and spawn count, and asks which one. If the run is the most recent dev-team
-session anywhere, `/plugin-dev:audit-run latest` skips the question. If you know the session
-id, pass it or a unique prefix of it.
+Any words from the title work, in any case. If exactly one dev-team chat matches, that is the
+one. If several match, or you type no words at all, it lists the candidates and asks. Each
+candidate takes two lines, with the title in quotes:
+
+```
+5976c083-2a42-4a6a-815c-bb773869bd41  "Project architecture migration"
+    ~/PycharmProjects/quant · 2026-09-28 12:09 → 09-29 09:50 (21h40m) · 110 agents · commands: run-package
+    fork of 1493ed56: its history up to 09-29 06:59 is a copy of that chat's
+1493ed56-5636-4a51-8a71-1c3377579975  "Project architecture migration"
+    ~/PycharmProjects/quant · 2026-09-28 12:09 → 09-29 06:59 (18h50m) · 105 agents · commands: run-package
+e861e636-bb4b-404e-a8e8-90c012ea38dd  "Project architecture migration"
+    ~/PycharmProjects/quant · 2026-09-28 11:26 → 11:41 (0h14m) · 0 agents · commands: run-package
+```
+
+To tell same-named chats apart:
+- **The span and its length:** your 8-hour run is the one that lasted hours, not the 14-minute
+  false start.
+- **The agent count:** a `run-package` that did real work spawned dozens of agents.
+- **`fork of …`:** forking or resuming a chat makes a new session, with a copy of the
+  history up to that point, under the same title. The fork is the one to pick when the work
+  went on after the split. Its trace still finds every agent spawned before the fork: those
+  transcripts stay with the original session, and the trace looks there.
+- **`still active`:** the session wrote to disk in the last two minutes.
+
+The long ID at the start of each entry is Claude Code's session ID. It is also the name of
+the transcript file, `~/.claude/projects/<project folder>/<id>.jsonl`. Pass it, or its first
+8 characters, when titles don't settle it: `/plugin-dev:audit-run 5976c083`. `latest` means
+the most recent chat that used dev-team anywhere. Headless eval runs in temp folders never
+appear in the sidebar, so they are left out of the list.
 
 **4. Look at the chart first.** The trace step writes `flow.html` into
 `dev-team/evals/workspace/audit/<id8>/`, and the skill offers to open it. Time runs down the

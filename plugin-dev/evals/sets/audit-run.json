@@ -63,6 +63,26 @@
         "flow.html lists U03 under 'Reviews that found issues' and not U05"
       ],
       "added_in": "audit-run 0.12, when the flow chart was added"
+    },
+    {
+      "id": 4,
+      "name": "find-titles-and-forks",
+      "kind": "mechanical",
+      "baseline": "none",
+      "prompt": "python3 evals/fixtures/audit-run/make_session.py $TMP && AUDIT_RUN_PROJECTS=$TMP python3 skills/audit-run/scripts/trace.py find --plugin toy --all, then build by title words 'toy file', and build the fork by id f0a0d17f",
+      "expected_output": "A chat is found by the title the app shows, a fork is named as one, an ambiguous title builds nothing, and a fork's trace still finds the agents left under its original",
+      "files": [
+        "evals/fixtures/audit-run/make_session.py"
+      ],
+      "expectations": [
+        "find prints both planted sessions with the title \"Ship the toy file\"",
+        "find marks f0a0d17f… as 'fork of 0a0d17f0', and the original as nothing",
+        "build 'toy file' exits non-zero listing '2 toy chats match' and writes no index.json",
+        "build f0a0d17f writes one unit, U01 with agent id a0fixture00000001 (whose transcript lives only under the original), and two segments",
+        "each segment in the fork's index.json carries version 0.1.0",
+        "find without --all hides both planted sessions (their project is under /tmp/)"
+      ],
+      "added_in": "audit-run: chat titles and forks (2026-09-29)"
     }
   ]
 }

@@ -1,7 +1,7 @@
 ---
 name: audit-run
 description: Audit a real run of this plugin's workflow from its session transcripts - which agents were spawned with what, every tool call, hook block, commit and hand-back - against the plugin's own agent and skill files at the version that ran, and report every error with evidence on both sides. Draws the run as a flow chart showing what ran in parallel and what in series, how many runs and review rounds each section took, and what each review found. Checks each agent's inputs, procedure, write scope, error recovery and whether its claims are backed by its tool calls, the driver's branching on each return, and consistency across agents. Writes the report under evals/workspace/audit/ and logs the run with log-eval. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), after or during a workflow run in another project.
-argument-hint: "[session-id | path.jsonl | latest] [--units risk|all|new|seg:N|U01,U05] [--full]"
+argument-hint: "[chat title words | session-id | path.jsonl | latest] [--units risk|all|new|seg:N|U01,U05] [--full]"
 disable-model-invocation: true
 ---
 
@@ -24,12 +24,27 @@ own directory, the one under test.
 
 1. Read `.claude-plugin/plugin.json`. Its `name` is **P**. With no manifest, stop: this skill
    runs inside the plugin whose run is being audited.
-2. The session is the first argument that is not a flag:
+2. The session is everything in the arguments before the first flag:
    - a path to a `.jsonl`, or a session id or unique prefix: use it;
    - `latest`: the newest session that used **P**;
+   - words from the chat's title, as the app's sidebar shows it (`architecture migration`):
+     `T build` resolves them when exactly one chat matches, and otherwise prints the matches
+     and exits 1 — show them and ask as below;
    - nothing: run `T find --plugin P`. With one hit, use it. With several, ask with
-     `AskUserQuestion`, one option per session (its date, project, commands and spawn count),
-     at most four, newest first.
+     `AskUserQuestion`, one option per session, at most four, newest first. The label is the
+     chat's title in quotes; the description is its project, its span and length, its agent
+     count and commands, and `fork of <id8>` when it is one.
+
+   `find` prints each session as two lines: the id and the title the user sees, then the
+   project, the span, the agents and the commands. It hides headless runs in temp directories
+   (eval harnesses, never in the sidebar); `--all` shows them.
+
+   **Forks.** A forked or resumed chat is a new session whose history up to the fork is a copy
+   of the original's, while the transcripts of agents spawned before the fork stay under the
+   original. `find` marks it `fork of <id8>`, and `T build` on the fork still finds those
+   agents under the original. So auditing the fork audits everything, and it is the one to
+   pick when the work went on after the split. Two chats with the same title are usually a
+   chat and its fork.
 3. The workspace is `evals/workspace/audit/<first 8 chars of the session id>/`. Check that
    `.gitignore` covers `evals/workspace/`, and add the line if it does not. The trace holds
    the project's file contents and must never be committed.
@@ -60,8 +75,11 @@ description, and the verdict is a `Verdict:` line in the return. So a plugin who
 say neither gets a chart of waves without review colours, which is still correct about
 parallel and series.
 
-Print the script's summary lines. Then settle **which version ran**, since every rule is
-checked against that version:
+Print the script's summary lines. They give the plugin version per segment. When they warn
+that the run spans versions (a long chat resumed after `/plugin` updated it), nothing changes
+below: each segment's and unit's `definition` in `index.json` already points at the version
+that ran it. Then settle **which version ran**, since every rule is checked against that
+version:
 
 - `index.json`'s `plugin_root` exists: the definitions are read from there.
 - It does not exist (the cache was cleared or updated since): check out the tag for its
