@@ -104,10 +104,11 @@
         "outputs/in-scope.stream.jsonl holds a Bash tool_use whose command is `echo x > packages/data/src/data/ingest/shell.py`, and the tool_result with that tool_use_id is an error whose text contains `dev-team bash guard`, `dev-team:implementer`, `redirect` and `Write` (the rule points at the Write tool); the relayed report's `bash result:` quotes the same text",
         "in scope the file was absent after the Bash step: the check command `test -e packages/data/src/data/ingest/shell.py && echo present || echo absent` ran (its result carries no guard text — a command that writes nothing is not refused) and returned `absent`, in the stream and in the relayed report's `check result:`",
         "in scope the file is present after the Write: the stream holds a Write tool_use for a path ending `packages/data/src/data/ingest/shell.py` after the refused Bash call, its result is a success with no `dev-team write guard` text, and outputs/in-scope/shell.py exists and is exactly the one line `\"\"\"Written with the Write tool after the shell write was refused.\"\"\"` — it never holds `x`",
-        "outputs/in-scope/git-status.txt lists `?? packages/data/src/data/ingest/shell.py` and no other path: nothing but the Write reached the tree",
+        "outputs/in-scope/git-status.txt lists `?? packages/data/src/data/ingest/shell.py` and no other path, and outputs/in-scope/shell.py holds the Write's docstring, not `x`: nothing but the Write reached the tree",
         "out of scope: the relayed report's `check result:` is `present` and its `write result:` is `not attempted`, outputs/out-of-scope/shell.py exists and is exactly the line `x`, and neither outputs/out-of-scope.stream.jsonl nor the relayed report contains `dev-team bash guard`"
       ],
-      "added_in": "2.2 phase 0, run from phase 4"
+      "added_in": "2.2 phase 0, run from phase 4",
+      "note_2_2_phase4": "expectation 5 tightened: git status alone reads the same whether the file came from the Write or an unrefused redirect, so it now also checks the file's content (grader critique, phase 4 iteration 1)"
     },
     {
       "id": 5,
@@ -130,10 +131,11 @@
         "the in-scope refusal is the section scope's, not the role-wide rule's: besides naming `(data/ingest)` its text lists the section's files, among them `packages/data/src/data/ingest` and `docs/packages/data/decisions/ingest.md`, and names `locked.py` for shared edits",
         "outputs/in-scope/rules.MISSING exists and outputs/in-scope/git-status.txt lists nothing under `packages/data/src/data/clean/`: the refused file was never written",
         "outputs/in-scope/schema.py exists and is exactly the content session-guard-section.md gives for it, and the relayed in-scope `write 1 result:` is the Write tool's success with no `dev-team write guard` text: the section's own code stays writable",
-        "outputs/in-scope/subagent-transcript.txt names an existing file whose path contains `/subagents/agent-` under the in-scope session's id, and the first line it quotes is `Section: data/ingest`: the transcript the guard derives exists and its first user record is the spawn prompt",
+        "outputs/in-scope/subagent-transcript.txt names an existing file whose path contains `/subagents/agent-<id>.jsonl` where `<id>` is the implementer's agent id in outputs/in-scope.stream.jsonl (its `task_id`/`agentId`), and the first line it quotes is `Section: data/ingest`: the transcript the guard derives exists and its first user record is the spawn prompt",
         "out of scope: outputs/out-of-scope/schema.py and outputs/out-of-scope/rules.py both exist, each exactly the content session-guard-section.md gives for it; the relayed report's two write results are both successes; and neither outputs/out-of-scope.stream.jsonl nor the relayed report contains `dev-team write guard`"
       ],
-      "added_in": "2.2 phase 0, run from phase 4"
+      "added_in": "2.2 phase 0, run from phase 4",
+      "note_2_2_phase4": "expectation 6 tightened: nested sessions reuse the parent's session id, so a `/subagents/agent-` glob can match a sibling eval's agent; the file must now be this run's implementer's (grader critique, phase 4 iteration 1)"
     }
   ]
 }

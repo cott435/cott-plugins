@@ -1,6 +1,6 @@
 # Fixture — `hook-events`
 
-Recorded hook inputs for the four scripts under `hooks/`, one case per path through each,
+Recorded hook inputs for the five scripts under `hooks/`, one case per path through each,
 piped into the script exactly as `hooks/hooks.json` runs it (`python3 <script>`, with
 `CLAUDE_PLUGIN_ROOT` set to the plugin and `CLAUDE_PLUGIN_DATA` to a temporary directory).
 Written for phase 2 of the remake (`site/notes/remake-02-hooks.md`), whose case table every
@@ -59,5 +59,27 @@ stale `Decision:` in an inbox that never flows, a self-numbered stub and one who
 differs from the central entry (both renumbered), two inboxes in turn (`-a`, then `-b` from
 `-a`'s result), a missing central ledger, a write that is not an inbox, an out-of-scope repo,
 malformed stdin, `--all` by hand, and a crashed holder's lock (`setup.stale_lock`).
+
+The `guard-*` cases (2.2, `site/notes/2.2-04-guards.md`) run `guard_writes.py` in an `arch`
+repo. The 2.1 ones keep their events and expectations, the role-wide rule. The 2.2 section
+cases also write a `data` contract (`ingest`, `clean`, `surface`) and a `setup.transcript`: a
+`PreToolUse` event carries no `agent_transcript_path`, so `check.py` writes it where the guard
+derives it, `<transcript_path minus .jsonl>/subagents/agent-<agent_id>.jsonl`. An implementer
+on `data/ingest` writes its own code, unit tests, inbox, ledger (new and old path), scratch
+under `.dev-team/tmp/` and marker, and is refused a sibling's code, unit tests, inbox and
+marker, its intent tests, `docs/decisions.md` and the package `pyproject.toml` (the refusal
+names `locked.py`). On `data/surface` it may write `interface.md` and `mkdocs.yml`. A
+`Scaffold:` run and a missing transcript fall back to the role-wide rule. The role cases cover the
+2.2 paths: the designer's inbox allowed and `docs/decisions.md` refused, a review under
+`docs/packages/<pkg>/reviews/<section>/` allowed to the reviewer and refused to the architect,
+and a change file under the package allowed to the architect.
+
+The nineteen `bash-*` cases (same note) pipe `tool_input.command` into `guard_bash.py`:
+a redirect, an append with a here-document, `sed -i`, `tee`, `python3 -c` opening for write,
+a chain whose second half redirects, and a reviewer's redirect are refused. Allowed are
+`/dev/null`, `.dev-team/tmp/` (relative and absolute), `2>&1`, `python3 -c` that only reads,
+and two `locked.py` commands (`{plugin}` in the event stands for this plugin's root). An
+unparseable command fails open with the rule on stderr, and the main thread, `Explore`, an
+out-of-scope repo and malformed stdin exit 0.
 
 Needs `ruff` on PATH and `pytest` importable by `python3`.

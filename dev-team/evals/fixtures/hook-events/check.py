@@ -5,8 +5,8 @@ Usage:  python3 check.py [case ...]
 
 Each case is `events/<case>.json`:
 
-- `script`: `format`, `gate`, `guard` or `sync` (hooks/format_on_edit.py, gate_on_stop.py,
-  guard_writes.py, sync_decisions.py).
+- `script`: `format`, `gate`, `guard`, `sync` or `bash` (hooks/format_on_edit.py,
+  gate_on_stop.py, guard_writes.py, sync_decisions.py, guard_bash.py).
 - `repo`: `built` (build.py: one built section, one proposed deviation), `arch` (a directory
   holding only `docs/architecture.md`) or `plain` (an empty directory: out of scope).
 - `setup`: `prior`, files committed just before the run's commit (so they are in the repo
@@ -17,9 +17,12 @@ Each case is `events/<case>.json`:
   `stale_lock`, a name whose `.dev-team/locks/<name>/` is created with its mtime set 1200 s
   back (a crashed holder's lock); `transcript`, a spawn prompt written as the one `user` record
   of a JSONL at the event's `agent_transcript_path` (`{cwd}` substituted, its parent created),
-  the file the gate reads the section from; or `transcript_file`, a recorded transcript under
-  this directory (`transcripts/<name>.jsonl`) copied there instead.
-- `event`: the hook input as Claude Code sends it, `{cwd}` standing for the repo; or `raw`,
+  the file the gate reads the section from — or, for an event without one (a `PreToolUse`),
+  at the path the guards derive, `<transcript_path minus .jsonl>/subagents/agent-<agent_id>.jsonl`;
+  or `transcript_file`, a recorded transcript under this directory
+  (`transcripts/<name>.jsonl`) copied there instead.
+- `event`: the hook input as Claude Code sends it, `{cwd}` standing for the repo and
+  `{plugin}` for this plugin's root (a `locked.py` path in a Bash command); or `raw`,
   stdin sent verbatim. `args`: command-line arguments, for the gate's `--report` mode and the
   sync hook's `--all`, which read no stdin.
 - `env`: extra environment for the script (the gate's `DEV_TEAM_GATE_TIMEOUT` and
@@ -51,7 +54,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 PLUGIN = HERE.parents[2]
 SCRIPTS = {"format": "format_on_edit.py", "gate": "gate_on_stop.py", "guard": "guard_writes.py",
-           "sync": "sync_decisions.py"}
+           "sync": "sync_decisions.py", "bash": "guard_bash.py"}
 sys.path.insert(0, str(HERE))
 import build  # noqa: E402
 
@@ -105,6 +108,9 @@ def check(case: Path) -> list[str]:
         event = spec.get("event")
         agent_id = (event or {}).get("agent_id", "")
         atp = (event or {}).get("agent_transcript_path", "").replace("{cwd}", str(repo))
+        if not atp and (event or {}).get("transcript_path") and agent_id:
+            tp = Path(event["transcript_path"].replace("{cwd}", str(repo)))
+            atp = str(tp.with_suffix("") / "subagents" / f"agent-{agent_id}.jsonl")
         if atp and ("transcript" in setup or "transcript_file" in setup):
             Path(atp).parent.mkdir(parents=True, exist_ok=True)
             if "transcript_file" in setup:
@@ -116,7 +122,7 @@ def check(case: Path) -> list[str]:
         if "counter" in setup:
             counter.parent.mkdir(parents=True, exist_ok=True)
             counter.write_text(f"{setup['counter']}\n")
-        stdin = spec["raw"] if "raw" in spec else "" if event is None else json.dumps(event).replace("{cwd}", str(repo))
+        stdin = spec["raw"] if "raw" in spec else "" if event is None else json.dumps(event).replace("{cwd}", str(repo)).replace("{plugin}", str(PLUGIN))
         env = {**os.environ, "CLAUDE_PLUGIN_ROOT": str(PLUGIN), "CLAUDE_PLUGIN_DATA": str(data), **spec.get("env", {})}
         res = subprocess.run(["python3", str(PLUGIN / "hooks" / SCRIPTS[spec["script"]]), *spec.get("args", [])],
                              input=stdin, capture_output=True, text=True, cwd=repo, env=env)
