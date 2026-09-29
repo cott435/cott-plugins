@@ -6,8 +6,8 @@ nobody is at the keyboard, and the tester asks nothing.
 
 ## Answers
 
-- To any question the tester would ask: there is no user. The entry in `docs/deviations.md`
-  says what shipped; assert that and say so in the return.
+- To any question the tester would ask: there is no user. The entry in
+  `docs/deviations/data/ingest.md` says what shipped; assert that and say so in the return.
 
 ## Where the files and the commit go
 
@@ -15,9 +15,10 @@ nobody is at the keyboard, and the tester asks nothing.
   holding this eval set (the one with `.claude-plugin/plugin.json`). The package root is
   `packages/data/`. Read the tree; never write into it.
 - The existing intent tree is `packages/data/tests/intent/ingest/`. To edit and run it: copy
-  that directory whole into `outputs/tests/intent/ingest/` and make your edits there. Every
-  file you did not change must stay byte-identical to the repo's copy — that is how the grader
-  checks the scope of the regeneration.
+  that directory whole into `outputs/tests/intent/ingest/`, and `packages/data/tests/fixtures/`
+  whole into `outputs/tests/fixtures/` (the conftest reads its sample from there, and it is not
+  staged), and make your edits there. Every file you did not change must stay byte-identical
+  to the repo's copy — that is how the grader checks the scope of the regeneration.
 - The commit: `outputs/commit.txt` holds the commit message exactly as it would be given to
   `git commit` — the summary line, a blank line, then the trailer line(s). `outputs/staged.txt`
   lists the package-relative paths you would stage, one per line (only the files you changed).

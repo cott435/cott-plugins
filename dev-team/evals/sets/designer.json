@@ -31,7 +31,8 @@
         "The final message in transcript.md is ten lines or fewer, its first line is exactly `Result: done`, and it contains lines beginning `Design:`, `Open questions:`, `Deviations:` and `Commit:`",
         "No file exists under outputs/ other than docs/packages/data/design/storage.md, commit.txt and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/; in particular outputs/docs/decisions.md does not exist and the return is not `stopped`"
       ],
-      "added_in": "remake phase 0, run from phase 3"
+      "added_in": "remake phase 0, run from phase 3",
+      "note_2_2": "No line changed: the design path does not move and the run writes no ledger. The fixture repo/docs/deviations/data/storage.md, listed in `files` since ff5776a but never committed, is added in 2.2 phase 0 as a ledger at its 2.0-2.1 location (a title line and a note, no entries)."
     },
     {
       "id": 2,
@@ -61,7 +62,8 @@
         "The final message in transcript.md is ten lines or fewer, its first line is exactly `Result: done`, and it contains a `Design:` line naming docs/packages/data/design/ingest.md and a `Commit:` line",
         "No file exists under outputs/ other than docs/packages/data/design/ingest.md, commit.txt and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/; docs/changes/ingest-tz-aware-bars.md and docs/packages/data/contract.md are not written to outputs/"
       ],
-      "added_in": "remake phase 0, run from phase 3"
+      "added_in": "remake phase 0, run from phase 3",
+      "note_2_2": "No line changed: `Change file: docs/changes/ingest-tz-aware-bars.md` is a pre-2.2 location that 2.2 still reads (designer Inputs 8), so the prompt keeps it, and expectation 1's second line `Change: …` cites the path the prompt sends; the design path docs/packages/data/design/ingest.md does not move."
     },
     {
       "id": 3,
@@ -70,7 +72,7 @@
       "baseline": "previous",
       "harness": "evals/sets/files/designer/eval-3-prices-spec-change.md",
       "prompt": "Repo root for this run: evals/sets/files/designer/repo (every path below is relative to it).\n\nSection: data/prices\nMode: new\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: packages/data/src/data/ingest/README.md\nUpstream interfaces: none\nSource probes: docs/sources/alpaca.md\nChange file: none\nDesign-gap: none\nSkills to invoke: none\nWrite to: docs/packages/data/design/prices.md\nRun: run-package data",
-      "expected_output": "No design is written; instead outputs/docs/deviations/data/prices.md gains one appended `## data/prices — <date> — spec-change:contract` entry whose Clause cites the contract's prices interface row, whose Found cites the probe doc's Observed schema (no adjusted_close field; adjustment is a request parameter and `c` is the adjusted close), with Status open and Raised by the designer; outputs/commit.txt commits the ledger with scope data/prices and the run trailer; the return is `Result: spec-change`, then `Spec-change: contract — <one line>`, then the entry heading, ten lines or fewer.",
+      "expected_output": "No design is written; instead a new ledger outputs/docs/packages/data/deviations/prices.md (first line `# Deviations — data/prices`) gets one `## data/prices — <date> — spec-change:contract — 1` entry whose Clause cites the contract's prices interface row, whose Found cites the probe doc's Observed schema (no adjusted_close field; adjustment is a request parameter and `c` is the adjusted close), with Status open and Raised by the designer, while the older-location ledger docs/deviations/data/prices.md is read and not written; outputs/commit.txt commits the new ledger with scope data/prices and the run trailer; the return is `Result: spec-change`, then `Spec-change: contract — <one line>`, then the entry heading, ten lines or fewer.",
       "files": [
         "evals/sets/files/designer/repo/docs/architecture.md",
         "evals/sets/files/designer/repo/docs/packages/data/contract.md",
@@ -80,18 +82,76 @@
       ],
       "expectations": [
         "outputs/docs/packages/data/design/prices.md does not exist",
-        "outputs/docs/deviations/data/prices.md exists, keeps the fixture's title line and note, and appends exactly one entry whose heading matches `## data/prices — <YYYY-MM-DD> — spec-change:contract`",
+        "outputs/docs/packages/data/deviations/prices.md exists, its first line is exactly `# Deviations — data/prices`, and it holds exactly one entry, whose heading matches `## data/prices — <YYYY-MM-DD> — spec-change:contract — 1`; outputs/docs/deviations/data/prices.md does not exist (the fixture's older-location ledger is read, never written)",
         "The entry has lines beginning `Clause:`, `Said:`, `Found:`, `Why:`, `Status:` and `Raised by:`; `Status:` is `open`",
         "`Clause:` names the package contract's Section interfaces entry for prices (`fetch_bars`, the `adjusted_close` claim), and `Said:` quotes or paraphrases that the response carries an `adjusted_close` field",
         "`Found:` cites docs/sources/alpaca.md (its Observed schema or Quirks heading) and states that no `adjusted_close` field exists and that adjustment is the `adjustment` request parameter with `c` as the adjusted close",
         "`Raised by:` names the designer and the run (`run-package data`), and no `Resolved by:` line claims a resolution",
         "transcript.md records reading docs/sources/alpaca.md and docs/packages/data/contract.md, and reading the deviations entry template under skills/planning-templates/references/ (deviations-entry.md) before writing the entry",
-        "The final message in transcript.md is ten lines or fewer; its first line is exactly `Result: spec-change`, its second line begins `Spec-change: contract — `, and its third line is the entry heading written to outputs/docs/deviations/data/prices.md",
-        "outputs/commit.txt exists, its first line begins `data/prices: ` and it has a trailer line `Dev-Team-Run: run-package data`; the commit stages docs/deviations/data/prices.md and no design file",
-        "No file exists under outputs/ other than docs/deviations/data/prices.md, commit.txt and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/; in particular outputs/docs/decisions.md does not exist and the return is not `stopped` or `done`",
+        "The final message in transcript.md is ten lines or fewer; its first line is exactly `Result: spec-change`, its second line begins `Spec-change: contract — `, and its third line is the entry heading written to outputs/docs/packages/data/deviations/prices.md",
+        "outputs/commit.txt exists, its first line begins `data/prices: ` and it has a trailer line `Dev-Team-Run: run-package data`; the paths after its `---` line include docs/packages/data/deviations/prices.md and no design file",
+        "No file exists under outputs/ other than docs/packages/data/deviations/prices.md, commit.txt and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/; in particular outputs/docs/decisions.md and outputs/docs/deviations/ do not exist and the return is not `stopped` or `done`",
         "The transcript does not describe the contradiction as an Open questions entry, a Contract deviations entry or a Pitfalls and risks entry of a design; it is raised only as the ledger entry"
       ],
-      "added_in": "remake phase 0, run from phase 3"
+      "added_in": "remake phase 0, run from phase 3",
+      "note_2_2": "Changed: expected_output and expectations 2, 8, 9 and 10. The ledger path docs/deviations/data/prices.md becomes docs/packages/data/deviations/prices.md and the heading gains `— 1` (F13: `<k>` is the entry's sequence in its file, here a new file). Expectation 2 no longer asks that the fixture's title and note be kept: the fixture repo/docs/deviations/data/prices.md (listed in `files` since ff5776a but never committed; added in 2.2 phase 0) is the older location, read and never written, and the harness sheet says so; the expectation asks instead for the new file's title line and that the older file is not in outputs/. Expectation 9 reads the staged paths from the `---` block the harness sheet now asks for. Eval 5 took the additive half of the E1 test (a design is written, §10 lists the helper as a `deviation`), so this eval carries the boundary half: a consumer-visible contract fault is one `spec-change:contract` entry with `— <k>`, no design, and no `deviation` entry — already held by expectations 1, 2, 10 and 11."
+    },
+    {
+      "id": 4,
+      "name": "storage-stop-stub-to-inbox",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/designer/eval-4-storage-stop.md",
+      "prompt": "Repo root for this run: evals/sets/files/designer/repo-stop (every path below is relative to it).\n\nSection: data/storage\nMode: new\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: packages/data/src/data/ingest/README.md\nUpstream interfaces: none\nSource probes: none\nChange file: none\nDesign-gap: none\nSkills to invoke: none\nWrite to: docs/packages/data/design/storage.md\nRun: run-package data",
+      "expected_output": "No design is written; the designer appends one `## D? — <store engine question>` stub (Scope, Raised by, Recommendation, Assumption if unanswered, Status: open) to a new inbox outputs/docs/packages/data/decisions/storage.md titled `# Decisions — data/storage`, never writes docs/decisions.md itself, reads the inbox back after the harness's sync_decisions.py stand-in and cites the number it finds (`D3`, or `D?` with `unsynced` when the script is absent), commits the inbox (with the stand-in's docs/decisions.md) and returns `Result: stopped`, `Stopped for decisions: …`, `Commit: …`.",
+      "files": [
+        "evals/sets/files/designer/repo-stop/docs/architecture.md",
+        "evals/sets/files/designer/repo-stop/docs/packages/data/contract.md",
+        "evals/sets/files/designer/repo-stop/docs/decisions.md",
+        "evals/sets/files/designer/repo-stop/packages/data/src/data/ingest/README.md"
+      ],
+      "expectations": [
+        "outputs/docs/packages/data/design/storage.md does not exist",
+        "outputs/docs/packages/data/decisions/storage.md exists, its first line is exactly `# Decisions — data/storage`, and it holds exactly one `## ` entry, a stub whose question is about the bar store's engine, headed `## D? — <question>` — or `## D3 — <question>` only when transcript.md shows a `harness:` run of sync_decisions.py whose stdout reports `D? → D3`",
+        "The stub has lines beginning `Scope: data/storage`, `Raised by: OQ-data-storage-` followed by a number, `Recommendation:`, `Assumption if unanswered:` (its value may be empty) and `Status: open`; it has no `Decision:` line and no other `Status:` line",
+        "transcript.md shows the designer's own Write or Edit of the inbox with the heading written as `## D? — `, never a number it chose, and shows no Write or Edit by the designer to docs/decisions.md (baseline 2.1 fails this: it appends `## D3 — …` to docs/decisions.md itself)",
+        "Either outputs/docs/decisions.md does not exist, or transcript.md shows it copied there by a `harness:` stand-in step and it holds the fixture's `## D1 — ` and `## D2 — ` entries unchanged followed by `## D3 — ` with the stub's question and `Status: open`",
+        "transcript.md records reading skills/planning-templates/references/decisions-inbox.md (under the plugin root) before the designer's first write to the inbox, and reading docs/decisions.md and docs/packages/data/contract.md (baseline 2.1 fails this: it has no inbox template to read)",
+        "The final message in transcript.md is ten lines or fewer; its first line is exactly `Result: stopped`; its second line begins `Stopped for decisions: ` and names `D3` when the inbox reads `D3` after the stand-in, or names `D?` and contains `unsynced` when it still reads `D?`; and it has a line beginning `Commit:`",
+        "outputs/commit.txt exists, its first line begins `data/storage: ` and it has a trailer line `Dev-Team-Run: run-package data`; the paths after its `---` line include docs/packages/data/decisions/storage.md, include docs/decisions.md when outputs/docs/decisions.md exists, and include no design file",
+        "No Bash command transcript.md records for the designer (every command not prefixed `harness:`) contains a heredoc `<<`, `sed -i`, `tee`, or a `>` or `>>` redirect to anything but /dev/null",
+        "No file exists under outputs/ other than docs/packages/data/decisions/storage.md, docs/decisions.md (only as the stand-in's copy), commit.txt and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/; nothing exists under outputs/docs/deviations/ or outputs/docs/packages/data/deviations/"
+      ],
+      "added_in": "2.2 phase 0, run from phase 7"
+    },
+    {
+      "id": 5,
+      "name": "clean-section-10-e1-test",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/designer/eval-5-clean-deviation.md",
+      "prompt": "Repo root for this run: evals/sets/files/designer/repo-clean (every path below is relative to it).\n\nSection: data/clean\nMode: new\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: packages/data/src/data/ingest/README.md\nUpstream interfaces: none\nSource probes: none\nChange file: none\nDesign-gap: none\nSkills to invoke: none\nWrite to: docs/packages/data/design/clean.md\nRun: run-package data",
+      "expected_output": "A new design at outputs/docs/packages/data/design/clean.md keeps `clean_bars` exactly as the contract gives it, supplies `check_csv`'s per-reason counts through one additive name or optional parameter the contract's clean entry does not give, lists that item under Contract deviations citing a single `## data/clean — <date> — deviation — 1` entry (Status proposed, Raised by `designer — run-package data`) in a new ledger outputs/docs/packages/data/deviations/clean.md, files no spec-change, commits both files as `data/clean: design`, and returns `Result: done` with `Deviations: 1`.",
+      "files": [
+        "evals/sets/files/designer/repo-clean/docs/architecture.md",
+        "evals/sets/files/designer/repo-clean/docs/packages/data/contract.md",
+        "evals/sets/files/designer/repo-clean/docs/decisions.md",
+        "evals/sets/files/designer/repo-clean/packages/data/src/data/ingest/README.md"
+      ],
+      "expectations": [
+        "outputs/docs/packages/data/design/clean.md exists and its first line is exactly `Mode: new`",
+        "The design's Interfaces row for `clean_bars` keeps the contract's shape: `bars: Iterable[Bar]` is its only parameter without a default and its return type is `Iterator[Bar]`",
+        "The design gives `check_csv` its per-reason counts (`ohlc`, `volume`, `duplicate`) through something the contract's clean entry does not name — a helper function or class, or a keyword parameter with a default — and names `check_csv` as what uses it",
+        "The design's Contract deviations heading is not `None`: it lists that item and cites its ledger entry by the heading `data/clean — <YYYY-MM-DD> — deviation — 1`, and lists no change to `clean_bars`'s signature or return type",
+        "outputs/docs/packages/data/deviations/clean.md exists, its first line is exactly `# Deviations — data/clean`, and it holds exactly one entry, whose heading matches `## data/clean — <YYYY-MM-DD> — deviation — 1`; outputs/docs/deviations/ does not exist (baseline 2.1 fails this: it writes docs/deviations/data/clean.md with a heading that has no `— 1`)",
+        "The entry has lines beginning `Clause:`, `Said:`, `Did:`, `Why:`, `Status: proposed`, `Raised by: designer — run-package data` and `Resolved by: —`; `Clause:` cites the package contract's clean Section interfaces entry or its `check_csv` Pipelines entry",
+        "No file under outputs/ has a heading containing `spec-change`, and the final message has no `Spec-change:` line: the additive item is not filed as `spec-change:contract`",
+        "transcript.md records reading docs/packages/data/contract.md, docs/architecture.md, docs/decisions.md and packages/data/src/data/ingest/README.md before writing the design, and reading skills/planning-templates/references/deviations-entry.md before writing the ledger entry",
+        "The final message in transcript.md is ten lines or fewer, its first line is exactly `Result: done`, and it has lines beginning `Design: docs/packages/data/design/clean.md`, `Deviations: 1` and `Commit:`",
+        "outputs/commit.txt exists, its first line is exactly `data/clean: design`, it has a trailer line `Dev-Team-Run: run-package data`, and the paths after its `---` line are exactly docs/packages/data/design/clean.md and docs/packages/data/deviations/clean.md",
+        "No file exists under outputs/ other than docs/packages/data/design/clean.md, docs/packages/data/deviations/clean.md, commit.txt and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/; in particular outputs/docs/decisions.md and outputs/docs/packages/data/decisions/ do not exist"
+      ],
+      "added_in": "2.2 phase 0, run from phase 7"
     }
   ]
 }

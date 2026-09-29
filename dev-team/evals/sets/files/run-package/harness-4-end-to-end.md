@@ -45,6 +45,17 @@ cd <copy> && claude -p "<command>" --plugin-dir <plugin-dir> --output-format str
   into `<outputs>/status-data.txt` and `<outputs>/status-analysis.txt`.
 - A command that exits non-zero, or whose stream has no final `result` event, is recorded and
   the sequence stops there; write what you have and the summary.
+- While each command runs, keep every version of every stop-gate record: a gate run overwrites
+  `<copy>/.dev-team/gate/<pkg>/<section>.txt`, so a later round would erase the one the F4
+  observation and the gate expectations need. Start this watcher in the background beside each
+  command and stop it when the command exits:
+
+  ```
+  mkdir -p <outputs>/gate-history && while :; do for f in <copy>/.dev-team/gate/*/*.txt; do [ -f "$f" ] || continue; m=$(stat -c %Y "$f"); k=$(basename "$(dirname "$f")")-$(basename "$f" .txt)-$m.txt; [ -e "<outputs>/gate-history/$k" ] || cp -p "$f" "<outputs>/gate-history/$k"; done; sleep 1; done
+  ```
+
+  The file name carries the record's modification time (epoch seconds), which is when that
+  gate run finished writing it. It reads `.dev-team/` only; it writes nothing in the copy.
 - Headless runs have no `AskUserQuestion`. When a run ends `stopped` on a `D<n>` in
   `<copy>/docs/decisions.md` (a stub with no `Decision:`), act as the user: write the answer
   from **Answers** (or the stub's `Recommendation:`) as `Decision:` and `Status: decided` in the
@@ -93,6 +104,31 @@ Stated as the user would state them. Anything not here: the stub's `Recommendati
   max and mean, with eval L's means in a column beside: implementer 54,342; tester 39,652;
   reviewer 38,467; architect 38,411; designer 26,055 (`evals/2026-09-19-l-fixed-cost-per-section.md`).
 - `<outputs>/repo/` — the copy's `docs/`, `packages/`, `tests/` and root `README.md`
-  (`rsync -a --exclude .git`).
+  (`rsync -a --exclude .git`), and its `.dev-team/gate/` and `.dev-team/stop/` when they exist
+  (`rsync -a <copy>/.dev-team/gate <copy>/.dev-team/stop <outputs>/repo/.dev-team/`). The
+  decisions inboxes (`docs/packages/<pkg>/decisions/<section>.md`), the per-section ledgers and
+  the per-section review directories come with `docs/`.
+- `<outputs>/batches.md` — for each `run-package` stream (3, 5 and any `b`/`c` re-run), every
+  assistant message of the driver (no `parent_tool_use_id`) that holds one or more Agent
+  `tool_use` blocks, in order: the batch number; each call's `subagent_type` and its prompt's
+  `Section:`, `Scaffold:`, `Package:`, `Spec-change:`, `Round:` and `Letter:` lines where it has
+  them; then, verbatim, the output of the last `status.py <pkg>` tool result before that
+  message (every row with its state and `ready` column). A batch is the Agent calls of one
+  assistant message: two messages in a row are two batches, whatever the wall clock says.
+- `<outputs>/agent-bash.md` — every Bash `tool_use` in any stream made by a `dev-team:` agent
+  (an event carrying a `parent_tool_use_id`, or the forked architect or documenter of a typed
+  command): stream, the agent's role and `Section:`, the command verbatim, and whether its
+  `tool_result` shows a hook refused it (quote the refusal). If a stream does not carry
+  subagent tool calls, say so for that stream.
+- `<outputs>/gates.md` — the F4 observation and the gate records, from `<outputs>/gate-history/`
+  and the final `.dev-team/gate/*/*.txt`: one row per record version — path, its header line
+  verbatim, the header's stamp, the file's modification time from the history name, and every
+  `SKIPPED`, `TIMEOUT` and `ELSEWHERE` line it holds verbatim. Then the hook timing from the
+  streams: every event the `run-package` streams carry for a `SubagentStop` hook run (a
+  `system` event naming the hook, with whatever start/end or timestamp fields it has), quoted;
+  or, when the streams carry none, say so. Then, for every batch in `batches.md` holding two or
+  more section implementers, their two gate windows (header stamp to modification time, or the
+  stream's hook events when they exist) and one line: `F4: overlap observed` naming the pair,
+  `F4: no overlap`, or `F4: not observable` with why. Say which timing source each window used.
 - `transcript.md` — each command with its exit code and duration, each user action you took
   (answers, re-runs), how you found the ingest command for `rows.txt`, and the final message.

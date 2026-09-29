@@ -4,8 +4,8 @@ PASS Floor lint `uv run ruff check packages/data` — 0 errors
 PASS Floor format `uv run ruff format --check packages/data` — 0 files would be reformatted
 PASS Enforced unit tests `uv run pytest packages/data/tests/unit -q` — 5 passed
 PASS Enforced intent tests `uv run pytest packages/data/tests/intent -q` — 7 passed, 2 tolerated
-TOLERATED intent packages/data/tests/intent/clean/test_workflow.py::test_dedupe_keeps_first — docstring `Design §4 step 2` matches proposed clause `design §4 step 2 dedupe` (docs/deviations.md, data/clean — 2026-09-24 — deviation)
-TOLERATED intent packages/data/tests/intent/clean/test_workflow.py::test_zero_volume_rows_dropped — docstring `Design §4 step 3` matches proposed clause `design §4 step 3 zero-volume rows` (docs/deviations.md, data/clean — 2026-09-25 — deviation)
+TOLERATED intent packages/data/tests/intent/clean/test_workflow.py::test_dedupe_keeps_first — docstring `Design §4 step 2` matches proposed clause `design §4 step 2 dedupe` (docs/packages/data/deviations/clean.md, data/clean — 2026-09-24 — deviation)
+TOLERATED intent packages/data/tests/intent/clean/test_workflow.py::test_zero_volume_rows_dropped — docstring `Design §4 step 3` matches proposed clause `design §4 step 3 zero-volume rows` (docs/packages/data/deviations/clean.md, data/clean — 2026-09-25 — deviation)
 PASS Enforced coverage `uv run pytest packages/data --cov=packages/data/src --cov-report=term` — 91% ≥ 85%
 PASS Guarded grep over the run's diff — 0 hits
 MEASURED complexity `uv run radon cc packages/data/src -s -a` — clean: max B (6) clean_bars, average A (3.2)

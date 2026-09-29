@@ -1,5 +1,5 @@
 # git diff 7c2e4b1..HEAD -- packages/data/src/data/clean packages/data/tests/unit/clean packages/data/tests/intent/clean
-# HEAD is 4b1e9c2 — data/clean: fix round 1 (dedupe on (symbol, timestamp), drop zero-volume rows, gap rows at previous close)
+# HEAD is 4b1e9c2 (data/ingest: its review report); the section's last commit is 9d3f2a1 — data/clean: fix round 1 (dedupe on (symbol, timestamp), drop zero-volume rows, gap rows at previous close)
 --- a/packages/data/src/data/clean/rules.py
 +++ b/packages/data/src/data/clean/rules.py
 @@ -12,24 +12,24 @@
