@@ -6,6 +6,19 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [0.13.0] - 2026-09-29
+
+### Added
+- **`audit-run` finds a chat by its title** (2bb54d9): `/plugin-dev:audit-run <words from the title>` resolves the chat the sidebar shows by that name, and lists the matches when there are several. `trace.py find` prints each session with its title, project, span and length, agent count, the commands actually typed, and `fork of <id8>` for a forked or resumed chat. Headless eval sessions are hidden unless `--all`.
+- **Workflow page "Checking a run"** (10ed049): an 8-hour `run-package` chat audited end to end, and how the skill differs from the `run-auditor` agent.
+
+### Fixed
+- **A forked chat is audited whole** (2bb54d9): its trace finds the agent transcripts left under the original session, which it used to miss (105 of 110 on a real fork).
+- **`find` counts** (2bb54d9): commands only where typed, not quoted in tool output, and agents no longer double-counted.
+
+### Changed
+- **Plugin version per segment and per unit** (2bb54d9): a chat resumed after a plugin update is checked against the version each part ran on.
+
 ## [0.12.1] - 2026-09-29
 
 ### Changed
