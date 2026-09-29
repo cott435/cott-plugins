@@ -92,7 +92,9 @@ Nothing about lint, import-linter, or docs goes here — the root owns those.
 Three kinds of contract, all in the root `pyproject.toml`. `layers` lists **highest first**;
 indirect import chains count; a layer that does not exist yet fails the check unless it is
 wrapped `(pkg)`, which is why the scaffold step adds packages as they are built rather than
-listing the whole target up front. Packages must be importable — run inside the workspace
+listing the whole target up front. A wrapped layer that does exist is enforced exactly like an
+unwrapped one, so leaving a built section wrapped loses nothing but the typo check
+[proven: evals/2026-09-29-2.2-platform-facts.md]. Packages must be importable — run inside the workspace
 environment.
 
 ```toml
