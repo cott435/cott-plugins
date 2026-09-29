@@ -6,6 +6,29 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [0.12.0] - 2026-09-29
+
+### Added
+- **`audit-run`** (482d74a): a typed skill that audits a real run of a plugin's workflow from
+  its session transcripts, holding it against the plugin's own agent and skill files at the
+  version that ran. `scripts/trace.py` rebuilds each agent spawned, the prompt it was sent,
+  every tool call, hook block, commit and hand-back. Commits it cannot tie to the agent's own
+  files are marked unconfirmed. Findings cite a trace step and a `file:line` and are classed by
+  fault, and every ERROR is spot-checked before it is reported. `--units new` re-audits only
+  newly finished agents, to watch a run in progress.
+- **`run-auditor`** (482d74a): plugin-dev's first agent. It audits one unit, one driver
+  segment, or the whole run for cross-agent consistency, and writes one findings file.
+- **The run as a flow chart** (7797882): `flow.html` and a Flow section in `run.md`. Waves of
+  agents run in parallel or in series; each column is one section, with its runs and review
+  rounds; each review is coloured by its verdict with its counts; bands mark where the driver
+  asked the user; audit ERROR badges show after `trace.py flow`.
+- **`contracts.yml` checks agent frontmatter** (482d74a) against `plugin-anatomy`'s key list.
+- **`evals/sets/audit-run.json`** with a planted-defect fixture and a known-shape flow fixture
+  (482d74a, 7797882).
+
+### Changed
+- `VERSIONING.md` and `CLAUDE.md`: the plugin now has one agent, `run-auditor`, on `inherit`.
+
 ## [0.11.0] - 2026-09-26
 
 ### Added
