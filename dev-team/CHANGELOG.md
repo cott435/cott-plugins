@@ -12,6 +12,32 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [2.1.0] - 2026-09-29
+
+Testers now work inside the real workspace, and a gate retry no longer fills the driver's
+context with repeated reports. Evidence: `evals/2026-09-29-scaffold-step-and-retry-amendment.md`.
+
+### Added
+- **The SCAFFOLD step** (21175fc). `run-package`'s first spawn, right after the run gate, when
+  `status.py --scaffold <pkg>` says the workspace is missing. One implementer, in its new
+  scaffold mode, builds the root `pyproject.toml` with the plugin's lint rules, the package
+  skeleton, `mkdocs.yml` and `.gitignore`. It runs `uv sync` and the empty workspace's checks,
+  and commits them with `uv.lock`. Every tester then writes and runs its intent tests inside
+  the workspace, under the repo's own lint rules, with the Toolchain's own test command.
+- **`status.py --scaffold <pkg>`** (21175fc), and a `scaffold: needed` line in the package
+  block. A root that is not a uv workspace (an adopted repo) needs nothing.
+
+### Changed
+- **After a gate retry the implementer hands back an amendment** (61d1e58): `Result:`,
+  `Amends:`, `Gate:`, `Fixed:` and the amended `Commit:`, not its whole report again.
+  `run-package` takes an agent's last hand-back as its return.
+- **The first section's implementer no longer scaffolds** (21175fc). The root and the package
+  skeleton are the SCAFFOLD step's. The implementer adds only its section's `configs.py`,
+  dependencies and contract-3 entry.
+
+A repo built under 2.0.0 already has its workspace, so `--scaffold` prints `done` and nothing
+changes for it.
+
 ## [2.0.0] - 2026-09-29
 
 The audit fixes. `/plugin-dev:audit-run` held a real 105-agent `run-package` (the quant
