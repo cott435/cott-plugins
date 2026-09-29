@@ -6,8 +6,8 @@ applies here the same as everywhere else in `cott-plugins`.
 
 ## Repo-specific
 
-`VERSIONING.md` holds this plugin's own versioning decisions. It has no agents, so there's
-no `model:` field to set — see that file for why.
+`VERSIONING.md` holds this plugin's own versioning decisions, including the one agent's
+`model:` choice.
 
 ## This plugin in particular
 

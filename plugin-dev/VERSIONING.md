@@ -6,8 +6,9 @@ skill, shared by every plugin. This file records only what is specific to this o
 
 ## Model decisions
 
-This plugin has no agents — it is skills and scripts only — so there is no `model:` field to
-set anywhere in it.
+One agent, `run-auditor` (spawned by `audit-run`), on `inherit`. An audit is judgment over a
+long trace. A cheaper model misses the claims-versus-evidence mismatches that are the point of
+the check, and the person running an audit has already chosen the session model for it.
 
 ## Exceptions
 
