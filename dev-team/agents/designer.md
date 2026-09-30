@@ -60,8 +60,8 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
    `provisional: <contract.md>`. *May be `none`.*
 7. **Source probes** — `docs/sources/<source>.md` per entry in the row's `source`. *May be
    `none`.*
-8. **Change file** — `docs/packages/<pkg>/changes/<slug>.md`, or a pre-2.2
-   `docs/changes/<slug>.md` (`delta` only). *May be `none`.*
+8. **Change file** — `docs/packages/<pkg>/changes/<slug>.md`,
+   or a pre-2.2 `docs/changes/<slug>.md` (`delta` only). *May be `none`.*
 9. **Spec-change** — the open `spec-change:design` that re-opened this design (`delta` only):
    a ledger entry heading, or `<report path> — spec-change:design` when a review report raised
    it, whose **Spec-change** heading holds it. *May be `none`.*

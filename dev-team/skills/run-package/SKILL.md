@@ -79,8 +79,8 @@ file exists, else `provisional: docs/packages/<dep>/contract.md`. Sources are th
 cell, `<kind>:<token>` each. An open change file naming the section is one under
 `docs/packages/<pkg>/changes/` or `docs/changes/` that `grep -l` finds with both `Status: open`
 and `<pkg>/<section>` in it. Rounds are the row's `round` column (`—` is 0); a round's reports
-are `docs/packages/<pkg>/reviews/<section>/*-r<n>-*.md`, or the older
-`docs/reviews/*-<pkg>-<section>-r<n>-*.md`, and a report with no `-r<n>-` in its name is
+are `docs/packages/<pkg>/reviews/<section>/*-r<n>-*.md`,
+or the older `docs/reviews/*-<pkg>-<section>-r<n>-*.md`, and a report with no `-r<n>-` in its name is
 round 1.
 
 ### Researcher — PROBE

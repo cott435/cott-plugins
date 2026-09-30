@@ -16,7 +16,17 @@ inside the `claude -p` process, the hooks fire there, and every commit is the ag
   and delete `<scratchpad>/plugin-baseline/evals/workspace` if present. Everything but the
   driver is the working tree's in both configurations.
 - `<copy>`: `bash <plugin>/evals/fixtures/two-package/reset.sh <scratchpad>/run-package-eval-4-<with_skill|old_skill>`;
-  its last printed line. No seeds: `plan-repo` and `plan-package` write the contracts.
+  its last printed line. No seeds: `plan-repo` and `plan-package` write the contracts. Two
+  setup edits, before command 1:
+  - **A `repo`-scope pytest row** (2.2 phase 11), so the `SKIPPED` expectation is not
+    vacuous: append `| full suite | 0 failures | \`uv run pytest\` | repo |` as the last row of
+    the **Floor** table in `<copy>/docs/constraints.md`, and commit that one file in the copy as
+    `fixture: a repo-scope pytest row`.
+  - **Only `<plugin-dir>` loaded.** When a dev-team plugin is installed and enabled for the
+    user, write `<copy>/.claude/settings.json` as
+    `{"enabledPlugins": {"dev-team@cott-plugins": false}}` and add `.claude/settings.json` to
+    `<copy>/.git/info/exclude`, so the run gate's clean tree holds and the installed copy never
+    answers a `/dev-team:` command.
 - `<outputs>`: this run's `outputs/` directory; make `<outputs>/streams/`.
 - `uv --version` and `claude --version` must work; `sqlite3` on PATH. If not, say so in
   `transcript.md` and stop.
@@ -28,6 +38,8 @@ Each from inside the copy, headless, its stream kept:
 ```
 cd <copy> && claude -p "<command>" --plugin-dir <plugin-dir> --output-format stream-json --verbose --permission-mode bypassPermissions > <outputs>/streams/<n>-<slug>.jsonl 2> <outputs>/streams/<n>-<slug>.stderr
 ```
+
+Add `--model <model>` when the eval's operator names one; both configurations use the same.
 
 | n | command | slug |
 |---|---|---|
@@ -51,7 +63,7 @@ cd <copy> && claude -p "<command>" --plugin-dir <plugin-dir> --output-format str
   command and stop it when the command exits:
 
   ```
-  mkdir -p <outputs>/gate-history && while :; do for f in <copy>/.dev-team/gate/*/*.txt; do [ -f "$f" ] || continue; m=$(stat -c %Y "$f"); k=$(basename "$(dirname "$f")")-$(basename "$f" .txt)-$m.txt; [ -e "<outputs>/gate-history/$k" ] || cp -p "$f" "<outputs>/gate-history/$k"; done; sleep 1; done
+  mkdir -p <outputs>/gate-history && while :; do for f in <copy>/.dev-team/gate/*/*.txt; do [ -f "$f" ] || continue; m=$(stat -c %Y "$f" 2>/dev/null || stat -f %m "$f"); k=$(basename "$(dirname "$f")")-$(basename "$f" .txt)-$m.txt; [ -e "<outputs>/gate-history/$k" ] || cp -p "$f" "<outputs>/gate-history/$k"; done; sleep 1; done
   ```
 
   The file name carries the record's modification time (epoch seconds), which is when that

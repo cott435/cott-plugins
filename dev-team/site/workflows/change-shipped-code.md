@@ -8,11 +8,11 @@ Forks into the **architect** at package scope with the change as its argument (a
 crosses packages is `/dev-team:plan-repo "<change>"`, which classifies the same way). It turns
 the request into change items and classifies each by the state of what it touches. `data` is
 built, so the contract is not edited in place — a canonical contract describes code that
-exists. The outcome is **CHANGE**: `docs/changes/add-vwap.md`, with
+exists. The outcome is **CHANGE**: `docs/packages/data/changes/add-vwap.md`, with
 
 - **Change goal** — one paragraph;
-- **Affected sections** — qualified names, `data/clean`, plus every consumer section this change
-  adapts;
+- **Affected sections** — qualified names, `data/clean` — this package's only; a change that
+  crosses packages is one file per affected package, same slug;
 - **Contract changes** — per contract (**Repo contract**, **Package contract: data**,
   **Interface: data**), what is Added, Changed and Removed, every altered shipped name with its
   old and new signature;
@@ -35,7 +35,7 @@ entries that re-open the documents (**Pairing on a section**).
 
 An open change file newer than a section's design re-opens that section at DESIGN. The designer
 runs in `delta` mode (its design's first lines are `Mode: delta` and `Change:
-docs/changes/add-vwap.md`), and the implementer and reviewers read the change file above the
+docs/packages/data/changes/add-vwap.md`), and the implementer and reviewers read the change file above the
 package contract: for anything it names, it wins. Consumer sections named under **Downstream
 impact** re-open the same way when their package is run.
 
@@ -50,6 +50,6 @@ the change file is history.
 ## When the contract itself is wrong
 
 A section can find that a document is wrong while it is being built. That is a `spec-change`
-entry in `docs/deviations/<pkg>/<section>.md`, not a change request: a `spec-change:contract` re-opens the
+entry in `docs/packages/<pkg>/deviations/<section>.md`, not a change request: a `spec-change:contract` re-opens the
 section at PLAN, where the driver runs the architect to edit the contract (EDIT, EDIT+STALE,
 CHANGE or DECIDE, exactly as above) and set the entry `resolved`.

@@ -31,6 +31,14 @@ default is the 2.2 layout, so every case that sets no layout runs under it. `rev
 (ingest's path cell as `…/ingest/`). `{HEAD}` in any file content is the commit the step
 starts from.
 
+**The 2.2 layout here.** Every case that sets no `layout` builds its reports at
+`docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<letter>.md`, its ledger at
+`docs/packages/<pkg>/deviations/<section>.md` with `— <k>` headings, its change files at
+`docs/packages/<pkg>/changes/<slug>.md` (one per package, naming only that package's sections)
+and its inbox at `docs/packages/<pkg>/decisions/<section>.md`; `"layout": "old"` and
+`"legacy": true` pin the 2.0 and pre-2.0 spellings `status.py` still reads, and
+`review-both-layouts` and `ledger-moved-new` mix the two in one repo.
+
 The 2.2 cases (phase 1 of `site/notes/2.2-01-status-paths.md`) are the last fifteen rows. Six
 older cases whose expectations spell a 2.0 path or heading (`inputs-fix-round`,
 `inputs-spec-change-review`, `report-spec-change-b`, `report-spec-change-recorded`,

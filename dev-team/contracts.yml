@@ -140,6 +140,49 @@ forbid:
     pattern: 'dev-team:(?!architect|designer|researcher|tester|implementer|reviewer|documenter|curator)[a-z-]+'
     files: ['hooks/hooks.json', 'hooks/*.py']
 
+  # The six claims below hold the 2.2 paths and defaults against drift. Each is scoped with
+  # `files:` to the authored prose (site/notes/ quotes the old spellings on purpose) and
+  # exempts with `near:`, so a sentence that names an old path as still read passes and a
+  # sentence that writes to it fails. Planted defects: evals/2026-09-30-2.2-docs-and-release.md.
+  - name: no file writes to the 2.0 ledger path
+    # Since 2.2 the section ledger is docs/packages/<pkg>/deviations/<section>.md; the 2.0 path
+    # is read, never written. A writer told the old path splits one section's entries in two.
+    pattern: 'docs/deviations/<pkg>/<section>\.md|docs/deviations/\$pkg/|docs/deviations/<pkg>/\*'
+    near: 90
+    unless: ['older', 'still read', 'pre-2.2', '2.0 ', 'edited in place', 'where it is']
+    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/flow.md', 'site/workflows/*.md']
+
+  - name: no file writes a review report to docs/reviews/
+    # Reports are docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<letter>.md since 2.2.
+    pattern: 'docs/reviews/<date>|docs/reviews/\*-<pkg>|Write to `docs/reviews/'
+    near: 90
+    unless: ['older', 'still read', 'pre-2.2', '2.0 ']
+    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/flow.md', 'site/workflows/*.md']
+
+  - name: no file writes a change file to docs/changes/
+    # Change files are docs/packages/<pkg>/changes/<slug>.md, one per affected package.
+    pattern: 'docs/changes/<slug>\.md|docs/changes/\*'
+    near: 90
+    unless: ['older', 'still read', 'pre-2.2', '2.0 ']
+    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/flow.md', 'site/workflows/*.md']
+
+  - name: the stop marker is per section
+    # .dev-team/stop/<pkg>/<section>; a bare .dev-team/stop is 2.1's and a sibling's marker
+    # under parallel implementers.
+    pattern: '\.dev-team/stop\b(?!/)'
+    files: ['agents/*.md', 'skills/**/*.md', 'hooks/*.py', 'README.md', 'site/flow.md', 'site/workflows/*.md']
+
+  - name: the tester's mode field is Design mode
+    # 2.1's `Adopted code:` spawn field is `Design mode: new | document | delta` since 2.2.
+    pattern: 'Adopted code'
+    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/flow.md', 'site/workflows/*.md']
+
+  - name: nothing says implementers run one at a time except to describe --serial
+    pattern: '[Ii]mplementers? (run )?(one at a time|never run in parallel|×1, sequential)|one implementer at a time'
+    near: 120
+    unless: ['--serial']
+    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/flow.md', 'site/workflows/*.md']
+
 # Every heading a reader parses is one the owner's template defines.
 headings:
   - name: interface.md headings its readers parse are ones the implementer writes

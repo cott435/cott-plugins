@@ -407,8 +407,8 @@ The **Observed schema** is for the designers; do not read it into your context.
 nothing it has not verified against the code, and it never edits `interface.md` (the
 implementer's), a design, a review, or code.
 
-1. **Collect.** Every entry in `docs/packages/<pkg>/deviations/*.md` (and the older
-   `docs/deviations/<pkg>/*.md` and `docs/deviations.md`) for a `<pkg>/<section>` with kind
+1. **Collect.** Every entry in `docs/packages/<pkg>/deviations/*.md`
+   (and the older `docs/deviations/<pkg>/*.md` and `docs/deviations.md`) for a `<pkg>/<section>` with kind
    `deviation` and `Status: approved`, and every `docs/packages/<pkg>/changes/<slug>.md` with
    `Status: open` (and every pre-2.2 `docs/changes/<slug>.md` whose **Affected sections** names
    a section of `<pkg>`). `proposed` and `rejected` entries are not

@@ -224,7 +224,7 @@ summary `intent tests current with design`, and return `Tests: 0 written (unchan
 
 ## Regenerate
 
-`Regenerate:` names entries in `docs/deviations/<pkg>/<section>.md` whose clause your tests cite: an
+`Regenerate:` names entries in `docs/packages/<pkg>/deviations/<section>.md` (or the older ledger that holds them) whose clause your tests cite: an
 `approved` deviation (the code does what **Did** says, and the reviewer accepted it) or a
 `spec-change:test` (a test asserted something the documents, as corrected, do not say).
 

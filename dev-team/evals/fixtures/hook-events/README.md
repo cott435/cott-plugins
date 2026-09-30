@@ -82,4 +82,14 @@ and two `locked.py` commands (`{plugin}` in the event stands for this plugin's r
 unparseable command fails open with the rule on stderr, and the main thread, `Explore`, an
 out-of-scope repo and malformed stdin exit 0.
 
+**The 2.2 layout here.** `build.py` still writes the section's ledger at the 2.0 path,
+`docs/deviations/data/ingest.md`, so the tolerated case also proves the gate reads the old
+location; the new one, `docs/packages/data/deviations/ingest.md`, is written by
+`guard-implementer-section-ledger-new`, and reviews at `docs/packages/data/reviews/ingest/`
+appear in `gate-diff-since-review`, `gate-diff-before-review` and the reviewer and architect
+guard cases. Every record is `.dev-team/gate/<pkg>/<section>.txt`, and every marker case writes
+the per-section `.dev-team/stop/<pkg>/<section>` (or `.dev-team/stop/scaffold`); no case
+writes the 2.1 single marker. Decision stubs and `Applied:` lines live in
+`docs/packages/data/decisions/<section>.md`, the `sync-*` cases' inbox.
+
 Needs `ruff` on PATH and `pytest` importable by `python3`.

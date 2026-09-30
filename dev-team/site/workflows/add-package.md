@@ -24,8 +24,8 @@ DONE):
   in the return: re-run `/dev-team:plan-package <pkg>` for each.
 - **CHANGE** — the item touches a built or shipped package, such as a name the new package
   needs from `data` that `data`'s `interface.md` does not provide. A canonical contract
-  describes code that exists, so the architect writes `docs/changes/<slug>.md` instead: the
-  goal, the affected sections, the contract changes (Added / Changed / Removed per contract)
+  describes code that exists, so the architect writes `docs/packages/<pkg>/changes/<slug>.md`
+  instead, one per affected package with the same slug: the goal, the affected sections, the contract changes (Added / Changed / Removed per contract)
   and the downstream impact, `Status: open`.
 - **DECIDE** — the item reverses a dependency edge, makes a cycle, or needs a convention bound
   packages disagree on. A `D<n>` stub, and the run stops.

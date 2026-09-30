@@ -65,8 +65,8 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
 8. **Intent tests** — `<package root>/tests/intent/<section>/`. *May be `none`.*
 9. **Review** — the newest round's report paths, comma-separated. *May be `none`.*
 10. **Round** — `1` on the first build; `n+1` in FIX `n`.
-11. **Change file** — `docs/packages/<pkg>/changes/<slug>.md` (or a pre-2.2
-    `docs/changes/<slug>.md`) when an open change file names the section. *May be `none`.*
+11. **Change file** — `docs/packages/<pkg>/changes/<slug>.md`
+    (or a pre-2.2 `docs/changes/<slug>.md`) when an open change file names the section. *May be `none`.*
 12. **Run** — `run-package <pkg>`: your commit trailer (**Commit**). *May be `none`.*
 
 Read all of them, and `docs/decisions.md`, your section's ledger

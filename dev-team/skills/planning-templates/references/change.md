@@ -8,8 +8,9 @@ token; the file is history once synced and is never edited afterwards except for
 One file per affected package: a repo-level change (from `/dev-team:plan-repo`) writes one
 file per package it touches, all with the same slug, each naming only that package's sections
 under **Affected sections** and only that package's groups under **Contract changes** plus the
-**Repo contract** group when the change touches it. A `docs/changes/<slug>.md` from before 2.2
-is still read as naming every package its Affected sections name, and is synced where it is.
+**Repo contract** group when the change touches it.
+A pre-2.2 `docs/changes/<slug>.md` is still read as naming every package its Affected sections
+name, and is synced where it is.
 
 The line after the title is `Status: open | synced`.
 

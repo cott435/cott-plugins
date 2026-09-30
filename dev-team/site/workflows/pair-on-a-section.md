@@ -42,7 +42,7 @@ When you say you are done:
    open (layout, styling, copy) needs no entry. The rest are a `deviation` (inside the
    section) or a `spec-change:<level>` (a boundary, or a test that asserts what no document
    says), by the implementer's own table. You see the list and correct it.
-2. **Ledger.** One entry per deviation or spec-change in `docs/deviations/<pkg>/<section>.md`, with your
+2. **Ledger.** One entry per deviation or spec-change in `docs/packages/<pkg>/deviations/<section>.md`, with your
    reason as its **Why**.
 3. **README.** The section README is brought in line with the code, and its **Implementation
    notes** cite the new entries.
