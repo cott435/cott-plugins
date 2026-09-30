@@ -12,7 +12,7 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
-## [Unreleased]
+## [2.2.0] - 2026-09-30
 
 Implementers in parallel; the per-section documents under their package. Evidence:
 `evals/2026-09-29-audit-run-package-f1c390a1.md` and the 2.2 phase logs.
@@ -57,7 +57,7 @@ Implementers in parallel; the per-section documents under their package. Evidenc
   PLAN; return first lines only (E7); changed rows printed without grep (E8). `pair` at the
   2.2 paths.
 - **`plan-package`, `sync-plan`, `finalize-project`** at the 2.2 paths (5f87ce0).
-- **The fixes the end-to-end build pointed at** (phase 12, `evals/2026-09-30-2.2-docs-and-release.md`):
+- **The fixes the end-to-end build pointed at** (54efe7d; `evals/2026-09-30-2.2-docs-and-release.md`, `evals/2026-09-30-2.2-run-fixes.md`):
   a lint, type or Guarded failure located in an intent-test file is the gate's `ELSEWHERE`
   again, as in 2.1, and an `xfail` reason `D5_OPEN` cites D5; every turn an implementer ends
   is a `Result:` hand-back, a gate failure in a file it may not edit is `Result: blocked`, and
@@ -69,7 +69,7 @@ Implementers in parallel; the per-section documents under their package. Evidenc
   2 with `allow_indirect_imports = true`); the Bash guard refuses a python here-document write
   and exempts only `uv` and the `.gitignore` printf under `locked.py`; `plan-package` runs the
   run gate with no package; §Project convention lists paths literally.
-- **The package API page is `docs/api/<pkg>/index.md`** (phase 12): Claude Code refuses a
+- **The package API page is `docs/api/<pkg>/index.md`** (54efe7d): Claude Code refuses a
   subagent's Write of a `.md` whose name starts `analysis` (or `report`, `summary`, `findings`),
   so `docs/api/analysis.md` could never be written; the old name is still read and writable.
   The `surface` implementer may edit its package `pyproject.toml` for `[project.scripts]`;
