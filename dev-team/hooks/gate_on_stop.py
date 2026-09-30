@@ -22,7 +22,7 @@ Input: the hook JSON on stdin (`cwd`, `agent_id`, `agent_type`, `stop_hook_activ
    <agent_id>`) holds the attempt number; this stop adds one.
 4. The run's diff: the section's paths (its code, `tests/unit/<section>`,
    `tests/intent/<section>`, its README; for `surface` also `interface.md` and
-   `docs/api/<pkg>.md`) since the section's newest review round's `Commit:`
+   `docs/api/<pkg>/index.md`) since the section's newest review round's `Commit:`
    (`status.newest_round`, when it is an ancestor of `HEAD`), else since the empty tree — so
    Guarded sees only what was added since the last review, and no commit ordering is assumed.
    Untracked files under those paths count as added in full.
@@ -38,8 +38,13 @@ Input: the hook JSON on stdin (`cwd`, `agent_id`, `agent_type`, `stop_hook_activ
    ELSEWHERE: a row whose every located failure (a `path:line` or `path::test` its output
    names) lies outside the section's paths is `ELSEWHERE`, not `FAIL`: the package-wide rows
    also lint and test sibling sections, often half-built under parallel implementers, and the
-   implementer writes only inside its own section. The line stays in the record for the
-   reviewer. The rows share what is left of a time budget below
+   implementer writes only inside its own section. A located failure whose every location lies
+   under `<pkg>/tests/intent/` is `ELSEWHERE` too, whether or not the run touched it: the tester
+   owns those lines (a lint, type or Guarded hit there — a Guarded hit is written `ELSEWHERE
+   guarded <item> at <path>:<n> (the tester's file)`). The intent suite's own failures stay
+   `FAIL` (or tolerated by a deviation), since what fails there is the code. An `xfail` cites a
+   decision when a `D<n>` not followed by a digit appears on its line (`D5:`, `D5_OPEN`). The
+   line stays in the record for the reviewer. The rows share what is left of a time budget below
    the hook's 600 s timeout (`DEV_TEAM_GATE_BUDGET`, default 540 s; each row at most
    `DEV_TEAM_GATE_TIMEOUT`, default 240 s). A row that runs out of time, or never starts because
    the budget is spent, is TIMEOUT, not FAIL: nothing the implementer edits makes a package-wide
@@ -50,8 +55,10 @@ Input: the hook JSON on stdin (`cwd`, `agent_id`, `agent_type`, `stop_hook_activ
 7. No FAIL: delete the counter, exit 0. A FAIL before attempt 3: the FAIL lines to stderr,
    exit 2, the text naming the 2.2 retry rule (§Project convention rule 4: amend when
    `git log -1 --format=%s` starts with the section's scope, else a second commit with the same
-   summary and trailer; from attempt 2 naming `debugging-and-error-recovery`). Attempt 3: the
-   FAIL lines to stderr, delete the counter, exit 0.
+   summary and trailer; from attempt 2 naming `debugging-and-error-recovery`), and saying that
+   every finish is a hand-back whose first line is `Result:` — a FAIL in a file the implementer
+   may not edit is `Result: blocked` with the gate lines. Attempt 3: the FAIL lines to stderr,
+   delete the counter, exit 0.
 8. Malformed stdin or any exception: report it on stderr and exit 0 (fail open, reported).
 
 By hand, `python3 gate_on_stop.py --report [--base <rev>]` from the repo root runs the same
@@ -98,7 +105,7 @@ ADDED = (
     ("@pytest.mark.skip", re.compile(r"@pytest\.mark\.skip")),
 )
 XFAIL = re.compile(r"xfail")
-DECISION = re.compile(r"\bD\d+\b")
+DECISION = re.compile(r"\bD\d+(?!\d)")
 
 # The word an Exceptions row's `check` cell must contain to pardon each item, by name prefix.
 EXCEPTION_WORD = {
@@ -196,11 +203,13 @@ def diff_lines(base: str, paths: list[str] | None = None) -> list[tuple[str, str
 
 def section_paths(pkg: str, section: str) -> list[str]:
     """The section's paths as git pathspecs: its code (nested sections excluded), unit and intent
-    trees and README; for `surface` also `interface.md` and `docs/api/<pkg>.md`."""
+    trees and README; for `surface` also `interface.md` and `docs/api/<pkg>/index.md` (and the
+    pre-2.2 `docs/api/<pkg>.md`)."""
     p = status._paths(pkg, section)
     out = [*map(status._rel, p["code"]), status._rel(p["unit"]), status._rel(p["intent"]), status._rel(p["readme"])]  # type: ignore[arg-type]
     if section == "surface":
-        out += [status._rel(status.DOCS / "packages" / pkg / "interface.md"), status._rel(status.DOCS / "api" / f"{pkg}.md")]
+        out += [status._rel(status.DOCS / "packages" / pkg / "interface.md"), status._rel(status.DOCS / "api" / pkg / "index.md"),
+                status._rel(status.DOCS / "api" / f"{pkg}.md")]
     return list(dict.fromkeys(out))
 
 
@@ -279,18 +288,24 @@ def _located(out: str) -> set[str]:
 def _elsewhere(out: str, touched: set[str], section: tuple[str, str] | None = None) -> list[str]:
     """Where a failure lies when it is not the run's to fix; else [] (it is, or cannot be placed).
 
-    With a section: the sorted located files, when none is under the section's paths. Without
-    one (the 2.1 discovery and `--report`): the intent-test directories, when every located
-    file is an intent test the run did not touch.
+    With a section: the sorted located files, when none is the run's to edit — outside the
+    section's paths, or an intent test (the tester's file), touched or not. Without one (the
+    2.1 discovery and `--report`): the intent-test directories, when every located file is an
+    intent test the run did not touch.
     """
     located = _located(out)
     if not located:
         return []
     if section is not None:
-        return [] if any(_in_section(p, *section) for p in located) else sorted(located)
+        return [] if any(_in_section(p, *section) and not _is_intent(p) for p in located) else sorted(located)
     if any("/tests/intent/" not in f"/{p}" or p in touched for p in located):
         return []
     return sorted({re.sub(r"(^|.*/)(tests/intent/[^/]+)/.*$", r"\1\2/", p) for p in located})
+
+
+def _is_intent(path: str) -> bool:
+    """True for a repo-relative path under a package's `tests/intent/`."""
+    return "/tests/intent/" in f"/{path}"
 
 
 def _row(label: str, cmd: str, code: int, out: str, touched: set[str], timeout: int = TIMEOUT,
@@ -302,7 +317,7 @@ def _row(label: str, cmd: str, code: int, out: str, touched: set[str], timeout: 
     where = _elsewhere(out, touched, section)
     if where and section is not None:
         return (f"ELSEWHERE {label}: {cmd} exited {code}, every failure outside {'/'.join(section)} "
-                f"({', '.join(where)}): {_tail(out)}")
+                f"or in intent tests ({', '.join(where)}): {_tail(out)}")
     if where:
         return (f"ELSEWHERE {label}: {cmd} exited {code}, every failure in intent tests this run may not "
                 f"edit ({', '.join(where)}): {_tail(out)}")
@@ -472,10 +487,12 @@ def _thresholds(text: str) -> dict[str, list[float]]:
     return out
 
 
-def check_guarded(base: str, paths: list[str], pathspec: list[str] | None = None, before: str | None = None) -> list[str]:
+def check_guarded(base: str, paths: list[str], pathspec: list[str] | None = None, before: str | None = None,
+                  intent_elsewhere: bool = False) -> list[str]:
     """Guarded items on the lines added or removed since base (under pathspec when given); a
     lowered threshold when `docs/constraints.md` is in paths, compared with its text at before
-    (default base)."""
+    (default base). With intent_elsewhere (a section run), a hit in an intent test is the
+    tester's line: ELSEWHERE, not FAIL."""
     exceptions = status.exceptions_rows()
     today = dt.date.today()
     lines = diff_lines(base, pathspec)
@@ -509,6 +526,8 @@ def check_guarded(base: str, paths: list[str], pathspec: list[str] | None = None
     for item, path, n in hits:
         if _pardoned(item, path, exceptions, today):
             out.append(f"PASS guarded {item} at {path}:{n} (Exceptions row)")
+        elif intent_elsewhere and _is_intent(path):
+            out.append(f"ELSEWHERE guarded {item} at {path}:{n} (the tester's file)")
         else:
             out.append(f"FAIL guarded {item} at {path}:{n}")
     if not hits:
@@ -553,7 +572,7 @@ def run_checks(base: str, section: tuple[str, str]) -> tuple[list[tuple[str, str
     own = check_intent(pkg, sec) + check_unit(pkg, sec)
     before = base if base != EMPTY_TREE else ("HEAD~1" if _own_head(pkg, sec) and status.git(
         "rev-parse", "--verify", "-q", "HEAD~1") else "HEAD")
-    own += check_guarded(base, sorted(touched), spec, before)
+    own += check_guarded(base, sorted(touched), spec, before, intent_elsewhere=True)
     if sec == "surface":
         own += check_surface(pkg)
     lines = check_rows([pkg], touched, start + BUDGET, section)
@@ -646,6 +665,8 @@ def _retry_message(n: int, targets: list[tuple[str, str]], fails: list[str]) -> 
            f"(attempt {n} of {MAX_ATTEMPTS}):", *fails]
     if n == 2:
         msg.append("Two attempts: invoke `debugging-and-error-recovery` with the Skill tool before the third.")
+    msg.append("Every finish is a hand-back whose first line is `Result:`. A FAIL in a file you may not edit "
+               "is not yours to fix: write your marker and hand back `Result: blocked` with these lines.")
     msg.append("When you finish, hand back an amendment, not the full report again: `Result:`, `Amends:`, "
                "`Gate:`, `Fixed:` and the amended `Commit:` (implementer.md, Return message), through your "
                "hand-back tool if you have one (SubagentHandback). The caller already holds your first "

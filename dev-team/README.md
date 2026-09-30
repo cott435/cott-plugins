@@ -238,8 +238,10 @@ the spec-change's level re-opened first.
 - **`sync_decisions.py`** (`PostToolUse` on `Write|Edit`) — on a write to a decisions inbox,
   `docs/packages/<pkg>/decisions/<section>.md`, by anyone: under the lock
   `.dev-team/locks/decisions/`, a `## D?` stub gets the next free number, is appended to
-  `docs/decisions.md` and renumbered in the inbox; an `Applied:` line the central entry lacks
-  is added once. Nothing flows the other way, and `Decision:` and `Status:` never flow at all.
+  `docs/decisions.md` and renumbered in the inbox; the central entry's `Applied:` lines that
+  name the inbox's own section are made equal to the inbox's, so a line the section edits or
+  removes is edited or removed centrally, while other sections' lines are untouched. Nothing
+  else flows, and `Decision:` and `Status:` never flow at all.
   The numbering comes back to the agent as context (`D? → D14`). `--all` by hand merges every
   inbox (**Decisions**, below).
 - **`gate_on_stop.py`** (`SubagentStop`, `^dev-team:implementer$`) — the implementer may not
@@ -252,7 +254,10 @@ the spec-change's level re-opened first.
   **Enforced** rows of `docs/constraints.md` for the package (else the Toolchain commands of
   `docs/architecture.md`). A `repo`-scope pytest row is CI's: the record says `SKIPPED <row>:
   repo-scope pytest is CI's` and never runs it. A check whose every located failure lies
-  outside the section's paths is `ELSEWHERE`, not `FAIL`: the implementer may not edit there.
+  outside the section's paths, or in an intent-test file (a lint, type or Guarded hit in the
+  tester's lines), is `ELSEWHERE`, not `FAIL`: the implementer may not edit there. A failing
+  intent test is still `FAIL`, since what fails is the code. An `xfail` cites a decision when
+  its line holds a `D<n>` not followed by a digit (`D5:`, `D5_OPEN`).
   The package-wide rows share a time budget under the hook's timeout: a row that runs out of
   time is `TIMEOUT`, not `FAIL`. Every line goes to the section's own record,
   `.dev-team/gate/<pkg>/<section>.txt`, headed `dev-team gate — attempt n — <stamp> — section
@@ -273,17 +278,20 @@ the spec-change's level re-opened first.
   everywhere but `docs/`, except the ledgers, the inboxes, its `interface.md` and its API page.
   An implementer with a `Section:` line is confined to its section's files — its code,
   `tests/unit/<section>/`, fixtures, its ledger and inbox, `.dev-team/tmp/`, and for `surface`
-  also `interface.md`, the API page, the root `pyproject.toml` and `mkdocs.yml`; a scaffold
+  also `interface.md`, the API page `docs/api/<pkg>/index.md`, the package `pyproject.toml` (its
+  `[project.scripts]`), the root `pyproject.toml` and `mkdocs.yml`; a scaffold
   run or an unreadable transcript falls back to the role-wide rule. Every role's globs cover the
   2.2 paths, and the old locations stay writable for status edits. Nobody but the tester writes
   under `tests/intent/`.
 - **`guard_bash.py`** (`PreToolUse` on `Bash`) — no dev-team agent writes a repo file from the
   shell: a redirect (`>`, `>>`) to anything but `/dev/null` or a path under `.dev-team/tmp/`,
-  `sed -i`, `tee`, and `python -c` code that opens a file for writing are refused, with the
-  rule on stderr. A command whose program is `locked.py` is let through: it is the one way an
-  implementer runs `uv add` or appends the `.gitignore` block, holding
-  `.dev-team/locks/<name>/` while the command runs. A command it cannot parse is let through
-  with the rule on stderr.
+  `sed -i`, `tee`, and python code that opens a file for writing — as `python -c`, or as a
+  here-document script (`python3 - <<'EOF'`) — are refused, with the rule on stderr; an
+  `sh -c` script is checked like a command of its own. `locked.py` is the one way an
+  implementer runs `uv add`, `uv remove`, `uv lock` or `uv sync`, or appends the `.gitignore`
+  block (`sh -c "printf … >> .gitignore"`), holding `.dev-team/locks/<name>/` while the command
+  runs; those are let through, and any other command wrapped in `locked.py` is checked as if it
+  were not. A command it cannot parse is let through with the rule on stderr.
 
 ## Questions
 
@@ -466,7 +474,7 @@ docs/
 ├── sources/<source>.md              SOURCE PROBE, one `## <pkg>/<section>` entry per consumer (researcher)
 ├── sources/<source>.sample.json · .probe.py    recorded responses + re-runnable probe   (api)
 ├── sources/<source>.stats.json  · .profile.py  column statistics + re-runnable profile  (dataset)
-├── api/<pkg>.md                     the docs-site API page                         (the surface section's implementer)
+├── api/<pkg>/index.md               the docs-site API page                         (the surface section's implementer)
 ├── index.md                         the docs-site home page                        (documenter)
 ├── packages/
 │   └── data/

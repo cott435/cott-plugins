@@ -32,7 +32,7 @@ forbid:
   - name: the package API page is never credited to finalize-project alone
     # The surface section's implementer writes it as each package ships; finalize-project
     # lists a missing one under Known gaps and writes none.
-    pattern: 'api/<pkg>\.md|api/\$pkg\.md|api/data\.md'
+    pattern: 'api/<pkg>\.md|api/\$pkg\.md|api/data\.md|api/<pkg>/index\.md|api/data/index\.md'
     near: 40
     all_of: ['finalize-project']
     unless: ['surface section', 'the implementer', 'Known gaps']

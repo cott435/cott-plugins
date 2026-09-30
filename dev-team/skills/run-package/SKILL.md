@@ -31,15 +31,15 @@ run from the repo root. It exits 1 on a failing gate; that is the answer, not an
   And never tell the user what a return says past its first line — a failure count, a
   phrase, a claim that a suite is green: a summary can be wrong, and the audited returns
   held false ones. What a run did is on disk, and the next `status.py` shows it.
-- Open the files the agents wrote to check their work. You read only what resolves a spawn
-  field: the Sections table of `docs/packages/<pkg>/contract.md`, the `<pkg>` row of
-  `docs/architecture.md`'s Packages table and its **Shared conventions** (a source's access
-  variable), the `docs/legacy/inventory.md` row for a source token, the first line of a design
-  (`Mode:`), the `Commit:` line of a review report, and file names under
-  `docs/packages/<pkg>/reviews/<section>/`, `docs/sources/`, `docs/packages/<pkg>/changes/`
-  and the older `docs/reviews/` and `docs/changes/`. Judging the work is the reviewer's.
-  `status.py`'s source is not yours to read either: a state you do not understand is
-  **Asking**, with the row.
+- Open the files the agents wrote to check their work. Read only with the Read tool, and only:
+  the Sections table of `docs/packages/<pkg>/contract.md`, the `<pkg>` row of
+  `docs/architecture.md` and its **Shared conventions** (a source's access variable), and the
+  `docs/legacy/inventory.md` row for a source token. Every other spawn field comes from
+  `status.py --fields <pkg>/<section>`, and a reviewer's **Previous round** from the file names
+  the Glob tool finds under `docs/packages/<pkg>/reviews/<section>/` (or the older
+  `docs/reviews/`). Never `ls`, `grep`, `find`, `cat` or `head` a repo file. Judging the work
+  is the reviewer's. `status.py`'s source is not yours to read either: a state you do not
+  understand is **Asking**, with the row.
 - Spawn anything in the background. Every Agent call is `run_in_background: false`; the next
   batch needs the last one's commits.
 - Spawn with a bare agent name. `architect` does not resolve to the plugin agent; it silently
@@ -76,12 +76,12 @@ root>` is the `<pkg>` row's `path` in the Packages table. A section's dependenci
 `depends on` cell, and for `surface` every other section. Upstream packages are the `<pkg>`
 row's `depends on` in the Packages table: each is `docs/packages/<dep>/interface.md` when that
 file exists, else `provisional: docs/packages/<dep>/contract.md`. Sources are the row's `source`
-cell, `<kind>:<token>` each. An open change file naming the section is one under
-`docs/packages/<pkg>/changes/` or `docs/changes/` that `grep -l` finds with both `Status: open`
-and `<pkg>/<section>` in it. Rounds are the row's `round` column (`—` is 0); a round's reports
-are `docs/packages/<pkg>/reviews/<section>/*-r<n>-*.md`,
-or the older `docs/reviews/*-<pkg>-<section>-r<n>-*.md`, and a report with no `-r<n>-` in its name is
-round 1.
+cell, `<kind>:<token>` each. `status.py --fields <pkg>/<section>` prints four lines — `mode:`,
+`change file:`, `design mode:` and `diff base:` — run once per section you spawn for, and each
+table below names the line a field copies. Rounds are the row's `round` column (`—` is 0); a
+round's reports are `docs/packages/<pkg>/reviews/<section>/*-r<n>-*.md`,
+or the older `docs/reviews/*-<pkg>-<section>-r<n>-*.md`, and a report with no `-r<n>-` in its
+name is round 1.
 
 ### Researcher — PROBE
 
@@ -108,13 +108,13 @@ take turns, since both extend one file.
 | Field | Value |
 |---|---|
 | **Section** | `<pkg>/<section>` |
-| **Mode** | `delta` when an open change file names the section, or the row's evidence is `open <heading>` for a `spec-change:design`; `document` when `<path>` holds code and there is no design; else `new` |
+| **Mode** | the `mode:` line of `status.py --fields`: `new`, `document` or `delta` |
 | **Contract** | `docs/packages/<pkg>/contract.md` |
 | **Repo contract** | `docs/architecture.md` |
 | **Dependency READMEs** | `<dep path>/README.md` per dependency, comma-separated; in `delta` and `document` modes `own: <path>/README.md` first when it exists |
 | **Upstream interfaces** | per upstream package, as resolved above |
 | **Source probes** | `docs/sources/<token>.md` per source |
-| **Change file** | the open change file (`delta` only) |
+| **Change file** | the `change file:` line of `status.py --fields` (`delta` only; else `none`) |
 | **Spec-change** | the heading from the row's evidence when it reads `open <heading>` and names `spec-change:design`; else `none` |
 | **Design-gap** | the tester's `design-gap` return, verbatim, when this run's tester returned one for the section |
 | **Skills to invoke** | the row's `builds with` |
@@ -135,7 +135,7 @@ take turns, since both extend one file.
 | **Upstream interfaces** | per upstream package, as resolved above |
 | **Source probes** | `docs/sources/<token>.md` per source |
 | **Regenerate** | the entry heading from the row's evidence when it reads `regenerate: <heading>` or `open <heading>` (a `spec-change:test`); else `none` |
-| **Design mode** | the word after `Mode:` on the design's first line: `new`, `document` or `delta` |
+| **Design mode** | the `design mode:` line of `status.py --fields`: `new`, `document` or `delta` |
 | **Write to** | `tests/intent/<section>/ under <package root>` |
 | **Run** | `run-package <pkg>` |
 
@@ -193,7 +193,7 @@ code, and neither may be handed the other's report. Round 2 and later is one: `F
 | **Source probes** | `docs/sources/<token>.md` per source |
 | **Intent tests** | `tests/intent/<section>/` |
 | **Previous round** | from round 2: round `r-1`'s report paths, comma-separated; else `none` |
-| **Diff** | from round 2: `<sha>..HEAD`, `<sha>` the `Commit:` line of round `r-1`'s `-s` report, or its `-a` report when `r-1` is 1 (the one report when it has no letter); else `none` |
+| **Diff** | from round 2: `<sha>..HEAD`, `<sha>` the `diff base:` line of `status.py --fields` (round `r-1`'s `-s` report's `Commit:`, or its `-a` report's when `r-1` is 1); else `none` |
 | **Gate** | `.dev-team/gate/<pkg>/<section>.txt` |
 | **Run** | `run-package <pkg>` |
 
@@ -258,10 +258,14 @@ granted *one more round* at a cap.
    - `spec-change` → nothing to relay: the entry is in
      `docs/packages/<pkg>/deviations/<section>.md` and `status.py` re-opens the step it names
      (PLAN, DESIGN or TEST), where the next block carries it.
-   - `blocked` or `stopped`, or a first line that is not `Result:` → **Asking**, with the
-     return as the question.
+   - `blocked` or `stopped` → **Asking**, with the return as the question.
+   - a first line that is not `Result:` → re-run `status.py <pkg>`: if the row has moved past
+     the step's state (IMPLEMENT or FIX → REVIEW, DESIGN → TEST, TEST → IMPLEMENT, REVIEW →
+     DONE or FIX), note `<role> <section>: no Result: line; state advanced` for the
+     **Summary** and go on; else **Asking**, with the return as the question. The state is on
+     disk; a malformed last turn after a good commit is not a question for the user.
 6. **Re-derive.** `status.py <pkg>`, its whole output read as printed — never piped through
-   `grep`, `head` or `tail`, and never narrowed to the sections you spawned: a filtered table
+   a filter such as `head` or `tail`, and never narrowed to the sections you spawned: a filtered table
    hides a re-opened upstream section and the `shipped:` line. Print the rows whose state or
    evidence changed, by comparing them with the rows you kept, and nothing in prose about
    them. A row whose
@@ -333,6 +337,7 @@ sections: <DONE>/<total> DONE; <section> · <state>, …
 agent runs: designer <n> · tester <n> · implementer <n> · reviewer <n> · researcher <n> · architect <n>
 commits: <start sha>..<end sha> (<count>)
 stopped because: <the agent's first two lines, or the run gate's FAIL lines>
+no Result: line: <role> <section>: no Result: line; state advanced, …
 uncommitted: docs/decisions.md
 next: <status.py's next line>
 ```
@@ -341,8 +346,9 @@ The first line echoes the command's arguments, so it says which walk this was: `
 data: done`, `run-package data ingest: done`, `run-package data ingest --step REVIEW: done`,
 `run-package data --serial: done`.
 `done` means the walk you were asked for finished — the package closed, the section DONE, or
-the one step run. `stopped because` appears only when stopped, `uncommitted` only when you
-edited `docs/decisions.md`. `sections` and `next` come from a final `status.py <pkg>`, the
+the one step run. `stopped because` appears only when stopped, `no Result: line` only when a
+return's first line was not `Result:` and its row had advanced (**Loop** step 5), and
+`uncommitted` only when you edited `docs/decisions.md`. `sections` and `next` come from a final `status.py <pkg>`, the
 `next:` line copied as it prints; `commits` from `git rev-parse --short HEAD` and
 `git rev-list --count <start>..HEAD`. Every agent run counts once under its role, the
 architect's PLAN and close runs included.

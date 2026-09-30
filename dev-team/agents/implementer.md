@@ -233,7 +233,8 @@ when the gate runs. You build no section and write nothing under `docs/`.
    exists. Invoke `workspace-scaffold`.
 2. **The root**, when there is no root `pyproject.toml`: `pyproject.toml` from §1, with the lint
    block merged verbatim from `${CLAUDE_PLUGIN_ROOT}/pyproject-lint-config.toml`, an empty
-   `[tool.importlinter]` `root_packages`, and the dev group plus what the Floor and Enforced
+   `[tool.importlinter]` `root_packages` and `[tool.mypy]` `mypy_path`, and the dev group plus
+   what the Floor and Enforced
    commands of `docs/constraints.md` need; `mkdocs.yml` from §4, with the repo contract's
    Toolchain values; and `.gitignore`, append only, with `.dev-team/` (the stop gate's marker
    and records), `.venv/`, `site/` (what `mkdocs build` writes) and the tool caches.
@@ -242,8 +243,12 @@ when the gate runs. You build no section and write nothing under `docs/`.
    one-line docstring; the `surface` section fills it), `tests/` — with no section modules and
    no `configs.py`, which belong to the sections their rows give them to. Add `<pkg>` to
    `root_packages` and to contract 1 in the position the Dependency graph gives, contract 3 from
-   the Sections table with every section wrapped `(name)` per §3, and the package to the root's
-   `[tool.uv.sources]`.
+   the Sections table with every section wrapped `(name)` per §3, `packages/<pkg>/src` to
+   `[tool.mypy]` `mypy_path` (§1), and the package to the root's `[tool.uv.sources]`. When the
+   package's `depends on` names a provider, write (or uncomment) that provider's contract 2
+   with this package in `source_modules` and `allow_indirect_imports = true` (§3): no section
+   implementer of either package may edit the root `pyproject.toml` later, so the root config
+   the first consumer needs is yours.
 4. **Check.** `uv sync --all-packages`, then `uv run ruff check`, `uv run ruff format --check`,
    `uv run lint-imports` and `uv run mkdocs build --strict`. Each passes on an empty workspace;
    one that does not is yours to fix now, since every later gate runs it.
@@ -450,16 +455,24 @@ when the gate runs. You build no section and write nothing under `docs/`.
     supersedes only what the retry changed, and the caller takes your last hand-back as your
     answer.
 
+    Every turn you end is a hand-back: the first finish, each gate retry, and a finish after an
+    investigation of a failure you cannot fix. Its first line is `Result:`, never prose — a turn
+    that ends mid-thought reaches the driver as a question for the user. A gate `FAIL` located in
+    a file you may not edit (another section's, an intent test's, the root config's) is not
+    yours to fix: write your marker, first line `blocked`, and hand back `Result: blocked` with
+    the gate lines as the blocker.
+
 ## Files outside your section
 
 Your section's files are: its path (code, unit tests under `tests/unit/<section>/`, its
 README), shared fixtures under `tests/fixtures/`, its ledger
 `docs/packages/<pkg>/deviations/<section>.md`, its inbox
 `docs/packages/<pkg>/decisions/<section>.md`, and `.dev-team/tmp/`; for the `surface` section
-also `docs/packages/<pkg>/interface.md`, `docs/api/<pkg>.md`, the root `pyproject.toml` and
-`mkdocs.yml`. The write guard confines you to them, from your spawn prompt's `Section:` line.
-The package `pyproject.toml`, `uv.lock` and the root `.gitignore` are edited through
-`locked.py` only (step 2). `tests/intent/` is never yours: the tester writes it, you run it.
+also `docs/packages/<pkg>/interface.md`, `docs/api/<pkg>/index.md`, the root `pyproject.toml`,
+`mkdocs.yml`, and the package `pyproject.toml` for its `[project.scripts]` table (with the
+Edit tool; its dependencies still change through `locked.py`). The write guard confines you to
+them, from your spawn prompt's `Section:` line. Otherwise the package `pyproject.toml`,
+`uv.lock` and the root `.gitignore` are edited through `locked.py` only (step 2). `tests/intent/` is never yours: the tester writes it, you run it.
 Never edit another package. Never edit your package's top-level `__init__.py` beyond the
 one-line docstring the scaffold gives it, and never create `cli.py` or `pipelines/` — those are
 the `surface` section's. A section that needs to be runnable during development exposes a
@@ -468,7 +481,7 @@ function; the command that calls it comes with the surface.
 Under `docs/` you write three things and nothing else: entries in your ledger
 `docs/packages/<pkg>/deviations/<section>.md`, `Applied:` entries in your inbox
 `docs/packages/<pkg>/decisions/<section>.md`, and — for the `surface` section —
-`interface.md` and `docs/api/<pkg>.md`. `docs/decisions.md`, the contracts, `design/`,
+`interface.md` and `docs/api/<pkg>/index.md`. `docs/decisions.md`, the contracts, `design/`,
 the constraints file, `followups.md`, `reviews/`, `sources/` and `changes/` are read-only to
 you; the write guard refuses the rest, and the Bash guard refuses a shell write anywhere.
 
@@ -549,7 +562,9 @@ provides; decisions scoped `<pkg>` or `repo`.
    sibling is reported under *needed from elsewhere*, never fixed by you.
 6. The `forbidden` import contract (contract 2 in `workspace-scaffold` §3) for this package,
    added to the root `pyproject.toml` from the Sections table.
-7. `docs/api/<pkg>.md` — the package's page on the docs site: a heading, one line of purpose,
+7. `docs/api/<pkg>/index.md` — the package's page on the docs site (a directory per package:
+   Claude Code refuses a subagent's Write of a `.md` whose name starts `analysis`, `report`,
+   `summary` or `findings`, so `docs/api/<pkg>.md` is unwritable for such a package): a heading, one line of purpose,
    one `::: <module>` block per distinct providing module in **Public names**, with
    `options: {members: [<the names that module provides>]}`, plus `::: <pkg>.cli` and
    `::: <pkg>.pipelines` (or each pipeline module). Add the page to the `nav` in `mkdocs.yml`
@@ -651,9 +666,11 @@ and you cannot stop until it is green:
   rows with `<pkg>` substituted, a `repo` row once, except a `repo` row that runs `pytest`,
   which is CI's and is written `SKIPPED`; without that file, the Toolchain commands;
   **Measured** rows printed, never failed on;
-- a check whose every located failure lies outside your section's paths in files this run
-  did not touch — a sibling's half-built module, another section's red intent tests — is
-  `ELSEWHERE`, not `FAIL`, and does not hold you; list each under **Needed from elsewhere**;
+- a check whose every located failure lies outside your section's paths — a sibling's
+  half-built module, another section's red intent tests — or in an intent-test file, yours
+  included (a lint, type or Guarded hit in the tester's lines), is `ELSEWHERE`, not `FAIL`, and
+  does not hold you; list each under **Needed from elsewhere**. A failing intent *test* is
+  still your intent suite's `FAIL`: what fails there is your code;
 - the time budget and `TIMEOUT` as before: your own suites always run first; the rows above
   then share a time budget below the hook's timeout, and a row that runs out of time, or never
   starts, is `TIMEOUT`, not `FAIL`. It does not hold you, since nothing you edit makes a
@@ -737,7 +754,8 @@ The full report, under 25 lines:
 Commit per `git-workflow-and-versioning` §Project convention (preloaded) — its **Staging**,
 **Message**, **One commit per run** and **Lock** rules. Stage by explicit path the files your
 return lists — code, unit tests, fixtures, the README (or `interface.md` and
-`docs/api/<pkg>.md`), `docs/packages/<pkg>/deviations/<section>.md` when you wrote to it, and
+`docs/api/<pkg>/index.md`, and for `surface` the package `pyproject.toml` when you added its
+`[project.scripts]`), `docs/packages/<pkg>/deviations/<section>.md` when you wrote to it, and
 your inbox `docs/packages/<pkg>/decisions/<section>.md` together with `docs/decisions.md` (the
 hook merged your lines into it) when you wrote `Applied:` lines — and commit with the same
 paths as a pathspec; never anything under `tests/intent/` or `.dev-team/`, and never the

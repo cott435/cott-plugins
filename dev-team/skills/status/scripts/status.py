@@ -2,7 +2,7 @@
 """Derive where every package and section stands from docs/ and the code. Nothing is stored.
 
 Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--repo]
-                          [--inputs <pkg>/<section>] [--scaffold <pkg>]
+                          [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]
 
 A section is in exactly one state, decided in this order, first match wins:
 
@@ -52,7 +52,8 @@ without it is a 2.x ledger and `k` is absent. The **inbox** is
 `docs/packages/<pkg>/decisions/<section>.md`: `## D? — <question>` stubs and `## D<n>` entries
 holding `Applied:` lines, merged into `docs/decisions.md` by `hooks/sync_decisions.py`. This
 script never writes it; `--run-gate` fails on an inbox holding anything the central ledger
-does not.
+does not, and on a central `Applied: <pkg>/<section>, …` line the section's inbox entry for
+that `D<n>` no longer holds (the hook mirrors a section's own lines).
 
 An **open spec-change** is an entry `spec-change:<level>`
 with `Status: open`, or a review report of the newest round whose verdict is `spec-change`:
@@ -109,6 +110,24 @@ it names before touching the section. One `<Field>: <value>` line per field, in 
 11. **Change file** — from either location, every open `docs/packages/<pkg>/changes/<slug>.md`
     or `docs/changes/<slug>.md` whose Affected sections names the section.
 12. **Run** — `run-package <pkg>`.
+
+`--fields <pkg>/<section>` prints the spawn fields run-package would otherwise resolve by
+reading files, four `key: value` lines in this order, and exits 0 (2 on a section the contract
+lacks):
+
+1. `mode: new | document | delta` — `delta` when an open change file names the section, or the
+   state's evidence is `open <heading>` for a `spec-change:design`; `document` when the
+   section's path holds a `.py` file (nested sections excluded; for `surface`, the package's
+   own `__init__.py`, which the scaffold writes, does not count) and there is no design; else
+   `new`. The designer's `Mode:` field.
+2. `change file: <path>, … | none` — the open change files naming the section, as
+   **Change file** in `--inputs`.
+3. `design mode: <word> | none` — the word after `Mode:` on the design's first line (a title
+   line above it is read past, up to the fifth line); `none` with no design or no such line.
+   The tester's `Design mode:` field.
+4. `diff base: <sha> | none` — from the newest round `n` ≥ 1, the `Commit:` of round `n`'s
+   `-s` report, or its `-a` report when `n` is 1, or its one report when it has no letter;
+   `none` with no round or no `Commit:`. The next reviewer's `Diff:` field is `<sha>..HEAD`.
 """
 
 from __future__ import annotations
@@ -513,6 +532,17 @@ def _applied_lines(body: str) -> list[str]:
             if re.match(r"(?:[-*]\s+)?\**Applied\**\s*:", line.strip())]
 
 
+def applied_owner(line: str) -> str | None:
+    """The `<pkg>/<section>` an `Applied:` line names first, or None."""
+    m = re.match(r"(?:[-*]\s+)?\**Applied\**\s*:\s*\**\s*([\w.-]+/[\w.-]+)\s*,", line.strip())
+    return m.group(1) if m else None
+
+
+def inbox_section(path: Path) -> str:
+    """`<pkg>/<section>` of an inbox path, `docs/packages/<pkg>/decisions/<section>.md`."""
+    return f"{Path(path).parent.parent.name}/{Path(path).stem}"
+
+
 def inbox_entries(path: Path) -> list[dict[str, object]]:
     """The entries of one inbox: heading, n (`?` or digits), question, Applied, Status, raw."""
     try:
@@ -544,10 +574,12 @@ def _central_bodies() -> dict[str, str]:
 
 
 def unsynced_inboxes() -> list[str]:
-    """One reason per inbox entry the central ledger lacks; [] when every inbox is merged."""
+    """One reason per inbox entry the central ledger lacks, and per central `Applied:` line of
+    the inbox's own section that the inbox entry no longer holds; [] when every inbox is merged."""
     central = _central_bodies()
     out = []
     for f in inbox_files():
+        own = inbox_section(f)
         for e in inbox_entries(f):
             n = str(e["n"])
             if n == "?":
@@ -560,6 +592,9 @@ def unsynced_inboxes() -> list[str]:
                     if line not in have:
                         out.append(f"{_rel(f)}: D{n} Applied: line not in docs/decisions.md")
                         break
+                for line in _applied_lines(central[n]):
+                    if applied_owner(line) == own and line not in e["Applied"]:  # type: ignore[operator]
+                        out.append(f"{_rel(f)}: stale Applied: line — D{n}: {line}")
     return out
 
 
@@ -1275,6 +1310,14 @@ def _dunder_all(init: Path) -> set[str] | None:
     return set()
 
 
+def _name_cell(row: dict[str, str]) -> str:
+    """A table row's name: the first backticked span of its `name` cell (`` `Trade` (`models.py`) ``
+    is `Trade`), else the cell up to its first `(`."""
+    raw = next((v for h, v in row.items() if "name" in h), "")
+    m = re.match(r"\s*`([^`]+)`", raw)
+    return (m.group(1) if m else raw.split("(")[0]).strip("`* ").strip()
+
+
 def surface_check(pkg: str) -> tuple[str, list[str]]:
     """(PASS | FAIL | n/a, reasons): __all__ vs interface.md Public names vs READMEs' Public: yes rows, and lazy import."""
     iface = DOCS / "packages" / pkg / "interface.md"
@@ -1289,7 +1332,19 @@ def surface_check(pkg: str) -> tuple[str, list[str]]:
     if all_names is None:
         fails.append(f"no readable __all__ in {_rel(top / '__init__.py')}")
         all_names = set()
-    public = {col(r, "name") for r in table_rows(_item(iface.read_text(), "Public names"), ("name",)) if col(r, "name")}
+    iface_rows = table_rows(_item(iface.read_text(), "Public names"), ("name",))
+    public = {_name_cell(r) for r in iface_rows if _name_cell(r)}
+    # A name whose providing module lies outside every other section (a pipeline, the CLI) is the
+    # surface section's own: no section README can carry its row.
+    section_mods = []
+    for r in rows:
+        if r["section"] != "surface":
+            try:
+                section_mods.append(".".join((ROOT / r["path"]).resolve().relative_to(top.resolve().parent).parts))
+            except ValueError:
+                section_mods.append(f"{pkg}.{r['section']}")
+    surface_own = {_name_cell(r) for r in iface_rows
+                   if (mod := col(r, "providing")) and not any(mod == m or mod.startswith(m + ".") for m in section_mods)}
     readmes: set[str] = set()
     for r in rows:
         if r["section"] == "surface":
@@ -1297,10 +1352,10 @@ def surface_check(pkg: str) -> tuple[str, list[str]]:
         f = ROOT / r["path"] / "README.md"
         if f.exists():
             for er in table_rows(_item(f.read_text(), "Entry points and interfaces"), ("name",)):
-                if col(er, "public").lower().startswith("yes") and col(er, "name"):
-                    readmes.add(col(er, "name").split("(")[0])
+                if col(er, "public").lower().startswith("yes") and _name_cell(er):
+                    readmes.add(_name_cell(er))
     for a, an, b, bn in ((all_names, "__all__", public, "interface.md Public names"),
-                         (public, "interface.md Public names", readmes, "README Public: yes rows"),
+                         (public - surface_own, "interface.md Public names", readmes, "README Public: yes rows"),
                          (readmes, "README Public: yes rows", all_names, "__all__")):
         for name in sorted(a - b):
             fails.append(f"{name}: in {an}, not in {bn}")
@@ -1408,6 +1463,55 @@ def implementer_inputs(pkg: str, section: str) -> list[str]:
     ]
 
 
+def _holds_code(pkg: str, section: str) -> bool:
+    """True when the section's path holds a `.py` file, nested sections excluded; for `surface`
+    the package's own `__init__.py` (the scaffold's) does not count."""
+    p = _paths(pkg, section)
+    code: list[str] = p["code"]  # type: ignore[assignment]
+    base = ROOT / code[0]
+    nested = [ROOT / c.removeprefix(":(exclude)") for c in code[1:]]
+    if not base.is_dir():
+        return False
+    scaffold = base / "__init__.py" if section == "surface" else None
+    return any(f != scaffold and not any(n == f or n in f.parents for n in nested)
+               for f in base.rglob("*.py"))
+
+
+def spawn_fields(pkg: str, section: str) -> list[str]:
+    """The `--fields` lines for one section; the module docstring lists them."""
+    p = _paths(pkg, section)
+    design: Path = p["design"]  # type: ignore[assignment]
+    changes = [_rel(c["path"]) for c in open_changes(pkg, section)]  # type: ignore[arg-type]
+    state, evidence = section_state(pkg, section)
+    if changes or (evidence.startswith("open ") and "spec-change:design" in evidence):
+        mode = "delta"
+    elif _holds_code(pkg, section) and not design.exists():
+        mode = "document"
+    else:
+        mode = "new"
+    design_mode = "none"
+    if design.exists():
+        head = design.read_text().strip().splitlines()[:5]
+        if m := next((m for line in head if (m := re.match(r"\**Mode:\**\s*`?(\w+)", line.strip()))), None):
+            design_mode = m.group(1)
+    base = "none"
+    reps = _reports(pkg, section)
+    if reps:
+        n = max(reps)
+        files = sorted(reps[n])
+        pick = (next((f for f in files if f.name.endswith("-s.md")), None)
+                or (next((f for f in files if f.name.endswith("-a.md")), None) if n == 1 else None)
+                or (files[0] if len(files) == 1 and not re.search(r"-r\d+-[abs]\.md$", files[0].name) else None))
+        if pick and (m := re.match(r"[0-9a-f]{7,40}", _report_fields(pick).get("Commit", "").strip("`"))):
+            base = git("rev-parse", "--short", m.group(0)) or m.group(0)
+    return [
+        f"mode: {mode}",
+        f"change file: {', '.join(changes) or 'none'}",
+        f"design mode: {design_mode}",
+        f"diff base: {base}",
+    ]
+
+
 def _flag_value(argv: list[str], flag: str) -> tuple[bool, str | None]:
     """(present, value) for a flag with an optional non-flag value after it; removes both from argv."""
     if flag not in argv:
@@ -1426,6 +1530,7 @@ def main() -> int:
     has_gate, gate_pkg = _flag_value(argv, "--run-gate")
     has_inputs, inputs_target = _flag_value(argv, "--inputs")
     has_scaffold, scaffold_pkg = _flag_value(argv, "--scaffold")
+    has_fields, fields_target = _flag_value(argv, "--fields")
     has_repo = "--repo" in argv
     argv = [a for a in argv if a != "--repo"]
     unknown = [a for a in argv if a.startswith("--")]
@@ -1472,6 +1577,15 @@ def main() -> int:
             print(f"no section {sec} in {_rel(contract_path(pkg))}")
             return 2
         print("\n".join(implementer_inputs(pkg, sec)))
+    if has_fields:
+        pkg, _, sec = (fields_target or "").partition("/")
+        if not pkg or not sec:
+            print("--fields needs a target: status.py --fields <pkg>/<section>")
+            return 2
+        if _row(pkg, sec) is None:
+            print(f"no section {sec} in {_rel(contract_path(pkg))}")
+            return 2
+        print("\n".join(spawn_fields(pkg, sec)))
     if has_scaffold:
         if not scaffold_pkg:
             print("--scaffold needs a package: status.py --scaffold <pkg>")
@@ -1479,7 +1593,7 @@ def main() -> int:
         needed = scaffold_needed(scaffold_pkg)
         print(f"scaffold: needed ({', '.join(needed)})" if needed else "scaffold: done")
         code |= 1 if needed else 0
-    if has_rounds or has_gate or has_surface or has_repo or has_inputs or has_scaffold:
+    if has_rounds or has_gate or has_surface or has_repo or has_inputs or has_scaffold or has_fields:
         return code
     if not DOCS.exists():
         print("no docs/ directory here — run from the repo root")

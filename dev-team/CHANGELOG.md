@@ -57,6 +57,24 @@ Implementers in parallel; the per-section documents under their package. Evidenc
   PLAN; return first lines only (E7); changed rows printed without grep (E8). `pair` at the
   2.2 paths.
 - **`plan-package`, `sync-plan`, `finalize-project`** at the 2.2 paths (5f87ce0).
+- **The fixes the end-to-end build pointed at** (phase 12, `evals/2026-09-30-2.2-docs-and-release.md`):
+  a lint, type or Guarded failure located in an intent-test file is the gate's `ELSEWHERE`
+  again, as in 2.1, and an `xfail` reason `D5_OPEN` cites D5; every turn an implementer ends
+  is a `Result:` hand-back, a gate failure in a file it may not edit is `Result: blocked`, and
+  the driver re-derives before asking on a return with no `Result:` line; a section's own
+  `Applied:` lines in `docs/decisions.md` follow its inbox, and the run gate fails on a stale
+  one; the driver reads its spawn fields from the new `status.py --fields <pkg>/<section>`
+  (`mode`, `change file`, `design mode`, `diff base`) instead of listing and grepping files; the
+  scaffold writes the root config the first consumer needs (`[tool.mypy] mypy_path`, contract
+  2 with `allow_indirect_imports = true`); the Bash guard refuses a python here-document write
+  and exempts only `uv` and the `.gitignore` printf under `locked.py`; `plan-package` runs the
+  run gate with no package; §Project convention lists paths literally.
+- **The package API page is `docs/api/<pkg>/index.md`** (phase 12): Claude Code refuses a
+  subagent's Write of a `.md` whose name starts `analysis` (or `report`, `summary`, `findings`),
+  so `docs/api/analysis.md` could never be written; the old name is still read and writable.
+  The `surface` implementer may edit its package `pyproject.toml` for `[project.scripts]`;
+  `status.py --surface` reads a README name cell's first backticked span and needs no section
+  README row for a name a surface-owned module (a pipeline, the CLI) provides.
 
 ## [2.1.0] - 2026-09-29
 

@@ -36,8 +36,9 @@ contract invents its own shapes and conventions, and the next package invents th
 
 ## Steps
 
-1. **Run gate.** `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --run-gate $pkg`.
-   FAIL → return `Result: blocked` with its lines, and write nothing.
+1. **Run gate.** `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --run-gate`,
+   with no package: it checks the branch and the tree, since the package's contract is what
+   this run writes. FAIL → return `Result: blocked` with its lines, and write nothing.
 
 2. **Survey.** Read, and nothing beyond it:
    - `docs/architecture.md` — the `$pkg` row, its `depends on`, the Boundaries subsections for

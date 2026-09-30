@@ -39,7 +39,7 @@ and its inbox at `docs/packages/<pkg>/decisions/<section>.md`; `"layout": "old"`
 `"legacy": true` pin the 2.0 and pre-2.0 spellings `status.py` still reads, and
 `review-both-layouts` and `ledger-moved-new` mix the two in one repo.
 
-The 2.2 cases (phase 1 of `site/notes/2.2-01-status-paths.md`) are the last fifteen rows. Six
+The 2.2 cases (phase 1 of `site/notes/2.2-01-status-paths.md`) are the last fifteen rows. The eight phase-12 cases (`site/notes/2.2-12-run-fixes.md`) follow them: `--fields` for new, document, delta by a change file, delta by a `spec-change:design`, round 2 and a bad target, and the run gate's stale-`Applied:` FAIL and its other-section PASS. Six
 older cases whose expectations spell a 2.0 path or heading (`inputs-fix-round`,
 `inputs-spec-change-review`, `report-spec-change-b`, `report-spec-change-recorded`,
 `test-regenerate`, `test-spec-change-test`) set `"layout": "old"`, so they keep pinning the old
@@ -113,3 +113,13 @@ optional flag).
 | `run-gate-inbox-synced` | inbox `## D3` whose `Applied:` line is in the central D3 | `--run-gate data` | `run gate: PASS`; exit 0 |
 | `clause-full-name` | approved deviation `Clause: design §5 load trades from csv`; one test cites it, another cites `load trades count` | `—` | `ingest · TEST`, evidence `/^regenerate: data\/ingest — 2026-09-27 — deviation — 1$/` |
 | `clause-full-name-no-match` | the same clause (at the 2.0 path), only the `load trades count` test | `—` | `ingest · REVIEW`, evidence `/^no review$/` (no match on the first word alone) |
+| `fields-new` | a design, nothing else | `--fields data/ingest` | `mode: new`, `change file: none`, `design mode: new`, `diff base: none`, in that order |
+| `fields-document` | code, no design | `--fields data/ingest` | `mode: document`; `design mode: none` |
+| `fields-delta-change` | DONE, then an open change file naming the section | `--fields data/ingest` | `mode: delta`; `change file: docs/packages/data/changes/vwap-window.md`; `/^diff base: [0-9a-f]{7}$/` |
+| `fields-delta-spec-change` | an open `spec-change:design` after the tests | `--fields data/ingest` | `mode: delta`; `change file: none` |
+| `fields-round-2` | round 1 requests changes, a fix, round 2 `s` | `--fields data/ingest` | `/^diff base: [0-9a-f]{7}$/` |
+| `fields-bad-target` | contract only | `--fields data/nope` | `no section nope in docs/packages/data/contract.md`; exit 2 |
+| `run-gate-stale-applied` | central D3 holds two `data/ingest` `Applied:` lines, the inbox one | `--run-gate data` | `run gate: FAIL`; `stale Applied: line — D3: Applied: data/ingest, 2026-09-27, …loader.py`; exit 1 |
+| `run-gate-stale-applied-other-section` | central D3 holds a `data/clean` line and the inbox's `data/ingest` line | `--run-gate data` | `run gate: PASS`; exit 0 |
+| `surface-name-cell-and-pipeline` | surface DONE; a README name cell `` `load_trades` (`__init__.py`) ``; `run_load` provided by `data.pipelines.load` with no README row (phase 12, the 12.7 stop) | `--surface data` | `surface: PASS` |
+| `surface-section-name-no-readme-row` | the same with ingest's row `Public: no` | `--surface data` | `surface: FAIL`; `load_trades: in interface.md Public names, not in README Public: yes rows`; no `run_load` line; exit 1 |

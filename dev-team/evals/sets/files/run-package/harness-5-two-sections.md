@@ -103,6 +103,12 @@ the walk ends at round 1.
 
 ## After the run
 
+While the driver runs, keep every version of every stop-gate record, with the watcher of
+`harness-4-end-to-end.md` (**The commands, in order**) started beside the session and stopped
+when it exits, writing `<outputs>/gate-history/`: a later gate run overwrites
+`.dev-team/gate/<pkg>/<section>.txt`, and the F4 observation needs both implementers' records
+of the one batch.
+
 Take these from `<copy>` read-only, after the summary block:
 
 - `<outputs>/summary.md` — your final message, the summary block, verbatim.
@@ -123,6 +129,15 @@ Take these from `<copy>` read-only, after the summary block:
   records. If `<copy>/.dev-team/gate/` does not exist, say so in `transcript.md` — the stop gate
   keys on the hook event's `cwd`, which in a harness session may not be the copy — and create
   nothing in its place.
+- `<outputs>/returns.md` — one row per agent run: role, `Section:`/`Scaffold:` line, and the
+  first line of its last hand-back (the last `assistant` record with text in its subagent
+  transcript).
+- `<outputs>/gates.md` — every record version in `<outputs>/gate-history/` and every final
+  `.dev-team/gate/<pkg>/<section>.txt`: header verbatim and modification time; then, for the
+  batch holding the two section implementers, each one's gate windows (start: the
+  implementer's last `assistant` record before the record's modification time; end: the
+  modification time) and one line — `F4: overlap observed` naming the pair, `F4: no overlap`,
+  or `F4: not observable` with why — worded as eval 4's `gates.md`.
 - `transcript.md` — each `status.py` run and what its rows said (every row's state and its
   `ready` column); each batch with its spawns and the branch you took on each first line; every
   file you wrote yourself in `<copy>` (only `docs/decisions.md` is allowed, and only when

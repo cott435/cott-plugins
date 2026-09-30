@@ -1,0 +1,54 @@
+{
+  "note": "--fields after round 2: the -s report's Commit: is the diff base",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 1,
+      "reports": {
+        "a": "approve",
+        "b": "request changes"
+      }
+    },
+    {
+      "do": "fix",
+      "section": "ingest"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 2,
+      "reports": {
+        "s": "request changes"
+      }
+    }
+  ],
+  "args": [
+    "--fields",
+    "data/ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "mode: new\n"
+    ],
+    "matches": [
+      "^diff base: [0-9a-f]{7}$"
+    ]
+  }
+}

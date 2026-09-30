@@ -82,6 +82,21 @@ and two `locked.py` commands (`{plugin}` in the event stands for this plugin's r
 unparseable command fails open with the rule on stderr, and the main thread, `Explore`, an
 out-of-scope repo and malformed stdin exit 0.
 
+The phase-12 cases (`site/notes/2.2-12-run-fixes.md`): `gate-guarded-intent-elsewhere` (an
+`xfail` whose reason is a constant, in the section's intent tree: `ELSEWHERE guarded … (the
+tester's file)`, and the gate passes), `gate-guarded-decision-constant` (`reason=D5_OPEN` in a
+unit test cites D5: no Guarded hit), `gate-intent-test-fail-still-fail` (a red intent test is
+still `FAIL intent`, while the lint failure in the same file is `ELSEWHERE`); `sync-mirror-edit`,
+`sync-mirror-removal`, `sync-mirror-other-section` and `sync-mirror-idempotent` (a section's own
+central `Applied:` lines follow its inbox; another section's are untouched);
+`bash-python-stdin-refused`, `bash-python-heredoc-no-script-refused` and
+`bash-python-stdin-read-allowed` (a python here-document script), `bash-locked-sed-refused` and
+`bash-locked-sh-refused` (`locked.py` exempts only `uv add|remove|lock|sync` and the
+`.gitignore` printf, which `bash-locked-allowed` and `bash-locked-uv-add` keep allowed); and, from 12.7's stop, `guard-implementer-surface-package-pyproject` and
+`guard-implementer-surface-api-page` (a `surface` implementer writes its package
+`pyproject.toml` and `docs/api/<pkg>/index.md`, while `guard-implementer-section-pyproject`
+still refuses the package `pyproject.toml` to `ingest`).
+
 **The 2.2 layout here.** `build.py` still writes the section's ledger at the 2.0 path,
 `docs/deviations/data/ingest.md`, so the tolerated case also proves the gate reads the old
 location; the new one, `docs/packages/data/deviations/ingest.md`, is written by

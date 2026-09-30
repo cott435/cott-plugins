@@ -1,0 +1,22 @@
+{
+  "note": "--fields before any code: new mode, the design's Mode: word, no round",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    }
+  ],
+  "args": [
+    "--fields",
+    "data/ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "mode: new\nchange file: none\ndesign mode: new\ndiff base: none\n"
+    ]
+  }
+}

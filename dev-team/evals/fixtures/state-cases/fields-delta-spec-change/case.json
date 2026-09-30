@@ -1,0 +1,33 @@
+{
+  "note": "--fields with an open spec-change:design: delta, no change file",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "deviation",
+      "section": "ingest",
+      "kind": "spec-change:design",
+      "status": "open"
+    }
+  ],
+  "args": [
+    "--fields",
+    "data/ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "mode: delta\n",
+      "change file: none\n"
+    ]
+  }
+}

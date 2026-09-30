@@ -24,7 +24,9 @@ the section's path from the package contract and everything under it, its
 `tests/unit/<section>/`, `**/tests/fixtures/**`, its ledger (new and old paths, and
 `docs/deviations.md`), its inbox, `.dev-team/tmp/**`, its stop marker
 `.dev-team/stop/<pkg>/<section>`, and for `surface` also `docs/packages/<pkg>/interface.md`,
-`docs/api/<pkg>.md`, the root `pyproject.toml` and `mkdocs.yml`. A `Scaffold:` run, a
+the API page `docs/api/<pkg>/index.md` (and the pre-2.2 `docs/api/<pkg>.md`), the package's own
+`<package root>/pyproject.toml` (its `[project.scripts]`), the root `pyproject.toml` and
+`mkdocs.yml`. A `Scaffold:` run, a
 transcript with no `Section:` line or none readable, or a section the contract does not list
 falls back to the role-wide rule.
 """
@@ -55,7 +57,7 @@ ALLOWED: dict[str, tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]] = {
                              "docs/packages/*/readme-previous.md"), (), ()),
     "dev-team:curator": (("docs/legacy/**", ".claude/skills/*/**"), (), ()),
     "dev-team:implementer": (("**",), ("docs/**",),
-                             (*LEDGERS, *INBOXES, "docs/packages/*/interface.md", "docs/api/*.md")),
+                             (*LEDGERS, *INBOXES, "docs/packages/*/interface.md", "docs/api/*.md", "docs/api/*/index.md")),
 }
 SHARED = "Shared edits — pyproject.toml, uv.lock, .gitignore — go through locked.py."
 
@@ -99,7 +101,8 @@ def SECTION_SCOPE(pkg: str, section: str, row: dict[str, str], package_root: str
              f"docs/packages/{pkg}/deviations/{section}.md", f"docs/deviations/{pkg}/{section}.md", "docs/deviations.md",
              f"docs/packages/{pkg}/decisions/{section}.md", ".dev-team/tmp/**", f".dev-team/stop/{pkg}/{section}")
     if section == "surface":
-        scope += (f"docs/packages/{pkg}/interface.md", f"docs/api/{pkg}.md", "pyproject.toml", "mkdocs.yml")
+        scope += (f"docs/packages/{pkg}/interface.md", f"docs/api/{pkg}/index.md", f"docs/api/{pkg}.md",
+                  f"{package_root}/pyproject.toml", "pyproject.toml", "mkdocs.yml")
     return scope
 
 

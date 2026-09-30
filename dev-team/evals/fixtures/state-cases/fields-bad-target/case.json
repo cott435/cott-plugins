@@ -1,0 +1,18 @@
+{
+  "note": "--fields on a section the contract lacks exits 2",
+  "steps": [
+    {
+      "do": "base"
+    }
+  ],
+  "args": [
+    "--fields",
+    "data/nope"
+  ],
+  "expect": {
+    "exit": 2,
+    "contains": [
+      "no section nope in docs/packages/data/contract.md"
+    ]
+  }
+}

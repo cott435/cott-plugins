@@ -45,7 +45,15 @@ addopts = "--import-mode=importlib"
 # --- import-linter: copy the block from docs/architecture.md § Dependency graph ---
 [tool.importlinter]
 root_packages = []          # grown by the scaffold step as packages are first built
+
+[tool.mypy]
+mypy_path = []              # every built package's src/, grown by the scaffold step
 ```
+
+`mypy_path` is not optional once a repo-root directory shares a package's name (a `data/`
+folder of CSVs beside a `data` package): mypy resolves `import data` to that directory and
+every check of the package fails. The scaffold step adds `packages/<pkg>/src` to it when it
+adds the package to `root_packages`; nobody else edits either list.
 
 When `docs/constraints.md` exists, the `dev` group also carries what its **Floor** and
 **Enforced** commands run that the list above lacks — `pytest-cov` for `--cov`, `mypy`,
@@ -107,15 +115,20 @@ name = "package dependency direction"
 type = "layers"
 layers = ["ml", "analysis", "data"]
 
-# 2. Consumers use the public surface only — one per shipped package: forbidden_modules is
+# 2. Consumers use the public surface only — one per provider package: forbidden_modules is
 #    every row of the package contract's Sections table but `surface`, as <pkg>.<section>;
 #    source_modules is every package whose `depends on` names this one. Written by the
-#    implementer of the package's `surface` section.
+#    scaffold step of the first consumer (its source module must exist for `lint-imports` to
+#    accept the contract), or by the provider's `surface` implementer when a consumer already
+#    exists.
 [[tool.importlinter.contracts]]
 name = "data: consumers import the top level only"
 type = "forbidden"
 source_modules = ["analysis", "ml"]
 forbidden_modules = ["data.ingest", "data.clean", "data.audit", "data.storage"]
+# a lazy top-level `__init__.py` imports its sections, so every legal `from data import …`
+# is an indirect chain
+allow_indirect_imports = true
 
 # 3. Section layering inside a package — derived from the Sections table's `depends on`
 #    column, the `surface` row left out: a section sits above every section it depends on.
@@ -134,10 +147,14 @@ every section is legal. `lint-imports` is the command; it exits non-zero on any 
 **Growing the block.** The SCAFFOLD step adds the package to
 `root_packages` and to contract 1 in the position `docs/architecture.md` gives, and adds
 contract 3 for that package with every section of the Sections table placed by its `depends
-on`, every one wrapped `(name)` since none is built yet; each section's implementer unwraps its
-own name.
-The implementer of the package's `surface` section adds contract 2, once every other section
-is built. A scaffolded package has code — its `__init__.py` — so it is importable and listed.
+on`, every one wrapped `(name)` since none is built yet; the `surface` section's implementer
+unwraps them all. It adds `packages/<pkg>/src` to `[tool.mypy] mypy_path` (§1) in the same
+edit. When the package's `depends on` names a provider, the scaffold also writes (or
+uncomments) that provider's contract 2 with this package in `source_modules`: the consumer's
+scaffold is the first run whose module exists, and under the section-scoped write guard no
+section implementer of either package may edit the root `pyproject.toml`. The provider's
+`surface` implementer writes contract 2 itself only when a consumer already exists.
+A scaffolded package has code — its `__init__.py` — so it is importable and listed.
 
 ## 4. `mkdocs.yml`
 
@@ -163,7 +180,7 @@ plugins:
 nav:
   - Architecture: architecture.md
   - Decisions: decisions.md
-  - API: []                           # each surface section appends "- <pkg>: api/<pkg>.md"
+  - API: []                           # each surface section appends "- <pkg>: api/<pkg>/index.md"
                                       # Home: index.md is added by the documenter with the page
 ```
 
@@ -171,7 +188,7 @@ The site must build strict from the first scaffold onward, so the `nav` only eve
 files that exist: the scaffold step writes a nav with `Architecture` and `Decisions` and no
 `docs/index.md` — nothing under `docs/` but the ledgers, `interface.md` and `docs/api/` is the
 implementer's to write, so the home page waits for the documenter; each package's `surface`
-section adds `docs/api/<pkg>.md` (one `::: <module>` block per providing module in
+section adds `docs/api/<pkg>/index.md` (one `::: <module>` block per providing module in
 `interface.md`, plus `::: <pkg>.cli` and the pipeline modules) and its `API` nav entry;
 `/dev-team:finalize-project` writes `index.md`, adds `Home` and keeps the nav in sync. Cross-references in docstrings use `` [`name`][pkg.module.name] ``;
 `mkdocs build --strict` turns an unresolved one, or a nav entry with no file, into a build

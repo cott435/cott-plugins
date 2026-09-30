@@ -1,0 +1,34 @@
+{
+  "note": "--fields on a DONE section an open change file names: delta, the file, round 1's a Commit: as the diff base",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "change",
+      "slug": "vwap-window",
+      "sections": [
+        "data/ingest"
+      ]
+    }
+  ],
+  "args": [
+    "--fields",
+    "data/ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "mode: delta\n",
+      "change file: docs/packages/data/changes/vwap-window.md\n",
+      "design mode: new\n"
+    ],
+    "matches": [
+      "^diff base: [0-9a-f]{7}$"
+    ]
+  }
+}

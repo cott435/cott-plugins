@@ -35,7 +35,9 @@ section disagrees, this section wins.
    pathspec: `git add <paths>`, then `git commit -m "<message>" -- <paths>`. A plain `git
    commit` after `git add` takes whatever is staged, including a parallel agent's `git add`,
    and neither run sees an error; the pathspec form commits only these paths and holds the
-   index lock while it runs.
+   index lock while it runs. Write each path out literally in both commands, never through a
+   variable: `P="a b" && git add $P` passes one path `a b` under zsh, which does not split an
+   unquoted variable, and the commit fails.
 
 3. **Message** — First line `<scope>: <imperative summary>`, at most 72 characters:
 

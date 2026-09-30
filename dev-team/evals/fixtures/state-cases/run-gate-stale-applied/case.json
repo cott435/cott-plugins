@@ -1,0 +1,41 @@
+{
+  "note": "--run-gate fails on a central Applied: line of the section that its inbox entry no longer holds",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "files": {
+        "docs/decisions.md": "# Decisions\n\n## D3 — Which timestamp parser?\n\nScope: data/ingest\nRaised by: OQ-data-ingest-1\nRecommendation: pandas\nAssumption if unanswered: pandas\nDecision: pandas\nStatus: answered\nApplied: data/ingest, 2026-09-27, packages/data/src/data/ingest/loader.py\n"
+      },
+      "message": "docs: decisions"
+    },
+    {
+      "do": "inbox",
+      "section": "ingest",
+      "entries": [
+        "## D3\n\nApplied: data/ingest, 2026-09-28, packages/data/src/data/ingest/reader.py"
+      ]
+    },
+    {
+      "files": {
+        "docs/decisions.md": "# Decisions\n\n## D3 — Which timestamp parser?\n\nScope: data/ingest\nRaised by: OQ-data-ingest-1\nRecommendation: pandas\nAssumption if unanswered: pandas\nDecision: pandas\nStatus: answered\nApplied: data/ingest, 2026-09-27, packages/data/src/data/ingest/loader.py\nApplied: data/ingest, 2026-09-28, packages/data/src/data/ingest/reader.py\n"
+      },
+      "message": "docs: decisions synced once"
+    }
+  ],
+  "args": [
+    "--run-gate",
+    "data"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "run gate: FAIL",
+      "docs/packages/data/decisions/ingest.md: stale Applied: line — D3: Applied: data/ingest, 2026-09-27, packages/data/src/data/ingest/loader.py"
+    ],
+    "absent": [
+      "D3 Applied: line not in docs/decisions.md"
+    ]
+  }
+}

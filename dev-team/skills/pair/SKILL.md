@@ -128,7 +128,7 @@ When the user says they are done, or asks to wrap up:
    `${CLAUDE_PLUGIN_ROOT}/agents/implementer.md`). **Implementation notes** cites each new
    entry by its heading and never restates it. For `surface` the README is
    `docs/packages/<pkg>/interface.md`; when its **Public names** change, the entry is a
-   spec-change, and `docs/api/<pkg>.md` follows it.
+   spec-change, and `docs/api/<pkg>/index.md` follows it.
 5. **Gate.** `gate --report --base <start>`. It runs the stop gate's checks over everything
    since the start commit and writes the section's record, `.dev-team/gate/<pkg>/<section>.txt`,
    which the next reviewer reads as its evidence. Go through each FAIL line with the user

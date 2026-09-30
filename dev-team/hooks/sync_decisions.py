@@ -13,16 +13,22 @@ read the whole inbox and the central ledger, then, entry by entry in file order:
   central ledger with the heading renumbered; rewrite the inbox heading to `## D<n> —
   <question>`.
 - `## D<n>` or `## D<n> — <question>` whose `n` exists centrally and whose question, when
-  given, equals the central one (whitespace-normalized): copy each `Applied:` line the central
-  entry lacks (exact line match, stripped) after its last `Applied:` line, else at its end.
-  Nothing else flows: `Decision:`, `Status:`, `Recommendation:` in the inbox are ignored.
+  given, equals the central one (whitespace-normalized): the central entry's `Applied:` lines
+  naming the inbox's own `<pkg>/<section>` are made equal to the inbox entry's (inbox order, at
+  the position of the first such central line, else after the last `Applied:` line, else at
+  the entry's end), so an `Applied:` line the inbox edits or removes is edited or removed
+  centrally; an inbox line naming another section is copied once when the central entry lacks
+  it (exact line match, stripped) and never removed. Other sections' central lines are
+  untouched, and nothing else flows: `Decision:`, `Status:`, `Recommendation:` in the inbox
+  are ignored.
 - `## D<n>` whose `n` is absent centrally, or whose question differs: a stub; renumber as above.
 
 Idempotent: a second run merges nothing. Creates `docs/decisions.md` (`# Decisions`) when it is
 missing and there is something to append. On any change, prints JSON on stdout:
 `{"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": "dev-team
 decisions: <one clause per change, `; `-joined>"}}` — clauses `D? → D14`, `D14 → D15
-(renumbered: not the central D14)`, `D7: 1 Applied: line added`. No change: no stdout. Always
+(renumbered: not the central D14)`, `D7: 1 Applied: line added`, `D7: Applied: lines for
+data/ingest set to the inbox's (2)` (a line edited or removed). No change: no stdout. Always
 exit 0; any error is reported on stderr (`dev-team decisions sync: error — …`) and the inbox is
 left as it was.
 
@@ -127,6 +133,32 @@ class Ledger:
         self.entries.append(f"## {heading}\n" + body.strip("\n") + "\n")
         self.changed = True
 
+    def mirror_applied(self, n: str, owner: str, want: list[str]) -> tuple[int, bool]:
+        """Make D<n>'s Applied: lines naming owner equal want; (lines added, whether any existing
+        line of owner's was edited or removed)."""
+        i = self._find(n)
+        rows = self.entries[i].split("\n")
+        own = [k for k, line in enumerate(rows) if status._applied_lines(line) and status.applied_owner(line) == owner]
+        want = list(dict.fromkeys(want))
+        if [rows[k].strip() for k in own] == want:
+            return 0, False
+        if own:
+            at = own[0]
+            for k in reversed(own):
+                del rows[k]
+        else:
+            applied = [k for k, line in enumerate(rows) if status._applied_lines(line)]
+            if applied:
+                at = applied[-1] + 1
+            else:
+                at = len(rows)
+                while at > 1 and not rows[at - 1].strip():
+                    at -= 1
+        rows[at:at] = want
+        self.entries[i] = "\n".join(rows)
+        self.changed = True
+        return len(want), bool(own)
+
     def add_applied(self, n: str, lines: list[str]) -> int:
         """Add the Applied: lines D<n> lacks; how many were added."""
         i = self._find(n)
@@ -160,6 +192,7 @@ def merge(inbox: Path, ledger: Ledger) -> tuple[str | None, list[str]]:
     """Merge one inbox into the ledger; (the inbox's new text or None, one clause per change)."""
     text = inbox.read_text()
     entries = status.inbox_entries(inbox)
+    owner = status.inbox_section(inbox)
     # The heading lines inbox_entries accepted, in the same order, so each can be rewritten.
     heads = [m for m in re.finditer(r"^## (?=D[?\d])(.*)$", text, flags=re.M) if HEAD.match(m.group(1).strip())]
     edits: list[tuple[int, int, str]] = []
@@ -168,7 +201,13 @@ def merge(inbox: Path, ledger: Ledger) -> tuple[str | None, list[str]]:
         n, question = str(e["n"]), str(e["question"])
         central = None if n == "?" else ledger.question(n)
         if central is not None and (not question or _norm(question) == _norm(central)):
-            added = ledger.add_applied(n, list(e["Applied"]))  # type: ignore[arg-type]
+            lines = list(e["Applied"])  # type: ignore[arg-type]
+            mine = [line for line in lines if status.applied_owner(line) == owner]
+            count, replaced = ledger.mirror_applied(n, owner, mine)
+            added = ledger.add_applied(n, [line for line in lines if status.applied_owner(line) != owner])
+            if replaced:
+                clauses.append(f"D{n}: Applied: lines for {owner} set to the inbox's ({count})")
+            added += 0 if replaced else count
             if added:
                 clauses.append(f"D{n}: {added} Applied: line{'s' if added > 1 else ''} added")
             continue

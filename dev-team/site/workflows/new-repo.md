@@ -108,7 +108,7 @@ implementer at a time.
 
 The `surface` section comes last, since it depends on every other: its design is built from
 the shipped READMEs, its implementer writes the lazy top-level `__init__.py`, the pipelines,
-`cli.py`, `docs/api/data.md` and `docs/packages/data/interface.md`, and its review approves
+`cli.py`, `docs/api/data/index.md` and `docs/packages/data/interface.md`, and its review approves
 the package's public surface. When every section is DONE, the driver runs the architect as
 `sync-plan`: approved deviations go into the contract, verified against the code. The summary
 ends with `next: /dev-team:plan-package analysis`.

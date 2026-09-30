@@ -108,13 +108,12 @@ Stated as the user would state them. Anything not here: the stub's `Recommendati
   sha or `none` (with why: nothing to apply, or a return other than `done`), the
   `Dev-Team-Run:` trailer.
 - `<outputs>/fixed-cost.md` — per role, for every subagent spawn in every stream: the context
-  the agent held before doing any work. Read it from the subagent's first `assistant` event
-  (the events carrying its `parent_tool_use_id`): `usage.input_tokens +
-  usage.cache_creation_input_tokens + usage.cache_read_input_tokens`. If the stream does not
-  carry subagent turns, read the first `task_progress` event's `usage.total_tokens` for that
-  task, as eval L did; the file says which field it used. One row per spawn, then per role min,
-  max and mean, with eval L's means in a column beside: implementer 54,342; tester 39,652;
-  reviewer 38,467; architect 38,411; designer 26,055 (`evals/2026-09-19-l-fixed-cost-per-section.md`).
+  the agent held before doing any work. Read it from the subagent transcript's first
+  `assistant` record (`~/.claude/projects/<project>/<session>/subagents/agent-<id>.jsonl`; the
+  stream carries only `task_*` events for subagents): `usage.input_tokens +
+  usage.cache_creation_input_tokens + usage.cache_read_input_tokens`; the file says which
+  field it used. One row per spawn, then per role min, max and mean, with the 2.1.0 means
+  row 12.5 of `site/notes/2.2-12-run-fixes.md` measured beside them (its log names them).
 - `<outputs>/repo/` — the copy's `docs/`, `packages/`, `tests/` and root `README.md`
   (`rsync -a --exclude .git`), and its `.dev-team/gate/` and `.dev-team/stop/` when they exist
   (`rsync -a <copy>/.dev-team/gate <copy>/.dev-team/stop <outputs>/repo/.dev-team/`). The
@@ -142,5 +141,8 @@ Stated as the user would state them. Anything not here: the stub's `Recommendati
   more section implementers, their two gate windows (header stamp to modification time, or the
   stream's hook events when they exist) and one line: `F4: overlap observed` naming the pair,
   `F4: no overlap`, or `F4: not observable` with why. Say which timing source each window used.
+- `<outputs>/returns.md` — one row per agent run (the runs of `commits.md`): stream, role,
+  `Section:`/`Scaffold:`/`Package:` line, and the first line of its last hand-back, which is
+  the last `assistant` record with text in its subagent transcript.
 - `transcript.md` — each command with its exit code and duration, each user action you took
   (answers, re-runs), how you found the ingest command for `rows.txt`, and the final message.
