@@ -19,7 +19,20 @@ Answers, as facts you would state:
 ## Where committed files go
 
 The designer commits its files. Under the harness rules, write every file it would write or
-commit under `outputs/` at its repo-relative path (for example `outputs/docs/deviations.md`
-or `outputs/docs/packages/data/design/prices.md`, whichever it writes), and put the commit
+commit under `outputs/` at its repo-relative path, the path its own instructions give (for
+example `outputs/docs/packages/data/design/prices.md` for a design), and put the commit
 message — scope, summary and trailer exactly as it would be committed — in
-`outputs/commit.txt`.
+`outputs/commit.txt`, then a line `---`, then each path the commit would stage, one per line,
+exactly as its `git commit … -- <paths>` pathspec would name them.
+
+## The fixture's ledger at an older location
+
+The repo holds `docs/deviations/data/prices.md`, the section's ledger at its 2.0–2.1 location:
+a title line and a note, no entries. The designer reads it as it reads any ledger. A file it
+does not write is not copied into `outputs/`.
+
+For the grader: under 2.2 an entry is edited in the file that holds it, and every new entry
+goes to `docs/packages/<pkg>/deviations/<section>.md`. This run appends a new entry, so it
+lands in a new file, `docs/packages/data/deviations/prices.md`, whose first line is
+`# Deviations — data/prices` and whose one entry is numbered `— 1`; the older file is read and
+never written. A 2.1 designer appends to the older file with a heading that has no `— <k>`.

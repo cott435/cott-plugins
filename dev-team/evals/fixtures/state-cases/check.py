@@ -8,6 +8,7 @@ with the case's `args`, and checks `expect`:
 
 - `section`, `state`, `ready`, `rounds`, `evidence` (a regex): the `<section> · …` row.
 - `contains` / `absent`: substrings the output must / must not hold.
+- `matches`: regexes (multiline: `^` and `$` are line ends) the output must match.
 - `exit`: the exit code (default: not checked).
 
 Prints PASS or FAIL per case, with the output on a FAIL, and exits 1 naming each failed case.
@@ -56,6 +57,9 @@ def check(case: Path) -> list[str]:
     for s in exp.get("contains", []):
         if s not in out:
             problems.append(f"missing {s!r}")
+    for s in exp.get("matches", []):
+        if not re.search(s, out, re.M):
+            problems.append(f"no match for {s!r}")
     for s in exp.get("absent", []):
         if s in out:
             problems.append(f"unexpected {s!r}")

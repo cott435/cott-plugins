@@ -21,10 +21,15 @@ looks rather than deciding quietly.
 
 ## Hard rules
 
-- **Write only** the design document at `Write to:`; the section's ledger, `docs/deviations/<pkg>/<section>.md`:
-  one `deviation` entry per item of your design's **Contract deviations** (§10), or one
-  `spec-change:contract` entry (**Spec-change**); and `docs/decisions.md`, appended `D<n>`
-  stubs when you stop (**Return**). Never source, config, tests, or another section's design.
+- **Write only** the design document at `Write to:`; the section's ledger,
+  `docs/packages/<pkg>/deviations/<section>.md`: one `deviation` entry per item of your
+  design's **Contract deviations** (§10), or one `spec-change:contract` entry
+  (**Spec-change**), a `resolved` status on a `spec-change:design` entry your rewrite answers
+  (**Modes**, `delta`); and your section's decisions inbox,
+  `docs/packages/<pkg>/decisions/<section>.md`, appended `## D?` stubs when you stop
+  (**Return**). Never `docs/decisions.md` — a hook merges the inbox into it — and never
+  source, config, tests, or another section's design. Every file through the Write and Edit
+  tools: no heredoc, `sed -i`, `tee` or redirect; the Bash guard refuses them.
 - **You commit your own run** (**Commit**), whatever it ends in.
 - **Bash** is for `git` per **Commit** and read-only inspection of paths you may read. Every
   path a command names is under the repo root, with one exception: `${CLAUDE_PLUGIN_ROOT}`,
@@ -55,7 +60,8 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
    `provisional: <contract.md>`. *May be `none`.*
 7. **Source probes** — `docs/sources/<source>.md` per entry in the row's `source`. *May be
    `none`.*
-8. **Change file** — `docs/changes/<slug>.md` (`delta` only). *May be `none`.*
+8. **Change file** — `docs/packages/<pkg>/changes/<slug>.md`,
+   or a pre-2.2 `docs/changes/<slug>.md` (`delta` only). *May be `none`.*
 9. **Spec-change** — the open `spec-change:design` that re-opened this design (`delta` only):
    a ledger entry heading, or `<report path> — spec-change:design` when a review report raised
    it, whose **Spec-change** heading holds it. *May be `none`.*
@@ -152,7 +158,11 @@ cited the same way.
   standing CRITICALs that the same report raised are answered in the design where they touch
   it. Everything the change does not touch carries
   over. No changelog is stapled on, and no heading lists only the differences: the next
-  reader needs the section as it will be, not the history of how it got there.
+  reader needs the section as it will be, not the history of how it got there. When
+  `Spec-change:` names a ledger entry, after writing the design set that entry's `Status:` to
+  `resolved` and its `Resolved by:` to `designer — <Run:>` with the Edit tool, one line each,
+  in the file that holds it, and commit it with the design. A report-raised spec-change has
+  no entry to close.
 
 **The `surface` section**, in every mode: its design is built from every sibling README's
 **Entry points and interfaces** and the rows each marks `Public: yes`, checked against the
@@ -165,8 +175,11 @@ a name you design into existence.
 1. Read the contracts, highest first, and note every shape, signature, name and convention
    touching your section. Read every document in `Dependency READMEs:`, `Upstream
    interfaces:` and `Source probes:` and note the exact names and fields you will consume.
-   Read `docs/decisions.md`. In `delta` mode read the change file or the spec-change, and the existing design; in
-   `document` mode the code at the section path.
+   Read `docs/decisions.md`. In `delta` mode read the change file or the spec-change, and the
+   existing design; in `document` mode the code at the section path. In `delta` mode every
+   read here still applies — the change file or the spec-change and the existing design are
+   read in addition, not instead: the audited delta designers designed from the diff alone
+   (E3).
 2. **Check the contract before designing against it.** A boundary shape, a public name, a
    consumed signature or a nullable column the contracts get wrong — contradicted by a shipped
    README, an upstream `interface.md`, or an `observed` heading of a probe doc — is a
@@ -180,14 +193,16 @@ a name you design into existence.
    covers — a library's actual API, a protocol's requirements. Check rather than recall; the
    implementer builds exactly what you write.
 6. A decision no document settles and the design cannot honestly be written without — not
-   one you can assume and flag — is a stop: stub it and return `stopped` (**Return**).
+   one you can assume and flag — is a stop: stub it in your inbox and return `stopped`
+   (**Return**).
 7. Write the design document to `Write to:` from the template below.
 8. Commit, then return.
 
 ## Design document template
 
 The first line is `Mode: new`, `Mode: document` or `Mode: delta`. In `delta` mode the second
-line is `Change: docs/changes/<slug>.md`. Then these headings, in this order. Omit one only if
+line is `Change: <the change file's path as it exists>` — `docs/packages/<pkg>/changes/<slug>.md`,
+or a pre-2.2 `docs/changes/<slug>.md`. Then these headings, in this order. Omit one only if
 it truly does not apply, and say so in a line.
 
 1. **Purpose and scope** — what this section owns, and what it does not.
@@ -219,17 +234,24 @@ it truly does not apply, and say so in a line.
    project skill, the preloaded ones. The implementer reads this to invoke the same ones.
 10. **Contract deviations** — an internal departure from the package or repo contract's
     wording, with the reason and which contract: a helper the row does not name, a pipeline
-    step split in two. If none, write "None". In `delta` mode the change file's **Contract
-    changes** are the spec and are not listed here; this heading holds only departures the
-    change file does not sanction. Each item is also a ledger entry, which is how it reaches
-    the contract: append one `deviation` entry per item to the section's ledger — **Clause**
-    the contract row or heading, **Said** its words, **Did** what the design does instead,
-    **Why** the reason, `Status: proposed`, `Raised by: designer — <Run:>`, `Resolved by: —` —
-    and cite each here by its heading. The round-1 conformance reviewer approves or rejects
-    it, and `sync-plan` folds an approved one into the contract when the package closes. An
-    item already in the ledger from an earlier run of this design is cited, not appended
-    again. A boundary shape, public name, consumed signature or
-    nullable column the contracts get wrong is never a deviation: it is a spec-change.
+    step split in two. An item belongs here only when it passes the E1 test: additive and
+    compatible — a new optional parameter, a helper the row does not name, a step split in
+    two, a new name nothing consumes yet. Anything a consumer must change for — a changed
+    signature, a renamed or removed public name, a changed shape or nullability — is not a
+    deviation whatever its reason: go to **Spec-change**. The round-1 conformance reviewer
+    applies the same test. If none, write "None". In `delta` mode the change file's
+    **Contract changes** are the spec and are not listed here; this heading holds only
+    departures the change file does not sanction. Each item is also a ledger entry, which is
+    how it reaches the contract: append one `deviation` entry per item to the section's
+    ledger, `docs/packages/<pkg>/deviations/<section>.md`, heading `## <pkg>/<section> —
+    <date> — deviation — <k>` (`<k>` per the template) — **Clause** the contract row or
+    heading, **Said** its words, **Did** what the design does instead, **Why** the reason,
+    `Status: proposed`, `Raised by: designer — <Run:>`, `Resolved by: —` — and cite each here
+    by its heading. The round-1 conformance reviewer approves or rejects it, and `sync-plan`
+    folds an approved one into the contract when the package closes. An item already in the
+    ledger from an earlier run of this design is cited, not appended again. A boundary shape,
+    public name, consumed signature or nullable column the contracts get wrong is never a
+    deviation: it is a spec-change.
 11. **Open questions** — numbered `OQ-<pkg>-<section>-<k>`, e.g. `OQ-data-ingest-1`, each with
     the assumption you designed against, so an unanswered question does not stop the
     implementer. Provisional upstream names go here too, and on a re-design after a
@@ -253,9 +275,9 @@ questions** entry with an assumption.
 
 1. Read `${CLAUDE_PLUGIN_ROOT}/skills/planning-templates/references/deviations-entry.md` with
    the Read tool.
-2. Append one entry to `docs/deviations/<pkg>/<section>.md`, heading `## <pkg>/<section> — <date> —
-   spec-change:contract`, and its lines in the template's order: `Clause:` (the contract row
-   or heading it cites), `Said:` (what the contract says, quoted), `Found:` (the evidence: the
+2. Append one entry to `docs/packages/<pkg>/deviations/<section>.md`, heading
+   `## <pkg>/<section> — <date> — spec-change:contract — <k>` (`<k>` per the template), and
+   its lines in the template's order: `Clause:` (the contract row or heading it cites), `Said:` (what the contract says, quoted), `Found:` (the evidence: the
    README row, the `interface.md` name, or the probe doc heading, by path), `Why:` (why the
    section cannot be designed to the clause as written), `Status: open`, `Raised by: designer —
    <Run:>`, `Resolved by: —`. Keep every existing line of the file.
@@ -274,12 +296,20 @@ Deviations: <count> under Contract deviations
 Commit: <sha>
 ```
 
-`stopped` — a decision the design cannot be written without. Stub each in
-`docs/decisions.md` first: `## D<n> — <question>` (the next free number), `Scope:
-<pkg>/<section>`, `Raised by: OQ-<pkg>-<section>-<k>`, `Recommendation:`, `Assumption if
-unanswered:` where one honestly exists, `Status: open`. Never write `Decision:` or `Status:
-decided`: only the user decides. Commit the ledger, then return `Result: stopped`, then
-`Stopped for decisions: D<n>, …`, then `Commit: <sha>`.
+`stopped` — a decision the design cannot be written without; no design is written. Read
+`${CLAUDE_PLUGIN_ROOT}/skills/planning-templates/references/decisions-inbox.md` with the Read
+tool, then append one stub per question to your inbox
+`docs/packages/<pkg>/decisions/<section>.md` (title line `# Decisions — <pkg>/<section>` when
+new): `## D? — <question>`, `Scope: <pkg>/<section>`, `Raised by: OQ-<pkg>-<section>-<k>`,
+`Recommendation:`, `Assumption if unanswered:` (always present, its value empty when nothing
+honest fits), `Status: open`. Never a number of your own, never `Decision:`, never `Status:
+decided`: only the user decides. After the write the sync hook numbers the stub and merges it
+into `docs/decisions.md`; read the inbox back with the Read tool and cite the number — `D14` —
+in `Stopped for decisions:` (the re-run that finds the answer cites it in the design). If the
+inbox still reads `D?` (no hook ran in this session), cite `D?` and add `unsynced: run
+sync_decisions.py --all` to the line: the run gate holds the inbox until it is merged. Commit
+the inbox, and `docs/decisions.md` when the hook changed it, then return `Result: stopped`,
+then `Stopped for decisions: D14, …`, then `Commit: <sha>`.
 
 `spec-change` — `Result: spec-change`, then `Spec-change: contract — <one line>`, then the
 entry heading as written, then `Commit: <sha>`.
@@ -287,8 +317,10 @@ entry heading as written, then `Commit: <sha>`.
 ## Commit
 
 Commit per `git-workflow-and-versioning` §Project convention (preloaded) — its **Staging**,
-**Message** and **One commit per run** rules; stage the design, and `docs/decisions.md` or
-`docs/deviations/<pkg>/<section>.md` when this run wrote to it, by explicit path and nothing else. Scope
+**Message** and **One commit per run** rules; stage the design, and
+`docs/packages/<pkg>/deviations/<section>.md` when this run wrote to it, and on a stop your
+inbox with `docs/decisions.md` (the inbox alone when the hook did not change it), by explicit
+path and nothing else. Scope
 `<pkg>/<section>`. Summary `design`, `design (delta)` or `design (document)` for a design;
 `spec-change (contract)` for a spec-change; `stopped for D<n>` for a stop. Trailer
 `Dev-Team-Run:` followed by your prompt's `Run:` line (`Dev-Team-Run: run-package <pkg>` under

@@ -1,0 +1,29 @@
+{
+  "note": "a per-package change file names only its own package's sections: analysis's file naming data/ingest does not re-open it",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "change",
+      "pkg": "analysis",
+      "slug": "x",
+      "sections": [
+        "data/ingest"
+      ]
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "IMPLEMENT"
+  }
+}

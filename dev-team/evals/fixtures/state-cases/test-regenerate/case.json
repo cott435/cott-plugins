@@ -20,7 +20,8 @@
       "do": "deviation",
       "section": "ingest",
       "kind": "deviation",
-      "status": "approved"
+      "status": "approved",
+      "layout": "old"
     }
   ],
   "args": [],

@@ -2,6 +2,7 @@
   "script": "gate",
   "repo": "built",
   "setup": {
+    "transcript": "Section: data/ingest\nDesign: docs/packages/data/design/ingest.md\nRun: run-package data",
     "prior": {
       "packages/data/tests/intent/other/test_other.py": "\"\"\"Intent tests for data/other, written before its code.\"\"\"\n\nimport os\n\n\ndef test_other():\n    \"\"\"Design §1 other: exists.\"\"\"\n    assert True\n"
     },

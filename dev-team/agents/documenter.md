@@ -115,8 +115,8 @@ trustworthy. It has two sources, in this order:
      confirm, never to learn what the code does;
    - one env var declared by two sections with different defaults, both values and both
      sections;
-   - a shipped package (the script says `shipped`) with no `docs/api/<pkg>.md` — reported, not
-     written;
+   - a shipped package (the script says `shipped`) with no `docs/api/<pkg>/index.md` (nor a
+     pre-2.2 `docs/api/<pkg>.md`) — reported, not written;
    - a section with no README, a section README missing one of the seven headings, or an
      `interface.md` missing one of the headings you read;
    - a `decided` decision with no `Applied:` line, per the ledger reading above;

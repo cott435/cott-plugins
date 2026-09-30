@@ -2,8 +2,9 @@
   "script": "gate",
   "repo": "built",
   "setup": {
+    "transcript": "Section: data/ingest\nDesign: docs/packages/data/design/ingest.md\nRun: run-package data",
     "files": {
-      ".dev-team/stop": "blocked\nD4 needs an answer\n"
+      ".dev-team/stop/data/ingest": "blocked\nD4 needs an answer\n"
     },
     "counter": 1
   },
@@ -27,7 +28,7 @@
   "expect": {
     "exit": 0,
     "absent": [
-      ".dev-team/stop",
+      ".dev-team/stop/data/ingest",
       ".dev-team/gate"
     ],
     "counter": null

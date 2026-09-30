@@ -26,13 +26,15 @@
       },
       "spec": {
         "b": "design: §5 names one entry point; the probe doc shows two — docs/sources/trades.md, Observed schema"
-      }
+      },
+      "layout": "old"
     },
     {
       "do": "deviation",
       "section": "ingest",
       "kind": "spec-change:design",
-      "status": "open"
+      "status": "open",
+      "layout": "old"
     }
   ],
   "args": [],

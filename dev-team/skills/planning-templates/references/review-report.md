@@ -1,17 +1,20 @@
-# `docs/reviews/<date>-<pkg>-<section>-r<n>-<a, b or s>.md` — a review report
+# `docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<a, b or s>.md` — a review report
 
 Written by the reviewer, one file per reviewer per round: `a` (conformance) and `b`
-(correctness) in round 1, `s` from round 2 (`full`) and for a `defer` run. Read by
-`status.py` (round, verdict, `Commit:`, `Convergence:`), the fix-round implementer (the queue),
-the next reviewer (fixed / unfixed), never the documenter. `n` comes from `status.py --rounds`.
-Never overwrite a report; the filename is the round.
+(correctness) in round 1, `s` from round 2 (`full`) and for a `defer` run, one directory per
+section. Read by `status.py` (round, verdict, `Commit:`, `Convergence:`), the fix-round
+implementer (the queue), the next reviewer (fixed / unfixed), never the documenter. `n` comes
+from `status.py --rounds`, and so does `Commit:`: its `commit:` line, the section's last commit
+(`git log -1 --format=%h -- <the section's paths>`), never `HEAD`, which in a parallel batch is
+a sibling's report commit. A 2.0 report `docs/reviews/<date>-<pkg>-<section>-r<n>-<letter>.md`
+is still read as round `n`. Never overwrite a report; the filename is the round.
 
 Header, the first lines of the file, each `Key: value`:
 
 ```
 # Review — <pkg>/<section> — round <n> — <focus>
 Scope: <what was read>
-Commit: <sha reviewed>
+Commit: <the commit: line of status.py --rounds>
 Verdict: approve | request changes | spec-change
 Round: <n>
 Focus: conformance | correctness | full | defer
@@ -34,7 +37,7 @@ Then these headings, in order; an empty one is written with `- none`:
    level, `- design: …` (`test | design | contract`), then the evidence. `status.py` reads the
    level from there: until a ledger entry records it, the report is the open spec-change and
    re-opens that step. For a round-1 `b` report, which never writes the ledger, it is the only
-   record. An `a` or `s` reviewer also appends the matching entry to `docs/deviations/<pkg>/<section>.md`.
+   record. An `a` or `s` reviewer also appends the matching entry to `docs/packages/<pkg>/deviations/<section>.md`.
 7. **Deferred** — `defer` runs only: each standing CRITICAL and the `docs/followups.md` line it
    became.
 

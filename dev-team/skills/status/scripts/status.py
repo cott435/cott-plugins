@@ -2,7 +2,7 @@
 """Derive where every package and section stands from docs/ and the code. Nothing is stored.
 
 Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--repo]
-                          [--inputs <pkg>/<section>] [--scaffold <pkg>]
+                          [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]
 
 A section is in exactly one state, decided in this order, first match wins:
 
@@ -15,7 +15,7 @@ A section is in exactly one state, decided in this order, first match wins:
    `docs/sources/<token>.md` lacks a `## <pkg>/<section>` heading, or a `dataset:` source with
    no `docs/sources/<token>.md` at all.
 4. **DESIGN** — no design at `docs/packages/<pkg>/design/<section>.md`; or an open
-   `spec-change:design` entry; or an open `docs/changes/<slug>.md` whose **Affected sections**
+   `spec-change:design` entry; or an open change file whose **Affected sections**
    names the section and is newer than the design; or a probe doc the row names is newer than
    the design. A `spec-change:design` entry counts only until the design is committed after
    the commit that added it: the designer's rewrite answers it, and nobody sets its `Status:`.
@@ -38,7 +38,24 @@ A section is in exactly one state, decided in this order, first match wins:
 The **ledger** is one file per section, `docs/deviations/<pkg>/<section>.md`, so agents that
 run in parallel on different sections never write the same file; a `docs/deviations.md` from
 before that split is still read, and an entry moved out of it into its section's file keeps
-the commit that first added it, so a move answers nothing and re-opens nothing. An **open spec-change** is an entry `spec-change:<level>`
+the commit that first added it, so a move answers nothing and re-opens nothing.
+
+Since 2.2 the section's ledger is `docs/packages/<pkg>/deviations/<section>.md`; the 2.0
+location `docs/deviations/<pkg>/<section>.md` and the pre-2.0 `docs/deviations.md` are still
+read, and an entry is edited in the file that holds it. Review reports are
+`docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<a|b|s>.md`; the 2.0 names
+`docs/reviews/<date>-<pkg>-<section>-r<n>-<letter>.md` are still read as round `n`. Change
+files are `docs/packages/<pkg>/changes/<slug>.md`, one per affected package; a
+`docs/changes/<slug>.md` is still read as naming every package its **Affected sections**
+name. A ledger heading may end `— <k>`, the entry's 1-based sequence in its file; a heading
+without it is a 2.x ledger and `k` is absent. The **inbox** is
+`docs/packages/<pkg>/decisions/<section>.md`: `## D? — <question>` stubs and `## D<n>` entries
+holding `Applied:` lines, merged into `docs/decisions.md` by `hooks/sync_decisions.py`. This
+script never writes it; `--run-gate` fails on an inbox holding anything the central ledger
+does not, and on a central `Applied: <pkg>/<section>, …` line the section's inbox entry for
+that `D<n>` no longer holds (the hook mirrors a section's own lines).
+
+An **open spec-change** is an entry `spec-change:<level>`
 with `Status: open`, or a review report of the newest round whose verdict is `spec-change`:
 each level its **Spec-change** heading names counts as open until a ledger entry of that level
 for the section is committed with or after the report (then the entry speaks), or the
@@ -55,9 +72,12 @@ A Sections `path` cell written as `…/<name>/` (or `.../<name>/`) is the defaul
 
 Ready: a section whose state is neither DONE nor BLOCKED and whose every in-package `depends
 on` is DONE. The `surface` row depends on every other row whatever its cell says.
-Shipped: the `surface` section is DONE. Rounds: the highest `n` over
-`docs/reviews/<date>-<pkg>-<section>-r<n>-<a|b|s>.md`; a round's verdict is the worst of its
+Shipped: the `surface` section is DONE. Rounds: the highest `n` over the section's review
+reports, at either location; a round's verdict is the worst of its
 reports (request changes > spec-change > approve); a report with no `-r<n>-` is round 1.
+`--rounds <pkg>/<section>` prints a third line, `commit: <short sha>`, the newest commit
+touching the section's path, `tests/unit/<section>`, `tests/intent/<section>` and its README,
+or `commit: none` — the reviewer copies it as its report's `Commit:` (F12).
 
 **Scaffold.** A package is ready to be built in when its workspace exists: a root
 `pyproject.toml`, and, when that root is a uv workspace (`[tool.uv.workspace]`), a
@@ -83,18 +103,37 @@ it names before touching the section. One `<Field>: <value>` line per field, in 
    docs/packages/<dep>/contract.md`.
 7. **Source probes** — `docs/sources/<token>.md` per entry in the row's `source`.
 8. **Intent tests** — `<package root>/tests/intent/<section>/` when it exists.
-9. **Review** — the newest round's reports when its verdict is `request changes` (FIX n, or a
+9. **Review** — from either location, the newest round's reports when its verdict is `request changes` (FIX n, or a
    cap granted one more round) or `spec-change` (a rebuild after the step it re-opened: its
    CRITICALs still stand).
 10. **Round** — the newest round plus one.
-11. **Change file** — every open `docs/changes/<slug>.md` whose Affected sections names the
-    section.
+11. **Change file** — from either location, every open `docs/packages/<pkg>/changes/<slug>.md`
+    or `docs/changes/<slug>.md` whose Affected sections names the section.
 12. **Run** — `run-package <pkg>`.
+
+`--fields <pkg>/<section>` prints the spawn fields run-package would otherwise resolve by
+reading files, four `key: value` lines in this order, and exits 0 (2 on a section the contract
+lacks):
+
+1. `mode: new | document | delta` — `delta` when an open change file names the section, or the
+   state's evidence is `open <heading>` for a `spec-change:design`; `document` when the
+   section's path holds a `.py` file (nested sections excluded; for `surface`, the package's
+   own `__init__.py`, which the scaffold writes, does not count) and there is no design; else
+   `new`. The designer's `Mode:` field.
+2. `change file: <path>, … | none` — the open change files naming the section, as
+   **Change file** in `--inputs`.
+3. `design mode: <word> | none` — the word after `Mode:` on the design's first line (a title
+   line above it is read past, up to the fifth line); `none` with no design or no such line.
+   The tester's `Design mode:` field.
+4. `diff base: <sha> | none` — from the newest round `n` ≥ 1, the `Commit:` of round `n`'s
+   `-s` report, or its `-a` report when `n` is 1, or its one report when it has no letter;
+   `none` with no round or no `Commit:`. The next reviewer's `Diff:` field is `<sha>..HEAD`.
 """
 
 from __future__ import annotations
 
 import ast
+import json
 import os
 import re
 import subprocess
@@ -455,36 +494,125 @@ LEGACY_LEDGER = "deviations.md"
 
 
 def ledger_path(pkg: str, section: str) -> Path:
-    """The section's ledger: `docs/deviations/<pkg>/<section>.md`."""
+    """The section's ledger: `docs/packages/<pkg>/deviations/<section>.md`."""
+    return DOCS / "packages" / pkg / "deviations" / f"{section}.md"
+
+
+def old_ledger_path(pkg: str, section: str) -> Path:
+    """The 2.0 location of the section's ledger, `docs/deviations/<pkg>/<section>.md`; read only."""
     return DOCS / "deviations" / pkg / f"{section}.md"
 
 
 def ledger_files(pkg: str | None = None, section: str | None = None) -> list[Path]:
     """The ledger files that can hold pkg's (and section's) entries: the pre-split
-    `docs/deviations.md` when it exists, then the per-section files."""
+    `docs/deviations.md` when it exists, then the 2.0 per-section files, then the 2.2 ones."""
     out = [DOCS / LEGACY_LEDGER] if (DOCS / LEGACY_LEDGER).exists() else []
     if pkg and section:
-        out += [ledger_path(pkg, section)] if ledger_path(pkg, section).exists() else []
+        out += [f for f in (old_ledger_path(pkg, section), ledger_path(pkg, section)) if f.exists()]
+    elif pkg:
+        out += sorted((DOCS / "deviations" / pkg).glob("*.md")) + sorted((DOCS / "packages" / pkg / "deviations").glob("*.md"))
     else:
-        out += sorted((DOCS / "deviations" / pkg).glob("*.md") if pkg else (DOCS / "deviations").glob("*/*.md"))
+        out += sorted((DOCS / "deviations").glob("*/*.md")) + sorted((DOCS / "packages").glob("*/deviations/*.md"))
+    return out
+
+
+def inbox_path(pkg: str, section: str) -> Path:
+    """The section's decisions inbox, `docs/packages/<pkg>/decisions/<section>.md`."""
+    return DOCS / "packages" / pkg / "decisions" / f"{section}.md"
+
+
+def inbox_files(pkg: str | None = None) -> list[Path]:
+    """Every inbox of one package, or of the repo."""
+    return sorted((DOCS / "packages").glob(f"{pkg or '*'}/decisions/*.md"))
+
+
+def _applied_lines(body: str) -> list[str]:
+    """The stripped `Applied:` lines of an entry body, bulleted or bold forms included."""
+    return [line.strip() for line in body.splitlines()
+            if re.match(r"(?:[-*]\s+)?\**Applied\**\s*:", line.strip())]
+
+
+def applied_owner(line: str) -> str | None:
+    """The `<pkg>/<section>` an `Applied:` line names first, or None."""
+    m = re.match(r"(?:[-*]\s+)?\**Applied\**\s*:\s*\**\s*([\w.-]+/[\w.-]+)\s*,", line.strip())
+    return m.group(1) if m else None
+
+
+def inbox_section(path: Path) -> str:
+    """`<pkg>/<section>` of an inbox path, `docs/packages/<pkg>/decisions/<section>.md`."""
+    return f"{Path(path).parent.parent.name}/{Path(path).stem}"
+
+
+def inbox_entries(path: Path) -> list[dict[str, object]]:
+    """The entries of one inbox: heading, n (`?` or digits), question, Applied, Status, raw."""
+    try:
+        text = Path(path).read_text()
+    except OSError:
+        return []
+    out: list[dict[str, object]] = []
+    for e in re.split(r"^## (?=D[?\d])", text, flags=re.M)[1:]:
+        head = e.splitlines()[0].strip()
+        m = re.match(r"D(\?|\d+)\s*(?:[—–-]+\s*(.*))?$", head)
+        if not m:
+            continue
+        out.append({"heading": head, "n": m.group(1), "question": (m.group(2) or "").strip(),
+                    "Applied": _applied_lines(e), "Status": _field(e, "Status"), "raw": e})
+    return out
+
+
+def _central_bodies() -> dict[str, str]:
+    """n → body of every `## D<n>` entry of docs/decisions.md."""
+    f = DOCS / "decisions.md"
+    if not f.exists():
+        return {}
+    out = {}
+    for e in re.split(r"^## D(?=\d)", f.read_text(), flags=re.M)[1:]:
+        m = re.match(r"\d+", e)
+        if m:
+            out.setdefault(m.group(0), e)
+    return out
+
+
+def unsynced_inboxes() -> list[str]:
+    """One reason per inbox entry the central ledger lacks, and per central `Applied:` line of
+    the inbox's own section that the inbox entry no longer holds; [] when every inbox is merged."""
+    central = _central_bodies()
+    out = []
+    for f in inbox_files():
+        own = inbox_section(f)
+        for e in inbox_entries(f):
+            n = str(e["n"])
+            if n == "?":
+                out.append(f"{_rel(f)}: D? stub not yet numbered")
+            elif n not in central:
+                out.append(f"{_rel(f)}: D{n} not in docs/decisions.md")
+            else:
+                have = {line.strip() for line in central[n].splitlines()}
+                for line in e["Applied"]:  # type: ignore[union-attr]
+                    if line not in have:
+                        out.append(f"{_rel(f)}: D{n} Applied: line not in docs/decisions.md")
+                        break
+                for line in _applied_lines(central[n]):
+                    if applied_owner(line) == own and line not in e["Applied"]:  # type: ignore[operator]
+                        out.append(f"{_rel(f)}: stale Applied: line — D{n}: {line}")
     return out
 
 
 def deviation_entries(pkg: str, section: str | None = None) -> list[dict[str, str]]:
     """Ledger entries for pkg (and section): heading fields, the eight fields, and the file.
 
-    Keys: heading, pkg, section, date, kind, file, and Clause, Said, Did, Found, Why, Status,
-    Raised by, Resolved by.
+    Keys: heading, pkg, section, date, kind, k (the heading's `— <k>`, "" on a 2.x heading),
+    file, and Clause, Said, Did, Found, Why, Status, Raised by, Resolved by.
     """
     out = []
     for f in ledger_files(pkg, section):
         for e in re.split(r"^## ", f.read_text(), flags=re.M)[1:]:
             head = e.splitlines()[0].strip()
-            m = re.match(r"`?([\w.-]+)/([\w.-]+)`?\s+[—–-]+\s+(\S+)\s+[—–-]+\s+`?([\w:-]+)`?", head)
+            m = re.match(r"`?([\w.-]+)/([\w.-]+)`?\s+[—–-]+\s+(\S+)\s+[—–-]+\s+`?([\w:-]+)`?(?:\s+[—–-]+\s+(\d+))?\s*$", head)
             if not m or m.group(1) != pkg or (section is not None and m.group(2) != section):
                 continue
             entry = {"heading": head, "pkg": m.group(1), "section": m.group(2), "date": m.group(3),
-                     "kind": m.group(4).lower(), "file": _rel(f)}
+                     "kind": m.group(4).lower(), "k": m.group(5) or "", "file": _rel(f)}
             for k in DEVIATION_FIELDS:
                 entry[k] = _field(e, k)
             out.append(entry)
@@ -504,10 +632,11 @@ def entry_rev(entry: dict[str, str]) -> str | None:
     not yet committed."""
     if entry.get("source") == "report":
         return entry["rev"]
-    # Every ledger path, not only the entry's file: an entry moved from the pre-split
-    # docs/deviations.md into its section file keeps the commit that first added it.
+    # Every ledger path, not only the entry's file: an entry moved between docs/deviations.md,
+    # docs/deviations/ and docs/packages/*/deviations/ keeps the commit that first added it.
     heading = f"## {entry['heading']}"
-    sha = (git("log", "--reverse", "--format=%H", "-S", heading, "--", "docs/deviations.md", "docs/deviations") or "").split("\n")[0]
+    sha = (git("log", "--reverse", "--format=%H", "-S", heading, "--", "docs/deviations.md", "docs/deviations",
+               "docs/packages/*/deviations/*.md") or "").split("\n")[0]
     return sha or UNCOMMITTED
 
 
@@ -571,20 +700,34 @@ def live_spec_changes(pkg: str, section: str) -> list[dict[str, str]]:
 
 
 def clause_key(text: str) -> tuple[str, str] | None:
-    """(n, item) of a `design §<n> <item>` citation, case-insensitive; None when there is none."""
-    m = re.search(r"design\s*§\s*(\d+)\s+`?([^\s:;,`]+)", text, re.I)
-    return (m.group(1), m.group(2).lower()) if m else None
+    """(n, item) of a `design §<n> <item>` citation, case-insensitive; None when there is none.
+
+    The item is the whole name up to the first `:`, `;`, `,`, closing backtick or line end,
+    backticks and `*` stripped, whitespace collapsed, lowercased (W3): `design §5 load trades
+    from csv: one dict` → ("5", "load trades from csv").
+    """
+    m = re.search(r"design\s*§\s*(\d+)\s+(`?)([^:;,`\n]*)", text, re.I)
+    if not m:
+        return None
+    item = " ".join(m.group(3).replace("*", "").split()).lower()
+    return (m.group(1), item) if item else None
 
 
 def change_files() -> list[dict[str, object]]:
-    """Every docs/changes/<slug>.md: slug, path, status, and the sections **Affected sections** names."""
+    """Every change file: `docs/changes/<slug>.md` (pkg None), then `docs/packages/<pkg>/changes/<slug>.md`.
+
+    Keys: slug, path, pkg, status, and the sections **Affected sections** names.
+    """
+    found = [(None, f) for f in sorted((DOCS / "changes").glob("*.md"))]
+    found += [(f.parent.parent.name, f) for f in sorted((DOCS / "packages").glob("*/changes/*.md"))]
     out = []
-    for f in sorted((DOCS / "changes").glob("*.md")):
+    for pkg, f in found:
         text = f.read_text()
         affected = _item(text, "Affected sections")
         out.append({
             "slug": f.stem,
             "path": f,
+            "pkg": pkg,
             "status": _field(text, "Status").strip("`*_ ").lower(),
             "sections": set(re.findall(r"\b([\w.-]+/[\w.-]+)\b", affected)),
         })
@@ -592,9 +735,12 @@ def change_files() -> list[dict[str, object]]:
 
 
 def open_changes(pkg: str, section: str | None = None) -> list[dict[str, object]]:
+    """Open change files naming pkg (or pkg/section); a per-package file names only its own package's sections."""
     out = []
     for c in change_files():
         if not str(c["status"]).startswith("open"):
+            continue
+        if c["pkg"] is not None and c["pkg"] != pkg:
             continue
         secs: set[str] = c["sections"]  # type: ignore[assignment]
         if (section and f"{pkg}/{section}" in secs) or (not section and any(s.startswith(f"{pkg}/") for s in secs)):
@@ -603,12 +749,17 @@ def open_changes(pkg: str, section: str | None = None) -> list[dict[str, object]
 
 
 def _reports(pkg: str, section: str) -> dict[int, list[Path]]:
-    """Review reports of one section grouped by round. A 0.6-era report is round 1, suffix s."""
+    """Review reports of one section grouped by round, from `docs/packages/<pkg>/reviews/<section>/`
+    and the flat `docs/reviews/`. A 0.6-era report is round 1, suffix s."""
     stem = re.escape(f"{pkg}-{section}")
     new = re.compile(rf"\d{{4}}-\d{{2}}-\d{{2}}-{stem}-r(\d+)-([abs])\.md")
     old = re.compile(rf"(\d{{4}}-\d{{2}}-\d{{2}})-{stem}(?:-(\d+))?\.md")
+    per_section = re.compile(r"\d{4}-\d{2}-\d{2}-r(\d+)-([abs])\.md")
     rounds_: dict[int, list[Path]] = {}
     olds: list[tuple[str, int, Path]] = []
+    for f in (DOCS / "packages" / pkg / "reviews" / section).glob("*.md"):
+        if m := per_section.fullmatch(f.name):
+            rounds_.setdefault(int(m.group(1)), []).append(f)
     for f in (DOCS / "reviews").glob(f"*-{pkg}-{section}*.md"):
         if m := new.fullmatch(f.name):
             rounds_.setdefault(int(m.group(1)), []).append(f)
@@ -872,6 +1023,13 @@ def section_state(pkg: str, section: str) -> tuple[str, str]:
     return "DONE", f"review r{n} approve @{rsha[:7]}"
 
 
+def section_commit(pkg: str, section: str) -> str | None:
+    """Short sha of the newest commit touching the section's code, unit tree, intent tree and
+    README (not its design): the commit a reviewer reviews, and its report's `Commit:` (F12)."""
+    p = _paths(pkg, section)
+    return git("log", "-1", "--format=%h", "--", *map(_rel, (*p["code"], p["unit"], p["intent"], p["readme"]))) or None  # type: ignore[misc]
+
+
 def _section_rev(pkg: str, section: str) -> str | None:
     p = _paths(pkg, section)
     return _rev(p["design"], p["intent"], p["unit"], p["readme"], *p["code"])  # type: ignore[arg-type]
@@ -1022,6 +1180,85 @@ def toolchain_commands() -> list[str]:
 
 
 # ---------------------------------------------------------------------------------------------
+# Subagent transcripts: which section an agent run is for
+# ---------------------------------------------------------------------------------------------
+
+
+def _transcript_target(path: Path | str) -> tuple[str, str] | str | None:
+    """(pkg, section), "scaffold", or "none" from a transcript's first `user` record; None when
+    the file cannot be read."""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            for line in fh:
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                if not isinstance(rec, dict) or rec.get("type") != "user":
+                    continue
+                content = (rec.get("message") or {}).get("content", "")
+                if isinstance(content, list):
+                    content = "\n".join(str(c.get("text", "")) for c in content if isinstance(c, dict))
+                lines = str(content).splitlines()
+                if any(ln.startswith("Scaffold:") for ln in lines):
+                    return "scaffold"
+                for ln in lines:
+                    if m := re.match(r"^Section:\s+([\w.-]+)/([\w.-]+)\s*$", ln):
+                        return m.group(1), m.group(2)
+                return "none"
+    except OSError:
+        return None
+    return "none"
+
+
+def section_from_transcript(path: Path | str) -> tuple[str, str] | None:
+    """(pkg, section) from the first `Section: <pkg>/<section>` line of a subagent transcript's
+    first `user` record (the spawn prompt, verbatim — F2); None for a `Scaffold:` run, no
+    `Section:` line, or an unreadable file."""
+    target = _transcript_target(path)
+    return target if isinstance(target, tuple) else None
+
+
+def subagent_transcript(event: dict) -> Path | None:
+    """The subagent transcript a hook event belongs to: `agent_transcript_path` when the event
+    carries it (SubagentStop), else derived from `transcript_path` and `agent_id` (F1)."""
+    if event.get("agent_transcript_path"):
+        return Path(event["agent_transcript_path"])
+    tp, aid = event.get("transcript_path"), event.get("agent_id")
+    if tp and aid:
+        return Path(tp).with_suffix("") / "subagents" / f"agent-{aid}.jsonl"
+    return None
+
+
+def cached_section(event: dict) -> tuple[str, str] | None:
+    """section_from_transcript for a hook event, cached per agent under
+    `${CLAUDE_PLUGIN_DATA}/section/<agent_id>` (else `<cwd>/.dev-team/section/<agent_id>`) as
+    `<pkg>/<section>`, `scaffold` or `none`. An unreadable transcript is not cached."""
+    aid = event.get("agent_id")
+    base = Path(os.environ["CLAUDE_PLUGIN_DATA"]) if os.environ.get("CLAUDE_PLUGIN_DATA") else Path(event.get("cwd") or ROOT) / ".dev-team"
+    cache = base / "section" / str(aid) if aid else None
+    if cache is not None:
+        try:
+            value = cache.read_text().strip()
+        except OSError:
+            value = ""
+        if value:
+            pkg, _, sec = value.partition("/")
+            return (pkg, sec) if sec else None
+    path = subagent_transcript(event)
+    target = _transcript_target(path) if path else None
+    if target is None:
+        return None
+    if cache is not None:
+        try:
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            cache.write_text("/".join(target) if isinstance(target, tuple) else target)
+        except OSError:
+            pass
+    return target if isinstance(target, tuple) else None
+
+
+# ---------------------------------------------------------------------------------------------
 # Flags
 # ---------------------------------------------------------------------------------------------
 
@@ -1050,6 +1287,9 @@ def run_gate(pkg: str | None) -> list[str]:
             dirty.append(path)
     if dirty:
         fails.append(f"uncommitted changes outside the user-edited files: {', '.join(dirty)}; commit or stash them and re-run")
+    plugin = Path(__file__).resolve().parents[3]
+    for r in unsynced_inboxes():
+        fails.append(f"unsynced inbox — {r}; run python3 {plugin}/hooks/sync_decisions.py --all and commit it")
     if pkg and not contract_path(pkg).exists():
         fails.append(f"{pkg}: missing docs/packages/{pkg}/contract.md — run /dev-team:plan-package {pkg}")
     return fails
@@ -1070,6 +1310,14 @@ def _dunder_all(init: Path) -> set[str] | None:
     return set()
 
 
+def _name_cell(row: dict[str, str]) -> str:
+    """A table row's name: the first backticked span of its `name` cell (`` `Trade` (`models.py`) ``
+    is `Trade`), else the cell up to its first `(`."""
+    raw = next((v for h, v in row.items() if "name" in h), "")
+    m = re.match(r"\s*`([^`]+)`", raw)
+    return (m.group(1) if m else raw.split("(")[0]).strip("`* ").strip()
+
+
 def surface_check(pkg: str) -> tuple[str, list[str]]:
     """(PASS | FAIL | n/a, reasons): __all__ vs interface.md Public names vs READMEs' Public: yes rows, and lazy import."""
     iface = DOCS / "packages" / pkg / "interface.md"
@@ -1084,7 +1332,19 @@ def surface_check(pkg: str) -> tuple[str, list[str]]:
     if all_names is None:
         fails.append(f"no readable __all__ in {_rel(top / '__init__.py')}")
         all_names = set()
-    public = {col(r, "name") for r in table_rows(_item(iface.read_text(), "Public names"), ("name",)) if col(r, "name")}
+    iface_rows = table_rows(_item(iface.read_text(), "Public names"), ("name",))
+    public = {_name_cell(r) for r in iface_rows if _name_cell(r)}
+    # A name whose providing module lies outside every other section (a pipeline, the CLI) is the
+    # surface section's own: no section README can carry its row.
+    section_mods = []
+    for r in rows:
+        if r["section"] != "surface":
+            try:
+                section_mods.append(".".join((ROOT / r["path"]).resolve().relative_to(top.resolve().parent).parts))
+            except ValueError:
+                section_mods.append(f"{pkg}.{r['section']}")
+    surface_own = {_name_cell(r) for r in iface_rows
+                   if (mod := col(r, "providing")) and not any(mod == m or mod.startswith(m + ".") for m in section_mods)}
     readmes: set[str] = set()
     for r in rows:
         if r["section"] == "surface":
@@ -1092,10 +1352,10 @@ def surface_check(pkg: str) -> tuple[str, list[str]]:
         f = ROOT / r["path"] / "README.md"
         if f.exists():
             for er in table_rows(_item(f.read_text(), "Entry points and interfaces"), ("name",)):
-                if col(er, "public").lower().startswith("yes") and col(er, "name"):
-                    readmes.add(col(er, "name").split("(")[0])
+                if col(er, "public").lower().startswith("yes") and _name_cell(er):
+                    readmes.add(_name_cell(er))
     for a, an, b, bn in ((all_names, "__all__", public, "interface.md Public names"),
-                         (public, "interface.md Public names", readmes, "README Public: yes rows"),
+                         (public - surface_own, "interface.md Public names", readmes, "README Public: yes rows"),
                          (readmes, "README Public: yes rows", all_names, "__all__")):
         for name in sorted(a - b):
             fails.append(f"{name}: in {an}, not in {bn}")
@@ -1203,6 +1463,55 @@ def implementer_inputs(pkg: str, section: str) -> list[str]:
     ]
 
 
+def _holds_code(pkg: str, section: str) -> bool:
+    """True when the section's path holds a `.py` file, nested sections excluded; for `surface`
+    the package's own `__init__.py` (the scaffold's) does not count."""
+    p = _paths(pkg, section)
+    code: list[str] = p["code"]  # type: ignore[assignment]
+    base = ROOT / code[0]
+    nested = [ROOT / c.removeprefix(":(exclude)") for c in code[1:]]
+    if not base.is_dir():
+        return False
+    scaffold = base / "__init__.py" if section == "surface" else None
+    return any(f != scaffold and not any(n == f or n in f.parents for n in nested)
+               for f in base.rglob("*.py"))
+
+
+def spawn_fields(pkg: str, section: str) -> list[str]:
+    """The `--fields` lines for one section; the module docstring lists them."""
+    p = _paths(pkg, section)
+    design: Path = p["design"]  # type: ignore[assignment]
+    changes = [_rel(c["path"]) for c in open_changes(pkg, section)]  # type: ignore[arg-type]
+    state, evidence = section_state(pkg, section)
+    if changes or (evidence.startswith("open ") and "spec-change:design" in evidence):
+        mode = "delta"
+    elif _holds_code(pkg, section) and not design.exists():
+        mode = "document"
+    else:
+        mode = "new"
+    design_mode = "none"
+    if design.exists():
+        head = design.read_text().strip().splitlines()[:5]
+        if m := next((m for line in head if (m := re.match(r"\**Mode:\**\s*`?(\w+)", line.strip()))), None):
+            design_mode = m.group(1)
+    base = "none"
+    reps = _reports(pkg, section)
+    if reps:
+        n = max(reps)
+        files = sorted(reps[n])
+        pick = (next((f for f in files if f.name.endswith("-s.md")), None)
+                or (next((f for f in files if f.name.endswith("-a.md")), None) if n == 1 else None)
+                or (files[0] if len(files) == 1 and not re.search(r"-r\d+-[abs]\.md$", files[0].name) else None))
+        if pick and (m := re.match(r"[0-9a-f]{7,40}", _report_fields(pick).get("Commit", "").strip("`"))):
+            base = git("rev-parse", "--short", m.group(0)) or m.group(0)
+    return [
+        f"mode: {mode}",
+        f"change file: {', '.join(changes) or 'none'}",
+        f"design mode: {design_mode}",
+        f"diff base: {base}",
+    ]
+
+
 def _flag_value(argv: list[str], flag: str) -> tuple[bool, str | None]:
     """(present, value) for a flag with an optional non-flag value after it; removes both from argv."""
     if flag not in argv:
@@ -1221,6 +1530,7 @@ def main() -> int:
     has_gate, gate_pkg = _flag_value(argv, "--run-gate")
     has_inputs, inputs_target = _flag_value(argv, "--inputs")
     has_scaffold, scaffold_pkg = _flag_value(argv, "--scaffold")
+    has_fields, fields_target = _flag_value(argv, "--fields")
     has_repo = "--repo" in argv
     argv = [a for a in argv if a != "--repo"]
     unknown = [a for a in argv if a.startswith("--")]
@@ -1237,6 +1547,7 @@ def main() -> int:
         n = rounds(pkg, sec)
         print(f"rounds: {n}")
         print(f"next round: {n + 1}")
+        print(f"commit: {section_commit(pkg, sec) or 'none'}")
     if has_gate:
         fails = run_gate(gate_pkg or only)
         print("run gate: PASS" if not fails else "run gate: FAIL")
@@ -1266,6 +1577,15 @@ def main() -> int:
             print(f"no section {sec} in {_rel(contract_path(pkg))}")
             return 2
         print("\n".join(implementer_inputs(pkg, sec)))
+    if has_fields:
+        pkg, _, sec = (fields_target or "").partition("/")
+        if not pkg or not sec:
+            print("--fields needs a target: status.py --fields <pkg>/<section>")
+            return 2
+        if _row(pkg, sec) is None:
+            print(f"no section {sec} in {_rel(contract_path(pkg))}")
+            return 2
+        print("\n".join(spawn_fields(pkg, sec)))
     if has_scaffold:
         if not scaffold_pkg:
             print("--scaffold needs a package: status.py --scaffold <pkg>")
@@ -1273,7 +1593,7 @@ def main() -> int:
         needed = scaffold_needed(scaffold_pkg)
         print(f"scaffold: needed ({', '.join(needed)})" if needed else "scaffold: done")
         code |= 1 if needed else 0
-    if has_rounds or has_gate or has_surface or has_repo or has_inputs or has_scaffold:
+    if has_rounds or has_gate or has_surface or has_repo or has_inputs or has_scaffold or has_fields:
         return code
     if not DOCS.exists():
         print("no docs/ directory here — run from the repo root")

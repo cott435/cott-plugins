@@ -1,0 +1,12 @@
+{
+  "script": "sync",
+  "repo": "arch",
+  "raw": "not json",
+  "expect": {
+    "exit": 0,
+    "stdout": "",
+    "stderr_contains": [
+      "dev-team decisions sync: error"
+    ]
+  }
+}

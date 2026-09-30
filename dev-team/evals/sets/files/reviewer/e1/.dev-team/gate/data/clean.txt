@@ -1,0 +1,12 @@
+dev-team gate — attempt 1 — 2026-09-26T21:05:12Z — section data/clean
+PASS Floor lint `uv run ruff check packages/data` — 0 errors
+PASS Floor format `uv run ruff format --check packages/data` — 0 files would be reformatted
+PASS section unit tests `uv run pytest packages/data/tests/unit/clean -q` — 5 passed
+PASS section intent tests `uv run pytest packages/data/tests/intent/clean -q` — 10 passed, 0 tolerated
+PASS Enforced unit tests `uv run pytest packages/data/tests/unit -q` — 5 passed
+PASS Enforced intent tests `uv run pytest packages/data/tests/intent -q` — 10 passed, 0 tolerated
+PASS Enforced coverage `uv run pytest packages/data --cov=packages/data/src --cov-report=term` — 94% ≥ 85%
+PASS Guarded grep over the section's paths since the empty tree — 0 hits
+MEASURED complexity `uv run radon cc packages/data/src -s -a` — clean: max B (7) fill_gaps, average A (3.3)
+MEASURED module size `wc -l packages/data/src/**/*.py` — clean/api.py 57, clean/rules.py 44, clean/calendar.py 10, clean/errors.py 14
+result: PASS (attempt 1)

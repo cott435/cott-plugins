@@ -1,0 +1,55 @@
+{
+  "note": "rounds count across both locations: round 1 at the 2.0 path, round 2 under docs/packages/<pkg>/reviews/<section>/",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 1,
+      "layout": "old",
+      "reports": {
+        "a": "approve",
+        "b": "request changes"
+      }
+    },
+    {
+      "do": "fix",
+      "section": "ingest",
+      "note": "fix"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 2,
+      "reports": {
+        "s": "request changes"
+      },
+      "convergence": "0 prior unfixed, 1 new"
+    }
+  ],
+  "args": [
+    "--rounds",
+    "data/ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "rounds: 2",
+      "next round: 3"
+    ]
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "note": "--rounds prints `commit: <sha>`, the newest commit touching the section's code, unit and intent trees and README (F12)",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 1,
+      "reports": {
+        "a": "approve",
+        "b": "approve"
+      }
+    }
+  ],
+  "args": [
+    "--rounds",
+    "data/ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "rounds: 1"
+    ],
+    "matches": [
+      "^commit: [0-9a-f]{7}$"
+    ],
+    "absent": [
+      "commit: none"
+    ]
+  }
+}

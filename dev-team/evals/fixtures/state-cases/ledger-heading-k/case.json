@@ -1,0 +1,39 @@
+{
+  "note": "a 2.2 ledger heading ends `— <k>`, the entry's sequence in its file (F13); the parser reads it",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "deviation",
+      "section": "ingest",
+      "kind": "deviation",
+      "status": "proposed",
+      "clause": "design §5 other"
+    },
+    {
+      "do": "deviation",
+      "section": "ingest",
+      "kind": "deviation",
+      "status": "approved"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "TEST",
+    "evidence": "— deviation — 2$"
+  }
+}

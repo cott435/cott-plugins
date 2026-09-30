@@ -1,0 +1,33 @@
+{
+  "note": "a 2.0 ledger at docs/deviations/<pkg>/<section>.md is still read: an approved deviation there, cited by an untagged test, regenerates",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "deviation",
+      "section": "ingest",
+      "kind": "deviation",
+      "status": "approved",
+      "layout": "old"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "TEST",
+    "evidence": "^regenerate: data/ingest — 2026-09-27 — deviation$"
+  }
+}

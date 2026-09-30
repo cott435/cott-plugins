@@ -1,0 +1,25 @@
+{
+  "note": "--fields on code with no design: document mode",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    }
+  ],
+  "args": [
+    "--fields",
+    "data/ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "mode: document\n",
+      "change file: none\n",
+      "design mode: none\n",
+      "diff base: none\n"
+    ]
+  }
+}

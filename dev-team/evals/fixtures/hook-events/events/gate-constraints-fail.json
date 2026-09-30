@@ -2,6 +2,7 @@
   "script": "gate",
   "repo": "built",
   "setup": {
+    "transcript": "Section: data/ingest\nDesign: docs/packages/data/design/ingest.md\nRun: run-package data",
     "files": {
       "docs/constraints.md": "# Constraints\n\n## Floor\n\n| check | threshold | command | scope |\n|---|---|---|---|\n| lint | 0 errors | `ruff check packages/<pkg>` | package |\n| format | clean | `ruff format --check packages/<pkg>` | package |\n\n## Enforced\n\n| dimension | threshold | command | scope |\n|---|---|---|---|\n| coverage | 90 | `python3 -c \"import sys; print('coverage 42% < 90%'); sys.exit(1)\"` | package |\n| docstrings | 80% | `python3 -c \"print('docstrings: 100%')\"` | package |\n\n## Measured\n\n| dimension | current | target | command | scope |\n|---|---|---|---|---|\n\n## Guarded\n\n- a new `# noqa`, `# type: ignore`, `# pragma: no cover`\n- a new `@pytest.mark.skip` or `@pytest.mark.xfail` whose reason does not cite a `D<n>`\n- a deleted or weakened assertion in an existing test\n- a threshold in this file edited down\n\n## Exceptions\n\n| path or glob | check | reason | expires |\n|---|---|---|---|\n"
     }

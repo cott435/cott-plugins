@@ -1,0 +1,37 @@
+{
+  "script": "sync",
+  "repo": "arch",
+  "setup": {
+    "files": {
+      "docs/decisions.md": "# Decisions\n\n## D1 — Timestamps in UTC?\nScope: repo\nRaised by: architect\nRecommendation: UTC.\nAssumption if unanswered: UTC.\nDecision: UTC.\nStatus: decided\n\n## D2 — Session store?\nScope: data\nRaised by: OQ-data-ingest-1\nRecommendation: SQLite.\nAssumption if unanswered: SQLite.\nDecision:\nStatus: open\nApplied: data/clean, 2026-09-20, packages/data/src/data/clean/store.py\nApplied: data/ingest, 2026-09-29, packages/data/src/data/ingest/loader.py\n\n## D3 — Retry failed downloads?\nScope: data/ingest\nRaised by: OQ-data-ingest-2\nRecommendation: Three times.\nAssumption if unanswered: Three times.\nDecision: Three times, then raise.\nStatus: decided\n",
+      "docs/packages/data/decisions/clean.md": "# Decisions — data/clean\n\n## D2\nApplied: data/clean, 2026-09-20, packages/data/src/data/clean/store.py\n"
+    }
+  },
+  "event": {
+    "session_id": "9b1f0c52-3d4e-4a7b-8c21-5e6f7a8b9c0d",
+    "transcript_path": "{cwd}/../transcript.jsonl",
+    "cwd": "{cwd}",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "{cwd}/docs/packages/data/decisions/clean.md",
+      "content": "…"
+    },
+    "tool_response": {
+      "filePath": "{cwd}/docs/packages/data/decisions/clean.md",
+      "success": true
+    },
+    "tool_use_id": "toolu_01SyNcDe",
+    "agent_id": "a7c2e91f04b3d5a68",
+    "agent_type": "dev-team:implementer"
+  },
+  "expect": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "",
+    "file_equals": {
+      "docs/decisions.md": "# Decisions\n\n## D1 — Timestamps in UTC?\nScope: repo\nRaised by: architect\nRecommendation: UTC.\nAssumption if unanswered: UTC.\nDecision: UTC.\nStatus: decided\n\n## D2 — Session store?\nScope: data\nRaised by: OQ-data-ingest-1\nRecommendation: SQLite.\nAssumption if unanswered: SQLite.\nDecision:\nStatus: open\nApplied: data/clean, 2026-09-20, packages/data/src/data/clean/store.py\nApplied: data/ingest, 2026-09-29, packages/data/src/data/ingest/loader.py\n\n## D3 — Retry failed downloads?\nScope: data/ingest\nRaised by: OQ-data-ingest-2\nRecommendation: Three times.\nAssumption if unanswered: Three times.\nDecision: Three times, then raise.\nStatus: decided\n"
+    }
+  }
+}

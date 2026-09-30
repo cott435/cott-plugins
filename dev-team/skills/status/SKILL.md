@@ -1,7 +1,7 @@
 ---
 name: status
 description: Print where every package and section stands — one state per section (PROBE, DESIGN, TEST, IMPLEMENT, REVIEW, FIX n, PLAN, DONE, BLOCKED), the ready set, whether the package shipped, and the exact next command — derived from docs/ and the code every time, never from a status file. Use whenever you have lost track, before planning the next package, or to see why run-package stopped.
-argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--repo] [--inputs <pkg>/<section>] [--scaffold <pkg>]"
+argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--repo] [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]"
 disable-model-invocation: true
 ---
 
@@ -28,17 +28,26 @@ section depends on all of them. Nothing is counted from `docs/followups.md`.
 `--run-gate [pkg]` prints `run gate: PASS` or `run gate: FAIL` with one reason per line and
 exits 1 on FAIL: not a git repository; on `main` or `master`; uncommitted changes outside the
 user-edited files (`docs/decisions.md`, `docs/brief.md`, `docs/constraints.md`,
-`.claude/agent-memory/`); and, with a package, no `docs/packages/<pkg>/contract.md`. It is the
+`.claude/agent-memory/`); an inbox `docs/packages/<pkg>/decisions/<section>.md` holding a
+`D?` stub, a `D<n>` or an `Applied:` line that `docs/decisions.md` does not (the sync hook did
+not run; `python3 <plugin>/hooks/sync_decisions.py --all` repairs it), or a central
+`Applied: <pkg>/<section>, …` line that section's inbox entry no longer holds (`stale Applied:
+line`, the same repair); and, with a package, no
+`docs/packages/<pkg>/contract.md`. It is the
 check a run makes once, before its first agent.
 
 `--rounds <pkg>/<section>` prints `rounds: <n>` — the newest review round, from the
-`-r<n>-` in the report filenames, 0 with none — and `next round: <n+1>`. Nothing else runs; the
-reviewer names its report from it.
+`-r<n>-` in the report filenames, 0 with none — `next round: <n+1>`, and `commit: <short sha>`
+— the newest commit touching the section's code, unit tests, intent tests and README, or
+`none`; the reviewer copies it as its report's `Commit:`. Nothing else runs; the reviewer names
+its report from it.
 
 `--surface <pkg>` prints `surface: PASS` or `surface: FAIL` with reasons: every name must be in
 all three of `__all__` in the package's `__init__.py`, the **Public names** table of
 `docs/packages/<pkg>/interface.md`, and the `Public: yes` rows of the section READMEs' **Entry
-points and interfaces** tables; and `import <pkg>` must load no section module. Before
+points and interfaces** tables — except a name whose providing module lies outside every other
+section (a pipeline, the CLI), which is the `surface` section's own and has no section README
+row; a name cell is read as its first backticked span (`` `Trade` (`models.py`) `` is `Trade`); and `import <pkg>` must load no section module. Before
 `interface.md` exists it prints `surface: n/a (no interface.md)` and exits 0.
 
 `--repo` prints the repo-wide gap list the documenter copies under **Known gaps**: `packages:`,
@@ -54,9 +63,15 @@ step reads it.
 
 `--inputs <pkg>/<section>` prints the implementer's spawn block — twelve `<Field>: <value>`
 lines, `none` where a field has nothing to hold — resolved from the contract, the Packages
-table, the review reports and the open change files. `/dev-team:run-package` sends it verbatim
+table, and the review reports and open change files at either location. `/dev-team:run-package` sends it verbatim
 to the implementer, and `/dev-team:pair` reads the files it names. The script's docstring lists
 the fields and how each resolves. A section the contract lacks prints one line and exits 2.
+
+`--fields <pkg>/<section>` prints the other spawn fields run-package would otherwise read files
+for, four lines: `mode: new | document | delta` (the designer's **Mode**), `change file: <path>
+| none`, `design mode: <word> | none` (the tester's **Design mode**, from the design's `Mode:`
+line) and `diff base: <sha> | none` (the `Commit:` a round-2-or-later reviewer's **Diff**
+starts from). The docstring gives each rule. A section the contract lacks exits 2.
 
 The script runs no test and no constraint command. The stop hook runs `docs/constraints.md`'s
 **Floor** and **Enforced** rows through the same parser this script exposes, so the rows the

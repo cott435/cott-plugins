@@ -46,7 +46,8 @@ driver does with it.
   summary block. Run every shell command from `<copy>` (`cd <copy> && …` on each call — your
   cwd resets between calls).
 - Spawn agents for real: one Agent call per spawn, `subagent_type: "dev-team:<agent>"`,
-  `run_in_background: false`, parallel spawns of one kind in one message, as the target says.
+  `run_in_background: false`, the Agent calls the target puts in one message sent in one
+  message, as the target says.
   The prompt is the target's block for that role with every field resolved, plus one line at
   the top and nothing else changed:
   `Repo: <copy> — run every command from this directory and resolve every path in this prompt against it; ${CLAUDE_PLUGIN_ROOT} is <plugin>.`
@@ -54,7 +55,8 @@ driver does with it.
   `transcript.md`, write the summary block the target prescribes for a stop, and stop: the
   plugin's agents are not registered in this session, and that is the result.
 - The target's limits on the driver bind you: read a return's first line only (past it only
-  for `design-gap` and `spec-change`); open none of the files the agents wrote; write nothing in
+  where the target says so: a `design-gap` it relays, a `blocked` or `stopped` return it asks
+  about); open none of the files the agents wrote; write nothing in
   `<copy>` but `docs/decisions.md`, and only as the target's Asking step says; run no git command
   that writes in `<copy>` — `git rev-parse --short HEAD` and `git rev-list --count` only. The
   read-only copies under **After the run** are the one exception, taken after the summary.

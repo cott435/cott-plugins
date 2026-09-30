@@ -26,9 +26,10 @@ root. `status.py` exits 1 on a failing gate; that is the answer, not an error.
 
 - Write under `tests/intent/`. It is the tester's alone. An intent test the new behavior
   breaks becomes a ledger entry at **Wrap-up**, never an edit.
-- Edit a contract, a design, a change file, a review report, `docs/constraints.md` or
-  anything under `docs/sources/`. Those documents move through their owners at the next
-  `/dev-team:run-package`, and the ledger entries you write are what moves them.
+- Edit a contract, a design, a change file (`docs/packages/<pkg>/changes/`), a review report,
+  `docs/constraints.md` or anything under `docs/sources/`. Those documents move through their
+  owners at the next `/dev-team:run-package`, and the ledger entries you write are what moves
+  them.
 - Edit code outside the section, with the implementer's exceptions: shared test fixtures and
   the root `.gitignore`. When the change the user wants needs another section, say which
   section and what it lacks; pairing on it is a second `/dev-team:pair`.
@@ -57,7 +58,8 @@ root. `status.py` exits 1 on a failing gate; that is the answer, not an error.
      `docs/packages/<pkg>/interface.md`);
    - the `docs/decisions.md` entries whose `Scope:` covers `repo`, the package or the
      section;
-   - the section's entries in `docs/deviations/<pkg>/<section>.md`, and its `docs/followups.md` lines.
+   - the section's entries in `docs/packages/<pkg>/deviations/<section>.md` (and the older
+     locations), and its `docs/followups.md` lines.
 
    Read the section's code as you need it, not all at once.
 6. **Brief.** Eight lines at most:
@@ -107,9 +109,11 @@ When the user says they are done, or asks to wrap up:
    `spec-change:test`. Show the list to the user and let them correct it before you write
    anything.
 3. **Ledger.** Read `${CLAUDE_PLUGIN_ROOT}/skills/planning-templates/references/deviations-entry.md`,
-   then append one entry per `deviation` or `spec-change` line to `docs/deviations/<pkg>/<section>.md` (create
-   it with a `# Deviations — <pkg>/<section>` title when it does not exist). Heading `## <pkg>/<section> —
-   <ISO date> — <kind>`. The fields:
+   then append one entry per `deviation` or `spec-change` line to
+   `docs/packages/<pkg>/deviations/<section>.md` (create it with a `# Deviations —
+   <pkg>/<section>` title when it does not exist). Heading `## <pkg>/<section> — <ISO date> —
+   <kind> — <k>`, `<k>` one more than the number of `## ` entries the file holds (the
+   template's rule). The fields:
    - **Clause**: the design item exactly as the intent tests cite it, `design §<n> <item>`.
      The gate tolerates a failing intent test only when its docstring matches this.
    - **Said**: the document's words, quoted.
@@ -124,7 +128,7 @@ When the user says they are done, or asks to wrap up:
    `${CLAUDE_PLUGIN_ROOT}/agents/implementer.md`). **Implementation notes** cites each new
    entry by its heading and never restates it. For `surface` the README is
    `docs/packages/<pkg>/interface.md`; when its **Public names** change, the entry is a
-   spec-change, and `docs/api/<pkg>.md` follows it.
+   spec-change, and `docs/api/<pkg>/index.md` follows it.
 5. **Gate.** `gate --report --base <start>`. It runs the stop gate's checks over everything
    since the start commit and writes the section's record, `.dev-team/gate/<pkg>/<section>.txt`,
    which the next reviewer reads as its evidence. Go through each FAIL line with the user
@@ -138,8 +142,8 @@ When the user says they are done, or asks to wrap up:
    Stop when it passes, or when the user says to leave the rest. The `result:` line then
    records it, and the reviewer quotes it.
 6. **Commit.** One commit of every path changed since the start commit and not yet committed:
-   the code, the unit tests, the README, `docs/deviations/<pkg>/<section>.md`, and `docs/decisions.md` if you
-   edited it. Follow `git-workflow-and-versioning` §Project convention: stage by explicit
+   the code, the unit tests, the README, `docs/packages/<pkg>/deviations/<section>.md`, and
+   `docs/decisions.md` if you edited it. Follow `git-workflow-and-versioning` §Project convention: stage by explicit
    path, commit with the same pathspec, and write the message
    `<pkg>/<section>: pair — <what changed>` with the trailer `Dev-Team-Run: pair
    <pkg>/<section>`.

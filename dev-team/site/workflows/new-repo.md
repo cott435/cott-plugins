@@ -83,7 +83,7 @@ spawn is the SCAFFOLD step: one implementer builds the workspace — the root `p
 with the plugin's lint rules, the `data` package skeleton, `uv sync` — and commits it with
 `uv.lock`, before any tester runs. Each iteration after that it runs
 `status.py data`, takes the ready set — the sections whose in-package dependencies are DONE —
-and spawns one kind of step for all of them in one message:
+and spawns each one's step — whatever step each is at — in one message:
 
 - **PROBE** — a researcher per `api` source the section names, extending
   `docs/sources/<source>.md` with a `## data/<section>` entry.
@@ -93,16 +93,22 @@ and spawns one kind of step for all of them in one message:
 - **TEST** — a tester per section: `tests/intent/<section>/`, written from the documents and
   never the code, all red. A design it cannot test returns `design-gap`, and the designer runs
   again with its reasons.
-- **IMPLEMENT** — one implementer at a time: code, unit tests and the section README. The stop
-  gate keeps it running until the constraints rows, the intent suite and the Guarded grep are
-  green.
+- **IMPLEMENT** — an implementer per ready section, in parallel: code, unit tests and the
+  section README. The write guard keeps each inside its own section, and its stop gate keeps it
+  running until its section's intent and unit suites, the package's constraints rows and the
+  Guarded grep are green (a `repo`-scope pytest row is `SKIPPED`: CI's).
 - **REVIEW** — round 1 is two reviewers in parallel: A for conformance (a coverage table over
   every contract clause and design item), B for correctness and security. `request changes`
   makes the section FIX 1: the implementer reads the reports, then one diff-scoped reviewer.
+  Reports go to `docs/packages/data/reviews/<section>/`.
+
+Every ready row's step goes out in one message; only a PLAN row runs alone, since the
+architect edits what designers read. `--serial` is the one-kind-per-batch loop, one
+implementer at a time.
 
 The `surface` section comes last, since it depends on every other: its design is built from
 the shipped READMEs, its implementer writes the lazy top-level `__init__.py`, the pipelines,
-`cli.py`, `docs/api/data.md` and `docs/packages/data/interface.md`, and its review approves
+`cli.py`, `docs/api/data/index.md` and `docs/packages/data/interface.md`, and its review approves
 the package's public surface. When every section is DONE, the driver runs the architect as
 `sync-plan`: approved deviations go into the contract, verified against the code. The summary
 ends with `next: /dev-team:plan-package analysis`.

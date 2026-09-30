@@ -1,0 +1,82 @@
+# `data` — package contract
+
+Written: 2026-09-26 by `/dev-team:plan-package data`, under `docs/architecture.md` (2026-09-26).
+Package path: `packages/data`. Seeded for the `run-package` eval set (evals 5 and 6: two
+sections, `ingest` and `sessions`, that depend on nothing and on each other in nothing, so
+both are ready at every step until `surface`).
+
+## Purpose
+
+Load the analyst's CSV export of trades, rejecting malformed rows by row and field, and list
+the trading days a sequence of timestamps covers, with each day's first and last timestamp.
+Covers the brief's `load trades`, and the trading-session helper `docs/architecture.md` adds.
+
+## Sections
+
+| section | responsibility | path | owner doc | builds with | depends on | source |
+|---|---|---|---|---|---|---|
+| `ingest` | `load trades`: read `data/trades.csv` into `Trade` records in file order; reject a row with a missing or unparseable field and say which row and which field | `packages/data/src/data/ingest/` | `docs/packages/data/design/ingest.md` | `csv`, `datetime` (stdlib) | — | `dataset:trades` |
+| `sessions` | trading sessions: the distinct UTC trading days in a sequence of tz-aware timestamps, and one day's first and last timestamp; works on `datetime` values only, never on `Trade` or the CSV | `packages/data/src/data/sessions/` | `docs/packages/data/design/sessions.md` | `datetime` (stdlib) | — | — |
+| `surface` | §4 Pipelines and §5 Public surface: the package's top-level re-exports, the `data-days` command, `docs/packages/data/interface.md` | `packages/data/src/data/` | `docs/packages/data/design/surface.md` | — | `ingest`, `sessions` | — |
+
+## Section interfaces
+
+Signatures are this package's; shapes are `docs/architecture.md` **Boundaries**.
+
+### ingest
+
+- `Trade` — the repo shape `Trade`, a frozen dataclass: `ts: datetime` (tz-aware UTC),
+  `symbol: str`, `price: float`, `size: int`, `side: Literal["buy", "sell"]`.
+- `read_trades(path: Path) -> list[Trade]` — every data row of the CSV, in file order,
+  duplicates included.
+- `IngestError(DataError)` — raised on the first rejected row, with `row: int` (1-based data
+  row), `field: str` and `reason: str`; its message names all three.
+- `DataError(Exception)` — the package base exception, defined here, re-raised nowhere else.
+
+### sessions
+
+- `trading_days(stamps: Iterable[datetime]) -> list[date]` — the distinct UTC dates of the
+  stamps, ascending; an empty input gives `[]`. Raises `ValueError` naming the 0-based
+  position of the first naive (tz-unaware) stamp.
+- `session_bounds(stamps: Iterable[datetime], day: date) -> tuple[datetime, datetime]` — the
+  earliest and the latest stamp whose UTC date is `day`, in any input order. Raises
+  `ValueError` naming `day` when no stamp falls on it, and on a naive stamp as above.
+
+`sessions` imports nothing from `ingest`: it takes timestamps, so it raises the standard
+library's `ValueError` rather than `DataError`.
+
+## Pipelines
+
+- `list_trading_days(csv_path: Path) -> list[date]` — `read_trades` → the `ts` of each trade →
+  `trading_days`. Run by the `data-days` command: `data-days [--csv PATH]`, one ISO date per
+  line on stdout, default path from configuration.
+
+## Public surface (intent)
+
+| name | kind | consumer |
+|---|---|---|
+| `data.Trade` | shape | the analyst |
+| `data.read_trades` | function | the analyst |
+| `data.trading_days` | function | the analyst |
+| `data.session_bounds` | function | the analyst |
+| `data.list_trading_days` | pipeline | the analyst, through `data-days` |
+| `data.DataError` | exception | the analyst |
+
+## Consumes
+
+No upstream package. External: `dataset:trades` at `data/trades.csv`; probe
+`docs/sources/trades.md`, which serves `data/ingest`. `sessions` reads no source: the probe's
+**Shape** line (one session, 2026-09-01, `13:30:20Z` to `15:46:34Z`) is what its tests may
+check against.
+
+## Package conventions
+
+- Configuration: `DATA_CSV` (default `data/trades.csv`), read in `configs.py` with
+  `os.environ`.
+- Logging: logger `data`.
+- The intent suite lives at `tests/intent/<section>/` (the tester's); unit tests beside the
+  package as `project-structure` places them.
+
+## Open decisions
+
+None.

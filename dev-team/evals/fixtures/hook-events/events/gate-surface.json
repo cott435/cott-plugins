@@ -2,6 +2,7 @@
   "script": "gate",
   "repo": "built",
   "setup": {
+    "transcript": "Section: data/surface\nDesign: docs/packages/data/design/surface.md\nRun: run-package data",
     "files": {
       "docs/packages/data/design/surface.md": "Mode: new\n\n# data/surface — design\n",
       "docs/packages/data/interface.md": "# data — interface\n\n## Public names\n\n| name | kind | provided by |\n|---|---|---|\n| `load_trades` | function | ingest |\n| `Trade` | type | ingest |\n",

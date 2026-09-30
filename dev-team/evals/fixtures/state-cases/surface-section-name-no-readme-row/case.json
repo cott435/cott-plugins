@@ -1,0 +1,48 @@
+{
+  "note": "--surface (phase 12): a name a section provides (data.ingest) still needs its README Public: yes row; the pipeline name is exempt",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    },
+    {
+      "files": {
+        "docs/packages/data/interface.md": "# data — interface\n\n## Public names\n\n| name | kind | signature | providing module | consumer | since |\n|---|---|---|---|---|---|\n| `load_trades` | function | `load_trades(path)` | `data.ingest` | analysis | 2026-09-27 |\n| `run_load` | function | `run_load()` | `data.pipelines.load` | analysis | 2026-09-27 |\n\n## Pipelines\n\n- none\n",
+        "packages/data/src/data/__init__.py": "\"\"\"data — the public surface.\"\"\"\n\n__all__ = [\"load_trades\", \"run_load\"]\n\n\ndef __getattr__(name):\n    if name == \"load_trades\":\n        from data.ingest import load_trades\n\n        return load_trades\n    if name == \"run_load\":\n        from data.pipelines.load import run_load\n\n        return run_load\n    raise AttributeError(name)\n",
+        "packages/data/src/data/ingest/README.md": "# ingest\n\n## Entry points and interfaces\n\n| name | signature | one-line use case | Public |\n|---|---|---|---|\n| `load_trades` (`__init__.py`) | `load_trades(path)` | ingest the trades | no |\n",
+        "packages/data/src/data/pipelines/__init__.py": "",
+        "packages/data/src/data/pipelines/load.py": "\"\"\"The load pipeline.\"\"\"\n\n\ndef run_load():\n    return 0\n"
+      },
+      "message": "data: surface names"
+    }
+  ],
+  "args": [
+    "--surface",
+    "data"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "surface: FAIL",
+      "load_trades: in interface.md Public names, not in README Public: yes rows"
+    ],
+    "absent": [
+      "run_load: in interface.md"
+    ]
+  }
+}

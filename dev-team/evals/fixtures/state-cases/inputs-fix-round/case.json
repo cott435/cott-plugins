@@ -5,7 +5,7 @@
     {"do": "design", "section": "ingest"},
     {"do": "tests", "section": "ingest"},
     {"do": "build", "section": "ingest"},
-    {"do": "review", "section": "ingest", "round": 1, "reports": {"a": "approve", "b": "request changes"}}
+    {"do": "review", "layout": "old", "section": "ingest", "round": 1, "reports": {"a": "approve", "b": "request changes"}}
   ],
   "args": ["--inputs", "data/ingest"],
   "expect": {

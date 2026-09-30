@@ -1,0 +1,19 @@
+{
+  "note": "--rounds before anything is built prints `commit: none`",
+  "steps": [
+    {
+      "do": "base"
+    }
+  ],
+  "args": [
+    "--rounds",
+    "data/ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "rounds: 0",
+      "commit: none"
+    ]
+  }
+}

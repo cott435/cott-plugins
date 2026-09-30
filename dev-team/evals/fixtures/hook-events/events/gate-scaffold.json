@@ -2,6 +2,7 @@
   "script": "gate",
   "repo": "built",
   "setup": {
+    "transcript": "Scaffold: data\nRun: run-package data",
     "files": {
       "pyproject.toml": "[project]\nname = \"repo\"\nversion = \"0.0.0\"\n\n[tool.uv.workspace]\nmembers = [\"packages/*\"]\n",
       "uv.lock": "version = 1\n",

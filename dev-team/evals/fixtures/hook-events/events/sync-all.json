@@ -1,0 +1,27 @@
+{
+  "script": "sync",
+  "repo": "arch",
+  "args": [
+    "--all"
+  ],
+  "setup": {
+    "files": {
+      "docs/decisions.md": "# Decisions\n\n## D1 — Timestamps in UTC?\nScope: repo\nRaised by: architect\nRecommendation: UTC.\nAssumption if unanswered: UTC.\nDecision: UTC.\nStatus: decided\n\n## D2 — Session store?\nScope: data\nRaised by: OQ-data-ingest-1\nRecommendation: SQLite.\nAssumption if unanswered: SQLite.\nDecision:\nStatus: open\n\n## D3 — Retry failed downloads?\nScope: data/ingest\nRaised by: OQ-data-ingest-2\nRecommendation: Three times.\nAssumption if unanswered: Three times.\nDecision: Three times, then raise.\nStatus: decided\n",
+      "docs/packages/data/decisions/ingest.md": "# Decisions — data/ingest\n\n## D? — Which parser?\nScope: data/ingest\nRaised by: OQ-data-ingest-1\nRecommendation: Use the stdlib csv module.\nAssumption if unanswered: The stdlib csv module.\nStatus: open\n",
+      "docs/packages/data/decisions/clean.md": "# Decisions — data/clean\n\n## D? — Drop duplicate rows?\nScope: data/clean\nRaised by: OQ-data-clean-1\nRecommendation: Drop them.\nAssumption if unanswered: Drop them.\nStatus: open\n"
+    }
+  },
+  "expect": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "docs/packages/data/decisions/clean.md: D? → D4\ndocs/packages/data/decisions/ingest.md: D? → D5",
+    "file_equals": {
+      "docs/decisions.md": "# Decisions\n\n## D1 — Timestamps in UTC?\nScope: repo\nRaised by: architect\nRecommendation: UTC.\nAssumption if unanswered: UTC.\nDecision: UTC.\nStatus: decided\n\n## D2 — Session store?\nScope: data\nRaised by: OQ-data-ingest-1\nRecommendation: SQLite.\nAssumption if unanswered: SQLite.\nDecision:\nStatus: open\n\n## D3 — Retry failed downloads?\nScope: data/ingest\nRaised by: OQ-data-ingest-2\nRecommendation: Three times.\nAssumption if unanswered: Three times.\nDecision: Three times, then raise.\nStatus: decided\n\n## D4 — Drop duplicate rows?\nScope: data/clean\nRaised by: OQ-data-clean-1\nRecommendation: Drop them.\nAssumption if unanswered: Drop them.\nStatus: open\n\n## D5 — Which parser?\nScope: data/ingest\nRaised by: OQ-data-ingest-1\nRecommendation: Use the stdlib csv module.\nAssumption if unanswered: The stdlib csv module.\nStatus: open\n",
+      "docs/packages/data/decisions/ingest.md": "# Decisions — data/ingest\n\n## D5 — Which parser?\nScope: data/ingest\nRaised by: OQ-data-ingest-1\nRecommendation: Use the stdlib csv module.\nAssumption if unanswered: The stdlib csv module.\nStatus: open\n",
+      "docs/packages/data/decisions/clean.md": "# Decisions — data/clean\n\n## D4 — Drop duplicate rows?\nScope: data/clean\nRaised by: OQ-data-clean-1\nRecommendation: Drop them.\nAssumption if unanswered: Drop them.\nStatus: open\n"
+    },
+    "absent": [
+      ".dev-team/locks/decisions"
+    ]
+  }
+}

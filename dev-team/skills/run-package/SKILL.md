@@ -1,7 +1,7 @@
 ---
 name: run-package
-description: Drive one package to shipped - scaffold its workspace first when it has none, derive every section's state from disk, run the ready set (probes, designs and tests in parallel, implementers one at a time, two reviewers in round 1), route design-gap and spec-change, ask you on a block and record the answer, close the package with sync-plan, and end with a summary and the exact next command. Optional section and --step run one section or one step by hand; --defer moves a stuck review's findings to the backlog instead of asking.
-argument-hint: "<pkg> [<section>] [--step PROBE|DESIGN|TEST|IMPLEMENT|REVIEW] [--defer]"
+description: Drive one package to shipped - scaffold its workspace first when it has none, derive every section's state from disk, run every ready row's step in one message (designers, testers, implementers in parallel, two reviewers in round 1; the architect alone at PLAN), route design-gap and spec-change, ask you on a block and record the answer, close the package with sync-plan, and end with a summary and the exact next command. Optional section and --step run one section or one step by hand; --defer moves a stuck review's findings to the backlog instead of asking; --serial runs one kind of step per batch and one implementer at a time.
+argument-hint: "<pkg> [<section>] [--step PROBE|DESIGN|TEST|IMPLEMENT|REVIEW] [--defer] [--serial]"
 arguments: [pkg, rest]
 disable-model-invocation: true
 ---
@@ -25,17 +25,21 @@ run from the repo root. It exits 1 on a failing gate; that is the answer, not an
 - Edit a file other than `docs/decisions.md`, and that one only as **Asking** says.
 - Run a git command that writes. The only git you run is `git rev-parse --short HEAD`, at the
   start and at the end, and `git rev-list --count <start>..HEAD` for the summary.
-- Read a return past its first line, except a tester's `design-gap` return, which you relay in
-  full to the designer, and a `blocked` or `stopped` return, which is the question you ask. A
-  `spec-change` return is not relayed: its entry is on disk, and `status.py` names it.
-- Open the files the agents wrote to check their work. You read only what resolves a spawn
-  field: the Sections table of `docs/packages/<pkg>/contract.md`, the `<pkg>` row of
-  `docs/architecture.md`'s Packages table and its **Shared conventions** (a source's access
-  variable), the `docs/legacy/inventory.md` row for a source token, the first line of a design
-  (`Mode:`), the `Commit:` line of a review report, and file names under `docs/reviews/`,
-  `docs/sources/` and `docs/changes/`. Judging the work is the reviewer's. `status.py`'s
-  source is not yours to read either: a state you do not understand is **Asking**, with the
-  row.
+- Read a return past its first line, except a tester's `design-gap` return, which you relay
+  in full to the designer, and a `blocked` or `stopped` return, which is the question you
+  ask. A `spec-change` return is not relayed: its entry is on disk, and `status.py` names it.
+  And never tell the user what a return says past its first line — a failure count, a
+  phrase, a claim that a suite is green: a summary can be wrong, and the audited returns
+  held false ones. What a run did is on disk, and the next `status.py` shows it.
+- Open the files the agents wrote to check their work. Read only with the Read tool, and only:
+  the Sections table of `docs/packages/<pkg>/contract.md`, the `<pkg>` row of
+  `docs/architecture.md` and its **Shared conventions** (a source's access variable), and the
+  `docs/legacy/inventory.md` row for a source token. Every other spawn field comes from
+  `status.py --fields <pkg>/<section>`, and a reviewer's **Previous round** from the file names
+  the Glob tool finds under `docs/packages/<pkg>/reviews/<section>/` (or the older
+  `docs/reviews/`). Never `ls`, `grep`, `find`, `cat` or `head` a repo file. Judging the work
+  is the reviewer's. `status.py`'s source is not yours to read either: a state you do not
+  understand is **Asking**, with the row.
 - Spawn anything in the background. Every Agent call is `run_in_background: false`; the next
   batch needs the last one's commits.
 - Spawn with a bare agent name. `architect` does not resolve to the plugin agent; it silently
@@ -49,6 +53,8 @@ The first word is `<pkg>`. After it, in any order:
 - `--step <STEP>` — one of `PROBE`, `DESIGN`, `TEST`, `IMPLEMENT`, `REVIEW`: run that one step
   for the named section and stop.
 - `--defer` — at a review cap, defer instead of asking.
+- `--serial` — one kind of step per batch and one implementer at a time, the 2.1 loop, for a
+  repo whose sections share a file the write guard cannot separate.
 
 `--step` without `<section>`, a `--step` value not in that list, or any other `--` word: print
 one line saying which, and stop — no spawn, no summary.
@@ -70,10 +76,12 @@ root>` is the `<pkg>` row's `path` in the Packages table. A section's dependenci
 `depends on` cell, and for `surface` every other section. Upstream packages are the `<pkg>`
 row's `depends on` in the Packages table: each is `docs/packages/<dep>/interface.md` when that
 file exists, else `provisional: docs/packages/<dep>/contract.md`. Sources are the row's `source`
-cell, `<kind>:<token>` each. An open change file naming the section is one under `docs/changes/`
-that `grep -l` finds with both `Status: open` and `<pkg>/<section>` in it. Rounds are the row's
-`round` column (`—` is 0); a round's reports are `docs/reviews/*-<pkg>-<section>-r<n>-*.md`,
-and a report with no `-r<n>-` in its name is round 1.
+cell, `<kind>:<token>` each. `status.py --fields <pkg>/<section>` prints four lines — `mode:`,
+`change file:`, `design mode:` and `diff base:` — run once per section you spawn for, and each
+table below names the line a field copies. Rounds are the row's `round` column (`—` is 0); a
+round's reports are `docs/packages/<pkg>/reviews/<section>/*-r<n>-*.md`,
+or the older `docs/reviews/*-<pkg>-<section>-r<n>-*.md`, and a report with no `-r<n>-` in its
+name is round 1.
 
 ### Researcher — PROBE
 
@@ -100,13 +108,13 @@ take turns, since both extend one file.
 | Field | Value |
 |---|---|
 | **Section** | `<pkg>/<section>` |
-| **Mode** | `delta` when an open change file names the section, or the row's evidence is `open <heading>` for a `spec-change:design`; `document` when `<path>` holds code and there is no design; else `new` |
+| **Mode** | the `mode:` line of `status.py --fields`: `new`, `document` or `delta` |
 | **Contract** | `docs/packages/<pkg>/contract.md` |
 | **Repo contract** | `docs/architecture.md` |
 | **Dependency READMEs** | `<dep path>/README.md` per dependency, comma-separated; in `delta` and `document` modes `own: <path>/README.md` first when it exists |
 | **Upstream interfaces** | per upstream package, as resolved above |
 | **Source probes** | `docs/sources/<token>.md` per source |
-| **Change file** | the open change file (`delta` only) |
+| **Change file** | the `change file:` line of `status.py --fields` (`delta` only; else `none`) |
 | **Spec-change** | the heading from the row's evidence when it reads `open <heading>` and names `spec-change:design`; else `none` |
 | **Design-gap** | the tester's `design-gap` return, verbatim, when this run's tester returned one for the section |
 | **Skills to invoke** | the row's `builds with` |
@@ -127,14 +135,17 @@ take turns, since both extend one file.
 | **Upstream interfaces** | per upstream package, as resolved above |
 | **Source probes** | `docs/sources/<token>.md` per source |
 | **Regenerate** | the entry heading from the row's evidence when it reads `regenerate: <heading>` or `open <heading>` (a `spec-change:test`); else `none` |
-| **Adopted code** | `yes` when the design's first line is `Mode: document`, else `no` |
+| **Design mode** | the `design mode:` line of `status.py --fields`: `new`, `document` or `delta` |
 | **Write to** | `tests/intent/<section>/ under <package root>` |
 | **Run** | `run-package <pkg>` |
 
 ### Implementer — IMPLEMENT and FIX n
 
-`subagent_type: "dev-team:implementer"`, one at a time: implementers never run in parallel,
-since they share `pyproject.toml` and the workspace.
+`subagent_type: "dev-team:implementer"`, one per ready IMPLEMENT or FIX row, all in the
+batch's one message: implementers run in parallel like every other role. The write guard
+confines each to its section from its prompt's `Section:` line, the stop gate judges each on
+its own section, the marker and the decisions inbox are per section, and the two shared edits
+go through `locked.py`. With `--serial`, one at a time: the first such row only, as 2.1 did.
 
 The prompt is the output of `status.py --inputs <pkg>/<section>`, verbatim: the script
 resolves every field of the implementer's **Inputs** — the review reports at FIX `n` and at a
@@ -182,7 +193,7 @@ code, and neither may be handed the other's report. Round 2 and later is one: `F
 | **Source probes** | `docs/sources/<token>.md` per source |
 | **Intent tests** | `tests/intent/<section>/` |
 | **Previous round** | from round 2: round `r-1`'s report paths, comma-separated; else `none` |
-| **Diff** | from round 2: `<sha>..HEAD`, `<sha>` the `Commit:` line of round `r-1`'s `-s` report, or its `-a` report when `r-1` is 1 (the one report when it has no letter); else `none` |
+| **Diff** | from round 2: `<sha>..HEAD`, `<sha>` the `diff base:` line of `status.py --fields` (round `r-1`'s `-s` report's `Commit:`, or its `-a` report's when `r-1` is 1); else `none` |
 | **Gate** | `.dev-team/gate/<pkg>/<section>.txt` |
 | **Run** | `run-package <pkg>` |
 
@@ -217,19 +228,24 @@ granted *one more round* at a cap.
    round* or *defer* this run is not asked again: step 4 runs it. After the answers, re-run
    step 2.
 4. **The ready set.** The rows that count with `ready` `yes`, plus the rows granted a round or
-   a defer. Take the first kind in this order that has any, and spawn every one of that kind in
-   **one message**:
-   1. PLAN → one architect for the package, a `Spec-change:` line per PLAN row.
-   2. PROBE → the researchers.
-   3. DESIGN → a designer per section; also a section at TEST whose last tester run this run
-      returned `design-gap`.
-   4. TEST → a tester per section.
-   5. IMPLEMENT or FIX n → one implementer, for the first such row only. A cap row granted
-      *one more round* gets its implementer here, then its `full` reviewer as a REVIEW.
-   6. REVIEW → the reviewers of every such row: two per round-1 section, one otherwise; a row
-      granted *defer* gets its `defer` reviewer here. Every reviewer of the batch — both of a
-      round-1 pair included — is an Agent call in this one message; none waits for another's
-      return.
+   a defer. When any of them is PLAN, the batch is one architect for the package, with a
+   `Spec-change:` line per PLAN row, and nothing else: it edits the contracts the designers
+   read, so every other row waits one batch. Otherwise spawn **every ready row's step in one
+   message**, whatever mix of steps the rows are at:
+   - PROBE → the researchers, one per source that lacks the section's entry (two sections
+     waiting on one source take turns).
+   - DESIGN → a designer per section; also a section at TEST whose last tester run this run
+     returned `design-gap`.
+   - TEST → a tester per section.
+   - IMPLEMENT or FIX n → an implementer per section. A cap row granted *one more round* gets
+     its implementer here, then its `full` reviewer as a REVIEW next batch.
+   - REVIEW → the reviewers of every such row: two per round-1 section, one otherwise; a row
+     granted *defer* gets its `defer` reviewer here.
+
+   Every Agent call of the batch — both of a round-1 pair, every implementer — is in this one
+   message; none waits for another's return. With `--serial`: take the first kind in the
+   order PLAN, PROBE, DESIGN, TEST, IMPLEMENT/FIX, REVIEW that has any row, spawn every row of
+   that kind in one message, and for IMPLEMENT/FIX the first such row only.
 5. **Branch** on each return's first line, `Result: <value>`, and read nothing past it except
    where a case below says so. An agent's return is its **last** hand-back: an implementer the
    stop gate sent back hands back an amendment (`Amends:` on its second line) after its first
@@ -239,11 +255,20 @@ granted *one more round* at a cap.
    - `design-gap` (tester) → the designer for that section in the next batch, with the whole
      return as `Design-gap:`. The third `design-gap` for one section in this run is a block
      instead: **Asking**, with the return's `Gap:` lines as the question.
-   - `spec-change` → nothing to relay: the entry is in `docs/deviations/<pkg>/<section>.md` and `status.py`
-     re-opens the step it names (PLAN, DESIGN or TEST), where the next block carries it.
-   - `blocked` or `stopped`, or a first line that is not `Result:` → **Asking**, with the
-     return as the question.
-6. **Re-derive.** `status.py <pkg>`; print only the rows whose state changed. A row whose
+   - `spec-change` → nothing to relay: the entry is in
+     `docs/packages/<pkg>/deviations/<section>.md` and `status.py` re-opens the step it names
+     (PLAN, DESIGN or TEST), where the next block carries it.
+   - `blocked` or `stopped` → **Asking**, with the return as the question.
+   - a first line that is not `Result:` → re-run `status.py <pkg>`: if the row has moved past
+     the step's state (IMPLEMENT or FIX → REVIEW, DESIGN → TEST, TEST → IMPLEMENT, REVIEW →
+     DONE or FIX), note `<role> <section>: no Result: line; state advanced` for the
+     **Summary** and go on; else **Asking**, with the return as the question. The state is on
+     disk; a malformed last turn after a good commit is not a question for the user.
+6. **Re-derive.** `status.py <pkg>`, its whole output read as printed — never piped through
+   a filter such as `head` or `tail`, and never narrowed to the sections you spawned: a filtered table
+   hides a re-opened upstream section and the `shipped:` line. Print the rows whose state or
+   evidence changed, by comparing them with the rows you kept, and nothing in prose about
+   them. A row whose
    agent returned `done` this batch and whose state and evidence are exactly what they were
    before it ran did not move: spawning the same step again would repeat the same run. Send
    it to **Asking** instead, with the row and the agent's first two lines. Back to step 2.
@@ -302,7 +327,9 @@ with the agent's first two lines, or the row's evidence, as `stopped because`.
 
 ## Summary
 
-Always your last message, whether you finished or stopped, as this block and nothing after it:
+Always your last message, whether you finished or stopped, and the block is the whole message:
+no line before it or after it — no recap, no note about how the run went. What the run did is
+in the block and on disk; a sentence around it is a second summary nobody checks.
 
 ```
 run-package <arguments as typed>: <done | stopped at <section> <STEP>>
@@ -310,15 +337,18 @@ sections: <DONE>/<total> DONE; <section> · <state>, …
 agent runs: designer <n> · tester <n> · implementer <n> · reviewer <n> · researcher <n> · architect <n>
 commits: <start sha>..<end sha> (<count>)
 stopped because: <the agent's first two lines, or the run gate's FAIL lines>
+no Result: line: <role> <section>: no Result: line; state advanced, …
 uncommitted: docs/decisions.md
 next: <status.py's next line>
 ```
 
 The first line echoes the command's arguments, so it says which walk this was: `run-package
-data: done`, `run-package data ingest: done`, `run-package data ingest --step REVIEW: done`.
+data: done`, `run-package data ingest: done`, `run-package data ingest --step REVIEW: done`,
+`run-package data --serial: done`.
 `done` means the walk you were asked for finished — the package closed, the section DONE, or
-the one step run. `stopped because` appears only when stopped, `uncommitted` only when you
-edited `docs/decisions.md`. `sections` and `next` come from a final `status.py <pkg>`, the
+the one step run. `stopped because` appears only when stopped, `no Result: line` only when a
+return's first line was not `Result:` and its row had advanced (**Loop** step 5), and
+`uncommitted` only when you edited `docs/decisions.md`. `sections` and `next` come from a final `status.py <pkg>`, the
 `next:` line copied as it prints; `commits` from `git rev-parse --short HEAD` and
 `git rev-list --count <start>..HEAD`. Every agent run counts once under its role, the
 architect's PLAN and close runs included.

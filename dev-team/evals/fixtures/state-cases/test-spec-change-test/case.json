@@ -5,7 +5,7 @@
     {"do": "design", "section": "ingest"},
     {"do": "tests", "section": "ingest"},
     {"do": "build", "section": "ingest"},
-    {"do": "deviation", "section": "ingest", "kind": "spec-change:test", "status": "open"}
+    {"do": "deviation", "layout": "old", "section": "ingest", "kind": "spec-change:test", "status": "open"}
   ],
   "args": [],
   "expect": {

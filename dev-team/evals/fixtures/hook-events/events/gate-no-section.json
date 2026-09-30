@@ -2,6 +2,7 @@
   "script": "gate",
   "repo": "built",
   "setup": {
+    "transcript": "Repo: .\nRun: run-package data",
     "files": {
       "notes.txt": "scratch\n"
     },

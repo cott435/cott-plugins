@@ -1,0 +1,35 @@
+{
+  "note": "clause_key matches on the full item name (W3): the test citing `load trades from csv` matches the approved clause; the one citing `load trades count` does not",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "files": {
+        "packages/data/tests/intent/ingest/test_ingest.py": "def test_0():\n    \"\"\"Design §5 load trades from csv: one dict per row.\"\"\"\n    assert True\n\n\ndef test_1():\n    \"\"\"Design §5 load trades count: the row count.\"\"\"\n    assert True\n"
+      },
+      "message": "data/ingest: intent tests"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "deviation",
+      "section": "ingest",
+      "kind": "deviation",
+      "status": "approved",
+      "clause": "design §5 load trades from csv"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "TEST",
+    "evidence": "^regenerate: data/ingest — 2026-09-27 — deviation — 1$"
+  }
+}

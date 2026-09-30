@@ -5,24 +5,34 @@ Usage:  python3 check.py [case ...]
 
 Each case is `events/<case>.json`:
 
-- `script`: `format`, `gate` or `guard` (hooks/format_on_edit.py, gate_on_stop.py,
-  guard_writes.py).
+- `script`: `format`, `gate`, `guard`, `sync` or `bash` (hooks/format_on_edit.py,
+  gate_on_stop.py, guard_writes.py, sync_decisions.py, guard_bash.py).
 - `repo`: `built` (build.py: one built section, one proposed deviation), `arch` (a directory
   holding only `docs/architecture.md`) or `plain` (an empty directory: out of scope).
 - `setup`: `prior`, files committed just before the run's commit (so they are in the repo
   but not in the run's diff); `files` written into the repo (uncommitted unless `commit` names
-  a message, which commits everything); and `counter`, the gate's attempt count before this
-  stop.
-- `event`: the hook input as Claude Code sends it, `{cwd}` standing for the repo; or `raw`,
-  stdin sent verbatim. `args`: command-line arguments, for the gate's `--report` mode, which
-  reads no stdin.
+  a message, which commits everything; `{RUN_SHA}` in their text is the short sha of the
+  run's commit, after `prior`); `remove`, paths deleted from the working tree after
+  `files`; `counter`, the gate's attempt count before this stop;
+  `stale_lock`, a name whose `.dev-team/locks/<name>/` is created with its mtime set 1200 s
+  back (a crashed holder's lock); `transcript`, a spawn prompt written as the one `user` record
+  of a JSONL at the event's `agent_transcript_path` (`{cwd}` substituted, its parent created),
+  the file the gate reads the section from — or, for an event without one (a `PreToolUse`),
+  at the path the guards derive, `<transcript_path minus .jsonl>/subagents/agent-<agent_id>.jsonl`;
+  or `transcript_file`, a recorded transcript under this directory
+  (`transcripts/<name>.jsonl`) copied there instead.
+- `event`: the hook input as Claude Code sends it, `{cwd}` standing for the repo and
+  `{plugin}` for this plugin's root (a `locked.py` path in a Bash command); or `raw`,
+  stdin sent verbatim. `args`: command-line arguments, for the gate's `--report` mode and the
+  sync hook's `--all`, which read no stdin.
 - `env`: extra environment for the script (the gate's `DEV_TEAM_GATE_TIMEOUT` and
   `DEV_TEAM_GATE_BUDGET`, say).
-- `expect`: `exit`; `stdout_contains`; `stderr` (exact), `stderr_contains`, `stderr_lacks`, `stderr_startswith`;
+- `expect`: `exit`; `stdout` (exact, stripped), `stdout_contains`; `stderr` (exact), `stderr_contains`, `stderr_lacks`, `stderr_startswith`;
   `file_equals`, `file_contains`, `file_lacks` (repo-relative); `absent` (paths that must not
   exist); `gate_contains`, `gate_lacks`, and `gate_only` (every line of the gate's record for
   `gate_section`, default `data/ingest`, at `.dev-team/gate/<pkg>/<section>.txt`, between the
-  header and the `result:` line starts with one of these); `counter` (the attempt
+  header and the `result:` line starts with one of these: `PASS`, `FAIL`, `ELSEWHERE`,
+  `TIMEOUT`, `MEASURED`, `TOLERATED`, `SKIPPED`); `counter` (the attempt
   count after, `null` for no counter file).
 
 The script runs with `CLAUDE_PLUGIN_ROOT` set to this plugin and `CLAUDE_PLUGIN_DATA` to a
@@ -34,14 +44,17 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 PLUGIN = HERE.parents[2]
-SCRIPTS = {"format": "format_on_edit.py", "gate": "gate_on_stop.py", "guard": "guard_writes.py"}
+SCRIPTS = {"format": "format_on_edit.py", "gate": "gate_on_stop.py", "guard": "guard_writes.py",
+           "sync": "sync_decisions.py", "bash": "guard_bash.py"}
 sys.path.insert(0, str(HERE))
 import build  # noqa: E402
 
@@ -77,20 +90,39 @@ def check(case: Path) -> list[str]:
             subprocess.run([*git, "commit", "-q", "-m", "fixture: before the run", "--", *setup["prior"]],
                            cwd=repo, check=True)
             subprocess.run([*git, "commit", "-q", "-m", msg], cwd=repo, check=True)
+        run_sha = build.run_sha(repo) if spec["repo"] == "built" else ""
         for rel, text in setup.get("files", {}).items():
             (repo / rel).parent.mkdir(parents=True, exist_ok=True)
-            (repo / rel).write_text(text)
+            (repo / rel).write_text(text.replace("{RUN_SHA}", run_sha))
+        for rel in setup.get("remove", []):
+            shutil.rmtree(repo / rel) if (repo / rel).is_dir() else (repo / rel).unlink()
         if "commit" in setup:
             subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
             subprocess.run(["git", "-c", "user.name=fixture", "-c", "user.email=fixture@example.invalid",
                             "commit", "-q", "-m", setup["commit"]], cwd=repo, check=True)
+        if "stale_lock" in setup:
+            lock = repo / ".dev-team" / "locks" / setup["stale_lock"]
+            lock.mkdir(parents=True)
+            then = time.time() - 1200
+            os.utime(lock, (then, then))
         event = spec.get("event")
         agent_id = (event or {}).get("agent_id", "")
+        atp = (event or {}).get("agent_transcript_path", "").replace("{cwd}", str(repo))
+        if not atp and (event or {}).get("transcript_path") and agent_id:
+            tp = Path(event["transcript_path"].replace("{cwd}", str(repo)))
+            atp = str(tp.with_suffix("") / "subagents" / f"agent-{agent_id}.jsonl")
+        if atp and ("transcript" in setup or "transcript_file" in setup):
+            Path(atp).parent.mkdir(parents=True, exist_ok=True)
+            if "transcript_file" in setup:
+                Path(atp).write_text((HERE / setup["transcript_file"]).read_text())
+            else:
+                record = {"type": "user", "message": {"role": "user", "content": setup["transcript"]}}
+                Path(atp).write_text(json.dumps(record) + "\n")
         counter = data / "gate" / agent_id
         if "counter" in setup:
             counter.parent.mkdir(parents=True, exist_ok=True)
             counter.write_text(f"{setup['counter']}\n")
-        stdin = spec["raw"] if "raw" in spec else "" if event is None else json.dumps(event).replace("{cwd}", str(repo))
+        stdin = spec["raw"] if "raw" in spec else "" if event is None else json.dumps(event).replace("{cwd}", str(repo)).replace("{plugin}", str(PLUGIN))
         env = {**os.environ, "CLAUDE_PLUGIN_ROOT": str(PLUGIN), "CLAUDE_PLUGIN_DATA": str(data), **spec.get("env", {})}
         res = subprocess.run(["python3", str(PLUGIN / "hooks" / SCRIPTS[spec["script"]]), *spec.get("args", [])],
                              input=stdin, capture_output=True, text=True, cwd=repo, env=env)
@@ -102,6 +134,8 @@ def check(case: Path) -> list[str]:
             problems.append(f"stderr {err.strip()!r}, expected {exp['stderr']!r}")
         if "stderr_startswith" in exp and not err.startswith(exp["stderr_startswith"]):
             problems.append(f"stderr does not start {exp['stderr_startswith']!r}")
+        if "stdout" in exp and res.stdout.strip() != exp["stdout"]:
+            problems.append(f"stdout {res.stdout.strip()!r}, expected {exp['stdout']!r}")
         problems += [f"stdout lacks {s!r}" for s in exp.get("stdout_contains", []) if s not in res.stdout]
         problems += [f"stderr lacks {s!r}" for s in exp.get("stderr_contains", []) if s not in err]
         problems += [f"stderr has {s!r}" for s in exp.get("stderr_lacks", []) if s in err]

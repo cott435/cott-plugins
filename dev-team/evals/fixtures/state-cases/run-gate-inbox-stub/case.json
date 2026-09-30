@@ -1,0 +1,26 @@
+{
+  "note": "--run-gate fails on an inbox holding a D? stub the sync hook never numbered",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "inbox",
+      "section": "ingest",
+      "entries": [
+        "## D? — Which parser?\n\nScope: data/ingest\nRaised by: OQ-data-ingest-1\nRecommendation: pandas\nAssumption if unanswered: pandas\nStatus: open"
+      ]
+    }
+  ],
+  "args": [
+    "--run-gate",
+    "data"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "run gate: FAIL",
+      "unsynced inbox — docs/packages/data/decisions/ingest.md: D? stub not yet numbered"
+    ]
+  }
+}

@@ -27,5 +27,8 @@
       "FAIL"
     ],
     "counter": null
+  },
+  "setup": {
+    "transcript": "Section: data/ingest\nDesign: docs/packages/data/design/ingest.md\nRun: run-package data"
   }
 }

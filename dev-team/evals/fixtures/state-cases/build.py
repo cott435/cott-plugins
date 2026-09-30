@@ -13,6 +13,10 @@ A step is either explicit, `{"files": {"<path>": "<content>"}, "message": "<summ
 macro, `{"do": "<macro>", ...}`; the macros are the functions named `m_<macro>` below. In any
 file content, `{HEAD}` is replaced with the sha of the commit the step is made on top of — the
 `Commit:` a reviewer writes is the code it reviewed, not its own report's commit.
+
+`review`, `deviation` and `change` take `"layout": "new" | "old"` (default `new`): `new` writes
+the 2.2 paths under `docs/packages/<pkg>/` and the ledger heading's `— <k>`; `old` the 2.0
+paths and heading.
 """
 
 from __future__ import annotations
@@ -250,7 +254,9 @@ def m_review(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
             head += [f"Convergence: {step.get('convergence', '0 prior unfixed, 0 new')}", "Diff: {HEAD}..HEAD"]
         body = "\n\n## CRITICAL\n\n" + ("- none" if verdict == "approve" else f"- src:1 — finding — fix it") + "\n\n## WARNING\n\n- none\n"
         body += "\n## Spec-change\n\n" + (f"- {step['spec'][suffix]}\n" if suffix in step.get("spec", {}) else "- none\n")
-        files[f"docs/reviews/{DATE}-{PKG}-{s}-r{n}-{suffix}.md"] = "\n".join(head) + body
+        rel = (f"docs/reviews/{DATE}-{PKG}-{s}-r{n}-{suffix}.md" if step.get("layout", "new") == "old"
+               else f"docs/packages/{PKG}/reviews/{s}/{DATE}-r{n}-{suffix}.md")
+        files[rel] = "\n".join(head) + body
     return [(files, f"{PKG}/{s}: review r{n}")]
 
 
@@ -279,13 +285,33 @@ def m_regenerate(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
 
 def m_deviation(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
     s, kind = step["section"], step["kind"]
-    rel = "docs/deviations.md" if step.get("legacy") else f"docs/deviations/{PKG}/{s}.md"
+    new = step.get("layout", "new") == "new" and not step.get("legacy")
+    rel = ("docs/deviations.md" if step.get("legacy") else
+           f"docs/packages/{PKG}/deviations/{s}.md" if new else f"docs/deviations/{PKG}/{s}.md")
     old = (dest / rel).read_text() if (dest / rel).exists() else ("# Deviations\n" if step.get("legacy") else f"# Deviations — {PKG}/{s}\n")
+    k = f" — {old.count(chr(10) + '## ') + 1}" if new else ""
     evidence = "Did: built it the other way" if kind == "deviation" else "Found: src/x.py:1"
-    entry = (f"\n## {PKG}/{s} — {DATE} — {kind}\n\nClause: {step.get('clause', 'design §5 load_trades')}\n"
+    entry = (f"\n## {PKG}/{s} — {DATE} — {kind}{k}\n\nClause: {step.get('clause', 'design §5 load_trades')}\n"
              f"Said: \"one thing\"\n{evidence}\nWhy: the data says otherwise\nStatus: {step['status']}\n"
              f"Raised by: implementer — run-package {PKG}\nResolved by: —\n")
     return [({rel: old + entry}, f"{PKG}/{s}: {kind} {step['status']}")]
+
+
+def m_change(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
+    slug = step["slug"]
+    pkg = step.get("pkg", PKG)
+    rel = f"docs/changes/{slug}.md" if step.get("layout", "new") == "old" else f"docs/packages/{pkg}/changes/{slug}.md"
+    affected = "\n".join(f"   - {sec} — changes" for sec in step["sections"])
+    text = (f"# `{rel}`\nStatus: {step.get('status', 'open')}\n\n1. **Change goal** — let the window be set per call.\n"
+            f"2. **Affected sections**\n{affected}\n3. **Contract changes** — none yet\n4. **Downstream impact** — none\n")
+    return [({rel: text}, f"docs: change {slug}")]
+
+
+def m_inbox(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
+    s = step["section"]
+    rel = f"docs/packages/{PKG}/decisions/{s}.md"
+    text = f"# Decisions — {PKG}/{s}\n\n" + "\n\n".join(e.strip() for e in step["entries"]) + "\n"
+    return [({rel: text}, f"{PKG}/{s}: decisions inbox")]
 
 
 def apply(dest: Path, step: dict) -> None:

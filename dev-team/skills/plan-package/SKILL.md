@@ -36,8 +36,9 @@ contract invents its own shapes and conventions, and the next package invents th
 
 ## Steps
 
-1. **Run gate.** `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --run-gate $pkg`.
-   FAIL → return `Result: blocked` with its lines, and write nothing.
+1. **Run gate.** `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --run-gate`,
+   with no package: it checks the branch and the tree, since the package's contract is what
+   this run writes. FAIL → return `Result: blocked` with its lines, and write nothing.
 
 2. **Survey.** Read, and nothing beyond it:
    - `docs/architecture.md` — the `$pkg` row, its `depends on`, the Boundaries subsections for
@@ -49,8 +50,10 @@ contract invents its own shapes and conventions, and the next package invents th
      shipped (`status.py <dep>` reads `shipped: yes`); else its `contract.md` if it exists,
      else the repo contract's Boundaries — and every name consumed from it is **provisional**.
    - `docs/packages/$pkg/contract.md` if it exists, and the package's code directory if any.
-   - `docs/deviations/$pkg/*.md`: open `spec-change:contract` entries.
-   - `docs/changes/*.md` with `Status: open` naming a `$pkg/<section>`.
+   - `docs/packages/$pkg/deviations/*.md` (and the older `docs/deviations/$pkg/*.md` and
+     `docs/deviations.md`): open `spec-change:contract` entries.
+   - `docs/packages/$pkg/changes/*.md` with `Status: open`, and any pre-2.2 `docs/changes/*.md`
+     naming a `$pkg/<section>`.
    - The project skills, per your **Project skills**; the repo contract's `candidate skills`
      column for `$pkg` is the starting point.
 

@@ -12,6 +12,70 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [2.2.0] - 2026-09-30
+
+Implementers in parallel; the per-section documents under their package. Evidence:
+`evals/2026-09-29-audit-run-package-f1c390a1.md` and the 2.2 phase logs.
+
+### Breaking
+
+| Change | What to do |
+|---|---|
+| Implementers run in parallel by default, and a batch holds every ready row's step, PLAN alone (d7a39a8) | nothing; `/dev-team:run-package <pkg> --serial` is the 2.1 loop, for sections that must edit one file the write guard cannot split |
+| The stop gate no longer runs `repo`-scope pytest rows of `docs/constraints.md`; the record says `SKIPPED <row>: repo-scope pytest is CI's` (2efa480) | nothing; CI still runs them |
+| New entries, reports, change files and decision stubs go to `docs/packages/<pkg>/…` — `decisions/`, `deviations/`, `reviews/<section>/`, `changes/` (43c5e36, e8a7cb5) | nothing; `docs/deviations/`, `docs/deviations.md`, `docs/reviews/` and `docs/changes/` are still read, and an entry is edited where it is. No migration |
+| The tester's spawn field `Adopted code:` is `Design mode: new \| document \| delta`, and the tester may return `Result: spec-change` (fc6ab8a) | nothing under the driver; a hand-written tester spawn sends the design's first line as `Design mode:` |
+| A designer or implementer never writes `docs/decisions.md`: stubs and `Applied:` lines go to the section's inbox, `docs/packages/<pkg>/decisions/<section>.md`, and a hook merges them (7fccd1d) | a session without the hook fails the run gate on an unsynced inbox; `python3 <plugin>/hooks/sync_decisions.py --all` repairs it |
+| A gate retry amends only when `HEAD` is the run's own commit; otherwise it is a second commit with the same trailer, so a run may have two commits (e8a7cb5) | nothing |
+| The `.dev-team/stop` marker is per section, `.dev-team/stop/<pkg>/<section>`; the deviation heading gains `— <k>` and the docstring tag `(deviation <date>-<k>)` (2efa480, e8a7cb5) | nothing; the old heading and tag spellings still match |
+
+### Added
+- `hooks/sync_decisions.py`, the decisions inbox and its template (7fccd1d); `hooks/guard_bash.py`
+  (ff75747); `skills/status/scripts/locked.py` (7fccd1d); `run-package --serial` (d7a39a8);
+  `status.py --rounds` `commit:` and the run gate's inbox check (43c5e36); the tester's
+  `spec-change:design` route and `Design mode:` (fc6ab8a); `SKIPPED` gate lines (2efa480).
+
+### Changed
+- **The gate is section-aware** (2efa480): the section from the spawn prompt in the subagent
+  transcript; the diff is the section's paths since its last review `Commit:`; intent and unit
+  suites; any located failure outside the section is `ELSEWHERE`.
+- **The write guard confines an implementer to its section** (ff75747), and a Bash guard refuses
+  shell writes to repo files (E4).
+- **Templates at the 2.2 paths; the retry commit rule** (e8a7cb5): §Project convention rule 4
+  amends only the run's own commit; an agent whose inbox changed stages it and
+  `docs/decisions.md`.
+- **The implementer runs in a batch** (768ef75): `Applied:` to the inbox, the per-section
+  marker, shared edits through `locked.py`, no shell writes, scratch under `.dev-team/tmp/`,
+  the `(name)` unwrap moved to the `surface` section (E3, E10, E11, E12).
+- **Designer and tester** (fc6ab8a): stubs to the inbox as `## D?`; the E1 test at §10; the
+  tester's W1 route, `Design mode:` (W4), full-name tag match (W3), closed return form (E2),
+  Python only through the test command (E6); each sets `resolved` on what it answers (W2).
+- **Reviewer and architect** (0f3c820): the E1 rule for designer-raised contract deviations;
+  `Commit:` from `status.py --rounds`, never `HEAD` (F12); reports per section; one change file
+  per affected package; the W2 sweep at the close.
+- **`run-package`** (d7a39a8): every ready row's step in one message, the architect alone at
+  PLAN; return first lines only (E7); changed rows printed without grep (E8). `pair` at the
+  2.2 paths.
+- **`plan-package`, `sync-plan`, `finalize-project`** at the 2.2 paths (5f87ce0).
+- **The fixes the end-to-end build pointed at** (54efe7d; `evals/2026-09-30-2.2-docs-and-release.md`, `evals/2026-09-30-2.2-run-fixes.md`):
+  a lint, type or Guarded failure located in an intent-test file is the gate's `ELSEWHERE`
+  again, as in 2.1, and an `xfail` reason `D5_OPEN` cites D5; every turn an implementer ends
+  is a `Result:` hand-back, a gate failure in a file it may not edit is `Result: blocked`, and
+  the driver re-derives before asking on a return with no `Result:` line; a section's own
+  `Applied:` lines in `docs/decisions.md` follow its inbox, and the run gate fails on a stale
+  one; the driver reads its spawn fields from the new `status.py --fields <pkg>/<section>`
+  (`mode`, `change file`, `design mode`, `diff base`) instead of listing and grepping files; the
+  scaffold writes the root config the first consumer needs (`[tool.mypy] mypy_path`, contract
+  2 with `allow_indirect_imports = true`); the Bash guard refuses a python here-document write
+  and exempts only `uv` and the `.gitignore` printf under `locked.py`; `plan-package` runs the
+  run gate with no package; §Project convention lists paths literally.
+- **The package API page is `docs/api/<pkg>/index.md`** (54efe7d): Claude Code refuses a
+  subagent's Write of a `.md` whose name starts `analysis` (or `report`, `summary`, `findings`),
+  so `docs/api/analysis.md` could never be written; the old name is still read and writable.
+  The `surface` implementer may edit its package `pyproject.toml` for `[project.scripts]`;
+  `status.py --surface` reads a README name cell's first backticked span and needs no section
+  README row for a name a surface-owned module (a pipeline, the CLI) provides.
+
 ## [2.1.0] - 2026-09-29
 
 Testers now work inside the real workspace, and a gate retry no longer fills the driver's
