@@ -16,12 +16,13 @@
       ],
       "expectations": [
         "transcript.md records opening skills/security-review/SKILL.md past its frontmatter — this harness's stand-in for a Skill call — before the section's code was written, and cites at least one thing that exists only in the body (a Verification command, a FAIL/PASS pair, or a numbered area), not the condition list the frontmatter description already carries",
-        "The Security step names the When to Activate condition this section matches and says which of the checklist's numbered areas apply to it",
+        "The Security step names the condition this section matches — in the words of security-review's frontmatter description, which the agent decides from, or of the body's When to Activate list — and says which of the checklist's numbered areas apply to it",
         "outputs/ holds the section's implementation and tests that were actually executed: the transcript gives the command and its result, and the tests name behaviors of this section rather than standing in as a placeholder",
         "Every security claim the run makes anywhere — the Security step, the section README, the final message — is borne out by the outputs: a control claimed is a control present in the code, and a verification claimed to have run has its command and its result recorded. An unsupported claim is a FAIL wherever it sits, not only in the final message",
         "Graded from outputs/ alone, without reading transcript.md: the code carries at least two of the controls the checklist's body prescribes for this section's risk — a secret kept out of source, URLs and logs; input validated at the boundary; a path, type or size confined before use; an error that does not echo what it received — each visible in the code itself"
       ],
-      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1"
+      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1",
+      "note_2_2_phase6": "expectation 2 required a body When to Activate item; the agent decides from the frontmatter description's conditions (iteration 2's eval 4 grader failed a run that named them). Either wording counts now; that one verdict changed and was re-graded."
     },
     {
       "id": 2,
@@ -36,12 +37,13 @@
       ],
       "expectations": [
         "transcript.md records opening skills/security-review/SKILL.md past its frontmatter — this harness's stand-in for a Skill call — before the section's code was written, and cites at least one thing that exists only in the body (a Verification command, a FAIL/PASS pair, or a numbered area), not the condition list the frontmatter description already carries",
-        "The Security step names the When to Activate condition this section matches and says which of the checklist's numbered areas apply to it",
+        "The Security step names the condition this section matches — in the words of security-review's frontmatter description, which the agent decides from, or of the body's When to Activate list — and says which of the checklist's numbered areas apply to it",
         "outputs/ holds the section's implementation and tests that were actually executed: the transcript gives the command and its result, and the tests name behaviors of this section rather than standing in as a placeholder",
         "Every security claim the run makes anywhere — the Security step, the section README, the final message — is borne out by the outputs: a control claimed is a control present in the code, and a verification claimed to have run has its command and its result recorded. An unsupported claim is a FAIL wherever it sits, not only in the final message",
         "Graded from outputs/ alone, without reading transcript.md: the code carries at least two of the controls the checklist's body prescribes for this section's risk — a secret kept out of source, URLs and logs; input validated at the boundary; a path, type or size confined before use; an error that does not echo what it received — each visible in the code itself"
       ],
-      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1"
+      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1",
+      "note_2_2_phase6": "expectation 2 required a body When to Activate item; the agent decides from the frontmatter description's conditions (iteration 2's eval 4 grader failed a run that named them). Either wording counts now; that one verdict changed and was re-graded."
     },
     {
       "id": 3,
@@ -56,12 +58,13 @@
       ],
       "expectations": [
         "transcript.md records opening skills/security-review/SKILL.md past its frontmatter — this harness's stand-in for a Skill call — before the section's code was written, and cites at least one thing that exists only in the body (a Verification command, a FAIL/PASS pair, or a numbered area), not the condition list the frontmatter description already carries",
-        "The Security step names the When to Activate condition this section matches and says which of the checklist's numbered areas apply to it",
+        "The Security step names the condition this section matches — in the words of security-review's frontmatter description, which the agent decides from, or of the body's When to Activate list — and says which of the checklist's numbered areas apply to it",
         "outputs/ holds the section's implementation and tests that were actually executed: the transcript gives the command and its result, and the tests name behaviors of this section rather than standing in as a placeholder",
         "Every security claim the run makes anywhere — the Security step, the section README, the final message — is borne out by the outputs: a control claimed is a control present in the code, and a verification claimed to have run has its command and its result recorded. An unsupported claim is a FAIL wherever it sits, not only in the final message",
         "Graded from outputs/ alone, without reading transcript.md: the code carries at least two of the controls the checklist's body prescribes for this section's risk — a secret kept out of source, URLs and logs; input validated at the boundary; a path, type or size confined before use; an error that does not echo what it received — each visible in the code itself"
       ],
-      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1"
+      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1",
+      "note_2_2_phase6": "expectation 2 required a body When to Activate item; the agent decides from the frontmatter description's conditions (iteration 2's eval 4 grader failed a run that named them). Either wording counts now; that one verdict changed and was re-graded."
     },
     {
       "id": 4,
@@ -76,12 +79,13 @@
       ],
       "expectations": [
         "transcript.md records opening skills/security-review/SKILL.md past its frontmatter — this harness's stand-in for a Skill call — before the section's code was written, and cites at least one thing that exists only in the body (a Verification command, a FAIL/PASS pair, or a numbered area), not the condition list the frontmatter description already carries",
-        "The Security step names the When to Activate condition this section matches and says which of the checklist's numbered areas apply to it",
+        "The Security step names the condition this section matches — in the words of security-review's frontmatter description, which the agent decides from, or of the body's When to Activate list — and says which of the checklist's numbered areas apply to it",
         "outputs/ holds the section's implementation and tests that were actually executed: the transcript gives the command and its result, and the tests name behaviors of this section rather than standing in as a placeholder",
         "Every security claim the run makes anywhere — the Security step, the section README, the final message — is borne out by the outputs: a control claimed is a control present in the code, and a verification claimed to have run has its command and its result recorded. An unsupported claim is a FAIL wherever it sits, not only in the final message",
         "Graded from outputs/ alone, without reading transcript.md: the code carries at least two of the controls the checklist's body prescribes for this section's risk — a secret kept out of source, URLs and logs; input validated at the boundary; a path, type or size confined before use; an error that does not echo what it received — each visible in the code itself"
       ],
-      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1"
+      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1",
+      "note_2_2_phase6": "expectation 2 required a body When to Activate item; the agent decides from the frontmatter description's conditions (iteration 2's eval 4 grader failed a run that named them). Either wording counts now; that one verdict changed and was re-graded."
     },
     {
       "id": 5,
@@ -95,12 +99,13 @@
         "skills/"
       ],
       "expectations": [
-        "The Security step decides that no When to Activate condition matches this section and moves on: at most three sentences, with no walkthrough of the checklist's areas one by one",
+        "The Security step decides that none of the conditions security-review's frontmatter description lists matches this section and moves on: at most three sentences, with no walkthrough of the checklist's areas one by one",
         "No Verification command, FAIL/PASS example or numbered area from security-review's SKILL.md body appears anywhere in transcript.md or outputs/ — the observable trace of the body having been read; quoting the frontmatter description, which the agent is told to decide from, does not fail this. (Whether the file was opened at all is not observable here: graders see the transcript and outputs, not the tool calls.)",
         "outputs/ holds the section's implementation and tests that were actually executed: the transcript gives the command and its result, and the tests name behaviors of this section rather than standing in as a placeholder",
         "Apart from the Security step's own verdict, no security paragraph, section or bulleted security review appears anywhere the run produces — the final message, the section README, or any file under outputs/. A run that declined the checklist and then wrote a security paragraph anyway is the failure implementer.md's Security step exists to name, and is a FAIL here"
       ],
-      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1"
+      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1",
+      "note_2_2_phase6": "expectation 1 named the body's When to Activate list; the agent decides from the frontmatter description's conditions (graders, iteration 1). No verdict changed."
     },
     {
       "id": 6,
@@ -114,12 +119,13 @@
         "skills/"
       ],
       "expectations": [
-        "The Security step decides that no When to Activate condition matches this section and moves on: at most three sentences, with no walkthrough of the checklist's areas one by one",
+        "The Security step decides that none of the conditions security-review's frontmatter description lists matches this section and moves on: at most three sentences, with no walkthrough of the checklist's areas one by one",
         "No Verification command, FAIL/PASS example or numbered area from security-review's SKILL.md body appears anywhere in transcript.md or outputs/ — the observable trace of the body having been read; quoting the frontmatter description, which the agent is told to decide from, does not fail this. (Whether the file was opened at all is not observable here: graders see the transcript and outputs, not the tool calls.)",
         "outputs/ holds the section's implementation and tests that were actually executed: the transcript gives the command and its result, and the tests name behaviors of this section rather than standing in as a placeholder",
         "Apart from the Security step's own verdict, no security paragraph, section or bulleted security review appears anywhere the run produces — the final message, the section README, or any file under outputs/. A run that declined the checklist and then wrote a security paragraph anyway is the failure implementer.md's Security step exists to name, and is a FAIL here"
       ],
-      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1"
+      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1",
+      "note_2_2_phase6": "expectation 1 named the body's When to Activate list; the agent decides from the frontmatter description's conditions (graders, iteration 1). No verdict changed."
     },
     {
       "id": 7,
@@ -133,12 +139,13 @@
         "skills/"
       ],
       "expectations": [
-        "The Security step decides that no When to Activate condition matches this section and moves on: at most three sentences, with no walkthrough of the checklist's areas one by one",
+        "The Security step decides that none of the conditions security-review's frontmatter description lists matches this section and moves on: at most three sentences, with no walkthrough of the checklist's areas one by one",
         "No Verification command, FAIL/PASS example or numbered area from security-review's SKILL.md body appears anywhere in transcript.md or outputs/ — the observable trace of the body having been read; quoting the frontmatter description, which the agent is told to decide from, does not fail this. (Whether the file was opened at all is not observable here: graders see the transcript and outputs, not the tool calls.)",
         "outputs/ holds the section's implementation and tests that were actually executed: the transcript gives the command and its result, and the tests name behaviors of this section rather than standing in as a placeholder",
         "Apart from the Security step's own verdict, no security paragraph, section or bulleted security review appears anywhere the run produces — the final message, the section README, or any file under outputs/. A run that declined the checklist and then wrote a security paragraph anyway is the failure implementer.md's Security step exists to name, and is a FAIL here"
       ],
-      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1"
+      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1",
+      "note_2_2_phase6": "expectation 1 named the body's When to Activate list; the agent decides from the frontmatter description's conditions (graders, iteration 1). No verdict changed."
     },
     {
       "id": 8,
@@ -152,12 +159,13 @@
         "skills/"
       ],
       "expectations": [
-        "The Security step decides that no When to Activate condition matches this section and moves on: at most three sentences, with no walkthrough of the checklist's areas one by one",
+        "The Security step decides that none of the conditions security-review's frontmatter description lists matches this section and moves on: at most three sentences, with no walkthrough of the checklist's areas one by one",
         "No Verification command, FAIL/PASS example or numbered area from security-review's SKILL.md body appears anywhere in transcript.md or outputs/ — the observable trace of the body having been read; quoting the frontmatter description, which the agent is told to decide from, does not fail this. (Whether the file was opened at all is not observable here: graders see the transcript and outputs, not the tool calls.)",
         "outputs/ holds the section's implementation and tests that were actually executed: the transcript gives the command and its result, and the tests name behaviors of this section rather than standing in as a placeholder",
         "Apart from the Security step's own verdict, no security paragraph, section or bulleted security review appears anywhere the run produces — the final message, the section README, or any file under outputs/. A run that declined the checklist and then wrote a security paragraph anyway is the failure implementer.md's Security step exists to name, and is a FAIL here"
       ],
-      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1"
+      "added_in": "0.9-evals phase 6; expectations revised in the same phase after iteration 1",
+      "note_2_2_phase6": "expectation 1 named the body's When to Activate list; the agent decides from the frontmatter description's conditions (graders, iteration 1). No verdict changed."
     },
     {
       "id": 9,
@@ -177,11 +185,12 @@
         "outputs/packages/data/src/data/clean/README.md exists with the seven headings Purpose, Files, Entry points and interfaces, Pipeline / workflow, Configuration, Running and testing, Implementation notes in that order, and its Implementation notes cites the ledger entry by its heading (`data/clean — <date> — deviation — 1`, or by section and date pointing at docs/packages/data/deviations/clean.md) instead of restating it: no sentence there repeats the Said / Did / Why triple beyond that citation",
         "No outputs/docs/followups.md exists, and transcript.md records no follow-up line being composed or appended for this run — not to the ingest section about `Trade`, not for the dedupe",
         "Nothing exists under outputs/docs/packages/ but `data/deviations/clean.md` and, when the run recorded an applied decision, the inbox `data/decisions/clean.md` (no contract or design edit); no outputs/docs/decisions.md exists (an `Applied:` line goes to the inbox, never the central ledger); nothing exists under outputs/packages/data/tests/intent/; and nothing under outputs/.dev-team/stop — no `outputs/.dev-team/stop/data/clean`, and no file `outputs/.dev-team/stop` — the marker is written only on `blocked` or `spec-change`, and this run is neither",
-        "outputs/packages/data/src/data/clean/ holds `clean_trades` deduping by a tuple of the row's fields with no `set(rows)` or `set(...)` over `Trade` objects, and outputs/packages/data/tests/unit/clean/ holds unit tests; transcript.md quotes the intent-suite command run before any code was written with its result (5 tests, all failing or erroring because `data.clean` does not exist) and the same command at the end with 5 passed",
+        "outputs/packages/data/src/data/clean/ holds `clean_trades` deduping by a tuple of the row's fields with no `set(rows)` or `set(...)` over `Trade` objects, and outputs/packages/data/tests/unit/clean/ holds unit tests; transcript.md quotes the intent-suite command run before any code was written with its result (5 tests, all failing or erroring because `data.clean` does not exist) and the intent suite run again at the end with 5 passed (from the repo root or the package directory, either counts)",
         "The final message's first line is exactly `Result: done`; it carries `Intent tests: 5/5`, a deviations line naming the ledger entry's heading, the README path and a `Commit:` line; outputs/commit.txt's first line is `data/clean: <summary>` (72 characters or fewer), its trailer is `Dev-Team-Run: run-package data`, and its staged paths include `docs/packages/data/deviations/clean.md`, the clean section's code and README, and nothing under `tests/intent/` or `.dev-team/`"
       ],
       "added_in": "remake phase 0, run from phase 4",
-      "note_2_2": "2.2 phase 0: respelled to the 2.2 paths. Prompt, harness line 2: the ledger hint `outputs/docs/deviations/data/clean.md` → `outputs/docs/packages/data/deviations/clean.md`, the marker hint `outputs/.dev-team/stop` → `outputs/.dev-team/stop/data/clean`. expected_output: the ledger path. Expectation 1: the ledger path, and the heading gains ` — 1`. Expectation 3: the README's citation gains ` — 1` and the ledger path. Expectation 5: `docs/packages/` now holds the ledger, so 'nothing under outputs/docs/packages/' allows `data/deviations/clean.md` and the section's inbox `data/decisions/clean.md` (D1 is scoped `data`, so a 2.2 run may record it there), adds 'no outputs/docs/decisions.md', and the marker is `outputs/.dev-team/stop/data/clean`. Expectation 7: the staged ledger path. The fixture keeps its 2.0 layout: it holds no ledger, review or inbox, so nothing in it is read at a moved path. What the eval tests is unchanged."
+      "note_2_2": "2.2 phase 0: respelled to the 2.2 paths. Prompt, harness line 2: the ledger hint `outputs/docs/deviations/data/clean.md` → `outputs/docs/packages/data/deviations/clean.md`, the marker hint `outputs/.dev-team/stop` → `outputs/.dev-team/stop/data/clean`. expected_output: the ledger path. Expectation 1: the ledger path, and the heading gains ` — 1`. Expectation 3: the README's citation gains ` — 1` and the ledger path. Expectation 5: `docs/packages/` now holds the ledger, so 'nothing under outputs/docs/packages/' allows `data/deviations/clean.md` and the section's inbox `data/decisions/clean.md` (D1 is scoped `data`, so a 2.2 run may record it there), adds 'no outputs/docs/decisions.md', and the marker is `outputs/.dev-team/stop/data/clean`. Expectation 7: the staged ledger path. The fixture keeps its 2.0 layout: it holds no ledger, review or inbox, so nothing in it is read at a moved path. What the eval tests is unchanged.",
+      "note_2_2_phase6": "expectation 6's 'the same command' was ambiguous between a root and a package-directory run (grader, iteration 1). No verdict changed."
     },
     {
       "id": 10,
@@ -201,11 +210,12 @@
         "outputs/.dev-team/stop/data/storage exists, its first line is `spec-change` and its second line is the ledger entry's heading; no file outputs/.dev-team/stop exists",
         "outputs/ holds no file under docs/packages/data/ but `deviations/storage.md` and, when the run recorded an applied decision, the inbox `decisions/storage.md` (neither contract.md nor design/storage.md), no docs/decisions.md, nothing under packages/data/tests/intent/, and no copy of the clean section's README or code: the contract, the design, the intent tests and the sibling section are untouched",
         "The contradiction is not resolved by adapting to the README and calling it a deviation: no `deviation` entry with `Status: proposed` records coding against `CleanResult`, no README or return line presents taking `.rows` as a recorded deviation, and no follow-up is filed (no outputs/docs/followups.md, no follow-up line in the transcript)",
-        "transcript.md records the intent suite being run before any code was written (6 tests, all failing or erroring because `data.storage` does not exist) and records reading the contract's Section interfaces row and both dependency READMEs (`ingest`, `clean`) before the spec-change decision is made",
+        "transcript.md records the intent suite being run before any code was written (failing or erroring because `data.storage` does not exist; pytest may report collection errors rather than a test count) and records reading the contract's Section interfaces row and both dependency READMEs (`ingest`, `clean`) before the spec-change decision is made",
         "outputs/commit.txt exists, its first line starts `data/storage:`, its trailer is `Dev-Team-Run: run-package data`, its staged paths include `docs/packages/data/deviations/storage.md` plus whatever code was built under `packages/data/src/data/storage/`, and nothing under `tests/intent/` or `.dev-team/` is staged, nor anything under `docs/packages/` but that ledger and, staged together with `docs/decisions.md`, an inbox the run wrote"
       ],
       "added_in": "remake phase 0, run from phase 4",
-      "note_2_2": "2.2 phase 0: respelled to the 2.2 paths. Prompt, harness line 2: the ledger hint `outputs/docs/deviations/data/storage.md` (the fixture's copy plus what you append) → `outputs/docs/packages/data/deviations/storage.md`, and the marker hint `outputs/.dev-team/stop` → `outputs/.dev-team/stop/data/storage`. expected_output: the marker path. Expectation 2: 'keeps the fixture's header lines' was stale since 2.1 deleted the fixture's header-only docs/deviations.md (commit ff5776a), so it now reads 'exists … opens with a `# ` title line'; the heading gains ` — 1`. Expectation 3: the marker path, and its second line (2.2's two-line marker). Expectation 4: `docs/packages/data/` now holds the ledger and may hold the inbox; no docs/decisions.md. Expectation 7: the staged ledger path, and `docs/packages/` is allowed only for the ledger and an inbox staged with docs/decisions.md. No fixture file moved: the tree holds no ledger, review or inbox. What the eval tests is unchanged."
+      "note_2_2": "2.2 phase 0: respelled to the 2.2 paths. Prompt, harness line 2: the ledger hint `outputs/docs/deviations/data/storage.md` (the fixture's copy plus what you append) → `outputs/docs/packages/data/deviations/storage.md`, and the marker hint `outputs/.dev-team/stop` → `outputs/.dev-team/stop/data/storage`. expected_output: the marker path. Expectation 2: 'keeps the fixture's header lines' was stale since 2.1 deleted the fixture's header-only docs/deviations.md (commit ff5776a), so it now reads 'exists … opens with a `# ` title line'; the heading gains ` — 1`. Expectation 3: the marker path, and its second line (2.2's two-line marker). Expectation 4: `docs/packages/data/` now holds the ledger and may hold the inbox; no docs/decisions.md. Expectation 7: the staged ledger path, and `docs/packages/` is allowed only for the ledger and an inbox staged with docs/decisions.md. No fixture file moved: the tree holds no ledger, review or inbox. What the eval tests is unchanged.",
+      "note_2_2_phase6": "expectation 6 assumed a '6 tests' count pytest never prints when collection errors (grader, iteration 1). No verdict changed."
     },
     {
       "id": 11,
