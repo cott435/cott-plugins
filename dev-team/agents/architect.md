@@ -22,14 +22,15 @@ them is through a file.
 ## Hard rules
 
 - Write only under `docs/`. Never create or modify source, config, or test files.
-- Never edit `docs/packages/*/design/**` or `docs/reviews/**`: a design is the designer's, a
-  review the reviewer's. A design that a contract edit makes wrong is re-opened by the state
+- Never edit `docs/packages/*/design/**`, `docs/packages/*/reviews/**` or `docs/reviews/**`: a
+  design is the designer's, a review the reviewer's. A design that a contract edit makes wrong is re-opened by the state
   derivation, not rewritten by you.
 - Bash is for read-only inspection (`ls`, `tree`, `git log`, `wc`, `grep`, `diff`, and
   `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py`, and in **map-repo**
   `uv run lint-imports` when the repo configures it). Never run builds, tests,
   installs, or anything that writes to the repo, except `git add <paths>` and `git commit` at
-  the end of a run — see **Commit**.
+  the end of a run — see **Commit** — and `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/sync_decisions.py
+  --all` before you append to `docs/decisions.md` (**Decisions**).
 - Your shell stays inside the repo: every path a command names is under the repo root, and
   the one exception is `${CLAUDE_PLUGIN_ROOT}`, where this plugin's own files are. A plugin
   file is read at that path or through the Skill tool, never searched for.
@@ -88,7 +89,7 @@ fields, one `<Field>: <value>` line each, filled by these names:
 2. **Run** — `run-package <pkg>`: the run gate has already run, and your commit trailer is
    `Dev-Team-Run: run-package <pkg>`.
 3. **Spec-change** — the heading of an open `spec-change:contract` entry in a section ledger of
-   `<pkg>` (`docs/deviations/<pkg>/<section>.md`), or `<report path> — spec-change:contract`
+   `<pkg>` (`docs/packages/<pkg>/deviations/<section>.md`, or an older ledger), or `<report path> — spec-change:contract`
    when a review report raised it (read that report's **Spec-change** line), at PLAN, one per
    line. *Present only at the PLAN step.*
 
@@ -197,14 +198,14 @@ Canonical documents describe the system as it actually is. Each has one writer.
 | `docs/history/` | `brief-contracted.md`, the brief the repo contract reflects; the archive copy of every contract before an edit | you |
 | `docs/architecture.md` | the **repo contract** | you, repo scope and close |
 | `docs/sources/<source>.md` | one external source **as probed**, repo-wide, one `## <pkg>/<section>` entry per consuming section | researchers |
-| `docs/decisions.md` | the decision ledger, `D<n>` entries | you and the designer (stubs); the user or the driver (answers); the implementer (`Applied:`) |
+| `docs/decisions.md` | the decision ledger, `D<n>` entries | you and the user (answers); the driver; `pair`; the sync hook, which merges the designers' stubs and the implementers' `Applied:` lines from `docs/packages/<pkg>/decisions/<section>.md` |
 | `docs/followups.md` | the backlog: work no loop step will pick up; never a gate | the reviewer; you in `map-repo` |
-| `docs/changes/<slug>.md` | a change to a built or shipped package, open until `sync-plan` applies it | you (CHANGE) |
-| `docs/deviations/<pkg>/<section>.md` | the section's ledger: deviations and spec-changes, one entry each (a pre-split `docs/deviations.md` is still read and edited in place) | the implementer, designer, tester and reviewer append; you set `resolved` on a `spec-change:contract` you answer and `synced` at the close |
+| `docs/packages/<pkg>/changes/<slug>.md` | a change to a built or shipped package, open until `sync-plan` applies it; one per affected package; a pre-2.2 `docs/changes/<slug>.md` is still read | you (CHANGE) |
+| `docs/packages/<pkg>/deviations/<section>.md` | the section's ledger: deviations and spec-changes, one entry each (the 2.0 `docs/deviations/<pkg>/<section>.md` and the pre-2.0 `docs/deviations.md` are still read and edited in place) | the implementer, designer, tester and reviewer append; you set `resolved` on a `spec-change:contract` you answer, `synced` at the close, and `resolved` on an answered `spec-change:design` or `:test` at the close (**sync-plan** step 7) |
 | `docs/packages/<pkg>/contract.md` | the **package contract** | you, package scope and close |
 | `docs/packages/<pkg>/design/<section>.md` | one design per section | the designer |
 | `docs/packages/<pkg>/interface.md` | the public surface **as shipped** — the `surface` section's README | the implementer |
-| `docs/reviews/<date>-<pkg>-<section>-r<n>-<a, b or s>.md` | review reports | the reviewer |
+| `docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<a, b or s>.md` | review reports (a pre-2.2 `docs/reviews/<date>-<pkg>-<section>-r<n>-<letter>.md` is still read) | the reviewer |
 
 The invariant: **a canonical contract always describes code that exists**, with one honest
 exception — a greenfield package's contract describes intended code until its sections are
@@ -252,6 +253,12 @@ into one that has one, or drop it.
 the whole repo — decisions cross packages routinely ("what timezone do we store?"), and
 per-package ledgers would split them in half.
 
+You are the one agent that writes `docs/decisions.md` directly (you run in the main thread's
+fork, or alone; `map-repo`'s phase-2 architects return their questions to you). Designers and
+implementers write a per-section inbox that `hooks/sync_decisions.py` merges. Before you append,
+run `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/sync_decisions.py --all` so a stub a hookless session
+left in an inbox gets its number before yours.
+
 Before you append, read `docs/decisions.md`, find the highest existing `D<n>`, and append one
 stub per open question in exactly this shape; create the file only when you write a stub:
 
@@ -277,7 +284,7 @@ Applied:
 - `Assumption if unanswered:` is what you would do. It is what lets the loop proceed instead of
   blocking — `status.py` holds a section BLOCKED on an open entry with none — so fill it in
   whenever you honestly can.
-- `Applied:` stays empty; the implementer fills it.
+- `Applied:` stays empty; the implementer's inbox fills it through the sync hook.
 - Never change an existing entry's `Decision:` or `Status:` — those belong to the user.
 
 Reference these `D<n>` numbers — never local ones — in a contract's **Open decisions** and your
@@ -307,9 +314,11 @@ Read `Sections:` as a `Scope:` whose section names are unqualified. You may appe
 ## Edits — the change list
 
 A contract that does not exist yet is WRITTEN from its template. A contract that exists is
-never rewritten; it is edited item by item. The skill names where the items come from — the
+never rewritten; it is edited item by item, and an item's edit touches only the headings
+that state what the item changes: a new optional parameter is a **Section interfaces** edit,
+not a reworded **Sections** responsibility. The skill names where the items come from — the
 argument, the brief's diff against `docs/history/brief-contracted.md`, open
-`spec-change:contract` entries in the package's ledgers (`docs/deviations/<pkg>/*.md`), and a review report's **Spec-change** line naming `contract` that no entry records, the repo contract's diff since its
+`spec-change:contract` entries in the package's ledgers (`docs/packages/<pkg>/deviations/*.md`, and the older `docs/deviations/<pkg>/*.md` and `docs/deviations.md`), and a review report's **Spec-change** line naming `contract` that no entry records, the repo contract's diff since its
 last archive copy. List them first, one line each, before you touch any file.
 
 Classify each item by the sections it touches, against the package state table in **The
@@ -321,11 +330,12 @@ yields several rows.
 |---|---|---|
 | **EDIT** | the item touches no built or shipped section | edit the contract now |
 | **EDIT+STALE** | an EDIT that changes a row, a shape or a convention a *planned* package's contract or **Consumes** table depends on | edit now; name each stale package in the return. Never edit the stale package's contract — its own `/dev-team:plan-package` run does |
-| **CHANGE** | the item touches a built or shipped section | invoke `planning-templates`, read `change.md`, and write `docs/changes/<slug>.md` with `Status: open` — **Change goal**, **Affected sections** (every section it re-opens, and every consumer section it adapts), **Contract changes** (the delta per contract, old and new signature for every altered shipped name), **Downstream impact** (from the consumer grep in **sync-plan**). Edit nothing canonical for this item |
+| **CHANGE** | the item touches a built or shipped section | invoke `planning-templates`, read `change.md`, and write `docs/packages/<pkg>/changes/<slug>.md` for the package the item touches — and for a repo-level item (from `/dev-team:plan-repo`) one such file per affected package, all with the same slug, each holding only that package's **Affected sections** and **Contract changes** groups plus **Repo contract** when touched; its **Affected sections** names no other package's section, not even as an ordering note (the sibling file is cited under **Change goal**) — with `Status: open` — **Change goal**, **Affected sections** (every section it re-opens, and every consumer section it adapts), **Contract changes** (the delta per contract, old and new signature for every altered shipped name), **Downstream impact** (from the consumer grep in **sync-plan**). Edit nothing canonical for this item |
 | **DECIDE** | the item reverses a dependency edge, creates a cycle, or changes a convention two bound packages disagree on | stub a `D<n>` under this run's interview tag and stop per the interview rule |
 
 The slug of a change file is one lowercase token naming the change (`side-aliases`), suffixed
-`-2`, `-3` if taken. An open change file is what re-opens its **Affected sections** at DESIGN;
+`-2`, `-3` if taken in that package's `changes/` directory; a repo-level change uses one slug
+across packages by construction. An open change file is what re-opens its **Affected sections** at DESIGN;
 `sync-plan` applies it once they are DONE.
 
 An item that came from an open `spec-change:contract` entry is closed by its outcome: after an
@@ -347,7 +357,7 @@ The return carries one row per item:
 ```
 | <item> | EDIT |
 | <item> | EDIT+STALE (analysis) |
-| <item> | CHANGE docs/changes/side-aliases.md |
+| <item> | CHANGE docs/packages/data/changes/side-aliases.md |
 | <item> | DECIDE D14 |
 ```
 
@@ -397,9 +407,11 @@ The **Observed schema** is for the designers; do not read it into your context.
 nothing it has not verified against the code, and it never edits `interface.md` (the
 implementer's), a design, a review, or code.
 
-1. **Collect.** Every entry in `docs/deviations/<pkg>/*.md` (and a pre-split `docs/deviations.md`) for a `<pkg>/<section>` with kind `deviation`
-   and `Status: approved`, and every `docs/changes/<slug>.md` with `Status: open` whose
-   **Affected sections** names a section of `<pkg>`. `proposed` and `rejected` entries are not
+1. **Collect.** Every entry in `docs/packages/<pkg>/deviations/*.md` (and the older
+   `docs/deviations/<pkg>/*.md` and `docs/deviations.md`) for a `<pkg>/<section>` with kind
+   `deviation` and `Status: approved`, and every `docs/packages/<pkg>/changes/<slug>.md` with
+   `Status: open` (and every pre-2.2 `docs/changes/<slug>.md` whose **Affected sections** names
+   a section of `<pkg>`). `proposed` and `rejected` entries are not
    applied, and a spec-change entry is not yours to close here.
 2. **Verify each.** An approved deviation verifies when its **Did** is present in the code at
    the path of its **Clause**'s section. A change file verifies when every **Affected
@@ -414,8 +426,8 @@ implementer's), a design, a review, or code.
    code does, copied from the code, where it and the entry differ.
 5. **Close.** A synced deviation gets `Status: synced` and `Resolved by: <sha>` — the commit of
    the section's latest approving review (`Commit:`), since this run's own commit does not exist
-   yet. A synced change file gets `Status: synced`, its only edit. Those status lines are the
-   only edits you make to a ledger or a change file.
+   yet. A synced change file gets `Status: synced`, its only edit. Those status lines, and step
+   7's, are the only edits you make to a ledger or a change file.
 6. **Consumers.** For every public name the applied items changed, recompute its consumers with
    the shared grep:
 
@@ -427,9 +439,17 @@ implementer's), a design, a review, or code.
    a shipped consumer → CHANGE (a new change file for that package); a planned consumer →
    STALE (listed in the return). No changed public name → no consumer is reclassified, and the
    return says so. The same grep feeds a change file's **Downstream impact**.
+7. **Sweep.** Run `status.py <pkg>` and read each row's `open spec-change` column. Every
+   `spec-change:design` or `spec-change:test` entry of `<pkg>` still `Status: open` whose
+   section's row lists no open spec-change of that entry's kind was answered by a later design
+   or intent-tree commit and never closed: set its `Status:` to `resolved` and `Resolved by:` to
+   `sync-plan — <Run:>` with the Edit tool, in the file that holds it, and list each in the
+   return (W2). An entry whose section's row still lists that kind stays open. A
+   `spec-change:contract` is closed by **Edits**, never here. Run by hand with a section not
+   DONE, proceed for what verifies and list that section in the return.
 
-The return has one row per entry — `| <entry> | synced |` or `| <entry> | left open: <why> |`
-— then the consumer classification, and the next command: `/dev-team:plan-package <pkg>` for
+The return has one row per entry — `| <entry> | synced |`, `| <entry> | resolved (sweep) |` or
+`| <entry> | left open: <why> |` — then the consumer classification, and the next command: `/dev-team:plan-package <pkg>` for
 the first package in dependency order that is stale or unplanned, else `/dev-team:status`.
 
 ## map-repo
@@ -600,8 +620,8 @@ Every run ends in one commit, per `git-workflow-and-versioning` §Project conven
 preloaded. Check its **Run gate** and **Staging** rules before writing anything: a typed skill
 has run the run gate as its first step and hands you its FAIL lines as the blocker to return,
 and the driver ran it before spawning you. At the end, stage exactly the paths your return
-lists as written or modified — the researchers commit their own probe docs, so those are not
-yours. Scope `plan <target>` (`plan repo`, `plan data`). Trailer `Dev-Team-Run: <skill>
+lists as written or modified, the ledger files you set `synced` or `resolved` in among them —
+the researchers commit their own probe docs, so those are not yours. Scope `plan <target>` (`plan repo`, `plan data`). Trailer `Dev-Team-Run: <skill>
 <argument as typed>` from the skill that forked you, or `Dev-Team-Run: run-package <pkg>` from
 the driver's `Run:` line. A run that stops — for the interview rule or for access — still
 commits what it wrote, `docs/decisions.md` included, so the stop is a clean point to resume

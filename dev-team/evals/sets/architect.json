@@ -90,7 +90,7 @@
       ],
       "expectations": [
         "Exactly two change files exist under outputs/: outputs/docs/packages/data/changes/<slug>.md and outputs/docs/packages/analysis/changes/<slug>.md, with the same `<slug>`; nothing exists under outputs/docs/changes/",
-        "Each of the two change files has `Status: open` as its second line, and its `##` headings are, in order, Change goal, Affected sections, Contract changes, Downstream impact",
+        "Each of the two change files has `Status: open` as the first non-blank line after its title, and its `##` headings are, in order, Change goal, Affected sections, Contract changes, Downstream impact",
         "data's change file's Affected sections names `data/ingest` and names no `analysis/` section; analysis's change file's Affected sections names `analysis/features` and names no `data/` section",
         "data's change file's Contract changes has a `Package contract: data` group and a `Repo contract` group stating that the **Trades** shape gains `venue`, and no `Package contract: analysis` or `Interface: analysis` group; analysis's has a `Package contract: analysis` group and a `Repo contract` group, and no `Package contract: data` or `Interface: data` group",
         "The canonical contracts are not edited for the venue item: none of outputs/docs/architecture.md, outputs/docs/packages/data/contract.md and outputs/docs/packages/analysis/contract.md that exists contains the word `venue`",
@@ -99,7 +99,8 @@
         "outputs/commit.txt has a subject line beginning `plan repo:`, stages both change files, and carries the trailer `Dev-Team-Run: plan-repo every trade gains a venue: the export's new venue column (non-null, an upper-case exchange code such as XNAS) is carried on Trade as venue: str, and analysis keeps its rolling VWAP window per symbol and venue` — the argument as typed"
       ],
       "added_in": "2.2 phase 0, run from phase 8",
-      "note": "Row 8.5. The 2.1 baseline writes one docs/changes/<slug>.md naming both packages' sections, so it fails expectation 1 (and with it 3, 4 and 7)."
+      "note": "Row 8.5. The 2.1 baseline writes one docs/changes/<slug>.md naming both packages' sections, so it fails expectation 1 (and with it 3, 4 and 7).",
+      "note_2_2_phase8": "Expectation 2 read `Status: open` as the literal second line; `status.py` reads the field wherever it is, and a blank line after a Markdown title is the change template's own layout in effect. Rewritten to the first non-blank line after the title."
     },
     {
       "id": 5,
