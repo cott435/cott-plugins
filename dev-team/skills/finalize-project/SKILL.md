@@ -79,9 +79,11 @@ planned. Reporting a gap is useful; failing on a missing file is not.
    - **Entry points** — CLI commands and pipelines collected from the `interface.md` files.
    - **Key decisions** — every `decided` entry scoped `repo`, one line each; package-scoped
      ones are in the package READMEs.
-   - **Documentation map** — links to `docs/architecture.md`, `docs/decisions.md`,
-     `docs/deviations/` (and a pre-split `docs/deviations.md`) and `docs/followups.md` where they exist, `docs/reviews/`, each
-     `docs/packages/<pkg>/`, and each package README.
+   - **Documentation map** — links to `docs/architecture.md`, `docs/decisions.md`, each
+     `docs/packages/<pkg>/` (its contract, `interface.md`, `design/`, `deviations/`,
+     `decisions/`, `reviews/`, `changes/`), `docs/followups.md` where it exists, the older
+     `docs/deviations/`, `docs/deviations.md`, `docs/reviews/` and `docs/changes/` where they
+     exist, and each package README.
    - **Known gaps** — the script's output verbatim as one block, then every document check
      from your instructions.
 
