@@ -127,7 +127,7 @@ take turns, since both extend one file.
 | **Upstream interfaces** | per upstream package, as resolved above |
 | **Source probes** | `docs/sources/<token>.md` per source |
 | **Regenerate** | the entry heading from the row's evidence when it reads `regenerate: <heading>` or `open <heading>` (a `spec-change:test`); else `none` |
-| **Adopted code** | `yes` when the design's first line is `Mode: document`, else `no` |
+| **Design mode** | the word after `Mode:` on the design's first line |
 | **Write to** | `tests/intent/<section>/ under <package root>` |
 | **Run** | `run-package <pkg>` |
 

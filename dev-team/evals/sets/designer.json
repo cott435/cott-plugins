@@ -29,10 +29,11 @@
         "outputs/commit.txt exists and contains a first line `data/storage: design` and a trailer line `Dev-Team-Run: run-package data`",
         "transcript.md records reading docs/packages/data/contract.md, docs/architecture.md and packages/data/src/data/ingest/README.md before writing the design",
         "The final message in transcript.md is ten lines or fewer, its first line is exactly `Result: done`, and it contains lines beginning `Design:`, `Open questions:`, `Deviations:` and `Commit:`",
-        "No file exists under outputs/ other than docs/packages/data/design/storage.md, commit.txt and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/; in particular outputs/docs/decisions.md does not exist and the return is not `stopped`"
+        "No file exists under outputs/ other than docs/packages/data/design/storage.md, commit.txt, docs/packages/data/deviations/storage.md (only when every entry in it is a `deviation` headed `## data/storage — <YYYY-MM-DD> — deviation — <k>` with `Status: proposed`, and each is cited under the design's Contract deviations), and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/; in particular outputs/docs/decisions.md and outputs/docs/deviations/ do not exist and the return is not `stopped`"
       ],
       "added_in": "remake phase 0, run from phase 3",
-      "note_2_2": "No line changed: the design path does not move and the run writes no ledger. The fixture repo/docs/deviations/data/storage.md, listed in `files` since ff5776a but never committed, is added in 2.2 phase 0 as a ledger at its 2.0-2.1 location (a title line and a note, no entries)."
+      "note_2_2": "No line changed: the design path does not move and the run writes no ledger. The fixture repo/docs/deviations/data/storage.md, listed in `files` since ff5776a but never committed, is added in 2.2 phase 0 as a ledger at its 2.0-2.1 location (a title line and a note, no entries).",
+      "note_2_2_phase7": "Expectation 12 corrected in phase 7 (grader critique, both configurations): the fixture contract's §5 names `query_bars` public while §Section interfaces gives it only as a `Store` method, so a §10 deviation, and with it a ledger, is the designer's procedure, not a fault. The ledger is allowed at the 2.2 path with `deviation` entries only; the 2.1 path docs/deviations/ is named as forbidden."
     },
     {
       "id": 2,
