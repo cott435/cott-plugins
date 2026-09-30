@@ -21,7 +21,7 @@ flowchart TD
   E --> X["run-evals on the note's Evals table<br/>(sets in evals/sets/, graded against the baseline)"]
   X --> Y["your review of the viewer"]
   Y --> C["logged with log-eval · one commit · ledger row · stop"]
-  C -->|next chat| R
+  C -->|next chat, or run-phases' next agent| R
   C -->|last phase| B["end-to-end rerun of every set · README · flow.md · workflows/ · CHANGELOG<br/>bump proposed in chat"]
   B --> V["bump-version, on your yes"]
   classDef stop stroke:#8a2f4a,stroke-width:2px;
@@ -93,6 +93,23 @@ true record rather than an intention.
 
 A chat that runs out of context marks its row `in progress` with the uncommitted paths
 listed and commits nothing of the phase; the next chat finishes it.
+
+## Or all of them from one chat — `run-phases <slug>`
+
+The same phases, without typing one chat per phase. `run-phases` stays in your chat and
+does no phase work itself. For each row not `done` it starts one fresh agent, one at a time,
+whose context is as clean as a new chat's: the design, the overview, the ledger and one note.
+The agent is a subagent that reads `run-phase`'s file and follows it, since a typed skill
+cannot be invoked by an agent. Where subagents cannot spawn their own (a cloud session caps
+`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` at 1), the agent is instead a headless `claude -p`
+session typed `/plugin-dev:run-phase <slug>`, with its own session id so it can be resumed.
+A phase's evals need an agent that can spawn executors and graders, hence the two modes. A subagent cannot ask you anything, so where `run-phase` would stop for you (the
+review of a behavioral row, a Deviation asking whether to commit, a question the plan does
+not answer, the last phase's bump) the agent returns a short status form instead. Your chat
+shows you what it found and resumes the same agent with your answer. After each `committed`
+return it checks the commit summary, the clean tree and the `done` row before it spawns the
+next phase. It stops at the end of the plan, at `--through N`, on `blocked` or
+`in progress`, or when you say stop.
 
 ## The end
 
