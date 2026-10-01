@@ -313,13 +313,25 @@ changed and `/dev-team:probe-source` was run — keep the document and extend it
 
 - Re-run the probe or profile program, rewriting `<source>.probe.py` or `<source>.profile.py`
   and `<source>.sample.json` or `<source>.stats.json`.
+- Keep every line of the shared body — everything outside the title line and the
+  `## <pkg>/<section>` entries, the preamble's `Purpose:` and program lines included — byte
+  for byte. Re-running the probe is not a reason to
+  re-word a line, re-order a table or re-flow a paragraph: `status.py` compares the document
+  each built consumer's design was written against with the one you leave, and one reworded
+  line sends that section back to DESIGN, a designer, a tester, an implementer and a review
+  round for nothing.
+- Rewrite a line only when what you observed this run contradicts it. A statistic that
+  differs only in rounding, or a timing or memory figure measured again, is not a
+  contradiction. A line this run's observation has made false is: a line saying something was
+  not checked, not measured or unknown, when this run checked it, is rewritten with the result,
+  never kept beside a new line that says the opposite. A new fact is a new line, under its
+  heading, after the lines already there.
 - Append this section's `## <pkg>/<section>` heading under **Sections served**, after the
   entries already there, or replace it in place when it exists. Every other section's entry
   stays as it is.
 - The ISO date in the title line becomes today's.
-- **Changes since last probe** is written only when the observed schema changed — a column or
-  field added, removed or retyped, a null rate or a distinct count moved — and is otherwise
-  absent.
+- **Changes since last probe** lists each line this run rewrote, the old line and the new, and
+  is absent when none was: an added line is not a change.
 - Task-fit headings written for an earlier section are kept, even when this section's purpose
   names no modeling task: they are that section's contract, not yours to reset to `not a
   modeling task`.

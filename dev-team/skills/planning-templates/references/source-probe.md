@@ -28,6 +28,14 @@ here, marked as a claim. Never let documented and observed sit under one heading
 readers trust this document because it says which is which, and one unmarked line spends that
 trust on every other line.
 
+**A document that exists only grows.** A second probe, for another section or after the
+world changed, keeps every line of the shared body — everything outside the title line and
+the `## <pkg>/<section>` entries — byte for byte. A line is rewritten only when the new
+observation contradicts it, and each rewritten line is listed under **Changes since last
+probe**, old and new. A new fact is a new line. `status.py` compares the document a design was
+written against with the one on disk: added lines re-open nothing, and one reworded line
+sends every built consumer of the source back to DESIGN.
+
 ## Kind `api`
 
 1. **Access** — `Env var: <NAME>` — `unset` | `set, rejected (<status>)` | `valid`, plus

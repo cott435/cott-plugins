@@ -20,7 +20,8 @@ file content, `{HEAD}` is replaced with the sha of the commit the step is made o
 
 `review`, `deviation` and `change` take `"layout": "new" | "old"` (default `new`): `new` writes
 the 2.2 paths under `docs/packages/<pkg>/` and the ledger heading's `— <k>`; `old` the 2.0
-paths and heading.
+paths and heading. `edit` takes `path`, `message`, and `append` (text added at the end),
+`"replace": ["<old>", "<new>"]` (the first occurrence, applied before `append`), or both.
 """
 
 from __future__ import annotations
@@ -277,7 +278,13 @@ def m_fix(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
 
 
 def m_edit(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
-    return [(append(dest, step["path"], step["append"]), step["message"])]
+    text = (dest / step["path"]).read_text()
+    if "replace" in step:  # ["<old>", "<new>"], applied before `append`
+        old, new = step["replace"]
+        if old not in text:
+            sys.exit(f"edit: {step['path']} has no {old!r} to replace")
+        text = text.replace(old, new, 1)
+    return [({step["path"]: text + step.get("append", "")}, step["message"])]
 
 
 def m_regenerate(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:

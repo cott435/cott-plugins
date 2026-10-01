@@ -24,20 +24,29 @@ same-day entries of one kind are told apart, and a test's docstring tag names th
 `(deviation <date>-<k>)`. Then these lines, in order:
 
 1. **Clause** — the contract row or design item, as the reader cites it: `contract §2 row
-   ingest`, `design §5 load_trades`, `design §6 EmptyFile`.
+   ingest`, `design §5 load_trades`, `design §6 EmptyFile`. For a `spec-change:test` on an
+   intent test that fails before it reaches the section's code, the test's docstring citation.
 2. **Said** — what the document says, quoted.
 3. **Did** — what was built (a deviation).
-4. **Found** — the evidence, `file:line` or a probe doc heading (a spec-change).
+4. **Found** — the evidence, `file:line` or a probe doc heading (a spec-change); for an
+   intent test that fails in its own helper, fixture or import, the traceback line.
 5. **Why** — the reason. A deviation with no reason is a CRITICAL review finding.
 6. **Status** — `proposed | approved | rejected | synced` for a deviation; `open | resolved`
-   for a spec-change. Who sets `resolved`: the designer on the `spec-change:design` entries its
-   rewrite answers, the tester on the `spec-change:test` entries it regenerates, the architect
-   on a `spec-change:contract` it edits for, each in the commit that answers it; `sync-plan`
-   sets it on any spec-change `status.py` already counts as answered at the package close.
+   for a spec-change. An entry whose heading ends `— <k>` is open until its `Status:` says
+   otherwise: `status.py` keeps its step open while the line reads `open`, whatever was
+   committed since. Who sets
+   `resolved`: the designer on each `spec-change:design` entry it was handed and its rewrite
+   answers, the tester on each `spec-change:test` entry it was handed and regenerates for, the
+   architect on each `spec-change:contract` it was handed and edits for, each in the commit
+   that answers it. An agent handed several entries sets `resolved` only on those its commit
+   answers and names the rest in its return. `sync-plan` sets it at the package close on an
+   older entry, one without `— <k>`, that `status.py` already counts as answered.
 7. **Raised by** — the role and the run: `implementer — run-package data`.
-8. **Resolved by** — `<role> — <Run:>` (`designer — run-package data`) or the report or
-   change-file path that closed it; `—` while open. Never the closing commit's own sha, which
-   does not exist when the line is written.
+8. **Resolved by** — one of three forms: `<role> — <Run:>` (`designer — run-package data`);
+   the report or change-file path that closed it; or, for a synced deviation, the section's
+   `approve @<sha>` as `status.py` prints it. `—` while open. Never the closing commit's own
+   sha, which does not exist when the line is written.
 
 Never claims a boundary shape, a public name or a nullable column as an internal deviation:
-those are `spec-change` entries, routed by level.
+those are `spec-change` entries, routed by level. Never claims `resolved` on an entry the agent
+was not handed or did not answer.

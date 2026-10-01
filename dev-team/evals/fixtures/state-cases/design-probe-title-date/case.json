@@ -1,5 +1,5 @@
 {
-  "note": "a shared line of the probe doc reworded after the design: the design-time line is gone, so the design is stale",
+  "note": "the probe doc's title line changed (its date) after the design: the title line is not compared, so the design is not stale (2.4, phase 3)",
   "steps": [
     {
       "do": "base"
@@ -12,8 +12,8 @@
       "do": "edit",
       "path": "docs/sources/trades.md",
       "replace": [
-        "- two exact duplicate rows\n",
-        "- two exact duplicate rows, both on 2026-09-03\n"
+        "# trades — dataset\n",
+        "# trades — dataset — 2026-10-01\n"
       ],
       "message": "docs/sources: trades re-probed"
     }
@@ -21,7 +21,9 @@
   "args": [],
   "expect": {
     "section": "ingest",
-    "state": "DESIGN",
-    "evidence": "docs/sources/trades.md [0-9a-f]{7} newer than design"
+    "state": "TEST",
+    "absent": [
+      "newer than design"
+    ]
   }
 }

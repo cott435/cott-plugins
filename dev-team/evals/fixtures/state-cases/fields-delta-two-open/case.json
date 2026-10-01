@@ -1,0 +1,39 @@
+{
+  "note": "--fields with two open spec-change:design entries: still delta (2.4, phase 3)",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "deviation",
+      "section": "ingest",
+      "kind": "spec-change:design",
+      "status": "open"
+    },
+    {
+      "do": "deviation",
+      "section": "ingest",
+      "kind": "spec-change:design",
+      "status": "open",
+      "clause": "design §5 other_item"
+    }
+  ],
+  "args": [
+    "--fields",
+    "data/ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "mode: delta\n"
+    ]
+  }
+}

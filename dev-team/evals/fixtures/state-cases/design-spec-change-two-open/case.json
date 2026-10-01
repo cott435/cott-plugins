@@ -1,0 +1,35 @@
+{
+  "note": "two open spec-change:design entries: DESIGN, and the evidence names both so the designer is sent both (2.4, phase 3)",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "deviation",
+      "section": "ingest",
+      "kind": "spec-change:design",
+      "status": "open"
+    },
+    {
+      "do": "deviation",
+      "section": "ingest",
+      "kind": "spec-change:design",
+      "status": "open",
+      "clause": "design §5 other_item"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "DESIGN",
+    "evidence": "^open data/ingest — 2026-09-27 — spec-change:design — 1; data/ingest — 2026-09-27 — spec-change:design — 2$"
+  }
+}

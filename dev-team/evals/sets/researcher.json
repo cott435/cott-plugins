@@ -9,7 +9,7 @@
       "kind": "behavioral",
       "baseline": "previous",
       "harness": null,
-      "prompt": "You are the dev-team researcher in probe mode. Your six fields:\n\n- Kind: `dataset`\n- Source: `readmissions`\n- Purpose: the `risk` package's modeling section predicts 30-day readmission; the designer picks the target, the feature set and the split from this document.\n- Access: `evals/sets/files/researcher/readmissions.csv`, relative to the plugin directory holding this eval set (the one with `.claude-plugin/plugin.json`).\n- Extracted skill: `none`\n- Output path: `docs/sources/readmissions.md`\n\nHarness rules: write every file you would write — the probe doc, the profile script, the statistics file — into `outputs/`, keeping its repo-relative path (`outputs/docs/sources/...`). Write nothing anywhere else, including scratch files. No scratch venv is needed: `python3` with pandas is on PATH. The Skill tool cannot load this project's skills in this harness, so invoking `planning-templates` means reading `skills/planning-templates/references/source-probe.md` in the plugin directory and recording in `transcript.md` that you read it.",
+      "prompt": "You are the dev-team researcher in probe mode. Your six fields:\n\n- Kind: `dataset`\n- Source: `readmissions`\n- Purpose: the `risk` package's modeling section predicts 30-day readmission; the designer picks the target, the feature set and the split from this document.\n- Access: `evals/sets/files/researcher/readmissions.csv`, relative to the plugin directory holding this eval set (the one with `.claude-plugin/plugin.json`).\n- Extracted skill: `none`\n- Output path: `docs/sources/readmissions.md`\n\nHarness rules: write every file you would write — the probe doc, the profile script, the statistics file — into `outputs/`, keeping its repo-relative path (`outputs/docs/sources/...`). Write nothing anywhere else, including scratch files. `evals/sets/files/researcher/readmissions.md`, beside the CSV, is another eval's fixture, not a data card for this dataset: do not read it, and do not count it as provenance. No scratch venv is needed: `python3` with pandas is on PATH. The Skill tool cannot load this project's skills in this harness, so invoking `planning-templates` means reading `skills/planning-templates/references/source-probe.md` in the plugin directory and recording in `transcript.md` that you read it.",
       "expected_output": "a dataset probe doc on the template's headings, with statistics only — no rows, personal columns redacted — and a task-fit section that names the target, the leakage and the split",
       "files": [
         "evals/sets/files/researcher/readmissions.csv"
@@ -25,7 +25,8 @@
         "Target names `readmitted_30d`, gives its class balance and the majority-class baseline rate any model must beat; Leakage names `discharge_code`; Splitting says the split must be chronological on `admitted_at` and grouped by `patient_id`",
         "Quirks names every redacted column and `systolic`'s mixed missing-value spellings (`n/a` and empty)"
       ],
-      "added_in": "0.9-evals phase 6"
+      "added_in": "0.9-evals phase 6",
+      "note_2_4_phase_3": "2.4 phase 3: the prompt names the sibling fixture `readmissions.md` as not a data card; iteration 1's working-tree run wrote Provenance `unverified` because it saw that file and was barred from reading it"
     },
     {
       "id": 2,
@@ -48,9 +49,11 @@
         "The task-fit headings keep the first probe's content: **Target** still names `readmitted_30d` with the 89.4% majority-class baseline, **Leakage** still names `discharge_code`, **Splitting** still says chronological on `admitted_at` and grouped by `patient_id`; none of Target, Leakage, Features, Splitting or Supported tasks reads `not a modeling task`",
         "`outputs/commit.txt` records a commit whose message summary begins `probe readmissions:` (scope `probe <source>`), stages only `docs/sources/readmissions.*` paths by explicit path, and carries one `Dev-Team-Run:` trailer; neither `transcript.md` nor the final message says the run does not commit because no `Commit: yes` field was given",
         "outputs/ also holds `readmissions.profile.py` and `readmissions.stats.json` beside the doc; no value from the CSV's `full_name`, `email` or `notes` columns appears anywhere under outputs/, and there is no `.sample.json` anywhere under outputs/",
-        "The return (the final message in `transcript.md`) is ten lines or fewer and gives the access status, the rows and columns profiled, whether it was a sample, the discrepancy count, the path, and the commit"
+        "The return (the final message in `transcript.md`) is ten lines or fewer and gives the access status, the rows and columns profiled, whether it was a sample, the discrepancy count, the path, and the commit",
+        "Every non-blank line of the fixture `evals/sets/files/researcher/readmissions.md` from its `## Access` heading through its `## Sections served` heading is present in `outputs/docs/sources/readmissions.md` byte for byte and in the same order, except a line the output lists under **Changes since last probe** with its old and its new text: a fixture line in that span reworded, re-wrapped, re-ordered or dropped with no such entry fails"
       ],
-      "added_in": "remake phase 0, run from phase 3"
+      "added_in": "remake phase 0, run from phase 3",
+      "note_2_4_phase_3": "2.4 phase 3: the last expectation is eval 3's byte-for-byte check, widened to allow a line listed under Changes since last probe, since the researcher now rewrites a line its observation made false. Iteration 1's baseline reworded the composite-key line with no such entry"
     },
     {
       "id": 3,

@@ -416,6 +416,16 @@ headings:
       - file: agents/reviewer.md
         cites: ['header', 'checks', 'result', 'pass']
 
+  - name: evidence forms the driver copies are ones status.py prints
+    # The driver builds the tester's Regenerate field and the designer's and architect's
+    # Spec-change fields by copying headings out of a row's evidence, and asks about a row
+    # whose evidence starts `gate `. The owner is the docstring's numbered Evidence list.
+    owner: skills/status/scripts/status.py
+    owner_span: ['**Evidence.**', '**Gate record.**']
+    readers:
+      - file: skills/run-package/SKILL.md
+        cites: ['open', 'regenerate']
+
   - name: every field the driver sends the researcher is one the researcher's Inputs defines
     # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.
     owner: agents/researcher.md

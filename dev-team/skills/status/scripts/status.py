@@ -19,12 +19,11 @@ A section is in exactly one state, decided in this order, first match wins:
    no `docs/sources/<token>.md` at all.
 4. **DESIGN** — no design at `docs/packages/<pkg>/design/<section>.md`; or an open
    `spec-change:design` entry; or an open change file whose **Affected sections**
-   names the section and is newer than the design; or a probe doc the row names is newer than
-   the design. A `spec-change:design` entry counts only until the design is committed after
-   the commit that added it: the designer's rewrite answers it, and nobody sets its `Status:`.
+   names the section and is newer than the design; or a probe doc the row names lost or
+   reworded a line the design was written against (added lines, the title line and other
+   sections' entries do not count).
 5. **TEST** — no `tests/intent/<section>/` under the package root; or the design is newer than
-   the intent tree; or an open `spec-change:test` entry the intent tree has not been committed
-   after (the tester's regeneration answers it); or an `approved` deviation entry whose
+   the intent tree; or an open `spec-change:test` entry; or an `approved` deviation entry whose
    `Clause:` is cited by an intent test docstring that carries no `(deviation ` tag
    (regenerate).
 6. **IMPLEMENT** — no README (`<section path>/README.md`; for `surface`,
@@ -60,14 +59,17 @@ script never writes it; `--run-gate` fails on an inbox holding anything the cent
 does not, and on a central `Applied: <pkg>/<section>, …` line the section's inbox entry for
 that `D<n>` no longer holds (the hook mirrors a section's own lines).
 
-An **open spec-change** is an entry `spec-change:<level>`
-with `Status: open`, or a review report of the newest round whose verdict is `spec-change`:
-each level its **Spec-change** heading names counts as open until a ledger entry of that level
-for the section is committed with or after the report (then the entry speaks), or the
-document the level names (the design, the intent tree, the package contract) is committed
-after it. So a round-1 `b` reviewer, which never writes the ledger, still re-opens the step.
-A `spec-change:design` or `:test` counts only until the design or intent tree is committed
-after it; a `spec-change:contract` entry until the architect closes it.
+An **open spec-change** is a ledger entry `spec-change:<level>` with `Status: open`, or a
+review report of the newest round whose verdict is `spec-change`. A ledger entry whose heading
+ends `— <k>` (written by 2.2 or later) is open until the agent that answers it sets its
+`Status:` to `resolved` — the tester for `test`, the designer for `design`, the architect for
+`contract` — and is never closed by commit order. A ledger entry without `— <k>`, and each
+level a report's **Spec-change** heading names, keep the older rule: open until the document
+the level names (the design, the intent tree, the package contract) is committed after it, or,
+for a report's, until a ledger entry of that level for the section is committed with or after
+the report (then the entry speaks). So a round-1 `b` reviewer, which never writes the ledger,
+still re-opens the step. An older `spec-change:contract` ledger entry is closed by the
+architect only.
 
 Round 1 is a pair: a round whose reports carry letters and lack `a` or `b` is REVIEW (rule 7)
 whatever the other says, so one reviewer's approval never ships a section alone.
@@ -83,6 +85,17 @@ reports (request changes > spec-change > approve); a report with no `-r<n>-` is 
 `--rounds <pkg>/<section>` prints a third line, `commit: <short sha>`, the newest commit
 touching the section's path, `tests/unit/<section>`, `tests/intent/<section>` and its README,
 or `commit: none` — the reviewer copies it as its report's `Commit:` (F12).
+
+**Evidence.** The strings the driver copies out of a row's evidence cell:
+
+1. **open** — `open <heading>; <heading>; …`: every open spec-change of the level that won
+   the row (PLAN, DESIGN or TEST), ledger headings and `<report path> — spec-change:<level>`
+   alike, `; `-separated.
+2. **regenerate** — `regenerate: <heading>`: an approved deviation whose clause an untagged
+   intent test cites.
+3. **gate blocked** — `gate blocked: <the marker's reason>`.
+4. **gate let through** — `gate let through after 3 attempts, <k> failures`.
+5. **gate not done** — `gate not done (attempt <n> of 3)`.
 
 **Gate record.** `.dev-team/gate/<pkg>/<section>.txt`, written by `hooks/gate_on_stop.py` on
 every implementer stop. It speaks for the commit its `commit:` line names: the newest commit
@@ -656,9 +669,13 @@ def entry_rev(entry: dict[str, str]) -> str | None:
 
 
 def answered(entry: dict[str, str], rev: str | None) -> bool:
-    """True when a spec-change is answered: rev (the design, the intent tree, or for one a report
-    raised, the contract) was committed after it. A contract-level ledger entry is closed by the
-    architect only."""
+    """True when a spec-change is answered. A ledger entry whose heading carries `— <k>` (2.2 or
+    later) speaks through its `Status:`: it is live while that reads `open`, whatever was
+    committed since. An older ledger entry and a report-raised one keep the commit-order rule:
+    answered when rev (the design, the intent tree, or for a report's, the contract) was
+    committed after it. An older contract-level ledger entry is closed by the architect only."""
+    if entry.get("source") != "report" and entry.get("k"):
+        return False
     if entry["kind"] == "spec-change:contract" and entry.get("source") != "report":
         return False
     return _newer(rev, entry_rev(entry))
@@ -880,11 +897,29 @@ def _strip_other_sections(text: str, pkg: str, section: str) -> str:
     return "\n".join(keep).strip()
 
 
-def _probe_newer(doc: Path, design_rev: str | None, pkg: str, section: str) -> str | None:
-    """The probe doc's revision when it is newer than the design for this section, else None.
+def _shared_lines(text: str, pkg: str, section: str) -> list[str]:
+    """A probe doc's non-blank lines, less its title line (the first line starting `# `) and
+    every `## <pkg>/<section>` entry but this section's own."""
+    lines = [line for line in _strip_other_sections(text, pkg, section).splitlines() if line.strip()]
+    title = next((i for i, line in enumerate(lines) if line.startswith("# ")), None)
+    if title is not None:
+        del lines[title]
+    return lines
 
-    A commit that only appends or edits another section's `## <pkg>/<section>` entry does not
-    count: a new consuming section makes that section need PROBE, not this design stale.
+
+def _is_subsequence(needle: list[str], hay: list[str]) -> bool:
+    """True when every item of needle appears in hay, in order."""
+    it = iter(hay)
+    return all(any(x == y for y in it) for x in needle)
+
+
+def _probe_newer(doc: Path, design_rev: str | None, pkg: str, section: str) -> str | None:
+    """The probe doc's revision when it changed the design's view of the source, else None.
+
+    The doc as it stood at the design's commit is compared with the doc now, line by line, each
+    reduced by `_shared_lines`. Added lines, the title line (its date) and other sections'
+    `## <pkg>/<section>` entries re-open nothing: a new consuming section makes that section
+    need PROBE, not this design stale. A design-time line that is gone or reworded does.
     """
     doc_rev = _rev(doc)
     if not _newer(doc_rev, design_rev):
@@ -895,7 +930,7 @@ def _probe_newer(doc: Path, design_rev: str | None, pkg: str, section: str) -> s
     if before is None:
         return doc_rev
     now = doc.read_text() if doc.exists() else ""
-    if _strip_other_sections(before, pkg, section) == _strip_other_sections(now, pkg, section):
+    if _is_subsequence(_shared_lines(before, pkg, section), _shared_lines(now, pkg, section)):
         return None
     return doc_rev
 
@@ -1053,8 +1088,8 @@ def section_state(pkg: str, section: str) -> tuple[str, str]:
 
     # 2. PLAN
     if "spec-change:contract" in kinds:
-        e = next(e for e in spec if e["kind"] == "spec-change:contract")
-        return "PLAN", f"open {e['heading']}"
+        heads = [e["heading"] for e in spec if e["kind"] == "spec-change:contract"]
+        return "PLAN", "open " + "; ".join(heads)
 
     # 3. PROBE
     for kind, token in _sources(row.get("source", "")):
@@ -1068,8 +1103,8 @@ def section_state(pkg: str, section: str) -> tuple[str, str]:
     if not design.exists():
         return "DESIGN", "no design"
     if "spec-change:design" in kinds:
-        e = next(e for e in spec if e["kind"] == "spec-change:design")
-        return "DESIGN", f"open {e['heading']}"
+        heads = [e["heading"] for e in spec if e["kind"] == "spec-change:design"]
+        return "DESIGN", "open " + "; ".join(heads)
     design_rev = _rev(design)
     for c in open_changes(pkg, section):
         crev = _rev(c["path"])  # type: ignore[arg-type]

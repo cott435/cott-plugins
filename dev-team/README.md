@@ -197,10 +197,10 @@ every call and never stored:
 | State | When |
 |---|---|
 | **BLOCKED** | an open decision with no assumption binds the section; or the review cap is hit (round 3, or round 2 with a prior unfixed); or the stop gate's record for the section's current commit says the implementer blocked, or was let through after three attempts, and no review round covers that code |
-| **PLAN** | an open `spec-change:contract` entry names the section — the architect edits the contract |
+| **PLAN** | an open `spec-change:contract` entry names the section — the architect edits the contract and sets the entry `resolved` |
 | **PROBE** | an `api:` source has no `## <pkg>/<section>` entry in its probe doc, or a `dataset:` source has no probe doc |
-| **DESIGN** | no design; or an open `spec-change:design` the design has not been rewritten since; or an open change file naming the section is newer than the design; or a probe doc it names is newer |
-| **TEST** | no intent tests; or the design is newer than them; or an open `spec-change:test` the tests have not been regenerated since; or an `approved` deviation's clause is cited by a test not yet regenerated |
+| **DESIGN** | no design; or an open `spec-change:design` entry (one written since 2.2 stays open until its `Status:` is `resolved`); or an open change file naming the section is newer than the design; or a probe doc it names lost or reworded a line the design was written against |
+| **TEST** | no intent tests; or the design is newer than them; or an open `spec-change:test` entry; or an `approved` deviation's clause is cited by a test not yet regenerated |
 | **IMPLEMENT** | no README (for `surface`, no `interface.md`); or the intent tests are newer than it; or the gate's record for the current commit says `not done`, a run that died between attempts |
 | **REVIEW** | no review round, or the code is newer than the newest round's `Commit:`, or a `spec-change` verdict has no open entry left |
 | **FIX n** | round `n` says `request changes`, under the cap, and nothing changed since |

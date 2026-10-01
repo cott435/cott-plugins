@@ -28,7 +28,8 @@ with `"legacy": true` in the pre-split `docs/deviations.md`), `change` (`slug`, 
 `docs/deviations/<pkg>/<section>.md` with no `— <k>`, `docs/changes/<slug>.md`); the
 default is the 2.2 layout, so every case that sets no layout runs under it. `review` takes
 `spec` (letter → the line under its **Spec-change** heading); `base` takes `shorthand`
-(ingest's path cell as `…/ingest/`). `{HEAD}` in any file content is the commit the step
+(ingest's path cell as `…/ingest/`); `edit` takes `append`, `"replace": ["<old>", "<new>"]`
+(the first occurrence, applied before `append`), or both. `{HEAD}` in any file content is the commit the step
 starts from.
 
 **The 2.2 layout here.** Every case that sets no `layout` builds its reports at
@@ -40,7 +41,7 @@ and its inbox at `docs/packages/<pkg>/decisions/<section>.md`; `"layout": "old"`
 `review-both-layouts` and `ledger-moved-new` mix the two in one repo.
 
 **The gate record (2.4).** The eleven `gate-*` cases (`site/notes/2.4-02-gate-record.md`,
-the last eleven rows) carry a top-level `gate` key: section → the text of its stop-gate
+the eleven rows after `surface-section-name-no-readme-row`) carry a top-level `gate` key: section → the text of its stop-gate
 record, written to `.dev-team/gate/data/<section>.txt` after `dirty`, `{SECTION}` the short
 sha of the newest commit touching the section's code and unit tree (resolved after every
 step, so a review commit, which touches only `docs/`, leaves it naming the build). The key
@@ -51,6 +52,15 @@ older cases whose expectations spell a 2.0 path or heading (`inputs-fix-round`,
 `inputs-spec-change-review`, `report-spec-change-b`, `report-spec-change-recorded`,
 `test-regenerate`, `test-spec-change-test`) set `"layout": "old"`, so they keep pinning the old
 layout; the rest run under the new one.
+
+**The ledger Status rule and the additive probe (2.4).** Eight cases
+(`site/notes/2.4-03-ledger-and-probe.md`, the last eight rows). A 2.2-or-later entry, one whose
+heading ends `— <k>`, is live while its `Status:` reads `open`, whatever was committed since;
+PLAN, DESIGN and TEST evidence lists every open heading of the level. A probe doc re-opens a
+design only when a design-time line is gone or reworded. `design-spec-change-answered` and
+`test-spec-change-answered` pin the commit-order rule, which now holds only for a heading
+without `— <k>`, so their `deviation` step is `"layout": "old"`; `design-probe-newer` rewords
+a shared line instead of appending one, which no longer re-opens anything.
 
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
@@ -67,10 +77,10 @@ optional flag).
 | `design-change-file-open` | DONE, then an open change file names the section | `—` | `ingest · DESIGN`, evidence `/^change vwap-window [0-9a-f]{7} newer than design [0-9a-f]{7}$/` |
 | `design-dependency-not-done` | no design; ingest (a dependency) not DONE | `—` | `clean · DESIGN`, ready no |
 | `design-missing` | no design; no dependencies | `—` | `ingest · DESIGN`, ready yes, evidence `/no design/` |
-| `design-probe-newer` | the probe doc's shared headings changed after the design | `—` | `ingest · DESIGN`, evidence `/docs/sources/trades.md [0-9a-f]{7} newer than design/` |
+| `design-probe-newer` | a shared line of the probe doc reworded after the design (2.4: `replace`, in place of an `append`) | `—` | `ingest · DESIGN`, evidence `/docs/sources/trades.md [0-9a-f]{7} newer than design/` |
 | `design-probe-other-section` | another section's entry appended to the probe doc: not stale | `—` | `ingest · IMPLEMENT` |
 | `design-spec-change-design` | open spec-change:design after the tests | `—` | `ingest · DESIGN`, evidence `/spec-change:design/` |
-| `design-spec-change-answered` | an open spec-change:design the design was rewritten after (remake phase 11) | `—` | `ingest · TEST`, evidence `/^design [0-9a-f]{7} newer than tests [0-9a-f]{7}$/`; no `spec-change:design` |
+| `design-spec-change-answered` | an open spec-change:design the design was rewritten after (remake phase 11); since 2.4 its entry is `"layout": "old"`, no `— <k>` | `—` | `ingest · TEST`, evidence `/^design [0-9a-f]{7} newer than tests [0-9a-f]{7}$/`; no `spec-change:design` |
 | `done-and-surface-ready` | ingest, clean, storage DONE; surface ready | `—` | `surface · DESIGN`, ready yes; `ingest · DONE`; `clean · DONE`; `storage · DONE`; `shipped: no (surface DESIGN)`; `next: /dev-team:run-package data` |
 | `fix-round-1` | round 1: a approves, b requests changes; the worst wins | `—` | `ingest · FIX 1`, round 1 |
 | `implement-missing-readme` | intent tests, no README | `—` | `ingest · IMPLEMENT`, evidence `/no .*README.md/` |
@@ -103,7 +113,7 @@ optional flag).
 | `test-missing` | design, no intent tree | `—` | `ingest · TEST`, ready yes |
 | `test-regenerate` | approved deviation whose clause an untagged intent test cites | `—` | `ingest · TEST`, evidence `/^regenerate: data/ingest — 2026-09-27 — deviation$/` |
 | `test-spec-change-test` | an open spec-change:test after the build (remake phase 11) | `—` | `ingest · TEST`, evidence `/^open data/ingest — 2026-09-27 — spec-change:test$/` |
-| `test-spec-change-answered` | the same, then a regeneration commit (remake phase 11) | `—` | `ingest · REVIEW`, evidence `/^no review$/`; no `spec-change:test` |
+| `test-spec-change-answered` | the same, then a regeneration commit (remake phase 11); since 2.4 its entry is `"layout": "old"`, no `— <k>` | `—` | `ingest · REVIEW`, evidence `/^no review$/`; no `spec-change:test` |
 | `test-design-newer-tests-current` | a delta design after the build, then a tester stamp commit `intent tests current with design` (remake phase 11) | `—` | `ingest · REVIEW`, evidence `/^no review$/` |
 | `ledger-old-layout` | approved deviation at the 2.0 `docs/deviations/data/ingest.md`, untagged citing test | `—` | `ingest · TEST`, evidence `/^regenerate: data\/ingest — 2026-09-27 — deviation$/` |
 | `ledger-heading-k` | a proposed entry, then an approved one: heading `… — deviation — 2` in the new file | `—` | `ingest · TEST`, evidence `/— deviation — 2$/` |
@@ -141,3 +151,11 @@ optional flag).
 | `gate-review-covers` | the `blocked` record, then round 1 `a` and `b` approve the same code | `—` | `ingest · DONE` |
 | `gate-blocked-half-pair` | the `blocked` record, then round 1 with only `a` | `—` | `ingest · REVIEW`, evidence `/^review r1 lacks its b report$/` |
 | `gate-blocked-dirty` | the `blocked` record, and an uncommitted `packages/data/src/data/ingest/extra.py` | `—` | `ingest · REVIEW`, evidence `/^no review$/` (the record is stale; with no review round rule 7 says `no review`) |
+| `design-spec-change-open-after-rewrite` | `base`, `design`, `tests`, an open `spec-change:design` (`— 1`), then the design edited | `—` | `ingest · DESIGN`, evidence `/^open data/ingest — 2026-09-27 — spec-change:design — 1$/` |
+| `design-spec-change-resolved` | the same, the design edit's commit also setting the entry's `Status: resolved` | `—` | `ingest · TEST`; no `spec-change:design` |
+| `design-spec-change-two-open` | two open `spec-change:design` entries (the second with `"clause": "design §5 other_item"`) | `—` | `ingest · DESIGN`, evidence `/^open data/ingest — 2026-09-27 — spec-change:design — 1; data/ingest — 2026-09-27 — spec-change:design — 2$/` |
+| `fields-delta-two-open` | the same | `--fields data/ingest` | `mode: delta` |
+| `plan-spec-change-two-open` | `base`, `design`, two open `spec-change:contract` entries | `—` | `ingest · PLAN`, evidence `/— spec-change:contract — 1; data/ingest — 2026-09-27 — spec-change:contract — 2$/` |
+| `test-spec-change-one-resolved` | `base`, `design`, `tests`, `build`, two open `spec-change:test` entries in one commit, then a regeneration commit that sets only entry 1 `resolved` | `—` | `ingest · TEST`, evidence `/^open data/ingest — 2026-09-27 — spec-change:test — 2$/` |
+| `design-probe-added-lines` | `base`, `design`, then `- one timestamp out of order` appended to `docs/sources/trades.md` | `—` | `ingest · TEST`; absent `newer than design` |
+| `design-probe-title-date` | `base`, `design`, then the probe doc's title line given a date (the fixture's title has none) | `—` | `ingest · TEST`; absent `newer than design` |

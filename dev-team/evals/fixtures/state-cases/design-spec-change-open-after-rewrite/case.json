@@ -1,0 +1,34 @@
+{
+  "note": "an open spec-change:design (— 1) the design was edited after: still DESIGN, since a 2.2-or-later entry speaks through its Status, not commit order (2.4, phase 3)",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "deviation",
+      "section": "ingest",
+      "kind": "spec-change:design",
+      "status": "open"
+    },
+    {
+      "do": "edit",
+      "path": "docs/packages/data/design/ingest.md",
+      "append": "\n- the entry point, corrected\n",
+      "message": "data/ingest: design"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "DESIGN",
+    "evidence": "^open data/ingest — 2026-09-27 — spec-change:design — 1$"
+  }
+}
