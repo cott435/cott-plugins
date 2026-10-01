@@ -47,7 +47,10 @@ forbid:
     # Both exceptions are in the pattern, not in `unless`, because `unless` exempts the whole
     # line: a bare command written beside /reload-plugins would have been exempted with it.
     # /reload-plugins is Claude Code's own command.
-    pattern: '(^|[\s"(\[`])/(?!dev-team:|reload-plugins)(?:[a-z][a-z0-9]*-[a-z0-9-]+|status)\b'
+    # A plugin-dev command (the same slash form, with `plugin-dev:` after the slash) is
+    # prefixed too: the notes under site/notes/ name them, and they are typeable wherever
+    # plugin-dev is installed.
+    pattern: '(^|[\s"(\[`])/(?!dev-team:|plugin-dev:|reload-plugins)(?:[a-z][a-z0-9]*-[a-z0-9-]+|status)\b'
 
   - name: no agent or skill stages everything
     # §Project convention stages by explicit path, so a run never commits a file it did not
@@ -252,7 +255,7 @@ headings:
     # plan is a bolded term inside item 3, not a numbered item, so the owner parser cannot see
     # it; the tester cites item 3 by name, and the Module plan rides on that. The design's
     # first line, `Mode:`, is not a numbered item either; the tester reads it beside its
-    # `Adopted code:` field. No reader cites `As shipped` or `Revision`: the template has none.
+    # `Design mode:` field. No reader cites `As shipped` or `Revision`: the template has none.
     owner: agents/designer.md
     owner_span: ['## Design document template', null]
     readers:

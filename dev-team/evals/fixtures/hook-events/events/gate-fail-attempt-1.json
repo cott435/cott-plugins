@@ -32,7 +32,7 @@
       "FAIL intent tests/intent/ingest/test_bad_row.py::test_load_trades_rejects_missing_field",
       "`Result:`, `Amends:`",
       "hand back an amendment, not the full report again",
-      "takes your last hand-back as your answer"
+      "takes your last turn as your answer"
     ],
     "stderr_lacks": [
       "This is your last retry",
