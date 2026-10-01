@@ -134,8 +134,9 @@ it names before touching the section. One `<Field>: <value>` line per field, in 
 3. **Contract** — `docs/packages/<pkg>/contract.md`.
 4. **Repo contract** — `docs/architecture.md`.
 5. **Dependency READMEs** — `<path>/README.md` per section in the row's `depends on`.
-6. **Upstream interfaces** — per package in the Packages row's `depends on`,
-   `docs/packages/<dep>/interface.md` when it exists, else `provisional:
+6. **Upstream interfaces** — per package in the Packages row's `depends on` that the
+   design's `Upstream packages:` line names (every one when the design is missing or has no
+   such line), `docs/packages/<dep>/interface.md` when it exists, else `provisional:
    docs/packages/<dep>/contract.md`.
 7. **Source probes** — `docs/sources/<token>.md` per entry in the row's `source`.
 8. **Intent tests** — `<package root>/tests/intent/<section>/` when it exists.
@@ -148,7 +149,7 @@ it names before touching the section. One `<Field>: <value>` line per field, in 
 12. **Run** — `run-package <pkg>`.
 
 `--fields <pkg>/<section>` prints the spawn fields run-package would otherwise resolve by
-reading files, four `key: value` lines in this order, and exits 0 (2 on a section the contract
+reading files, five `key: value` lines in this order, and exits 0 (2 on a section the contract
 lacks):
 
 1. `mode: new | document | delta` — `delta` when an open change file names the section, or the
@@ -164,6 +165,8 @@ lacks):
 4. `diff base: <sha> | none` — from the newest round `n` ≥ 1, the `Commit:` of round `n`'s
    `-s` report, or its `-a` report when `n` is 1, or its one report when it has no letter;
    `none` with no round or no `Commit:`. The next reviewer's `Diff:` field is `<sha>..HEAD`.
+5. `upstream interfaces: <path>, … | none` — as **Upstream interfaces** in `--inputs`. The
+   tester's and the reviewer's field; the designer is sent every upstream package.
 """
 
 from __future__ import annotations
@@ -1650,6 +1653,35 @@ def upstream_packages(pkg: str) -> list[str]:
     return []
 
 
+def design_upstream(pkg: str, section: str) -> list[str] | None:
+    """The names on the design's `Upstream packages:` line, the first match; `none` gives [].
+
+    None when there is no design or no such line.
+    """
+    design: Path = _paths(pkg, section)["design"]  # type: ignore[assignment]
+    if not design.exists():
+        return None
+    m = re.search(r"^\**Upstream packages:\**\s*(.*)$", design.read_text(), re.M)
+    return _names(m.group(1)) if m else None
+
+
+def _upstream_interfaces(pkg: str, section: str) -> list[str]:
+    """Per upstream package the design's `Upstream packages:` line names (every one when the
+    design is missing or has no such line): its interface.md, else `provisional: <contract>`.
+
+    A name on the line that is not in the Packages row's `depends on` is ignored: the line
+    narrows the row and cannot widen it.
+    """
+    named = design_upstream(pkg, section)
+    ups = []
+    for dep in upstream_packages(pkg):
+        if named is not None and dep not in named:
+            continue
+        iface = DOCS / "packages" / dep / "interface.md"
+        ups.append(_rel(iface) if iface.exists() else f"provisional: {_rel(contract_path(dep))}")
+    return ups
+
+
 def implementer_inputs(pkg: str, section: str) -> list[str]:
     """The implementer's spawn block for one section, one `<Field>: <value>` line per field.
 
@@ -1659,10 +1691,7 @@ def implementer_inputs(pkg: str, section: str) -> list[str]:
     rows = {r["section"]: r for r in sections(pkg)}
     p = _paths(pkg, section)
     deps = [f"{rows[d]['path']}/README.md" for d in _names(row.get("depends on", "")) if d in rows and d != section]
-    ups = []
-    for dep in upstream_packages(pkg):
-        iface = DOCS / "packages" / dep / "interface.md"
-        ups.append(_rel(iface) if iface.exists() else f"provisional: {_rel(contract_path(dep))}")
+    ups = _upstream_interfaces(pkg, section)
     probes = [f"docs/sources/{token}.md" for _, token in _sources(row.get("source", ""))]
     intent: Path = p["intent"]  # type: ignore[assignment]
     n, verdict, _, _ = newest_round(pkg, section)
@@ -1734,6 +1763,7 @@ def spawn_fields(pkg: str, section: str) -> list[str]:
         f"change file: {', '.join(changes) or 'none'}",
         f"design mode: {design_mode}",
         f"diff base: {base}",
+        f"upstream interfaces: {', '.join(_upstream_interfaces(pkg, section)) or 'none'}",
     ]
 
 

@@ -174,3 +174,7 @@ optional flag).
 | `surface-names-no-readme` | `base`, `design` for ingest, not built | the same | `surface names data/ingest: n/a (no README)`; exit 0 |
 | `surface-grouped-cell` | every row DONE; ingest's README has one row `` `load_trades`, `Trade` `` (written before ingest's review), both in `__all__` and **Public names** | `--surface data` | `surface: FAIL`; `data/ingest README:` with the cell reason; no line holding `Trade: in interface.md Public names, not in README`; exit 1 |
 | `shipped-surface-check-fail` | the same repo | `—` | `surface · DONE`; `shipped: no (surface check FAIL)`; `next: correct the README rows status.py --surface data names, then /dev-team:run-package data` |
+| `fields-upstream-line` | `base`, ingest DONE, the `analysis` contract and a `vwap` design whose §2 ends `Upstream packages: data` (2.4, phase 7) | `--fields analysis/vwap` | fifth line `upstream interfaces: provisional: docs/packages/data/contract.md` |
+| `fields-upstream-none` | the same, the line `Upstream packages: none` | the same | `upstream interfaces: none` |
+| `fields-upstream-no-line` | the same, the design without the line | the same | `upstream interfaces: provisional: docs/packages/data/contract.md` (every upstream package, as before 2.4) |
+| `inputs-upstream-none` | the same as `fields-upstream-none` | `--inputs analysis/vwap` | `Upstream interfaces: none` |
