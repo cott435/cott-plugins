@@ -580,7 +580,15 @@ provides; decisions scoped `<pkg>` or `repo`.
    one `::: <module>` block per distinct providing module in **Public names**, with
    `options: {members: [<the names that module provides>]}`, plus `::: <pkg>.cli` and
    `::: <pkg>.pipelines` (or each pipeline module). Add the page to the `nav` in `mkdocs.yml`
-   under `API`, touching nothing else in that file.
+   under `API`, touching nothing else in that file. `--strict` can still fail on a sibling's
+   docstring that cross-references a name the page does not render (`[`name`][pkg.module.name]`
+   with `name` not in **Public names**): you may not edit the docstring, so that is the one
+   case the page and `mkdocs.yml` bend, and only like this. Add the referenced name to its
+   module's `members`, and only for a warning `mkdocs build --strict` printed; if a warning
+   then remains that only a setting can resolve (an anchor syntax, a plugin), add that one
+   setting to `mkdocs.yml`. Each such addition is one `proposed` deviation naming the warning
+   it fixes (`Said:` the rule above, `Did:` the name or setting), never a silent edit; nothing
+   else in either file moves. A warning that neither resolves is *needed from elsewhere*.
 8. Tests under `tests/unit/surface/`: one end-to-end test per pipeline with the fixtures the
    design names, and one invocation test per CLI command (`--help` succeeds; a minimal run
    against fixtures succeeds). Run the package suite, `lint-imports`, and `mkdocs build

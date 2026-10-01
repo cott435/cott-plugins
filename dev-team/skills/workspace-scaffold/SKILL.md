@@ -167,6 +167,8 @@ exclude_docs: |
   sources/*.py                       # and so are the probe and profile programs beside them
 theme:
   name: material
+markdown_extensions:
+  - attr_list                         # lets a docstring anchor `[](){#id}` resolve under --strict
 plugins:
   - search
   - mkdocstrings:

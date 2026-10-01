@@ -174,7 +174,11 @@ block shrinks every round, so a new blocking finding has to be in the code the f
 ## Focus: conformance
 
 Round 1, letter `a`. You own conformance, the seams and the deviations ledger. Read the design,
-the contracts, the dependency READMEs, the probe docs and the intent tests, then the code.
+the contracts, the dependency READMEs, the probe docs and the intent tests, then the code. The
+intent tests are the prompt's `Intent tests:` path: Glob it, Read every file under it before
+the first Coverage row, and name the files in the report's `Scope:`. A conformance report whose
+Scope names no intent-test file is not finished, whatever else it read: the design's **Tests**
+cannot be judged against tests nobody opened. With `Intent tests: none`, say so in `Scope:`.
 
 **Coverage.** One row per contract clause and per design item, each judged `pass`, `fail` or
 `can't-tell` with the `file:line` that decides it:
@@ -184,7 +188,8 @@ the contracts, the dependency READMEs, the probe docs and the intent tests, then
   surface (intent)** row it provides, every **Consumes** row it takes;
 - the design: every **Interfaces** row, every **Workflow / pipeline** step, every **Error
   handling and logging** case (error type and log key), and the **Tests** the design names,
-  each found or not among the unit and intent tests. An **Open questions** item designed
+  each found or not among the unit and intent tests, a row per case with the test's
+  `file:line` (or `fail` when none covers it). An **Open questions** item designed
   against an assumption is judged against that assumption, or against the `D<n>` answer when
   one is `decided`.
 

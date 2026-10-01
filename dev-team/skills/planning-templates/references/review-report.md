@@ -13,7 +13,7 @@ Header, the first lines of the file, each `Key: value`:
 
 ```
 # Review — <pkg>/<section> — round <n> — <focus>
-Scope: <what was read>
+Scope: <what was read — a conformance or full report names the intent-test files>
 Commit: <the commit: line of status.py --rounds>
 Verdict: approve | request changes | spec-change
 Round: <n>
