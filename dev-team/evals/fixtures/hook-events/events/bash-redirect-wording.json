@@ -9,19 +9,18 @@
     "hook_event_name": "PreToolUse",
     "tool_name": "Bash",
     "tool_input": {
-      "command": "echo x > docs/followups.md",
+      "command": "pytest -q > log.txt",
       "description": "…"
     },
     "tool_use_id": "toolu_01AbCdEf",
     "agent_id": "a3f09c2e71b8d4e65",
-    "agent_type": "dev-team:reviewer"
+    "agent_type": "dev-team:implementer"
   },
   "expect": {
     "exit": 2,
-    "stderr_startswith": "dev-team bash guard: ",
     "stderr_contains": [
-      "dev-team:reviewer may not redirect",
-      "may not redirect to docs/followups.md: it is outside .dev-team/tmp/"
-    ]
+      "may not redirect to log.txt: it is outside .dev-team/tmp/"
+    ],
+    "stderr_startswith": "dev-team bash guard: "
   }
 }

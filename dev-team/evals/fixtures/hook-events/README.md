@@ -115,6 +115,28 @@ spec-change:test — 1`, `result: spec-change`); `gate-marker-no-reason` (a one-
 `blocked: (no reason given)`); and `gate-report-base`, which also checks for the `commit:`
 line.
 
+**The 2.4 guards** (`site/notes/2.4-04-entry-points-and-guards.md`). Both guards also act in a
+repo that has `docs/brief.md` and no `docs/architecture.md` (`bash-brief-only-refused`,
+`guard-brief-only-refused`, `guard-brief-only-allowed`, in a `plain` repo plus the brief). A
+refused redirect now reads `may not redirect to <target>: it is outside .dev-team/tmp/`
+(`bash-redirect-wording`), so `bash-append-refused`, `bash-chain-refused`,
+`bash-locked-sh-refused`, `bash-redirect-refused` and `bash-reviewer-refused` expect that text
+instead of `redirect: <target>`; every other refusal keeps `may not write a repo file from the
+shell (…)`. A researcher may redirect outside the repo root (`bash-researcher-outside-allowed`)
+and not inside it (`bash-researcher-inside-refused`). `entry_point.py` is let through only under
+`locked.py deps` for the package the caller's `Section:` names, with the `ingest`/`clean`/`surface`
+contract and a `Section: data/ingest` transcript as in the `guard-implementer-section-*` cases:
+`bash-locked-entry-point-allowed`; refused for another package
+(`bash-locked-entry-point-other-pkg-refused`), unwrapped (`bash-entry-point-unwrapped-refused`)
+and with no transcript (`bash-locked-entry-point-no-section-refused`). The write guard refuses a
+`surface` implementer a sibling section's code, naming its owner
+(`guard-surface-sibling-code-refused`), while the package's own `__init__.py` stays allowed
+(`guard-surface-own-init-allowed`); and refuses a tester a Write or Edit that adds a suppression
+comment under `tests/intent/` (`guard-tester-noqa-write-refused`,
+`guard-tester-type-ignore-edit-refused`), counting old against new, so an Edit that keeps an
+existing `# noqa` passes (`guard-tester-noqa-existing-kept`) and an event with no text fails open
+(`guard-tester-no-text-allowed`).
+
 **The 2.2 layout here.** `build.py` still writes the section's ledger at the 2.0 path,
 `docs/deviations/data/ingest.md`, so the tolerated case also proves the gate reads the old
 location; the new one, `docs/packages/data/deviations/ingest.md`, is written by

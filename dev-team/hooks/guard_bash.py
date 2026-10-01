@@ -1,20 +1,27 @@
 #!/usr/bin/env python3
 """PreToolUse hook on Bash: a dev-team agent never writes a repo file from the shell.
 
-Input: the hook JSON on stdin (`cwd`, `agent_type`, `tool_input.command`). Exit 0 unless
-`<cwd>/docs/architecture.md` exists and `agent_type` starts with `dev-team:`. Refused, exit
-2 with the rule on stderr: a redirect (`>`, `>>`, `1>`, `&>`, `>|`) whose target is not
-`/dev/null` and not under `.dev-team/tmp/`; `sed -i`; `tee`; `python -c` / `python3 -c`
-whose code calls `open(…, "w"|"a"|"x")` or `write_text(`, and the same check on the
-here-document body of a python whose script is `-`, or that has no script and a
-here-document (`python3 - <<'EOF'`); `sh -c`, `bash -c` and `zsh -c` scripts are checked as
-commands of their own. `2>&1`, `>&2` and `<` are not writes. `locked.py`
-(`python3 …/locked.py <name> -- <cmd>`) is the one way an implementer edits `pyproject.toml`,
-`uv.lock` or `.gitignore`, and it exempts only those edits: the command after `--` is `uv add`,
-`uv remove`, `uv lock` or `uv sync`, or `sh -c` whose script is one `printf … >> .gitignore`;
-any other wrapped command is checked as if it were not wrapped. A command the guard cannot
-parse (`shlex` fails) is let through with the rule on stderr: a guard fails open, and saying
-why is the most it can do. Malformed stdin: exit 0.
+Input: the hook JSON on stdin (`cwd`, `agent_type`, `agent_id`, `transcript_path`,
+`tool_input.command`). Exit 0 unless `agent_type` starts with `dev-team:` and
+`<cwd>/docs/brief.md` or `<cwd>/docs/architecture.md` exists, so `plan-repo`'s agents are
+guarded before the repo contract is written. Refused, exit 2 with the rule on stderr: a redirect
+(`>`, `>>`, `1>`, `&>`, `>|`) whose target is not `/dev/null` and not under `.dev-team/tmp/` —
+except that a `dev-team:researcher` may redirect to a path outside the repo root, its scratch by
+its own rules — refused as `may not redirect to <target>: it is outside .dev-team/tmp/`;
+`sed -i`; `tee`; `python -c` / `python3 -c` whose code calls `open(…, "w"|"a"|"x")` or `write_text(`,
+and the same check on the here-document body of a python whose script is `-`, or that has no
+script and a here-document (`python3 - <<'EOF'`); `sh -c`, `bash -c` and `zsh -c` scripts are
+checked as commands of their own. `2>&1`, `>&2` and `<` are not writes. `locked.py`
+(`python3 …/locked.py <name> -- <cmd>`) is the one way an implementer edits `pyproject.toml`, `uv.lock` or
+`.gitignore`, and it exempts only those edits: the command after `--` is `uv add`, `uv remove`,
+`uv lock` or `uv sync`, or `sh -c` whose script is one `printf … >> .gitignore`; any other
+wrapped command is checked as if it were not wrapped. The third shared edit is an entry point:
+`python3 …/entry_point.py <pkg> …` is let through only under `locked.py deps` and only when the
+caller's spawn prompt has `Section: <pkg>/<section>` for the same `<pkg>` (read by
+`status.cached_section`); unwrapped, under another lock, for another package or with no readable
+`Section:` line it is refused, since nothing but a section's implementer has an entry point to
+add. A command the guard cannot parse (`shlex` fails) is let through with the rule on stderr: a
+guard fails open, and saying why is the most it can do. Malformed stdin: exit 0.
 
 The command is split into simple commands on `;`, `&&`, `||`, `|`, `&` and newlines outside
 quotes, a here-document's body kept aside for the command that opened it; each is tokenized with `shlex` (punctuation runs split
@@ -31,8 +38,10 @@ import shlex
 import sys
 from pathlib import Path
 
-RULE = ("Use the Write or Edit tool; a shared edit goes through locked.py; scratch goes under .dev-team/tmp/ "
-        "or to /dev/null.")
+RULE = ("Use the Write or Edit tool; a shared edit goes through locked.py, and an entry point goes through "
+        "`locked.py deps -- python3 …/entry_point.py`; scratch goes under .dev-team/tmp/ or to /dev/null.")
+EP_UNWRAPPED = "entry point: run it through locked.py deps"
+EP_NO_SECTION = "entry point: no Section: line names this run's package"
 OPERATORS = re.compile(r"&>>|&>|>>|>\||>&|<<<|<<|<>|<&|&&|\|\||[;&|<>()]")
 WRITES = (">", ">>", ">|", "&>", "&>>", "<>")
 PYTHON = re.compile(r"python[\d.]*\Z")
@@ -120,18 +129,20 @@ def tokens(simple: str) -> list[str]:
     return out
 
 
-def _allowed_target(target: str, cwd: Path) -> bool:
+def _allowed_target(target: str, cwd: Path, agent: str = "") -> bool:
     if target == "/dev/null":
         return True
     root = os.path.realpath(cwd)
     path = os.path.realpath(target if os.path.isabs(target) else os.path.join(root, target))
+    if agent == "dev-team:researcher" and path != root and not path.startswith(root + os.sep):
+        return True  # a researcher's scratch is outside the repo by its own rules
     scratch = os.path.join(root, ".dev-team", "tmp")
     return path == scratch or path.startswith(scratch + os.sep)
 
 
-def _script_refusal(script: str, cwd: Path) -> str | None:
+def _script_refusal(script: str, cwd: Path, event: dict | None = None) -> str | None:
     """The first refusal among a shell script's simple commands."""
-    return next((r for c, b in split_commands(script) if (r := refusal(c, cwd, b))), None)
+    return next((r for c, b in split_commands(script) if (r := refusal(c, cwd, b, event))), None)
 
 
 def _gitignore_printf(script: str) -> bool:
@@ -144,7 +155,35 @@ def _gitignore_printf(script: str) -> bool:
     return bool(toks) and toks[0] == "printf" and writes == [(">>", ".gitignore")]
 
 
-def _locked(toks: list[str], cwd: Path) -> str | None:
+def _entry_point_args(toks: list[str]) -> list[str] | None:
+    """The arguments after the script when the command is python running `entry_point.py`; else None."""
+    if not toks or not PYTHON.match(os.path.basename(toks[0])):
+        return None
+    k = next((k for k, t in enumerate(toks[1:], 1) if not t.startswith("-")), None)
+    if k is None or os.path.basename(toks[k]) != "entry_point.py":
+        return None
+    return toks[k + 1:]
+
+
+def _entry_point_owner(args: list[str], cwd: Path, event: dict | None) -> str | None:
+    """None when the caller's `Section:` names the package entry_point.py is given; else the refusal."""
+    pkg = args[0] if args else ""
+    try:
+        plugin = Path(os.environ.get("CLAUDE_PLUGIN_ROOT") or Path(__file__).resolve().parents[1])
+        sys.path.insert(0, str(plugin / "skills" / "status" / "scripts"))
+        sys.dont_write_bytecode = True  # no __pycache__ inside the installed plugin
+        import status
+
+        status.set_root(cwd)
+        target = status.cached_section(event or {})
+    except Exception:  # a guard that cannot read the section refuses: only a section has an entry point
+        return EP_NO_SECTION
+    if target is None:
+        return EP_NO_SECTION
+    return None if target[0] == pkg else f"entry point: {pkg} is not this run's package"
+
+
+def _locked(toks: list[str], cwd: Path, event: dict | None = None) -> str | None:
     """A `locked.py <name> -- <cmd>` command: None when <cmd> is one of the shared edits locked.py
     exists for, else <cmd>'s own refusal."""
     inner = toks[toks.index("--") + 1:] if "--" in toks else []
@@ -152,28 +191,36 @@ def _locked(toks: list[str], cwd: Path) -> str | None:
         return None
     if len(inner) == 3 and inner[0] in SHELLS and inner[1] == "-c" and _gitignore_printf(inner[2]):
         return None
-    return _refusal(inner, cwd, []) if inner else None
+    ep = _entry_point_args(inner)
+    if ep is not None:
+        k = next(k for k, t in enumerate(toks) if t.endswith("locked.py"))
+        name = toks[k + 1] if k + 1 < len(toks) else ""
+        return EP_UNWRAPPED if name != "deps" else _entry_point_owner(ep, cwd, event)
+    return _refusal(inner, cwd, [], event) if inner else None
 
 
-def refusal(simple: str, cwd: Path, bodies: list[str] | None = None) -> str | None:
+def refusal(simple: str, cwd: Path, bodies: list[str] | None = None, event: dict | None = None) -> str | None:
     """`<what>: <token>` when this simple command writes a repo file; else None."""
-    return _refusal(tokens(simple), cwd, bodies or [])
+    return _refusal(tokens(simple), cwd, bodies or [], event)
 
 
-def _refusal(toks: list[str], cwd: Path, bodies: list[str]) -> str | None:
+def _refusal(toks: list[str], cwd: Path, bodies: list[str], event: dict | None = None) -> str | None:
     toks = list(toks)
+    agent = (event or {}).get("agent_type") or ""
     while toks and ASSIGNMENT.match(toks[0]):
         toks.pop(0)
     if not toks:
         return None
     if any(t.endswith("locked.py") for t in toks[:3]):
-        return _locked(toks, cwd)
+        return _locked(toks, cwd, event)
     for k, tok in enumerate(toks):
         target = toks[k + 1] if k + 1 < len(toks) else ""
-        if tok == ">&" and target and not re.fullmatch(r"\d+|-", target) and not _allowed_target(target, cwd):
+        if tok == ">&" and target and not re.fullmatch(r"\d+|-", target) and not _allowed_target(target, cwd, agent):
             return f"redirect: {target}"
-        if tok in WRITES and target and not _allowed_target(target, cwd):
+        if tok in WRITES and target and not _allowed_target(target, cwd, agent):
             return f"redirect: {target}"
+    if _entry_point_args(toks) is not None:
+        return EP_UNWRAPPED
     program = os.path.basename(toks[0])
     args = [t for t in toks[1:] if t not in WRITES]
     if program == "sed" and any(t.startswith("--in-place") or re.match(r"-[^-]*i", t) for t in args):
@@ -196,7 +243,7 @@ def _refusal(toks: list[str], cwd: Path, bodies: list[str]) -> str | None:
     if program in SHELLS and "-c" in toks[1:]:
         k = toks.index("-c", 1)
         if k + 1 < len(toks):
-            return _script_refusal(toks[k + 1], cwd)
+            return _script_refusal(toks[k + 1], cwd, event)
     return None
 
 
@@ -208,19 +255,24 @@ def main() -> int:
         command = (event.get("tool_input") or {}).get("command") or ""
     except (ValueError, KeyError, TypeError, AttributeError):
         return 0
-    if not agent.startswith("dev-team:") or not (cwd / "docs" / "architecture.md").exists():
+    if not agent.startswith("dev-team:") or not any((cwd / "docs" / f).exists() for f in ("brief.md", "architecture.md")):
         return 0
     try:
         if not command.strip():
             raise ValueError("empty command")
-        found = _script_refusal(command, cwd)
+        found = _script_refusal(command, cwd, event)
     except ValueError as e:
         print(f"dev-team bash guard: could not parse the command ({e}); let through. The rule: {agent} never "
               f"writes a repo file from the shell. {RULE}", file=sys.stderr)
         return 0
     if found is None:
         return 0
-    print(f"dev-team bash guard: {agent} may not write a repo file from the shell ({found}). {RULE}", file=sys.stderr)
+    if found.startswith("redirect: "):
+        print(f"dev-team bash guard: {agent} may not redirect to {found.removeprefix('redirect: ')}: it is outside "
+              f".dev-team/tmp/. {RULE}", file=sys.stderr)
+    else:
+        print(f"dev-team bash guard: {agent} may not write a repo file from the shell ({found}). {RULE}",
+              file=sys.stderr)
     return 2
 
 

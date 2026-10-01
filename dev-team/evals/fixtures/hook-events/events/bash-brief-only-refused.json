@@ -1,6 +1,11 @@
 {
   "script": "bash",
-  "repo": "arch",
+  "repo": "plain",
+  "setup": {
+    "files": {
+      "docs/brief.md": "# Brief\n\nA repo still being planned.\n"
+    }
+  },
   "event": {
     "session_id": "9b1f0c52-3d4e-4a7b-8c21-5e6f7a8b9c0d",
     "transcript_path": "{cwd}/../transcript.jsonl",
@@ -9,19 +14,18 @@
     "hook_event_name": "PreToolUse",
     "tool_name": "Bash",
     "tool_input": {
-      "command": "echo x > docs/followups.md",
+      "command": "echo x > notes.txt",
       "description": "…"
     },
     "tool_use_id": "toolu_01AbCdEf",
     "agent_id": "a3f09c2e71b8d4e65",
-    "agent_type": "dev-team:reviewer"
+    "agent_type": "dev-team:researcher"
   },
   "expect": {
     "exit": 2,
-    "stderr_startswith": "dev-team bash guard: ",
     "stderr_contains": [
-      "dev-team:reviewer may not redirect",
-      "may not redirect to docs/followups.md: it is outside .dev-team/tmp/"
-    ]
+      "may not redirect to notes.txt"
+    ],
+    "stderr_startswith": "dev-team bash guard: "
   }
 }

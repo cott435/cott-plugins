@@ -84,6 +84,8 @@ dependencies = [
 [project.scripts]
 # <pkg>-<verb> = "<pkg>.cli:<function>"   — added by the surface section's implementer; the module
 #                                          must live inside src/<pkg>/ or the entry point cannot resolve
+# any other entry-point table — [project.entry-points."<group>"], a pytest11 plugin, a
+# migrations group — is added by the section that owns the target module, never here
 
 [build-system]
 requires = ["hatchling"]
@@ -94,6 +96,12 @@ packages = ["src/<pkg>"]
 ```
 
 Nothing about lint, import-linter, or docs goes here — the root owns those.
+
+`[project.scripts]` is the `surface` section's. Every other entry-point table is neither the
+scaffold's nor `surface`'s: the implementer of the section that owns the target module adds
+the line with `skills/status/scripts/entry_point.py` under `locked.py deps`, in the commit
+that adds the module. An entry point whose module does not exist yet breaks every run that
+loads its group, and `surface` is built last, after the section needed it for its own tests.
 
 ## 3. import-linter contracts
 

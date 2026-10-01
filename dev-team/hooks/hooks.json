@@ -1,5 +1,5 @@
 {
-  "description": "dev-team: ruff after every .py edit by the implementer or tester; a stop gate the implementer must pass; a per-role write guard, section-scoped for an implementer; a Bash guard against shell writes; the decisions inbox folded into docs/decisions.md after every inbox write. Every script exits 0 outside a repo that has docs/architecture.md.",
+  "description": "dev-team: ruff after every .py edit by the implementer or tester; a stop gate the implementer must pass; a per-role write guard, section-scoped for an implementer; a Bash guard against shell writes; the decisions inbox folded into docs/decisions.md after every inbox write. Every script exits 0 outside a repo that has docs/architecture.md; the write guard and the Bash guard also act in a repo that has docs/brief.md.",
   "hooks": {
     "PostToolUse": [
       {
