@@ -421,7 +421,7 @@ headings:
         cites: ['header', 'commit', 'result', 'attempt', 'blocked', 'spec-change', 'report',
                 'not done', 'letting the run stop']
       - file: agents/reviewer.md
-        cites: ['header', 'checks', 'result', 'pass']
+        cites: ['header', 'commit', 'checks', 'result', 'pass', 'blocked', 'letting the run stop']
 
   - name: evidence forms the driver copies are ones status.py prints
     # The driver builds the tester's Regenerate field and the designer's and architect's
