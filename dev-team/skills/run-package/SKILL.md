@@ -37,7 +37,10 @@ run from the repo root. It exits 1 on a failing gate; that is the answer, not an
   `docs/legacy/inventory.md` row for a source token. Every other spawn field comes from
   `status.py --fields <pkg>/<section>`, and a reviewer's **Previous round** from the file names
   the Glob tool finds under `docs/packages/<pkg>/reviews/<section>/` (or the older
-  `docs/reviews/`). Never `ls`, `grep`, `find`, `cat` or `head` a repo file. Judging the work
+  `docs/reviews/`). Never `ls`, `grep`, `find`, `cat` or `head` a repo file, except that a session without the Glob
+  tool lists `docs/packages/<pkg>/reviews/<section>/` with `find` and tests a file for existence
+  with a one-line Read (`limit=1`), and nothing else; the Sections table is a Read, never a
+  `grep | head`. Judging the work
   is the reviewer's. `status.py`'s source is not yours to read either: a state you do not
   understand is **Asking**, with the row.
 - Spawn anything in the background. Every Agent call is `run_in_background: false`; the next
@@ -134,7 +137,7 @@ take turns, since both extend one file.
 | **Dependency READMEs** | `<dep path>/README.md` per dependency, comma-separated |
 | **Upstream interfaces** | per upstream package, as resolved above |
 | **Source probes** | `docs/sources/<token>.md` per source |
-| **Regenerate** | the entry heading from the row's evidence when it reads `regenerate: <heading>` or `open <heading>` (a `spec-change:test`); else `none` |
+| **Regenerate** | the entry heading from the row's evidence when it reads `regenerate: <heading>` or `open <heading>` (a `spec-change:test`); when `open` names several, `; `-separated, every heading, one per line; else `none` |
 | **Design mode** | the `design mode:` line of `status.py --fields`: `new`, `document` or `delta` |
 | **Write to** | `tests/intent/<section>/ under <package root>` |
 | **Run** | `run-package <pkg>` |
@@ -257,7 +260,8 @@ granted *one more round* at a cap.
      instead: **Asking**, with the return's `Gap:` lines as the question.
    - `spec-change` → nothing to relay: the entry is in
      `docs/packages/<pkg>/deviations/<section>.md` and `status.py` re-opens the step it names
-     (PLAN, DESIGN or TEST), where the next block carries it.
+     (PLAN, DESIGN or TEST), where the next block carries it. When the next `status.py` shows
+     no such row for the section, that is a row that did not move: **Asking**, below.
    - `blocked` or `stopped` → **Asking**, with the return as the question, whatever the next
      `status.py` shows. An implementer can block after its commit (the gate's FAIL comes
      after it), so the row may already read REVIEW; the marker the gate deleted is no
@@ -271,7 +275,9 @@ granted *one more round* at a cap.
    a filter such as `head` or `tail`, and never narrowed to the sections you spawned: a filtered table
    hides a re-opened upstream section and the `shipped:` line. Print the rows whose state or
    evidence changed, by comparing them with the rows you kept, as the table prints them: no
-   label before a row and no sentence about it after. A row whose
+   label before a row and no sentence about it after. The rows are your next message after
+   every `status.py` run, before the next spawn: a thought, or a sentence about the rows, is
+   not them. A row whose
    agent returned `done` this batch and whose state and evidence are exactly what they were
    before it ran did not move: spawning the same step again would repeat the same run. Send
    it to **Asking** instead, with the row and the agent's first two lines. Back to step 2.
@@ -305,6 +311,9 @@ One `AskUserQuestion` per block, its text built from what stopped:
 - a review cap: the row's evidence, with *one more round* and *defer* as the options;
 - a third `design-gap`: the tester's `Gap:` lines, with the designer's options where the return
   names them;
+- a section whose agent returned `spec-change` and whose next row is not PLAN, DESIGN or TEST:
+  the row as it prints, and that an agent returned `spec-change` — nothing from the return's
+  other lines, no count, no test name — with *run it again* and *stop here* as the options;
 - a row that did not move after its agent returned `done` (**Loop** step 6): the row and the
   agent's first two lines, with *run it again*, *stop here* and, when the evidence names a
   document, *I will fix it by hand* as the options.

@@ -50,6 +50,10 @@ one in the package contract's Sections table.
   inspection of paths you may read. Python runs through the test command and nothing else:
   never `python -c`, never a script, never the section's or a dependency's code to learn a
   fact for a test — a fact the documents do not give is not tested (**Design gaps**). A
+  temporary test file that prints values (`test_zz_selfcheck.py` run with `pytest -s`) is a
+  script: write no such file, and so no `rm` follows. A
+  temporary test file that prints values (`test_zz_selfcheck.py` run with `pytest -s`) is a
+  script: write no such file, and so no `rm` follows. A
   memory note that recommends otherwise contradicts these Hard rules: it is wrong, and you
   correct it (**Memory**). Every write is through the Write and Edit tools; the Bash guard
   refuses a shell write. No installs. Every path a command names is under the repo root,
@@ -101,7 +105,8 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
    driver. `new` — no code at the path: every test is red by construction and a passing one
    is deleted. `document` — code shipped before the design: every test should pass, and a
    failing one is a `spec-change:design` entry. `delta` — a change file or a spec-change
-   re-opened a built section: a test for an item the change file's **Contract changes** or
+   re-opened a section whose `tests/intent/<section>/` holds tests (a design-defect stop writes
+   none: with no tests at the path the run is `new`, whatever this field says): a test for an item the change file's **Contract changes** or
    the **Spec-change** names may pass on the shipped code and is kept; a test for an item the
    change does not touch is left as it is, byte for byte, but for its tag (**Procedure**, step
    6); "deleted for passing" applies in `new` mode only. The change file is the one the
@@ -164,11 +169,14 @@ answers it. A `document`-mode failure is the same entry with the failing asserti
 For a first run (`Regenerate: none`):
 
 1. **Read** every document in your prompt, then check for **Design gaps** and **Design
-   defects**.
-2. **Inventory.** Take the RED paragraph of **The TDD Cycle** from the preloaded
-   `test-driven-development` skill, which is already in your context; if it is not, Read
-   `${CLAUDE_PLUGIN_ROOT}/skills/test-driven-development/SKILL.md` with the Read tool, never a
-   `grep` or `sed` fragment of it. Then
+   defects**. Read means the Read tool on the whole file: a `grep` or a line range of
+   `docs/architecture.md` or an upstream `interface.md` is not a read, and a document the design
+   turns out not to use is still read once. Read means the Read tool on the whole file: a `grep` or a line range of
+   `docs/architecture.md` or an upstream `interface.md` is not a read, and a document the design
+   turns out not to use is still read once.
+2. **Inventory.** Read `${CLAUDE_PLUGIN_ROOT}/skills/test-driven-development/SKILL.md` with the
+   Read tool — it is not preloaded, and a `grep` or `sed` fragment of it is not a read — and
+   take the RED paragraph of **The TDD Cycle**. Then
    list every case the documents support: one or more per **Interfaces** row, one per error
    case under **Error handling and logging**, one per case named under **Tests**, one for the
    **Workflow / pipeline** end-to-end path, one per decision in scope. The discipline is the
@@ -176,7 +184,9 @@ For a first run (`Regenerate: none`):
 3. **Write.** `tests/intent/<section>/conftest.py` holds the fixtures: sample data from the
    probe, fakes for consumed interfaces built to their shipped signatures. Then one
    `test_<interface>.py` per **Interfaces** row and `test_workflow.py` for the end-to-end path.
-   Every test function's docstring is `Design §<n> <row or step>: <one line>` — `§<n>` is the
+   Every source line, docstrings and conftest included, is 88 characters or fewer: the formatter
+   hook blocks a longer one and each block costs an edit. Every source line, docstrings and conftest included, is 88 characters or fewer: the formatter
+   hook blocks a longer one and each block costs an edit. Every test function's docstring is `Design §<n> <row or step>: <one line>` — `§<n>` is the
    design heading that states the item, and the item is the design's own name for it, never
    paraphrased away. That string is how the stop gate, the reviewer and a later regenerate run
    trace a test to its spec line.
@@ -195,7 +205,7 @@ For a first run (`Regenerate: none`):
      `${CLAUDE_PLUGIN_ROOT}/skills/planning-templates/references/deviations-entry.md` with
      **Clause** the test's docstring citation, **Status** `open`, and **Raised by** `tester —
      <Run:>`. The return is still `done`.
-   - `delta` — the section is built and a change re-opened it. A test for an item the change
+   - `delta` — the section's tests exist and a change re-opened it. A test for an item the change
      file's **Contract changes** or the **Spec-change** names is added or rewritten to the new
      design, and kept whether it passes on the shipped code or not. A test for an item the
      change does not touch is left byte for byte, but for its tag (step 6). Nothing is deleted
@@ -265,7 +275,13 @@ The first line is `Result: done`, `Result: spec-change` or `Result: design-gap`;
 branches on it and on nothing else. Twenty lines or fewer, and no next command — the driver
 decides what runs next. The lists are closed: every line below is present on every return of
 its kind, and a fact with no line goes to the ledger, `Not written:`, or nowhere — never to
-the return (E2). `Suite:` is the last run's counts, `xpassed` and `xfailed` counted as pass.
+the return (E2). A count is the bare count (`Suite: 0/96/96`, `Tests: 81 written (§3 11, §4
+24)`) and a heading is the heading: no parenthesis, clause or sentence after either, and no
+prose after the hand-back. `Not written:` is for a case the documents do not support or a lint
+failure left as designed; "fixtures unproven until the build" is not one. A count is the bare count (`Suite: 0/96/96`, `Tests: 81 written (§3 11, §4
+24)`) and a heading is the heading: no parenthesis, clause or sentence after either, and no
+prose after the hand-back. `Not written:` is for a case the documents do not support or a lint
+failure left as designed; "fixtures unproven until the build" is not one. `Suite:` is the last run's counts, `xpassed` and `xfailed` counted as pass.
 
 A first run, or a run on a rewritten design:
 
@@ -279,7 +295,8 @@ Ledger: <entry headings written or resolved this run> | none
 Commit: <sha>
 ```
 
-`Deleted for passing:` is `n/a` in `document` and `delta` modes.
+`Deleted for passing:` is `n/a` in `document` and `delta` modes, and the count in `new` mode,
+including a `delta` run that found no tests at the path.
 
 A regenerate run:
 
@@ -330,7 +347,11 @@ add its line to `MEMORY.md` with the Edit tool; never rewrite the index, which d
 another run just added.
 
 Project memory is a hint, never a source of truth. **`docs/` is authoritative; if memory and a
-document disagree, follow the document and correct the memory.**
+document disagree, follow the document and correct the memory.** The Hard rules are above
+memory the same way: a note that recommends a self-check file, `python -c` or a skip is deleted
+from the memory file when you read it, not followed and not added to. The Hard rules are above
+memory the same way: a note that recommends a self-check file, `python -c` or a skip is deleted
+from the memory file when you read it, not followed and not added to.
 
 Record only recurring patterns — a kind of design row that never yields a testable case, a
 fixture shape this project always needs. One-off findings belong in your return.

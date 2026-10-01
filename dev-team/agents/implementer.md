@@ -286,7 +286,9 @@ when the gate runs. You build no section and write nothing under `docs/`.
 0. **Read.** Everything **Inputs** names, `docs/decisions.md`, the ledger and the backlog
    lines, in that order, before any command that is not a read. On a FIX round or a delta
    build this step is not shorter: the reports or the change file come after these reads,
-   not instead of them.
+   not instead of them. Read means the Read tool on the whole file: a `grep` of
+   `docs/packages/<dep>/interface.md` for one name is not a read, and the README then lists it
+   as consumed only if it was read.
 
 1. **Run the intent suite.** When `Intent tests:` is not `none`, run it with the Toolchain's
    one-package test command pointed there (`uv run pytest tests/intent/<section> -q` from the
@@ -340,7 +342,8 @@ when the gate runs. You build no section and write nothing under `docs/`.
 4. **Security.** First decide, from `security-review`'s frontmatter description alone (no
    invocation needed for this part): does this section match any of the conditions that
    description lists? Its body, the **When to Activate** list included, is read only after a
-   match. If none match, say so in one line and move on.
+   match. If none match, say so in one line of the README's **Implementation notes** and move on; the
+   return has no security line.
 
    If one matches, **invoke the `security-review` skill with the Skill tool before you write
    the code it bears on** — do not answer from what you already recall about secure login
@@ -353,12 +356,14 @@ when the gate runs. You build no section and write nothing under `docs/`.
    forgetting from the inside.
 
    Concretely: call the skill, then run its **Verification** steps that apply to what you are
-   building, not just its FAIL/PASS examples. If your return message is about to contain a
-   security paragraph, that paragraph is only earned if a `Skill` call for `security-review`
-   actually happened first in this run — a security paragraph with no tool call behind it is
-   exactly the failure this step exists to catch. And every control the paragraph names is in
-   the code, and every check it names ran in this run with its command and result: "tested"
-   names the test, "clean" names the command that printed it.
+   building, not just its FAIL/PASS examples. What you conclude about security goes in the
+   README's **Implementation notes**, never in the return, and a conclusion there is only
+   earned if a `Skill` call for `security-review` actually happened first in this run — a
+   security paragraph with no tool call behind it is exactly the failure this step exists to
+   catch. And every control the paragraph names is in the code, and every check it names ran in
+   this run with its command and result: "tested" names the test, "clean" names the command
+   that printed it. A Verification step you did not run is said so there, in those words, not
+   dropped.
 
 5. **Resolve stale decision markers.** Run `grep -rn 'TODO(decision' <your section's path>`.
    For every marker found, re-read that `D<n>` entry in `docs/decisions.md`:
@@ -380,7 +385,9 @@ when the gate runs. You build no section and write nothing under `docs/`.
 
    For an external source, read its probe doc. For an `api`, copy `<source>.sample.json` into
    your section's test fixtures: the parser's tests run against a recorded response, never a
-   hand-written dict shaped like the design. For a `dataset`, the doc's **Observed schema** is
+   hand-written dict shaped like the design. A section that calls a library which fetches and
+   parses the response itself has no parser to test: copy no sample and say so in the README's
+   **Implementation notes**. For a `dataset`, the doc's **Observed schema** is
    what you load and validate against, and where it ran task fit the target column, the excluded
    leaking columns and the split are fixed there — build those as written, and never widen the
    feature set to a column the probe named under **Leakage**.
@@ -413,7 +420,10 @@ when the gate runs. You build no section and write nothing under `docs/`.
    commented, helpers extracted only when the jump buys something.
 
 9. **Test.** Write every test the design's **Tests** section lists under
-   `tests/unit/<section>/`, plus the fixtures it names. If one is impossible as written,
+   `tests/unit/<section>/` — integration and end-to-end cases too, whatever path the design
+   gives them: the write guard allows no other test path, and that is not a deviation — plus
+   the fixtures it names (a conftest the design puts at `tests/conftest.py` is the section's
+   own `tests/unit/<section>/conftest.py`; data files go under `tests/fixtures/`). If one is impossible as written,
    implement the closest equivalent and say so. Run the section's unit suite with the
    Toolchain's one-package test command, and `lint-imports`. The gate runs the same unit
    suite; a missing `tests/unit/<section>/` is a gate `FAIL`. Fix failures in your own code; a
@@ -451,7 +461,10 @@ when the gate runs. You build no section and write nothing under `docs/`.
     For the `surface` section it is `interface.md` instead.
 
 13. **Commit** (**Commit**), before you finish: the stop gate judges your section's paths as
-    committed and in the working tree.
+    committed and in the working tree. Before it, one pass over what the return will say:
+    the `TODO(decision` grep of step 5 ran in this run (a line "no markers" needs it), every
+    upstream `interface.md` was read, and the `security-review` Verification steps ran if the
+    skill was invoked.
 
 14. **Finish.** End with your return message; the stop gate runs. When it exits 2 you are not
     done: fix what it names, stage the fix, then look at `git log -1 --format=%s`. When the
@@ -654,7 +667,12 @@ rejects it; you never do. README item 7 cites it by heading. Continue the run.
 design item; `Said:` what it says, quoted; `Found:` the evidence, `file:line` or a README table row or a
 probe doc heading — not `Did:`; `Why:`; `Status: open`; `Raised by: implementer — <Run:>`;
 `Resolved by: —`. Then write the marker `.dev-team/stop/<pkg>/<section>` — first line
-`spec-change`, second line the entry heading — build nothing further from that point (a
+`spec-change`, second line the entry heading — one stop, one entry: a second defect you find
+after writing one is named in that entry's **Found**, never a second entry, because the
+marker, the driver and the tester carry one heading each. A `spec-change:test` entry already
+`open` in the ledger when you start is the previous stop's: build nothing, write the marker
+naming that entry (no new entry), and return `Result: spec-change` at step 1. Build nothing
+further from that point (a
 `spec-change:test` met at a save point stops the build there; what was built is committed and
 listed), commit the ledger and whatever was already built, and return `Result: spec-change`
 naming the entry. The driver routes it by level.
@@ -699,7 +717,8 @@ and you cannot stop until it is green:
   starts, is `TIMEOUT`, not `FAIL`. It does not hold you, since nothing you edit makes a
   package-wide suite faster; your own suites still fail on a hang;
 - a **Guarded** grep of what you added since the last review: an added `# noqa`,
-  `# type: ignore`, `# pragma: no cover`, skip, or an xfail naming no `D<n>`; a removed assert
+  `# type: ignore`, `# pragma: no cover`, an `@pytest.mark.skip`, or an xfail naming no `D<n>`
+  (a runtime `pytest.skip` the design itself names, on an unreachable service, is not Guarded); a removed assert
   or `pytest.raises`; a lowered threshold — unless an unexpired **Exceptions** row pardons it;
 - for the `surface` section, `status.py --surface <pkg>`.
 
@@ -733,7 +752,8 @@ a framework's error response, say) is claimed only when this run observed it. Wh
 check, you say you did not check. The list below is closed (the scaffold's block too): a fact with no line in it goes to
 the ledger (a design defect is a `spec-change:design`), the README's **Implementation notes**,
 or *needed from elsewhere* — never to the return as a new line or a paragraph, and never past
-the cap.
+the cap. A count is the bare count and a heading the heading: no parenthesis, clause or sentence
+after either, and no prose after the hand-back.
 
 The first report is the full one below. After a gate retry, end with an **amendment** instead,
 as your final text — never the full report again, which the caller already holds:
@@ -763,7 +783,9 @@ The full report, under 25 lines:
   anything still red (the gate lets that finish end the run, so this return is the last word);
   `not run` when no stop hook runs (a harness that says so); `not run (marker)` on a
   `blocked` or `spec-change` return
-- Deviations: the entry headings; Spec-change: the entry heading
+- Deviations: the entry headings; Spec-change: the entry heading — the heading alone, no
+  clause or reason after it; what a marker return left unbuilt has no line, the entry and the
+  next spawn carry it
 - `D<n>` applied this run, and `TODO(decision D<n>)` markers resolved
 - Markers left: `TODO(decision D<n>)` with their IDs, `TODO(probe <source>)`
 - Review findings addressed (`<finding> (test seen red: <test>)` for a bug); backlog lines

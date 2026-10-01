@@ -980,8 +980,9 @@ def section_state(pkg: str, section: str) -> tuple[str, str]:
             return "TEST", f"uncommitted: {_rel(design)}"
         return "TEST", f"design {_short(design_rev)} newer than tests {_short(intent_rev)}"
     if "spec-change:test" in kinds:
-        e = next(e for e in spec if e["kind"] == "spec-change:test")
-        return "TEST", f"open {e['heading']}"
+        # every open one, so Regenerate names them all: a tester resolves only the entries it is sent
+        heads = [e["heading"] for e in spec if e["kind"] == "spec-change:test"]
+        return "TEST", "open " + "; ".join(heads)
     approved = [e for e in deviation_entries(pkg, section) if e["kind"] == "deviation" and _status(e) == "approved"]
     if approved:
         docs = intent_docstrings(intent)

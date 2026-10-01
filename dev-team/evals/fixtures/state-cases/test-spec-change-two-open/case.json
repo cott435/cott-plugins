@@ -1,0 +1,17 @@
+{
+  "note": "two open spec-change:test entries: TEST, and the evidence names both so the tester is sent both (a tester resolves only the entries it is sent)",
+  "steps": [
+    {"do": "base"},
+    {"do": "design", "section": "ingest"},
+    {"do": "tests", "section": "ingest"},
+    {"do": "build", "section": "ingest"},
+    {"do": "deviation", "section": "ingest", "kind": "spec-change:test", "status": "open"},
+    {"do": "deviation", "section": "ingest", "kind": "spec-change:test", "status": "open", "clause": "design §5 other_item"}
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "TEST",
+    "evidence": "^open data/ingest — 2026-09-27 — spec-change:test — 1; data/ingest — 2026-09-27 — spec-change:test — 2$"
+  }
+}

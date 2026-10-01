@@ -150,7 +150,8 @@ cited the same way.
   corrected — the tester will test your document against this code, so a correction written
   as fact is a red test nobody asked for.
 - **`delta`** — an open change file names the section, or an open `spec-change:design` does
-  (`Spec-change:`). Read the existing design at `Write to:`, the `own:` README, and the change
+  (`Spec-change:`); the first line stays `Mode: delta` even when the section was never built —
+  the tester treats a `delta` with no tests at the path as `new`. Read the existing design at `Write to:`, the `own:` README, and the change
   file or the spec-change: the ledger entry's **Clause**, **Said** and **Found**, or the
   report's **Spec-change** line and the findings it cites. Apply the change file's **Contract
   changes**, or answer the spec-change, and rewrite the whole document. A spec-change says a
@@ -226,7 +227,9 @@ it truly does not apply, and say so in a line.
 6. **Error handling and logging** — what is logged, at what level, with what fields, using
    the repo contract's error format and log keys. Every error case names its exception type.
    What retries, what fails fast.
-7. **Tests** — concrete cases: unit, integration, one end-to-end path. Name the fixture data
+7. **Tests** — concrete cases: unit, integration, one end-to-end path, all of them under
+   `tests/unit/<section>/` (the implementer's write guard allows no other test path), with the
+   section's conftest at `tests/unit/<section>/conftest.py` and data under `tests/fixtures/`. Name the fixture data
    each needs. Check every case against the sections it tests (§3, §4): two cases that
    contradict each other, or one that names a different file or value than the step it
    exercises, is a design defect the tester stops on.
