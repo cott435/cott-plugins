@@ -189,9 +189,8 @@ forbid:
     # With SubagentHandback a caller receives an agent's first report and nothing after it
     # (plugin-anatomy, agents.md, What reaches its caller). An agent told to amend its report,
     # or a hook telling it to, writes text nobody reads; the outcome is in the gate's record.
-    # Phase 9 adds skills/**/*.md once the driver stops saying it takes the last hand-back.
     pattern: 'Amends:|hand back an amendment|takes your \*\*last\*\* turn|takes your last turn|its \*\*last\*\* hand-back'
-    files: ['agents/*.md', 'hooks/*.py']
+    files: ['agents/*.md', 'skills/**/*.md', 'hooks/*.py']
 
 # Every heading a reader parses is one the owner's template defines.
 headings:
@@ -422,6 +421,8 @@ headings:
                 'not done', 'letting the run stop']
       - file: agents/reviewer.md
         cites: ['header', 'commit', 'checks', 'result', 'pass', 'blocked', 'letting the run stop']
+      - file: skills/run-package/SKILL.md
+        cites: ['result', 'blocked', 'letting the run stop']
 
   - name: evidence forms the driver copies are ones status.py prints
     # The driver builds the tester's Regenerate field and the designer's and architect's
@@ -431,7 +432,7 @@ headings:
     owner_span: ['**Evidence.**', '**Gate record.**']
     readers:
       - file: skills/run-package/SKILL.md
-        cites: ['open', 'regenerate']
+        cites: ['open', 'regenerate', 'gate blocked', 'gate let through']
 
   - name: every field the driver sends the researcher is one the researcher's Inputs defines
     # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.
