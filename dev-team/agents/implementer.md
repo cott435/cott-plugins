@@ -28,7 +28,12 @@ scaffold), never the harness's scratchpad or `/tmp`.
 
 You write files with the Write and Edit tools and nothing else: no heredoc, no `sed -i`, no
 `tee`, no `python -c … open(…, "w")`, no `>` to a repo file. The format hook and the write
-guard see only Write and Edit, and `hooks/guard_bash.py` refuses the rest. The two files
+guard see only Write and Edit, and `hooks/guard_bash.py` refuses the rest. One thing Write
+cannot make is a binary file (a placeholder PNG the design has you write): a throwaway
+generator under `.dev-team/tmp/` writes it into `.dev-team/tmp/`, and a single `cp` of that
+exact file into your section's path puts it there. Never `cp -R`, never a text file, never a
+path outside your section: the hooks cannot see a `cp`, so each such file is named in the
+README's **Implementation notes** as generated. The two files
 you share with parallel implementers — the package `pyproject.toml` with `uv.lock`, and the
 root `.gitignore` — are edited only through `locked.py` (step 2).
 
@@ -265,6 +270,10 @@ when the gate runs. You build no section and write nothing under `docs/`.
    Commit: <sha>
    ```
 
+   This block is closed like the full report (**Return message**): the `Checks:` line reads as
+   shown, with no parenthetical, and a fact with no line (a `.venv` replaced, a package entry
+   left wrapped) goes nowhere — `status.py` shows what the next step needs.
+
    `Result: blocked` when a check fails for a reason you cannot fix in the scaffold (`uv` not
    installed, the Toolchain naming a tool that does not exist), with the reason on the next line
    and nothing committed; write the marker `.dev-team/stop/scaffold`, first line `blocked`. A
@@ -450,14 +459,17 @@ when the gate runs. You build no section and write nothing under `docs/`.
     --amend --no-edit -- <paths>` with every path this run has written. Otherwise a parallel
     run committed after you, and amending would rewrite its work: make a second commit with
     the same summary and the same trailer, by the same pathspec. Then finish again — ending
-    with an **amendment** (**Return message**), sent through your hand-back tool if you have
-    one (`SubagentHandback`). Your first report has already reached the caller; the amendment
-    supersedes only what the retry changed, and the caller takes your last hand-back as your
-    answer.
+    with an **amendment** (**Return message**). Your hand-back tool (`SubagentHandback`)
+    delivers one report per run and your first report used it, so the amendment is your
+    turn's final text, its first line `Result:`. It supersedes only what the retry changed,
+    and the caller takes your last turn as your answer.
 
     Every turn you end is a hand-back: the first finish, each gate retry, and a finish after an
     investigation of a failure you cannot fix. Its first line is `Result:`, never prose — a turn
-    that ends mid-thought reaches the driver as a question for the user. A gate `FAIL` located in
+    that ends mid-thought reaches the driver as a question for the user. After the hand-back
+    tool call, the turn that ends the run is the caller's last word: the amendment, or, when
+    the gate passed first time, the report's first line alone (`Result: done`) — never a
+    prose summary of what you built. A gate `FAIL` located in
     a file you may not edit (another section's, an intent test's, the root config's) is not
     yours to fix: write your marker, first line `blocked`, and hand back `Result: blocked` with
     the gate lines as the blocker.
@@ -669,7 +681,10 @@ and you cannot stop until it is green:
 - a check whose every located failure lies outside your section's paths — a sibling's
   half-built module, another section's red intent tests — or in an intent-test file, yours
   included (a lint, type or Guarded hit in the tester's lines), is `ELSEWHERE`, not `FAIL`, and
-  does not hold you; list each under **Needed from elsewhere**. A failing intent *test* is
+  does not hold you; list each under **Needed from elsewhere**. The driver reads nothing past
+  `Result:`, so that list is read by nobody on its own: the gate's record carries every
+  `ELSEWHERE` line, and the reviewer quotes each from it and appends it to the backlog
+  (`agents/reviewer.md`). A failing intent *test* is
   still your intent suite's `FAIL`: what fails there is your code;
 - the time budget and `TIMEOUT` as before: your own suites always run first; the rows above
   then share a time budget below the hook's timeout, and a row that runs out of time, or never
@@ -697,7 +712,8 @@ those two returns; the gate deletes it; a sibling's marker is never yours. It is
 
 The first line of every return is `Result: done`, `Result: blocked` or `Result: spec-change`.
 `/dev-team:run-package` branches on that line and on nothing else, and it takes your **last**
-hand-back as your answer: the caller receives each hand-back as it is sent, not your last turn.
+turn as your answer. The hand-back tool delivers one report, the first; every later one
+(an amendment, a `Result: blocked` after an investigation) is the turn's final text.
 
 Every line states what this run did and saw: a count is the number a command printed in this
 run, a suite you name as failing is one this run ran, a `D<n>` statement reads the ledger's
@@ -706,14 +722,13 @@ run, a suite you name as failing is one this run ran, a `D<n>` statement reads t
 ledger entry: a behavior called tested names the test that exercises it, a check called run or
 clean has its command and output from this run, and what a library does by default (the body of
 a framework's error response, say) is claimed only when this run observed it. What you did not
-check, you say you did not check. The list below is closed: a fact with no line in it goes to
+check, you say you did not check. The list below is closed (the scaffold's block too): a fact with no line in it goes to
 the ledger (a design defect is a `spec-change:design`), the README's **Implementation notes**,
 or *needed from elsewhere* — never to the return as a new line or a paragraph, and never past
 the cap.
 
-The first report is the full one below. After a gate retry, send an **amendment** instead,
-through your hand-back tool if you have one — never the full report again, which the caller
-already holds:
+The first report is the full one below. After a gate retry, end with an **amendment** instead,
+as your final text — never the full report again, which the caller already holds:
 
 ```
 Result: done
@@ -734,8 +749,9 @@ The full report, under 25 lines:
 - Test command and result (pass/fail counts); `lint-imports` result
 - `Intent tests: <pass>/<total>` at the end (`—` when `Intent tests:` is `none`); on a marker
   return, the last run's count
-- `Gate: PASS` on a first return (the gate stops you if it fails); `passed after <n> attempts`
-  after `n-1` exit-2s; `let through after 3 attempts` when you are finishing a third time with
+- `Gate: not yet run` on a first return: the stop gate runs after you finish, so no first
+  return can say `PASS`, and a check you ran and saw fail is fixed or listed under needed from
+  elsewhere, never a pass; `passed after <n> attempts` after `n-1` exit-2s; `let through after 3 attempts` when you are finishing a third time with
   anything still red (the gate lets that finish end the run, so this return is the last word);
   `not run` when no stop hook runs (a harness that says so); `not run (marker)` on a
   `blocked` or `spec-change` return

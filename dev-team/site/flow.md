@@ -181,7 +181,7 @@ upstream `interface.md`, a probe doc — wins over every plan-time document abou
 | `docs/decisions.md` | `sync_decisions.py` from the inboxes; architect (stubs); you, the driver or `pair` (`Decision:`, `Status:`) | every agent; `status.py`; documenter | never; retired by `superseded` |
 | `docs/packages/<pkg>/decisions/<section>.md` (the inbox) | designer (`D?` stubs), implementer (`Applied:`) | `sync_decisions.py`; `status.py --run-gate` | an entry not yet in `docs/decisions.md` (`sync_decisions.py --all` repairs) |
 | `docs/constraints.md` | `set-constraints`, you | the stop gate, `status.py --run-gate`, CI, reviewer (Measured, Exceptions), tester (coverage) | you change the bar |
-| `docs/followups.md` | reviewer (out-of-diff WARNINGs, defer), architect (map-repo defects) | the fix-round implementer (entries for its section), documenter, you | never counted, never a gate |
+| `docs/followups.md` | reviewer (out-of-diff WARNINGs, `ELSEWHERE` lines, defer), architect (map-repo defects) | the fix-round implementer (entries for its section), documenter, you | never counted, never a gate |
 | `docs/history/<date>-<name>.md` | architect, before every contract edit | you | never |
 | `docs/index.md`, `packages/*/README.md`, root `README.md` | documenter | you | a shipped document changed after it |
 | `.dev-team/gate/<pkg>/<section>.txt` | the stop gate; `gate_on_stop.py --report` (`pair` at wrap-up) | reviewer (its evidence) | the next implementer stop or `--report` run |

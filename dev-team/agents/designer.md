@@ -227,7 +227,9 @@ it truly does not apply, and say so in a line.
    the repo contract's error format and log keys. Every error case names its exception type.
    What retries, what fails fast.
 7. **Tests** — concrete cases: unit, integration, one end-to-end path. Name the fixture data
-   each needs.
+   each needs. Check every case against the sections it tests (§3, §4): two cases that
+   contradict each other, or one that names a different file or value than the step it
+   exercises, is a design defect the tester stops on.
 8. **Pitfalls and risks** — what will go wrong if not handled, ranked. In `document` mode,
    the defects the code has today.
 9. **Skills used** — the skills you invoked, one line each on what each governed; with no
@@ -295,6 +297,8 @@ Open questions: OQ-<pkg>-<section>-1 (assumption: …), …  | none
 Deviations: <count> under Contract deviations
 Commit: <sha>
 ```
+
+`Deviations:` is the count alone — no ledger path, no list of the entries.
 
 `stopped` — a decision the design cannot be written without; no design is written. Read
 `${CLAUDE_PLUGIN_ROOT}/skills/planning-templates/references/decisions-inbox.md` with the Read

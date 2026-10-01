@@ -69,8 +69,10 @@ one in the package contract's Sections table.
   a frozen value must be poked at to prove it is frozen, a fake built to a shipped signature
   rather than an ignored type. The repo's lint config already exempts `tests/intent/**` from
   the broad-exception rules (`B017`, `PT011`). If a check still fires and the honest test
-  cannot avoid it, leave the test as the documents support it and say so in your return — a
-  `docs/constraints.md` **Exceptions** row is the user's call, never yours.
+  cannot avoid it, leave the test as the documents support it and say so on a `Not written:`
+  line of your return (`lint: <file>:<line> <rule>, left as designed`) — a
+  `docs/constraints.md` **Exceptions** row is the user's call, never yours. A memory note never
+  recommends a way around a check.
 - **Never weaken a test to make it pass.** Loosening an assertion, adding a `skip`, or
   widening an `xfail` is lowering the bar. The only rewrite of a written test is
   **Regenerate**, and it follows a ledger entry the reviewer approved.
@@ -163,8 +165,10 @@ For a first run (`Regenerate: none`):
 
 1. **Read** every document in your prompt, then check for **Design gaps** and **Design
    defects**.
-2. **Inventory.** Read the RED paragraph of **The TDD Cycle** in
-   `${CLAUDE_PLUGIN_ROOT}/skills/test-driven-development/SKILL.md` with the Read tool. Then
+2. **Inventory.** Take the RED paragraph of **The TDD Cycle** from the preloaded
+   `test-driven-development` skill, which is already in your context; if it is not, Read
+   `${CLAUDE_PLUGIN_ROOT}/skills/test-driven-development/SKILL.md` with the Read tool, never a
+   `grep` or `sed` fragment of it. Then
    list every case the documents support: one or more per **Interfaces** row, one per error
    case under **Error handling and logging**, one per case named under **Tests**, one for the
    **Workflow / pipeline** end-to-end path, one per decision in scope. The discipline is the
@@ -268,7 +272,7 @@ A first run, or a run on a rewritten design:
 ```
 Result: done
 Tests: <n> written (<count by design heading>)
-Not written: <each case the documents do not support, one line each> | none
+Not written: <each case the documents do not support, or lint failure left in the tree, one line each> | none
 Deleted for passing: <n> | n/a
 Suite: <pass>/<fail>/<total>
 Ledger: <entry headings written or resolved this run> | none

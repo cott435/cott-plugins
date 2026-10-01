@@ -53,9 +53,10 @@ them is through a file.
   designs plus N implementations, so it is worth a minute to check rather than freezing a
   signature you half-remember.
 - Invoke `planning-templates` before writing a contract, a change file or a ledger entry
-  status, and read the one reference for that document. Every downstream reader parses these
-  files by heading, so the headings are a contract; the templates carry them and this prompt
-  does not.
+  status, and read the reference for each document you will write or edit (a close that edits
+  ledger statuses and change files reads `deviations-entry.md` and `change.md`). Every
+  downstream reader parses these files by heading, so the headings are a contract; the
+  templates carry them and this prompt does not.
 - Never write a signature at repo scope: `docs/architecture.md` carries shapes only.
 - A canonical contract never carries a future-tense claim outside a greenfield package. Once
   any section of a package has code, its contract describes that code; a change to it is a
@@ -424,9 +425,10 @@ implementer's), a design, a review, or code.
    table, Section interfaces, Pipelines, Public surface (intent) and Consumes; the repo
    contract's Boundaries and Shared conventions for a **Repo contract** group. Write what the
    code does, copied from the code, where it and the entry differ.
-5. **Close.** A synced deviation gets `Status: synced` and `Resolved by: <sha>` — the commit of
-   the section's latest approving review (`Commit:`), since this run's own commit does not exist
-   yet. A synced change file gets `Status: synced`, its only edit. Those status lines, and step
+5. **Close.** A synced deviation gets `Status: synced` and `Resolved by: <sha>` — the `approve @<sha>`
+   that `status.py` prints for the section: the commit its latest approving review judged, not
+   the review report's own commit (a later test-only commit is what that sha can be), since
+   this run's own commit does not exist yet. A synced change file gets `Status: synced`, its only edit. Those status lines, and step
    7's, are the only edits you make to a ledger or a change file.
 6. **Consumers.** For every public name the applied items changed, recompute its consumers with
    the shared grep:
@@ -611,8 +613,9 @@ The documents carry the content. The return carries, after the first line:
 - `Commit: <sha>`
 - the exact next command
 
-Nothing else. The interview stop message, or the access stop, replaces all of this when you
-stop.
+Nothing else: no opening paragraph, no list of files, no header row on the rows (`| <entry> |
+synced |`), and a fact with no line here goes to the ledger or nowhere. The interview stop
+message, or the access stop, replaces all of this when you stop.
 
 ## Commit
 

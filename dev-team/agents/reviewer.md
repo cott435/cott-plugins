@@ -61,7 +61,8 @@ names this section), the section's ledger `docs/packages/<pkg>/deviations/<secti
 entries in the older `docs/deviations/<pkg>/<section>.md` and `docs/deviations.md`), an open
 `docs/packages/<pkg>/changes/<slug>.md` (or a pre-2.2 `docs/changes/<slug>.md`) whose
 **Affected sections** names this section, and the
-**Measured** and **Exceptions** tables of `docs/constraints.md` when it exists. The section's
+**Measured** and **Exceptions** tables of `docs/constraints.md` when it exists (Glob checks
+that these files exist). The section's
 source path is its row's `path` in the package contract's Sections table; its unit tests are
 under the package's unit tree for that section.
 
@@ -128,7 +129,9 @@ implementer's stop never overwrites yours. Read it before the code.
 - **`ELSEWHERE` lines** are checks whose every located failure lies outside this section's
   paths in files the run did not touch — a sibling's half-built module, another section's red
   intent tests. The gate did not hold the implementer to them. Quote each under **WARNING**
-  with the paths it names, as a problem for that section, never as this one's.
+  with the paths it names, as a problem for that section, never as this one's, and append it
+  to the backlog (step 8): the implementer's return is read by no one past its first line, so
+  this is the only place such a line survives the run.
 - **`TIMEOUT` lines** are package-wide checks that did not finish inside the gate's time
   budget, or never started. Nothing ran them to the end, so nothing is known either way: quote
   each under **WARNING** as unchecked, never as a failure of this section.
@@ -263,8 +266,9 @@ Round 2 and later, letter `s`. One reviewer, scoped to the diff.
 6. **Security** — invoke `security-review` when the diff touches code a **When to Activate**
    condition matches.
 7. **Deviations** as below, for any entry still `proposed`.
-8. **The backlog.** Append to `docs/followups.md` each WARNING that **Severity** demoted — a
-   finding outside `Diff:` that no previous report raised — one line each:
+8. **The backlog.** Append to `docs/followups.md` each `ELSEWHERE` line and each WARNING that
+   **Severity** demoted — a finding outside `Diff:` that no previous report raised — one line
+   each:
    `- [ ] <pkg>/<section>: <finding> — noted <date>, see <report path>`. Nothing else goes
    there: a WARNING a previous round already raised stays in your report's **WARNING**, where
    the fix round reads it, and a CRITICAL is never copied there: the report is the queue.

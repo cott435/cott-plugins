@@ -668,9 +668,9 @@ def _retry_message(n: int, targets: list[tuple[str, str]], fails: list[str]) -> 
     msg.append("Every finish is a hand-back whose first line is `Result:`. A FAIL in a file you may not edit "
                "is not yours to fix: write your marker and hand back `Result: blocked` with these lines.")
     msg.append("When you finish, hand back an amendment, not the full report again: `Result:`, `Amends:`, "
-               "`Gate:`, `Fixed:` and the amended `Commit:` (implementer.md, Return message), through your "
-               "hand-back tool if you have one (SubagentHandback). The caller already holds your first "
-               "report and takes your last hand-back as your answer."
+               "`Gate:`, `Fixed:` and the amended `Commit:` (implementer.md, Return message), as your final "
+               "text: your hand-back tool delivers one report and your first report used it. The caller "
+               "already holds that report and takes your last turn as your answer."
                + (" This is your last retry: the next finish ends the run whatever the checks find, so "
                   "if anything is still red, write `Gate: let through after 3 attempts`." if n == 2 else ""))
     return "\n".join(msg)

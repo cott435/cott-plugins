@@ -258,17 +258,20 @@ granted *one more round* at a cap.
    - `spec-change` → nothing to relay: the entry is in
      `docs/packages/<pkg>/deviations/<section>.md` and `status.py` re-opens the step it names
      (PLAN, DESIGN or TEST), where the next block carries it.
-   - `blocked` or `stopped` → **Asking**, with the return as the question.
-   - a first line that is not `Result:` → re-run `status.py <pkg>`: if the row has moved past
-     the step's state (IMPLEMENT or FIX → REVIEW, DESIGN → TEST, TEST → IMPLEMENT, REVIEW →
+   - `blocked` or `stopped` → **Asking**, with the return as the question, whatever the next
+     `status.py` shows. An implementer can block after its commit (the gate's FAIL comes
+     after it), so the row may already read REVIEW; the marker the gate deleted is no
+     evidence either way.
+   - a first line that is not `Result:` — never a `blocked` or `stopped` one — → re-run
+     `status.py <pkg>`: if the row has moved past the step's state (IMPLEMENT or FIX → REVIEW, DESIGN → TEST, TEST → IMPLEMENT, REVIEW →
      DONE or FIX), note `<role> <section>: no Result: line; state advanced` for the
      **Summary** and go on; else **Asking**, with the return as the question. The state is on
      disk; a malformed last turn after a good commit is not a question for the user.
 6. **Re-derive.** `status.py <pkg>`, its whole output read as printed — never piped through
    a filter such as `head` or `tail`, and never narrowed to the sections you spawned: a filtered table
    hides a re-opened upstream section and the `shipped:` line. Print the rows whose state or
-   evidence changed, by comparing them with the rows you kept, and nothing in prose about
-   them. A row whose
+   evidence changed, by comparing them with the rows you kept, as the table prints them: no
+   label before a row and no sentence about it after. A row whose
    agent returned `done` this batch and whose state and evidence are exactly what they were
    before it ran did not move: spawning the same step again would repeat the same run. Send
    it to **Asking** instead, with the row and the agent's first two lines. Back to step 2.

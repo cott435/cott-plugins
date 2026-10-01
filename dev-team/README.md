@@ -167,7 +167,8 @@ last, then closes the package. It runs in your conversation and spawns every age
    items contradicting each other returns `spec-change` instead. A `spec-change` needs no
    relay: its entry is in `docs/packages/<pkg>/deviations/<section>.md`, and the next
    `status.py` re-opens the step it names.
-   `blocked` and `stopped` are asked.
+   `blocked` and `stopped` are asked, whatever row the next `status.py` shows: an implementer
+   can block after its commit, when the gate's FAIL comes.
 5. **Re-derive** and loop.
 6. **The close.** When every section is DONE, the architect runs as `sync-plan`: approved
    deviations and pending change files go into the contracts, each verified against the code.
@@ -255,7 +256,8 @@ the spec-change's level re-opened first.
   `docs/architecture.md`). A `repo`-scope pytest row is CI's: the record says `SKIPPED <row>:
   repo-scope pytest is CI's` and never runs it. A check whose every located failure lies
   outside the section's paths, or in an intent-test file (a lint, type or Guarded hit in the
-  tester's lines), is `ELSEWHERE`, not `FAIL`: the implementer may not edit there. A failing
+  tester's lines), is `ELSEWHERE`, not `FAIL`: the implementer may not edit there, and the
+  reviewer carries each such line to `docs/followups.md`. A failing
   intent test is still `FAIL`, since what fails is the code. An `xfail` cites a decision when
   its line holds a `D<n>` not followed by a digit (`D5:`, `D5_OPEN`).
   The package-wide rows share a time budget under the hook's timeout: a row that runs out of
@@ -402,7 +404,7 @@ CRITICAL is a closed list: a **break** (a contract, a decided `D<n>`, or a name 
 from a shipped document), a **wrong result** on the main path, a **security** finding, a
 **silent or unreasoned deviation**. Everything else is a WARNING or a SUGGESTION. A mechanical
 failure is never the reviewer's: the stop gate already ran it, and the reviewer runs no command.
-An out-of-diff finding on round 2+ is a WARNING appended to `docs/followups.md`, the backlog —
+An out-of-diff finding on round 2+, and each `ELSEWHERE` line, is appended to `docs/followups.md`, the backlog —
 work no loop step will pick up, never counted and never a gate. At the cap, **Running a
 package** says what happens.
 
