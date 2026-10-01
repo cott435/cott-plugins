@@ -12,6 +12,84 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [Unreleased]
+
+A run stops where the files say it should. From three audited runs (`site/notes/open_items.md`,
+items 1 to 20) and the defects the 2.2 ledger left open. Design:
+`site/notes/2.4-design.md`. Evidence: the `2.4-*` logs in `evals/`.
+
+### Changed
+
+- The stop gate's record names the commit it speaks for (`commit:` on line 2) and records a
+  marker stop as `result: blocked` or `result: spec-change` under the earlier attempt's lines.
+  `status.py` reads the record for the section's current commit: an implementer that blocked
+  or was let through after three attempts leaves the section BLOCKED, one that died between
+  attempts leaves it at IMPLEMENT; `next:` offers running the implementer again or reviewing
+  anyway. A stale, pre-2.4 or `--report` record changes nothing (9c917c7)
+- A ledger entry written since 2.2 stays open until the agent that answers it sets
+  `resolved`, whatever was committed since; PLAN and DESIGN evidence list every open heading,
+  as TEST already did. A re-probe that only adds lines to a shared probe doc no longer sends
+  built consumers back to DESIGN, and the researcher keeps the shared body byte for byte unless
+  an observation changed (1f3cdce)
+- `entry_point.py` adds one entry-point line to a package `pyproject.toml` under the `deps`
+  lock and runs `uv sync`; the Bash guard lets it through only under `locked.py deps` and only
+  for the caller's own package. The write guard stops a section, `surface` included, at its
+  siblings' paths and refuses a suppression comment added under `tests/intent/`. Both guards
+  act from `docs/brief.md` as well as `docs/architecture.md`, and a researcher may redirect to
+  scratch outside the repo (ab4d453)
+- `status.py --surface <pkg> --section <s>` checks one section README's name cells, and the
+  stop gate runs it for every section but `surface`. `shipped: yes` needs the package's
+  surface check to pass. Guarded counts removed asserts and `pytest.raises` net per test file,
+  reads a wrapped `xfail(` call to its closing bracket, and keeps ruff 0.15's `--> path:line`
+  locations (1fe4292)
+- The implementer hands back once and its return carries no check results; after a gate retry
+  it ends with the one line `Result: done`. It registers entry points through `entry_point.py`,
+  writes one exported name per README row, marks every line that hard-codes an open decision's
+  assumption, treats a false gate FAIL in its own file as a block, and commits what it built
+  before blocking. The kind table gains a test that fails before the code and a contract-stated
+  signature that is not public (d558190)
+- The designer takes several `Spec-change:` headings and resolves each; the design names its
+  `Upstream packages:`, the entry points it owns, and which open decisions bind the section;
+  no test case needs a subprocess, a skip or an unreachable service without its substitute.
+  The architect stages from `git status --short` and resolves each contract entry it is
+  handed. `status.py --fields` gains `upstream interfaces:`, and the tester, implementer and
+  reviewer get only the upstream interfaces their design consumes (3bb3ecb)
+- The tester reads its documents only, preloads `test-driven-development`, stops with
+  `spec-change:design` on a case the repo's lint or the no-skip rule forbids, writes a
+  decision assigned elsewhere as a `Not written:` line, removes a test file with `git rm`, and
+  returns the bare `Tests:` count. The reviewer grades a `blocked` gate record or a failing
+  surface check CRITICAL, and a departure with no entry CRITICAL even when the design
+  contradicts itself (7d5cf7a)
+- The driver branches on the first hand-back, asks about a gate-BLOCKED row (*run the
+  implementer again*, *review anyway*, *stop here*) and about a failing surface check (*fixed,
+  retry*, *stop here*; the close waits), sends every open heading of a level, ends the run on
+  a free-text answer, prints `uncommitted: docs/decisions.md` from git, and writes `none` for
+  an empty `builds with`. Its evals' runner is committed under `evals/runners/run-package/`
+  (131e40e)
+
+### What you will notice
+
+| Change | What to do |
+|---|---|
+| A section whose implementer blocked or was let through now shows BLOCKED with `gate …` evidence, and `/dev-team:run-package` asks about it | Answer the question, or type the `next:` line |
+| A package shipped under 2.3 whose surface check fails prints `shipped: no (surface check FAIL)` | Run `status.py --surface <pkg>` and correct the README rows it names: one exported name per row |
+| A README with grouped or dotted name cells fails its section's next gate | The same correction, in that section |
+| A 2.2-or-later ledger entry still `open` re-opens its step even though its document was committed since | Run `/dev-team:run-package <pkg>`; if it was in fact answered, set its `Status:` to `resolved` by hand |
+| A re-probe that only adds to a shared probe doc no longer sends built consumers back to DESIGN | Nothing |
+| A repo with `docs/brief.md` and no `docs/architecture.md` now has the write and Bash guards on | Nothing; a refusal names the rule |
+| An implementer's return no longer lists test or lint results | Read `.dev-team/gate/<pkg>/<section>.txt` |
+| A tester stops with `spec-change:design` on a test case the repo's lint forbids, where it used to rewrite the case | Nothing; the designer rewrites the case in the next batch |
+
+### Fixed
+
+- The stale retry string in the `gate-fail-attempt-1` hook-event case, the contract claim that
+  refused `plugin-dev:` commands, `documenter.json`'s API page path, and a duplicate row in
+  `evals/README.md`; every suite green from here (4799002)
+- Definition fixes from the 9ecf4176 audit, merged after 2.3.0 with no changelog entry:
+  several open `spec-change:test` entries reach the tester, one entry per implementer stop,
+  no security line in the return, `delta` on a never-built section, test paths under
+  `tests/unit/<section>/` (1e81553). First run against an agent in 2.4's phases 6 to 9.
+
 ## [2.3.0] - 2026-09-30
 
 Definition fixes from the audit of a real `run-package content` run (session `befb4798`, 2.2.0:

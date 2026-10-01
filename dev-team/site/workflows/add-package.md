@@ -16,7 +16,7 @@ The architect diffs the brief against `docs/history/brief-contracted.md` and tur
 into change items: the new package's row in the Packages table, its dependency-graph edge, the
 shapes crossing its boundaries. Each item is classified by the state of the package it touches
 — unplanned, planned (a `contract.md`), built (section code) or shipped (the `surface` section
-DONE):
+DONE and its surface check passing):
 
 - **EDIT** — the item touches only unplanned packages, or planned ones it can simply change.
   Applied to `docs/architecture.md`.
