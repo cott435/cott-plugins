@@ -206,8 +206,9 @@ every call and never stored:
 | **FIX n** | round `n` says `request changes`, under the cap, and nothing changed since |
 | **DONE** | the newest round approves and the code is not newer than its `Commit:` |
 
-A package is **shipped** when its `surface` section is DONE. A round is the set of reports
-sharing `-r<n>`; its verdict is the worst of them.
+A package is **shipped** when its `surface` section is DONE and `status.py --surface <pkg>`
+passes; a package whose check fails prints `shipped: no (surface check FAIL)`. A round is the
+set of reports sharing `-r<n>`; its verdict is the worst of them.
 
 ## Pairing on a section
 

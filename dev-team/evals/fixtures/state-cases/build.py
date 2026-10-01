@@ -69,6 +69,10 @@ Loads, cleans and stores the trade export.
 | clean | dedupe and sort | packages/data/src/data/clean/ | docs/packages/data/design/clean.md | — | ingest | — |
 | storage | persist to SQLite | packages/data/src/data/storage/ | docs/packages/data/design/storage.md | sqlite3 | clean | — |
 | surface | the package's pipelines (§4) and public surface (§5) | packages/data/src/data/ | docs/packages/data/design/surface.md | — | ingest, clean, storage | — |
+
+## Public surface (intent)
+
+- `load_trades`, realized by ingest, consumed by analysis
 """
 
 TRADES = """# trades — dataset
@@ -109,7 +113,7 @@ The {section} section.
 
 | name | signature | one-line use case | Public |
 |---|---|---|---|
-| {name} | {name}(path) | {section} the trades | {public} |
+| `{name}` | `{name}(path)` | {section} the trades | {public} |
 
 ## Pipeline / workflow
 

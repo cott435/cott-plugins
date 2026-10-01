@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Derive where every package and section stands from docs/ and the code. Nothing is stored.
 
-Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--repo]
+Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg> [--section <s>]] [--repo]
                           [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]
 
 A section is in exactly one state, decided in this order, first match wins:
@@ -79,9 +79,17 @@ A Sections `path` cell written as `…/<name>/` (or `.../<name>/`) is the defaul
 
 Ready: a section whose state is neither DONE nor BLOCKED and whose every in-package `depends
 on` is DONE. The `surface` row depends on every other row whatever its cell says.
-Shipped: the `surface` section is DONE. Rounds: the highest `n` over the section's review
-reports, at either location; a round's verdict is the worst of its
+Shipped: the `surface` section is DONE and `--surface <pkg>` passes; otherwise the block prints
+`shipped: no (surface <STATE>)` or `shipped: no (surface check FAIL)`. Rounds: the highest `n`
+over the section's review reports, at either location; a round's verdict is the worst of its
 reports (request changes > spec-change > approve); a report with no `-r<n>-` is round 1.
+
+`--surface <pkg> --section <s>` checks one section's README, the per-section half the stop
+gate runs for every section but `surface`: a row of **Entry points and interfaces** whose name
+cell is not exactly one backticked Python identifier, and a `Public: yes` name the contract's
+**Public surface (intent)** does not name as a whole word (skipped when it has no such item),
+are each one reason; it prints `surface names <pkg>/<s>: PASS`, `FAIL` with one `  - <reason>`
+line each (exit 1), or `n/a (no README)`.
 `--rounds <pkg>/<section>` prints a third line, `commit: <short sha>`, the newest commit
 touching the section's path, `tests/unit/<section>`, `tests/intent/<section>` and its README,
 or `commit: none` — the reviewer copies it as its report's `Commit:` (F12).
@@ -1229,6 +1237,8 @@ def next_command(pkg: str, table: list[dict[str, object]] | None = None) -> str:
         return f"/dev-team:run-package {pkg}"
     if any(r["state"] != "DONE" for r in table):
         return f"/dev-team:run-package {pkg}"
+    if shipped_line(pkg, table) == "shipped: no (surface check FAIL)":
+        return f"correct the README rows status.py --surface {pkg} names, then /dev-team:run-package {pkg}"
     if _to_sync(pkg):
         return f"/dev-team:sync-plan {pkg}"
     others = [name for name, _ in packages() if name != pkg]
@@ -1256,6 +1266,17 @@ def scaffold_needed(pkg: str) -> list[str]:
     return []
 
 
+def shipped_line(pkg: str, table: list[dict[str, object]]) -> str:
+    """The block's `shipped:` line: yes only when `surface` is DONE and `--surface <pkg>` passes.
+    The check runs only once `surface` is DONE."""
+    surface = next((r for r in table if r["section"] == "surface"), None)
+    if surface is None:
+        return "shipped: no (no surface row)"
+    if surface["state"] != "DONE":
+        return f"shipped: no (surface {surface['state']})"
+    return "shipped: yes" if surface_check(pkg)[0] == "PASS" else "shipped: no (surface check FAIL)"
+
+
 def package_report(pkg: str) -> list[str]:
     lines = [f"## {pkg}", "section · state · evidence · ready · round · open spec-change · last commit"]
     if not contract_path(pkg).exists():
@@ -1268,11 +1289,7 @@ def package_report(pkg: str) -> list[str]:
                                  str(r["spec"]), str(r["commit"])]))
     if needed := scaffold_needed(pkg):
         lines.append(f"scaffold: needed ({', '.join(needed)})")
-    surface = next((r for r in table if r["section"] == "surface"), None)
-    if surface is None:
-        lines.append("shipped: no (no surface row)")
-    else:
-        lines.append("shipped: yes" if surface["state"] == "DONE" else f"shipped: no (surface {surface['state']})")
+    lines.append(shipped_line(pkg, table))
     lines.append(f"next: {next_command(pkg, table)}")
     return lines
 
@@ -1461,11 +1478,63 @@ def _dunder_all(init: Path) -> set[str] | None:
 
 
 def _name_cell(row: dict[str, str]) -> str:
-    """A table row's name: the first backticked span of its `name` cell (`` `Trade` (`models.py`) ``
-    is `Trade`), else the cell up to its first `(`."""
+    """An interface.md **Public names** row's name: the first backticked span of its `name` cell
+    (`` `Trade` (`models.py`) `` is `Trade`), else the cell up to its first `(`. A section
+    README's rows are read by `_name_cells`."""
     raw = next((v for h, v in row.items() if "name" in h), "")
     m = re.match(r"\s*`([^`]+)`", raw)
     return (m.group(1) if m else raw.split("(")[0]).strip("`* ").strip()
+
+
+ONE_NAME = re.compile(r"^\s*`[A-Za-z_]\w*`\s*$")
+
+
+def _name_cells(row: dict[str, str]) -> tuple[list[str], str | None]:
+    """A README row's names: every backticked span of its `name` cell that is a Python identifier,
+    and a reason when the cell is not exactly one backticked identifier, else None.
+
+    One exported name per row: `` `load_trades`, `Trade` `` and `` `Loader.load` `` each give a
+    reason, and so does a file hint, `` `load_trades` (`__init__.py`) ``.
+    """
+    raw = next((v for h, v in row.items() if "name" in h), "")
+    names = [s for s in re.findall(r"`([^`]+)`", raw) if s.isidentifier()]
+    reason = None if ONE_NAME.match(raw) else f"{raw.strip()}: name cell is not one backticked identifier"
+    return names, reason
+
+
+def _public_intent(pkg: str) -> str | None:
+    """The body of the contract's **Public surface (intent)** item, or None when it has none."""
+    f = contract_path(pkg)
+    if not f.exists():
+        return None
+    text = f.read_text()
+    body = _item(text, "Public surface (intent)") or _item(text, "Public surface")
+    if not body:
+        return None
+    lines = body.splitlines()
+    if lines and lines[0].lstrip().startswith("#"):  # the heading line itself names nothing
+        lines = lines[1:]
+    return "\n".join(lines)
+
+
+def surface_names(pkg: str, section: str) -> tuple[str, list[str]]:
+    """(PASS | FAIL | n/a, reasons): one section README's **Entry points and interfaces** rows,
+    each name cell exactly one backticked identifier, and each `Public: yes` name one the
+    contract's **Public surface (intent)** names as a whole word."""
+    readme: Path = _paths(pkg, section)["readme"]  # type: ignore[assignment]
+    if not readme.exists():
+        return "n/a", []
+    intent = _public_intent(pkg)
+    fails = []
+    for er in table_rows(_item(readme.read_text(), "Entry points and interfaces"), ("name",)):
+        names, reason = _name_cells(er)
+        if reason:
+            fails.append(reason)
+        if intent is not None and col(er, "public").lower().startswith("yes"):
+            for name in names:
+                if not re.search(rf"(?<!\w){re.escape(name)}(?!\w)", intent):
+                    fails.append(f"{name}: Public: yes, not in the contract's Public surface (intent)")
+    return ("FAIL" if fails else "PASS"), fails
 
 
 def surface_check(pkg: str) -> tuple[str, list[str]]:
@@ -1502,8 +1571,12 @@ def surface_check(pkg: str) -> tuple[str, list[str]]:
         f = ROOT / r["path"] / "README.md"
         if f.exists():
             for er in table_rows(_item(f.read_text(), "Entry points and interfaces"), ("name",)):
-                if col(er, "public").lower().startswith("yes") and _name_cell(er):
-                    readmes.add(_name_cell(er))
+                names, reason = _name_cells(er)
+                if reason:
+                    fails.append(f"{pkg}/{r['section']} README: {reason}")
+                # Every name the cell holds counts, so a grouped cell's second name is not lost.
+                if col(er, "public").lower().startswith("yes"):
+                    readmes.update(names)
     for a, an, b, bn in ((all_names, "__all__", public, "interface.md Public names"),
                          (public - surface_own, "interface.md Public names", readmes, "README Public: yes rows"),
                          (readmes, "README Public: yes rows", all_names, "__all__")):
@@ -1537,9 +1610,11 @@ def repo_report() -> list[str]:
             continue
         table = package_table(pkg)
         done = sum(1 for r in table if r["state"] == "DONE")
-        surface = next((r for r in table if r["section"] == "surface"), None)
-        if surface and surface["state"] == "DONE":
+        shipped = shipped_line(pkg, table)
+        if shipped == "shipped: yes":
             pk.append(f"{pkg}: shipped")
+        elif shipped == "shipped: no (surface check FAIL)":
+            pk.append(f"{pkg}: building ({done}/{len(table)} DONE, surface check FAIL)")
         elif not any(_paths(pkg, str(r["section"]))["design"].exists() for r in table):  # type: ignore[union-attr]
             pk.append(f"{pkg}: planned")
         else:
@@ -1677,6 +1752,7 @@ def main() -> int:
     argv = sys.argv[1:]
     has_rounds, rounds_target = _flag_value(argv, "--rounds")
     has_surface, surface_pkg = _flag_value(argv, "--surface")
+    has_section, section_name = _flag_value(argv, "--section")
     has_gate, gate_pkg = _flag_value(argv, "--run-gate")
     has_inputs, inputs_target = _flag_value(argv, "--inputs")
     has_scaffold, scaffold_pkg = _flag_value(argv, "--scaffold")
@@ -1704,7 +1780,25 @@ def main() -> int:
         for f in fails:
             print(f"  - {f}")
         code |= 1 if fails else 0
-    if has_surface:
+    if has_section and not has_surface:
+        print("--section needs --surface <pkg>")
+        return 2
+    if has_surface and has_section:
+        if not surface_pkg or not section_name:
+            print("--surface needs a package and --section a section: status.py --surface <pkg> --section <s>")
+            return 2
+        if section_name == "surface":
+            print(f"--section surface is the package-wide check: status.py --surface {surface_pkg}")
+            return 2
+        if _row(surface_pkg, section_name) is None:
+            print(f"no section {section_name} in {_rel(contract_path(surface_pkg))}")
+            return 2
+        verdict, fails = surface_names(surface_pkg, section_name)
+        print(f"surface names {surface_pkg}/{section_name}: {verdict}" + (" (no README)" if verdict == "n/a" else ""))
+        for f in fails:
+            print(f"  - {f}")
+        code |= 1 if verdict == "FAIL" else 0
+    elif has_surface:
         if not surface_pkg:
             print("--surface needs a package: status.py --surface <pkg>")
             return 2

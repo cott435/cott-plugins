@@ -137,6 +137,24 @@ comment under `tests/intent/` (`guard-tester-noqa-write-refused`,
 existing `# noqa` passes (`guard-tester-noqa-existing-kept`) and an event with no text fails open
 (`guard-tester-no-text-allowed`).
 
+**The 2.4 gate checks** (`site/notes/2.4-05-gate-checks.md`). `build.py`'s README now has an
+**Entry points and interfaces** table with one row, `` `load_trades` ``, `Public: yes`, and the
+contract a **Public surface (intent)** item naming it, so every `data/ingest` record carries
+`PASS surface names data/ingest` (`gate-surface-names-pass`) and a grouped cell fails it
+(`gate-surface-names-grouped-fail`). Removed asserts are a net count per file and per kind:
+`gate-assert-rewritten-pass` rewrites the unit test's one assert (`load_trades(csv_file)` to
+`load_trades(str(csv_file))`) and passes, while `gate-assert-dropped-fail` deletes it
+(`(1 removed, 0 added)`) and `gate-raises-dropped-fail` replaces a `with pytest.raises(…)`
+block, committed under `prior`, with a plain call; all three put a round-1 review at
+`{RUN_SHA}`, so the diff starts there and has removed lines at all. A wrapped
+`@pytest.mark.xfail(` call is read to its closing bracket: `reason="D3 open"` two lines down
+passes (`gate-xfail-wrapped-pass`), `reason="later"` fails at the decorator's line
+(`gate-xfail-wrapped-no-decision-fail`). `gate-tail-ruff-arrow` stands a Floor row in for ruff
+0.15, printing ` --> <path>:3:1` under its message with three lines after it; the FAIL line
+keeps the arrow line. The command builds the path from two strings, so only the output, not
+the command echoed in the FAIL line, can hold it. No earlier case removed or rewrote an assert,
+so none changed its expectation.
+
 **The 2.2 layout here.** `build.py` still writes the section's ledger at the 2.0 path,
 `docs/deviations/data/ingest.md`, so the tolerated case also proves the gate reads the old
 location; the new one, `docs/packages/data/deviations/ingest.md`, is written by

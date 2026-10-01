@@ -1,0 +1,45 @@
+{
+  "note": "--surface --section (2.4 phase 5): a Public: yes name the contract's Public surface (intent) does not name",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "edit",
+      "path": "packages/data/src/data/ingest/README.md",
+      "message": "data/ingest: a public helper",
+      "replace": [
+        "| `load_trades` | `load_trades(path)` | ingest the trades | yes |",
+        "| `load_trades` | `load_trades(path)` | ingest the trades | yes |\n| `helper` | `helper()` | help | yes |"
+      ]
+    }
+  ],
+  "args": [
+    "--surface",
+    "data",
+    "--section",
+    "ingest"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "surface names data/ingest: FAIL",
+      "helper: Public: yes, not in the contract's Public surface (intent)"
+    ],
+    "absent": [
+      "load_trades: Public: yes"
+    ]
+  }
+}

@@ -62,6 +62,14 @@ design only when a design-time line is gone or reworded. `design-spec-change-ans
 without `— <k>`, so their `deviation` step is `"layout": "old"`; `design-probe-newer` rewords
 a shared line instead of appending one, which no longer re-opens anything.
 
+**Surface names and shipped (2.4).** Seven cases (`site/notes/2.4-05-gate-checks.md`, the last
+seven rows). `build.py` writes each section README's name cell as one backticked identifier
+and gives the contract a **Public surface (intent)** item naming `load_trades`, so a package
+whose `surface` is DONE passes `--surface` and `shipped` and `shipped-sync` still print
+`shipped: yes`. `--surface <pkg> --section <s>` checks one README: each name cell exactly one
+backticked identifier, each `Public: yes` name in the contract's intent. `shipped: yes` now also
+needs the package-wide check.
+
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
 section's entry does not make an existing design stale, per the design's *Stale when* for a
@@ -138,7 +146,7 @@ optional flag).
 | `fields-bad-target` | contract only | `--fields data/nope` | `no section nope in docs/packages/data/contract.md`; exit 2 |
 | `run-gate-stale-applied` | central D3 holds two `data/ingest` `Applied:` lines, the inbox one | `--run-gate data` | `run gate: FAIL`; `stale Applied: line — D3: Applied: data/ingest, 2026-09-27, …loader.py`; exit 1 |
 | `run-gate-stale-applied-other-section` | central D3 holds a `data/clean` line and the inbox's `data/ingest` line | `--run-gate data` | `run gate: PASS`; exit 0 |
-| `surface-name-cell-and-pipeline` | surface DONE; a README name cell `` `load_trades` (`__init__.py`) ``; `run_load` provided by `data.pipelines.load` with no README row (phase 12, the 12.7 stop) | `--surface data` | `surface: PASS` |
+| `surface-name-cell-and-pipeline` | surface DONE; a README name cell `` `load_trades` `` (2.4 phase 5: the file hint `` (`__init__.py`) `` is gone, since the one-name rule fails it); `run_load` provided by `data.pipelines.load` with no README row (phase 12, the 12.7 stop) | `--surface data` | `surface: PASS` |
 | `surface-section-name-no-readme-row` | the same with ingest's row `Public: no` | `--surface data` | `surface: FAIL`; `load_trades: in interface.md Public names, not in README Public: yes rows`; no `run_load` line; exit 1 |
 | `gate-blocked` | `base`, `design`, `tests`, `build`; a `blocked` record for ingest's current commit (2.4, phase 2) | `—` | `ingest · BLOCKED`, evidence `/^gate blocked: status\.py --surface data fails on a sibling README$/`; `next: /dev-team:run-package data ingest --step IMPLEMENT (run it again) or /dev-team:run-package data ingest --step REVIEW (review anyway)` |
 | `gate-let-through` | the same build; an `attempt 3` record, two `FAIL` lines, `result: letting the run stop after 3 attempts with 2 failures` | `—` | `ingest · BLOCKED`, evidence `/^gate let through after 3 attempts, 2 failures$/` |
@@ -159,3 +167,10 @@ optional flag).
 | `test-spec-change-one-resolved` | `base`, `design`, `tests`, `build`, two open `spec-change:test` entries in one commit, then a regeneration commit that sets only entry 1 `resolved` | `—` | `ingest · TEST`, evidence `/^open data/ingest — 2026-09-27 — spec-change:test — 2$/` |
 | `design-probe-added-lines` | `base`, `design`, then `- one timestamp out of order` appended to `docs/sources/trades.md` | `—` | `ingest · TEST`; absent `newer than design` |
 | `design-probe-title-date` | `base`, `design`, then the probe doc's title line given a date (the fixture's title has none) | `—` | `ingest · TEST`; absent `newer than design` |
+| `surface-names-pass` | `base`, `design`, `tests`, `build` for ingest: README row `` `load_trades` ``, `Public: yes` | `--surface data --section ingest` | `surface names data/ingest: PASS`; exit 0 |
+| `surface-names-grouped` | the same, the row's cell `` `load_trades`, `Trade` `` | the same | `surface names data/ingest: FAIL`; `` `load_trades`, `Trade`: name cell is not one backticked identifier ``; exit 1 |
+| `surface-names-dotted` | the same build, a second row `` `Loader.load` ``, `Public: no` | the same | FAIL, the same reason for `` `Loader.load` ``; no reason for `` `load_trades` ``; exit 1 |
+| `surface-names-not-in-contract` | the same build, a row `` `helper` ``, `Public: yes`, not in the contract | the same | `helper: Public: yes, not in the contract's Public surface (intent)`; exit 1 |
+| `surface-names-no-readme` | `base`, `design` for ingest, not built | the same | `surface names data/ingest: n/a (no README)`; exit 0 |
+| `surface-grouped-cell` | every row DONE; ingest's README has one row `` `load_trades`, `Trade` `` (written before ingest's review), both in `__all__` and **Public names** | `--surface data` | `surface: FAIL`; `data/ingest README:` with the cell reason; no line holding `Trade: in interface.md Public names, not in README`; exit 1 |
+| `shipped-surface-check-fail` | the same repo | `—` | `surface · DONE`; `shipped: no (surface check FAIL)`; `next: correct the README rows status.py --surface data names, then /dev-team:run-package data` |

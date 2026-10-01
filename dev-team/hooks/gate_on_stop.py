@@ -32,7 +32,9 @@ Input: the hook JSON on stdin (`cwd`, `agent_id`, `agent_type`, `stop_hook_activ
    Guarded sees only what was added since the last review, and no commit ordering is assumed.
    Untracked files under those paths count as added in full.
 5. Checks, every one run: the section's intent suite and its unit suite (`tests/unit/<section>`)
-   first, then the Guarded grep of the diff, then `status.py --surface` for `surface`; then
+   first, then the Guarded grep of the diff, then `status.py --surface` for `surface` and the
+   per-section name check, `status.py --surface <pkg> --section <section>`, for every section
+   but `surface`; then
    the Floor and Enforced rows of `docs/constraints.md` for the section's package — a `repo`
    row once, except a `repo` row whose command runs `pytest`, which is CI's and is written
    `SKIPPED <row>: … repo-scope pytest is CI's` (never run: it never finished inside any
@@ -47,9 +49,12 @@ Input: the hook JSON on stdin (`cwd`, `agent_id`, `agent_type`, `stop_hook_activ
    under `<pkg>/tests/intent/` is `ELSEWHERE` too, whether or not the run touched it: the tester
    owns those lines (a lint, type or Guarded hit there — a Guarded hit is written `ELSEWHERE
    guarded <item> at <path>:<n> (the tester's file)`). The intent suite's own failures stay
-   `FAIL` (or tolerated by a deviation), since what fails there is the code. An `xfail` cites a
-   decision when a `D<n>` not followed by a digit appears on its line (`D5:`, `D5_OPEN`). The
-   line stays in the record for the reviewer. The rows share what is left of a time budget below
+   `FAIL` (or tolerated by a deviation), since what fails there is the code. Guarded's removed
+   items are a test file that lost more `assert` lines than it gained, or more `pytest.raises`,
+   counted per file and per kind, so a rewritten or moved assert is not a removal. An `xfail`
+   cites a decision when a `D<n>` not followed by a digit appears anywhere in its call, read to
+   the closing bracket (`D5:`, `D5_OPEN`; a wrapped call over the following added lines, at
+   most twenty). The line stays in the record for the reviewer. The rows share what is left of a time budget below
    the hook's 600 s timeout (`DEV_TEAM_GATE_BUDGET`, default 540 s; each row at most
    `DEV_TEAM_GATE_TIMEOUT`, default 240 s). A row that runs out of time, or never starts because
    the budget is spent, is TIMEOUT, not FAIL: nothing the implementer edits makes a package-wide
@@ -162,9 +167,12 @@ def _run(cmd: list[str] | str, cwd: Path, timeout: int = TIMEOUT) -> tuple[int, 
 
 
 def _tail(text: str, n: int = 3) -> str:
-    """A failure's detail on one line: every `path:line` it names (up to ten), then its last n lines."""
+    """A failure's detail on one line: every `path:line` it names (up to ten), then its last n lines.
+
+    ruff 0.15 prints a location as ` --> path:line:col` under the message; the arrow is kept.
+    """
     lines = [line.strip() for line in text.strip().splitlines() if line.strip()]
-    located = [ln for ln in lines if re.match(r"[\w./-]+\.\w+:\d+", ln)][:10]
+    located = [ln for ln in lines if re.match(r"(?:-->\s*)?[\w./-]+\.\w+:\d+", ln)][:10]
     rest = [ln for ln in lines[-n:] if ln not in located]
     return " | ".join(located + rest) if lines else "no output"
 
@@ -520,6 +528,23 @@ def _thresholds(text: str) -> dict[str, list[float]]:
     return out
 
 
+def _xfail_call(path: str, n: int, text: str, added: dict[tuple[str, int], str]) -> str:
+    """An added `xfail` line from `xfail` on, read through to its closing bracket: when the line
+    leaves a `(` open, the following added lines of the same file with consecutive numbers are
+    joined, at most twenty, until the brackets balance. `ruff format` wraps a long decorator, so
+    the `D<n>` may sit on a later line. Lines not added in this diff are not read: the earlier
+    review saw them."""
+    depth = text.count("(") - text.count(")")
+    parts = [text]
+    k = n + 1
+    while depth > 0 and k <= n + 20 and (path, k) in added:
+        nxt = added[(path, k)]
+        parts.append(nxt)
+        depth += nxt.count("(") - nxt.count(")")
+        k += 1
+    return "\n".join(parts)
+
+
 def check_guarded(base: str, paths: list[str], pathspec: list[str] | None = None, before: str | None = None,
                   intent_elsewhere: bool = False) -> list[str]:
     """Guarded items on the lines added or removed since base (under pathspec when given); a
@@ -529,23 +554,32 @@ def check_guarded(base: str, paths: list[str], pathspec: list[str] | None = None
     exceptions = status.exceptions_rows()
     today = dt.date.today()
     lines = diff_lines(base, pathspec)
-    hits: list[tuple[str, str, int]] = []
-    added_by_file: dict[str, set[str]] = {}
-    for path, sign, _, text in lines:
-        if sign == "+":
-            added_by_file.setdefault(path, set()).add(text.strip())
+    hits: list[tuple[str, str, int, str]] = []
+    added: dict[tuple[str, int], str] = {(path, n): text for path, sign, n, text in lines if sign == "+"}
+    # Removed asserts are a net count per test file and per kind: a signature change rewrites
+    # every assert that calls the function, and a rewrite is not a removal. A moved, rewritten
+    # or split assert passes; a file that lost more than it gained fails, at its first removed line.
+    kinds = (("removed assert", lambda s: s.startswith("assert ")), ("removed pytest.raises", lambda s: "pytest.raises" in s))
+    counts: dict[tuple[str, str], list] = {}  # (path, kind) -> [removed, added, first removed line]
     for path, sign, n, text in lines:
         if not path.endswith(".py"):
             continue
         if sign == "+":
-            hits += [(name, path, n) for name, rx in ADDED if rx.search(text)]
-            if XFAIL.search(text) and not DECISION.search(text):
-                hits.append(("xfail without a D<n>", path, n))
-        elif _is_test(path) and (status.ROOT / path).exists() and text.strip() not in added_by_file.get(path, set()):
-            if text.strip().startswith("assert "):
-                hits.append(("removed assert", path, n))
-            elif "pytest.raises" in text:
-                hits.append(("removed pytest.raises", path, n))
+            hits += [(name, path, n, "") for name, rx in ADDED if rx.search(text)]
+            if (m := XFAIL.search(text)) and not DECISION.search(_xfail_call(path, n, text[m.start():], added)):
+                hits.append(("xfail without a D<n>", path, n, ""))
+        if _is_test(path) and (status.ROOT / path).exists():
+            for kind, holds in kinds:
+                if holds(text.strip()):
+                    c = counts.setdefault((path, kind), [0, 0, None])
+                    if sign == "-":
+                        c[0] += 1
+                        c[2] = n if c[2] is None else c[2]
+                    else:
+                        c[1] += 1
+    for (path, kind), (removed, gained, first) in counts.items():
+        if removed > gained:
+            hits.append((kind, path, first, f" ({removed} removed, {gained} added)"))
     if "docs/constraints.md" in paths:
         rev = before or base
         prior = status.git("show", f"{rev}:docs/constraints.md") if rev != EMPTY_TREE else None
@@ -554,18 +588,26 @@ def check_guarded(base: str, paths: list[str], pathspec: list[str] | None = None
             old, new = _thresholds(prior), _thresholds(after_file.read_text())
             for name, nums in old.items():
                 if name in new and any(b < a for a, b in zip(nums, new[name])):
-                    hits.append((f"lowered threshold {name}", "docs/constraints.md", 0))
+                    hits.append((f"lowered threshold {name}", "docs/constraints.md", 0, ""))
     out = []
-    for item, path, n in hits:
+    for item, path, n, note in hits:
         if _pardoned(item, path, exceptions, today):
-            out.append(f"PASS guarded {item} at {path}:{n} (Exceptions row)")
+            out.append(f"PASS guarded {item} at {path}:{n}{note} (Exceptions row)")
         elif intent_elsewhere and _is_intent(path):
-            out.append(f"ELSEWHERE guarded {item} at {path}:{n} (the tester's file)")
+            out.append(f"ELSEWHERE guarded {item} at {path}:{n}{note} (the tester's file)")
         else:
-            out.append(f"FAIL guarded {item} at {path}:{n}")
+            out.append(f"FAIL guarded {item} at {path}:{n}{note}")
     if not hits:
         out.append("PASS guarded: nothing in the diff")
     return out
+
+
+def check_surface_names(pkg: str, section: str) -> list[str]:
+    """The per-section half of the surface check, run for every section but `surface`: the
+    section README's name cells and its `Public: yes` names against the contract."""
+    code, out = _run([sys.executable, str(STATUS_PY), "--surface", pkg, "--section", section], status.ROOT, 60)
+    return ([f"PASS surface names {pkg}/{section}"] if code == 0
+            else [f"FAIL surface names: {' | '.join(ln.strip() for ln in out.strip().splitlines())}"])
 
 
 def check_surface(pkg: str) -> list[str]:
@@ -606,8 +648,7 @@ def run_checks(base: str, section: tuple[str, str]) -> tuple[list[tuple[str, str
     before = base if base != EMPTY_TREE else ("HEAD~1" if _own_head(pkg, sec) and status.git(
         "rev-parse", "--verify", "-q", "HEAD~1") else "HEAD")
     own += check_guarded(base, sorted(touched), spec, before, intent_elsewhere=True)
-    if sec == "surface":
-        own += check_surface(pkg)
+    own += check_surface(pkg) if sec == "surface" else check_surface_names(pkg, sec)
     lines = check_rows([pkg], touched, start + BUDGET, section)
     return [section], lines + own
 
@@ -628,6 +669,9 @@ def run_checks_legacy(base: str | None) -> tuple[list[tuple[str, str]], list[str
     for pkg, section in targets:
         own += check_intent(pkg, section)
     own += check_guarded(base, paths)
+    for pkg, section in targets:
+        if section != "surface":
+            own += check_surface_names(pkg, section)
     for pkg in sorted({pkg for pkg, section in targets if section == "surface"}):
         own += check_surface(pkg)
     lines = check_rows(pkgs, set(paths), start + BUDGET)

@@ -1,0 +1,86 @@
+{
+  "note": "--surface (2.4 phase 5): surface DONE; ingest's one README row holds `load_trades`, `Trade`, both in __all__ and Public names: the cell is a reason, and Trade is not lost",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "edit",
+      "path": "packages/data/src/data/ingest/README.md",
+      "message": "data/ingest: grouped name cell",
+      "replace": [
+        "| `load_trades` | `load_trades(path)` | ingest the trades | yes |",
+        "| `load_trades`, `Trade` | `load_trades(path)` | ingest the trades | yes |"
+      ]
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "reports": {
+        "a": "approve",
+        "b": "approve"
+      }
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "design",
+      "section": "surface"
+    },
+    {
+      "do": "tests",
+      "section": "surface"
+    },
+    {
+      "do": "build",
+      "section": "surface"
+    },
+    {
+      "files": {
+        "docs/packages/data/interface.md": "# data — interface\n\n## Public names\n\n| name | kind | signature | providing module | consumer | since |\n|---|---|---|---|---|---|\n| `load_trades` | function | `load_trades(path)` | `data.ingest` | analysis | 2026-09-27 |\n| `Trade` | class | `Trade` | `data.ingest` | analysis | 2026-09-27 |\n\n## Pipelines\n\n- none\n",
+        "packages/data/src/data/__init__.py": "\"\"\"data — the public surface.\"\"\"\n\n__all__ = [\"load_trades\", \"Trade\"]\n\n\ndef __getattr__(name):\n    if name in (\"load_trades\", \"Trade\"):\n        import data.ingest\n\n        return getattr(data.ingest, name)\n    raise AttributeError(name)\n"
+      },
+      "message": "data/surface: Trade public"
+    },
+    {
+      "do": "review",
+      "section": "surface",
+      "reports": {
+        "a": "approve",
+        "b": "approve"
+      }
+    }
+  ],
+  "args": [
+    "--surface",
+    "data"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "surface: FAIL",
+      "data/ingest README: `load_trades`, `Trade`: name cell is not one backticked identifier"
+    ],
+    "absent": [
+      "Trade: in interface.md Public names, not in README"
+    ]
+  }
+}

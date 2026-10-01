@@ -1,0 +1,32 @@
+{
+  "note": "--surface --section (2.4 phase 5): ingest's README row is one backticked identifier, Public: yes, named by the contract's Public surface (intent)",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    }
+  ],
+  "args": [
+    "--surface",
+    "data",
+    "--section",
+    "ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "surface names data/ingest: PASS"
+    ]
+  }
+}
