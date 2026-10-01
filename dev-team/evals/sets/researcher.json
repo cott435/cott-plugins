@@ -51,6 +51,31 @@
         "The return (the final message in `transcript.md`) is ten lines or fewer and gives the access status, the rows and columns profiled, whether it was a sample, the discrepancy count, the path, and the commit"
       ],
       "added_in": "remake phase 0, run from phase 3"
+    },
+    {
+      "id": 3,
+      "name": "dataset-reprobe-second-section-keeps-shared-lines-byte-for-byte",
+      "kind": "behavioral",
+      "baseline": "dev-team-v2.3.0",
+      "harness": null,
+      "prompt": "You are the dev-team researcher in probe mode, spawned by `/dev-team:run-package risk` at the PROBE step for a section whose contract row names a source that already has a probe doc. Your eight fields:\n\n- Kind: `dataset`\n- Source: `readmissions`\n- Purpose: the `risk` package's `slices` section reports the model's recall and precision per slice — per `region`, and per calendar quarter of `admitted_at` — and suppresses a slice with too few positives; the designer needs the region levels as they are spelled, the quarters the data spans, and the row count and the count of `readmitted_30d = 1` rows in each slice, and nothing about the features or the split.\n- Access: `evals/sets/files/researcher/readmissions.csv`, relative to the plugin directory holding this eval set (the one with `.claude-plugin/plugin.json` and an `evals/` directory).\n- Extracted skill: `none`\n- Section: `risk/slices`\n- Write to: `docs/sources/readmissions.md`\n- Run: `run-package risk`\n\nThe document at `docs/sources/readmissions.md` already exists: in this harness it is `evals/sets/files/researcher/readmissions.md` in the plugin directory holding this eval set, written on 2026-09-20 for the `risk/model` section. Its profile script and statistics file were not carried into the harness; recompute them.\n\nHarness rules: write every file you would write — the updated probe doc, the profile script, the statistics file — into `outputs/`, keeping its repo-relative path (`outputs/docs/sources/...`). Write nothing anywhere else, including scratch files. No scratch venv is needed: `python3` with pandas is on PATH. The Skill tool cannot load this project's skills in this harness, so invoking `planning-templates` means reading `skills/planning-templates/references/source-probe.md` under your plugin root, and invoking `git-workflow-and-versioning` means reading `skills/git-workflow-and-versioning/SKILL.md` under your plugin root; record in `transcript.md` that you read each. Where you would run `git add` and `git commit`, do not: write the exact commands you would run — the staged paths and the full commit message with its trailer — to `outputs/commit.txt`, and record the same in `transcript.md`.",
+      "expected_output": "the fixture probe doc with only its title date changed and one `## risk/slices` entry appended (plus, at most, added lines for new facts): every line of the shared body and the `## risk/model` entry byte for byte as the 2026-09-20 probe left them, and no **Changes since last probe**",
+      "files": [
+        "evals/sets/files/researcher/readmissions.csv",
+        "evals/sets/files/researcher/readmissions.md"
+      ],
+      "expectations": [
+        "`outputs/docs/sources/readmissions.md` exists, and every non-blank line of the fixture `evals/sets/files/researcher/readmissions.md` from its `## Access` heading through its `## Sections served` heading is present in it byte for byte and in the same order: no fixture line in that span is reworded, re-wrapped, re-ordered or dropped, and no table row has a cell changed (a line-by-line diff of the two files shows only added lines there, or none)",
+        "The two preamble lines under the title are the fixture's, byte for byte: the `Purpose:` line is still the one written for the `model` section (it does not name `slices` and is not replaced or extended with this run's purpose), and the `Profile: readmissions.profile.py · Statistics: readmissions.stats.json` line is unchanged",
+        "The title line reads `# Source probe — readmissions — dataset — <date>` where `<date>` is the run's date, not 2026-09-20, and is otherwise the fixture's title line",
+        "The `## risk/model` entry under **Sections served** is the fixture's, byte for byte: its heading, its two `Purpose:` lines, and its table's header and all nine column rows",
+        "**Sections served** gains exactly one new heading, `## risk/slices`, placed after the whole `## risk/model` entry; the first line after the heading states the purpose it was probed for (the slices section's purpose from the prompt); the entry lists `region`, `admitted_at` and `readmitted_30d`, each labelled `observed`, and does not list `age`, `systolic`, `cholesterol`, `site_version`, `full_name`, `email` or `notes`",
+        "The count of `readmitted_30d = 1` rows per region (east 4, north 4, south 10, west 8) and per calendar quarter (2025 Q1 9, Q2 3, Q3 6, Q4 7, 2026 Q1 1) is in the document, either inside the `## risk/slices` entry or as lines added under an existing heading after the lines already there; none of it is written into a line the fixture already had — the `region`, `admitted_at` and `readmitted_30d` rows of the **Observed schema** table and the paragraph under **Target** are the fixture's, character for character",
+        "The phrase `Changes since last probe` appears nowhere in `outputs/docs/sources/readmissions.md`, as a heading or as a line: no line was rewritten, and the added entry and any added line are not recorded as changes",
+        "outputs/ holds `docs/sources/readmissions.profile.py` and `docs/sources/readmissions.stats.json` beside the doc, and the statistics file carries this run's numbers for the 246 rows, `region`, `admitted_at` and `readmitted_30d` among its columns",
+        "`transcript.md` shows the profile script was run against `readmissions.csv` in this run, before the doc was written: the shared lines were kept after a real re-probe, not by skipping it"
+      ],
+      "added_in": "2.4 phase 0, run from phase 3"
     }
   ]
 }
