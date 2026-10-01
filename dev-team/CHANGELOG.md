@@ -12,6 +12,43 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [2.3.0] - 2026-09-30
+
+Definition fixes from the audit of a real `run-package content` run (session `befb4798`, 2.2.0:
+13 errors, 17 warnings, 26 notes). Evidence: `evals/2026-09-30-audit-run-package-befb4798.md`,
+`evals/2026-09-30-audit-fixes-definition-faults.md`, `evals/2026-09-30-audit-fixes-e5-e12.md`.
+Contracts 43/43; no behavioral re-run of the changed agents.
+
+### Changed
+
+- `run-package`: a `blocked` or `stopped` return is asked about whatever row the next `status.py`
+  shows, since an implementer can block after its commit; the driver prints changed rows as the
+  table does, with no label or sentence (d000f3f)
+- The reviewer appends each `ELSEWHERE` line to `docs/followups.md`, the one place a lint or type
+  hit in the tester's lines survives the run (d000f3f)
+- A conformance reviewer reads every file under `Intent tests:` before its first Coverage row,
+  names them in `Scope:`, and gives each design **Tests** case its own row (772a499)
+- The implementer's first return says `Gate: not yet run`, not `Gate: PASS`: the stop gate runs
+  after the return (d000f3f)
+- A gate-retry amendment is the implementer's final text, not a second `SubagentHandback` call,
+  which delivers one report; the gate's retry message says the same (d000f3f)
+- The scaffold return is a closed list too; the tester reports a lint hit it left in the tree on
+  a `Not written:` line; the designer's `Deviations:` is the count alone; the architect's
+  return has no opening paragraph or header row (d000f3f)
+- The implementer's one route for a binary file Write cannot make: a generator under
+  `.dev-team/tmp/` and a single `cp` of that file, named in the README (d000f3f)
+- The surface section's one route when `mkdocs build --strict` fails on a sibling docstring's
+  cross-reference: `members` and one `mkdocs.yml` setting, each a `proposed` deviation (772a499)
+- The architect reads the reference for each document it edits, and `Resolved by:` is the
+  section's `approve @<sha>` (d000f3f)
+- The tester takes the RED paragraph from its preloaded skill; the designer checks each **Tests**
+  case against the sections it tests (d000f3f)
+
+### Added
+
+- `attr_list` in the scaffold's `mkdocs.yml`, so a docstring anchor resolves under `--strict`
+  (772a499)
+
 ## [2.2.0] - 2026-09-30
 
 Implementers in parallel; the per-section documents under their package. Evidence:
