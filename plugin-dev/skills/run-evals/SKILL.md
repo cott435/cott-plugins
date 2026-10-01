@@ -59,15 +59,18 @@ a plan runs them once, before anything depends on them.
 }
 ```
 
-- `baseline` is `none` (a new target — the baseline runs without it), `previous` (the target
+- `baseline` is `none` (a new target — the baseline runs without it), `previous` (the plugin
   as of the commit the current work started from: `git merge-base HEAD <default branch>`
   when on another branch, otherwise HEAD, the parent of uncommitted work), or an explicit git
-  ref.
+  ref. `references/eval-kinds.md` **Baselines** says where the default branch is looked for
+  and what `S init` warns about.
 - `harness` is optional, and required for a target that asks the user anything: a file of
   scripted answers the executor uses in place of the user.
 - Every expectation is observable in `outputs/` or `transcript.md` — a file exists, contains
   a thing, a count is under a limit, the chat message does or does not do something. "Is
-  good quality" is not an expectation.
+  good quality" is not an expectation. One that can only be checked in the transcript —
+  what was read, asked, run or said — names `transcript.md`: that word is how `S blind`
+  knows to withhold it from a comparator, which sees `outputs/` only.
 - `"runs": N` on an eval runs each configuration N times; the default is one.
 - Paths are relative to the plugin directory.
 
@@ -84,7 +87,8 @@ skill-creator's default `<skill>-workspace/` sibling would be picked up by
 
 ```
 evals/workspace/<target>/iteration-N/
-├── baseline-snapshot/                   git archive of the target's directory at the baseline ref
+├── manifest.json                        what `S init` printed
+├── baseline-snapshot/                   git archive of the whole plugin, minus evals/, at the baseline ref
 ├── eval-<id>-<name>/
 │   ├── eval_metadata.json               {eval_id, eval_name, prompt, assertions}
 │   ├── with_skill/
@@ -100,18 +104,45 @@ snapshot at a ref) or `without_skill` (`baseline: none`). These are skill-creato
 agents use them too, since its benchmark labels configurations by them. Iterations are kept:
 the next one is compared against the last.
 
+`manifest.json` and both copies of `eval_metadata.json` hold the expectations, and
+`evals/sets/` holds them too. No executor may read any of them; the executor prompt says so.
+
+## The model
+
+Every agent this skill spawns — executor, grader, comparator — runs on Sonnet 5.5, unless
+the user names another model for the run. In the Agent tool that is `model: "sonnet"`. In a
+headless `claude -p` run it is `--model claude-sonnet-5-5`, the full ID: `--model sonnet`
+is Sonnet 5 there (`plugin-anatomy`'s `references/agents.md`, **Model names**). The log
+names the model each kind of agent ran on.
+
 ## The behavioral loop
 
 1. `python3 S validate evals/sets/<target>.json`
 2. `python3 S init . <target> [--evals 1,2,3] [--baseline REF]` — prints a JSON manifest
    (also saved as `manifest.json` in the iteration): the iteration path, the baseline ref,
-   the skill-creator directory or null, and one entry per run with `run_dir`,
-   `outputs_dir`, `prompt`, `harness`, `target_file` and `expectations`.
+   `baseline_plugin_root` (the snapshot's copy of the plugin, or null), `warnings`, the
+   skill-creator directory or null, and one entry per run with `run_dir`, `outputs_dir`,
+   `prompt`, `harness`, `target_file`, `plugin_root` and `expectations`. A warning is also
+   printed to stderr. Read each one out and settle it before spawning anything: a baseline
+   that fell back to HEAD, or one identical to the working tree, compares the target with
+   itself — rerun `init` with `--baseline <ref>` unless the user says the baseline is right.
 3. Spawn every run in the manifest **in one message**, with-target and baseline together,
-   each a general-purpose subagent given the executor prompt below. As each finishes,
-   `python3 S timing <run_dir> --tokens N --duration-ms N` from its completion notice —
-   the only place those numbers exist.
-4. One grader per run, prompt below, all in one message.
+   each a general-purpose subagent given the executor prompt below — at most 20 running at
+   once (`plugin-anatomy`, `references/agents.md`); start the rest as slots free. As each
+   finishes, `python3 S timing <run_dir> --tokens N --duration-ms N` from its completion
+   notice — the only place those numbers exist.
+   **An executor ended by an error is rerun once.** A run that ends on an API error (a
+   dropped connection, an overload, a safeguard refusal), not on its own two-line summary,
+   has no result: empty `<run_dir>/outputs/`, delete `<run_dir>/transcript.md`, spawn the
+   same prompt again, and take `timing` from the rerun. A second error ends it — the run is
+   recorded as not run, is left out of the pass rate, and the log names it and the error.
+   Partial outputs are never graded. A run that broke a harness rule (it read the
+   expectations, or worked in another run's directory) is void and rerun the same way.
+4. One grader per run, prompt below, all in one message, once every executor has finished.
+   Nothing a grader needs — a prompt saved to a file, a list of expectations — is written
+   into a run directory or anywhere an executor's rules let it read while an executor is
+   still running; a staged grader prompt goes in the session scratchpad, outside the
+   iteration.
 5. `python3 S finalize <iteration-dir>` — the grader copies `timing` into `grading.json`,
    which hides `timing.json` from the benchmark's token count; this drops the copy. Then,
    from the skill-creator directory: `python3 -m scripts.aggregate_benchmark
@@ -125,22 +156,37 @@ the next one is compared against the last.
 
 The executor prompt, verbatim with `<…>` filled:
 
-> You are testing `<target>` by executing it. Read `<target file, or the snapshot's copy
-> for the baseline>` and follow it as if the user had typed: `<prompt>`. The repo is
-> `<repo root>`.
+> You are testing `<target>` by executing it. Your first tool call is the Read tool on
+> `<target_file>`; no other command comes before it, and you read every file with Read.
+> Follow that file as if the user had typed: `<prompt>`. The repo is `<repo root>`.
+> Your plugin root is `<plugin_root>`. Wherever the target says `${CLAUDE_PLUGIN_ROOT}`, or
+> names another file of its plugin — a skill, an agent, a script, a template — use the copy
+> under that directory and no other copy.
 > Harness rules — these override the target where they conflict:
 > - There is no live user. Wherever the target would ask, write the question and its
 >   options to `outputs/interview.md`, then answer from `<harness>` (or the option marked
 >   Recommended when it does not cover the question) and continue.
 > - Do not publish, commit, push, create branches, or write anywhere in the repo. Write
 >   whatever you would publish or write into `<outputs_dir>` instead.
+> - Read nothing under `<iteration>` except your own run directory `<run_dir>` — and
+>   `baseline-snapshot/` when your plugin root is inside it — and nothing under
+>   `<plugin dir>/evals/sets/` except what this prompt or the harness file names. What your
+>   run is graded on is kept in both, and a run that reads it is thrown away.
+> - Any copy of a repo or fixture you work on goes in a directory you create yourself with
+>   `mktemp -d` (`mktemp -d <scratchpad>/eval.XXXXXX` when the session has a scratchpad),
+>   never at a path another run could share. Delete nothing you did not create.
 > - Keep `<run_dir>/transcript.md`: each step, what you read, what you decided, and your
 >   final message to the user.
 > - Stop at the target's first approval point, or when the task is done.
 > Reply with a two-line summary.
 
-For a `without_skill` baseline the first sentence becomes "Do the following task as you
-would without any special instructions:" and no target file is named.
+`<target_file>` and `<plugin_root>` are the run's own manifest values: for `with_skill` the
+working tree's, for `old_skill` the copies under `baseline-snapshot/`, so the baseline runs
+the old version of every file of the plugin it reads, not only of the target.
+
+For a `without_skill` baseline the first two sentences become "Do the following task as you
+would without any special instructions: `<prompt>`", and the plugin-root paragraph is
+dropped: no target file and no plugin root are named. The harness rules stay.
 
 The grader prompt, verbatim with `<…>` filled:
 
@@ -243,17 +289,23 @@ python3 S blind <iteration-dir>
 
 That stages each eval's two output directories as `eval-*/blind/A` and `eval-*/blind/B` in a
 random order, writes which is which to `eval-*/blind/key.json`, and prints one entry per eval
-with `eval`, `a_dir`, `b_dir`, `prompt`, `expected_output` and `expectations`. The key is in
-neither what it prints nor any prompt below.
+with `eval`, `a_dir`, `b_dir`, `prompt`, `expected_output`, `expectations` and
+`withheld_expectations`. The key is in neither what it prints nor any prompt below.
+
+The comparator sees the two `outputs/` copies and no transcript, so `expectations` is the
+eval's list without the ones that name the transcript, and `withheld_expectations` counts
+those: handed over, each would fail for both sides and say nothing. The graders have already
+checked them with the transcript in hand.
 
 One comparator per eval, all in one message, each a general-purpose subagent:
 
 > Read `<skill-creator>/agents/comparator.md` and follow it. output_a_path: `<a_dir>`.
-> output_b_path: `<b_dir>`. eval_prompt: `<prompt>`. expectations: `<the eval's expectations
-> as a JSON list>`. The output the task should have produced, for context:
+> output_b_path: `<b_dir>`. eval_prompt: `<prompt>`. expectations: `<the entry's
+> expectations as a JSON list>`. The output the task should have produced, for context:
 > `<expected_output>`. Write your comparison to `<eval dir>/blind/comparison.json` in the
 > shape that file defines. Read nothing else under the iteration directory — A and B are all
-> you are given.
+> you are given. You have no transcript: an expectation you cannot check from A and B alone
+> is left out of your results, not failed for both.
 
 Read `comparator.md` first: it owns its input names and the shape of `comparison.json`, and
 if the file has moved on from this prompt, follow the file and record the difference as a
@@ -292,6 +344,7 @@ The log says "graded inline — skill-creator not found".
 
 ## Record
 
-Invoke `log-eval` with the set file, the eval IDs, the iteration directory, the baseline ref
-and both pass rates, before reporting results anywhere else. `evals/workspace/` is never
+Invoke `log-eval` with the set file, the eval IDs, the iteration directory, the baseline ref,
+both pass rates, the model the executors, graders and comparators ran on, and any run that
+was rerun or recorded as not run, before reporting results anywhere else. `evals/workspace/` is never
 committed; the set and the log are.

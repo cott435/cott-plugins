@@ -43,7 +43,9 @@ the log as the source.
 | Symptom | Rule | Source |
 |---|---|---|
 | An agent needs a user decision and stalls or guesses | Subagents and forked skills never get `AskUserQuestion`. Return the question; the workflow skill asks. | `agents.md` |
-| A fan-out of 30 agents does not all start | Concurrency is limited (20 by default [unconfirmed]); batch the fan-out and say so in the design. | `agents.md` |
+| A fan-out of 30 agents does not all start | At most 20 subagents run at once. The 21st spawn fails ("Concurrent subagent limit reached. You can run 20 subagents at once.") and is not queued. Batch the fan-out, start the rest as slots free, and say so in the design. | `agents.md` |
+| A caller acts on an agent's `done` although the agent went on and ended blocked | With `SubagentHandback`, only the agent's first hand-back reaches its caller; a second call is refused and later text reaches nobody. Hand back only when nothing after it can change the answer, or carry the outcome in a file the caller reads. | `agents.md` |
+| A hook inside a subagent finds none of the agent's own records in `transcript_path` | That path is the parent session's. The subagent's transcript is `<transcript_path minus .jsonl>/subagents/agent-<agent_id>.jsonl`; `SubagentStop` also gives it as `agent_transcript_path`. | `hooks.md` |
 | A deep agent cannot delegate | Subagents nest three layers below the main conversation; at the limit there is no `Agent` tool. | `agents.md` |
 | A wide fan-out uses far more context than expected | `skills:` preloads full content into every instance. Preload only what every run needs. | `composition.md` |
 | An agent does not follow the project's `CLAUDE.md` | It loads its own `CLAUDE.md` hierarchy from its working directory, or none with `omitClaudeMd`. Put what it needs in its file or its skills. | `agents.md` |
@@ -56,4 +58,6 @@ the log as the source.
 | Renaming an MCP server breaks agents | Tool names include the server name; agents' `tools` lists and hook matchers name them. Hold them together with a contract. | `mcp.md` |
 | Two skills with the same name | Which wins is [unconfirmed]. Avoid the collision; the plugin prefix keeps plugin skills apart from each other, not necessarily from project or user skills. | `skills.md` |
 | An agent in a subfolder is not found by its short name | Subfolders of `agents/` add name segments (`my-plugin:review:security`). | `agents.md` |
+| A subagent cannot write `analysis.md`, `REPORT.md`, `summary-2026.md` or `findings.md` | Claude Code refuses a subagent's Write of any `.md` whose file name starts `analysis`, `report`, `summary` or `findings`, in any case and in any directory. Give a file an agent must write another name: `docs/api/<pkg>/index.md`, not `docs/api/analysis.md`. Whether Edit or a shell write is refused too is [unconfirmed]. [proven: dev-team/evals/2026-09-28-remake-phase11-bundle.md, Claude Code 2.1.270; dev-team/evals/2026-09-30-2.2-run-fixes.md, `docs/api/analysis.md`] | `edge-cases.md` |
+| A headless run is on an older model than the alias suggests | `claude -p --model sonnet` was Sonnet 5 in CLI 2.1.283 while the Agent tool's `sonnet` was Sonnet 5.5. Pass the full model ID and check the transcript's `model`. | `agents.md` |
 | `claude plugin eval` picks up the wrong files | It treats any directory under `evals/` with `prompt.md` or `case.yaml` as a case. Keep its cases in their own eval directory. | `manifest.md` |

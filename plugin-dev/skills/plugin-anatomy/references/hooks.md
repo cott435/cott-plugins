@@ -89,6 +89,16 @@ failure cases too.
 - `SubagentStart`/`SubagentStop` match on agent type, such as `^my-plugin:reviewer$`. [docs]
 - Every event's input carries `cwd`, `session_id`, `transcript_path`, `permission_mode`,
   `hook_event_name`, and inside a subagent `agent_id` and `agent_type`. [docs]
+- Inside a subagent, `transcript_path` is still the **parent** session's file. The
+  subagent's own transcript is `<transcript_path minus .jsonl>/subagents/agent-<agent_id>.jsonl`,
+  with `agent-<agent_id>.meta.json` beside it (`agentType`, `description`, `toolUseId`). Its
+  first `type: "user"` record is the spawn prompt, verbatim. Later `user` records are
+  `isMeta` (the preloaded skills, stop-hook feedback), so a hook that wants the prompt
+  reads the first one only. [proven: dev-team/evals/2026-09-29-2.2-platform-facts.md, F1 and
+  F2, a `PreToolUse` event, Claude Code 2.1.285]
+- `SubagentStop` carries that path itself, as `agent_transcript_path`, beside
+  `last_assistant_message` and `stop_hook_active`. `PreToolUse` does not, so a guard derives
+  it as above. [proven: dev-team/evals/2026-09-27-remake-platform-facts.md, PF-2, 2.1.270]
 
 ## Scope it
 

@@ -19,6 +19,7 @@ import glob
 import json
 import os
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -168,42 +169,80 @@ def cmd_validate(args):
 
 # ---------------------------------------------------------------- init
 
+# Where `previous` looks for the default branch, after origin/HEAD. A clone made for one
+# branch (a cloud session, a CI checkout) often has no local main and no origin/HEAD, only
+# the remote-tracking branch.
+DEFAULT_BRANCHES = ("main", "master", "origin/main", "origin/master")
+
+
 def default_branch(root):
     r = git(root, "symbolic-ref", "--short", "refs/remotes/origin/HEAD")
     if r.returncode == 0 and r.stdout.strip():
         return r.stdout.strip()
-    for name in ("main", "master"):
-        if git(root, "rev-parse", "--verify", "--quiet", name).returncode == 0:
+    for name in DEFAULT_BRANCHES:
+        if git(root, "rev-parse", "--verify", "--quiet", f"{name}^{{commit}}").returncode == 0:
             return name
     return None
 
 
 def resolve_previous(root):
-    """The commit the current work started from: the merge-base with the default branch
-    when HEAD is on another branch, else HEAD itself (the parent of uncommitted work)."""
+    """The commit the current work started from, and a warning or None.
+
+    The merge-base with the default branch when HEAD is on another branch, else HEAD itself
+    (the parent of uncommitted work). HEAD for want of a default branch is a guess, and it
+    comes back with a warning: when the work is already committed, HEAD is the version
+    under test."""
     head = git(root, "rev-parse", "HEAD").stdout.strip()
     branch = default_branch(root)
-    if branch:
-        mb = git(root, "merge-base", "HEAD", branch).stdout.strip()
-        if mb and mb != head:
-            return mb
-    return head
+    if not branch:
+        return head, ("baseline 'previous' fell back to HEAD: no default branch found "
+                      f"(origin/HEAD, {', '.join(DEFAULT_BRANCHES)}). If the change under "
+                      "test is already committed, HEAD is the version under test — pass "
+                      "--baseline <ref>.")
+    mb = git(root, "merge-base", "HEAD", branch).stdout.strip()
+    if not mb:
+        return head, (f"baseline 'previous' fell back to HEAD: no merge-base with {branch}. "
+                      "If the change under test is already committed, HEAD is the version "
+                      "under test — pass --baseline <ref>.")
+    return mb, None
 
 
-def snapshot(root, ref, target_dir, dest):
-    """git archive <ref> <target_dir> into dest, keeping repo-relative paths."""
-    top = Path(git(root, "rev-parse", "--show-toplevel").stdout.strip())
-    rel = (root / target_dir).resolve().relative_to(top)
+def plugin_pathspec(root):
+    """(repo top, the plugin's repo-relative path, pathspecs for the plugin minus evals/)."""
+    top = Path(git(root, "rev-parse", "--show-toplevel").stdout.strip()).resolve()
+    rel = root.resolve().relative_to(top)
+    evals = "evals" if str(rel) == "." else f"{rel.as_posix()}/evals"
+    return top, rel, [rel.as_posix(), f":(exclude){evals}"]
+
+
+def snapshot(root, ref, dest):
+    """git archive the whole plugin directory at <ref> into dest, keeping repo-relative paths.
+
+    The whole plugin, not the target's directory: a target reads its plugin's other skills,
+    scripts and templates through ${CLAUDE_PLUGIN_ROOT}, and a baseline that finds only its
+    own directory in the snapshot reads the rest from the working tree. `evals/` is left
+    out — it holds the sets, and so the expectations, and no target reads it as plugin
+    content. Returns the snapshot's plugin root.
+    """
+    top, rel, spec = plugin_pathspec(root)
     dest.mkdir(parents=True, exist_ok=True)
-    arch = subprocess.run(["git", "archive", "--format=tar", ref, "--", str(rel)],
+    arch = subprocess.run(["git", "archive", "--format=tar", ref, "--", *spec],
                           cwd=top, capture_output=True)
     if arch.returncode != 0:
         raise SystemExit(f"git archive {ref} {rel} failed: {arch.stderr.decode().strip()}"
-                         " — if the target is new, its baseline is 'none'")
+                         " — if the plugin is new, the baseline is 'none'")
     tar = subprocess.run(["tar", "-x", "-C", str(dest)], input=arch.stdout, capture_output=True)
     if tar.returncode != 0:
         raise SystemExit(f"tar -x failed: {tar.stderr.decode().strip()}")
     return dest / rel
+
+
+def same_as_worktree(root, ref):
+    """True when the plugin (minus evals/) is the same at <ref> as in the working tree."""
+    top, _, spec = plugin_pathspec(root)
+    if git(top, "diff", "--quiet", ref, "--", *spec).returncode != 0:
+        return False
+    return not git(top, "ls-files", "--others", "--exclude-standard", "--", *spec).stdout.strip()
 
 
 def write_json(path, obj):
@@ -249,14 +288,26 @@ def cmd_init(args):
     it.mkdir(parents=True)
 
     target_file = root / data["target_path"]
+    warnings = []
     if base == "none":
-        base_config, base_file, ref = "without_skill", None, None
+        base_config, base_file, base_root, ref = "without_skill", None, None, None
     else:
-        ref = resolve_previous(root) if base == "previous" else base
+        ref, warning = resolve_previous(root) if base == "previous" else (base, None)
+        if warning:
+            warnings.append(warning)
         ref = git(root, "rev-parse", "--short", f"{ref}^{{commit}}").stdout.strip()
-        snap = snapshot(root, ref, Path(data["target_path"]).parent, it / "baseline-snapshot")
-        base_file = snap / Path(data["target_path"]).name
+        base_root = snapshot(root, ref, it / "baseline-snapshot")
+        base_file = base_root / data["target_path"]
+        if not base_file.is_file():
+            shutil.rmtree(it)
+            print(f"{data['target_path']} does not exist at {ref}"
+                  " — if the target is new, its baseline is 'none'")
+            return 1
         base_config = "old_skill"
+        if same_as_worktree(root, ref):
+            warnings.append(f"the baseline {ref} is identical to the working tree outside "
+                            "evals/: both configurations run the same files. If the change "
+                            "under test is already committed, pass --baseline <ref>.")
 
     runs = []
     for ev in evals:
@@ -265,7 +316,8 @@ def cmd_init(args):
                 "assertions": ev["expectations"]}
         write_json(edir / "eval_metadata.json", meta)
         harness = str(root / ev["harness"]) if ev.get("harness") else None
-        for config, tfile in (("with_skill", target_file), (base_config, base_file)):
+        for config, tfile, proot in (("with_skill", target_file, root),
+                                     (base_config, base_file, base_root)):
             write_json(edir / config / "eval_metadata.json", meta)
             for k in range(1, ev.get("runs", 1) + 1):
                 rdir = edir / config / f"run-{k}"
@@ -275,13 +327,18 @@ def cmd_init(args):
                     "run_dir": str(rdir), "outputs_dir": str(rdir / "outputs"),
                     "prompt": ev["prompt"], "harness": harness,
                     "target_file": str(tfile) if tfile else None,
+                    "plugin_root": str(proot) if proot else None,
                     "expectations": ev["expectations"],
                 })
 
     manifest = {"iteration": str(it), "baseline_ref": ref,
+                "baseline_plugin_root": str(base_root) if base_root else None,
+                "warnings": warnings,
                 "skill_creator": locate_skill_creator(), "runs": runs}
     write_json(it / "manifest.json", manifest)
     print(json.dumps(manifest, indent=2))
+    for line in warnings:
+        print(f"warning: {line}", file=sys.stderr)
     return 0
 
 
@@ -361,12 +418,18 @@ def cmd_review(args):
 
 # ---------------------------------------------------------------- blind
 
+# An expectation that can only be checked in the transcript names it (SKILL.md, The set).
+NEEDS_TRANSCRIPT = re.compile(r"transcript", re.IGNORECASE)
+
+
 def cmd_blind(args):
     """Stage each eval's two configurations as A and B in a random order.
 
     The comparator is told nothing but the two directories, so which one is the working
     tree's lives only in `blind/key.json` — written here, read after the verdicts, and never
-    part of what this prints.
+    part of what this prints. It sees `outputs/` and no transcript, so an expectation that
+    names the transcript would fail for both sides there: those are withheld, and counted in
+    `withheld_expectations`.
     """
     it = Path(args.iteration).resolve()
     if not it.is_dir():
@@ -402,13 +465,16 @@ def cmd_blind(args):
         for label, config in zip(("A", "B"), order):
             shutil.copytree(outs[config], blind_dir / label)
         write_json(blind_dir / "key.json", {"A": order[0], "B": order[1]})
+        assertions = meta.get("assertions", [])
+        visible = [a for a in assertions if not NEEDS_TRANSCRIPT.search(str(a))]
         pairs.append({
             "eval": edir.name,
             "a_dir": str(blind_dir / "A"),
             "b_dir": str(blind_dir / "B"),
             "prompt": meta.get("prompt", ""),
             "expected_output": expected.get(meta.get("eval_id"), ""),
-            "expectations": meta.get("assertions", []),
+            "expectations": visible,
+            "withheld_expectations": len(assertions) - len(visible),
         })
 
     for line in skipped:
