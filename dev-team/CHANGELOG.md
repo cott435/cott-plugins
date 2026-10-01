@@ -12,7 +12,7 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
-## [Unreleased]
+## [2.4.0] - 2026-10-01
 
 A run stops where the files say it should. From three audited runs (`site/notes/open_items.md`,
 items 1 to 20) and the defects the 2.2 ledger left open. Design:
