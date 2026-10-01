@@ -45,11 +45,11 @@ flowchart LR
 
 `/dev-team:run-package <pkg>` first builds the package's workspace when it has none, so every
 test is written and run inside it under the repo's own lint rules; then it derives every
-section's state from disk, runs the ready set, and loops until every section is DONE; then it
-closes the package. Every ready row's step goes out in one message — designers, testers,
-implementers and reviewers together, the architect alone at PLAN — so the chart's stages run
-side by side for different sections; `--serial` runs one kind of step per batch and one
-implementer at a time.
+section's state from disk, runs the ready set, and loops until every section is DONE; then,
+once the package's surface check passes, it closes the package. Every ready row's step goes
+out in one message — designers, testers, implementers and reviewers together, the architect
+alone at PLAN — so the chart's stages run side by side for different sections;
+`--serial` runs one kind of step per batch and one implementer at a time.
 
 ```mermaid
 flowchart TB
@@ -59,13 +59,16 @@ flowchart TB
   SCAF -->|"yes"| STATE["status.py: derive each section's state from disk<br/>PROBE · DESIGN · TEST · IMPLEMENT · REVIEW · FIX n · PLAN · DONE · BLOCKED"]
   STATE --> READY{"ready set: in-package deps DONE?"}
   READY -->|"none ready, some BLOCKED"| ASK
-  READY -->|"all DONE"| SYNC["architect: sync-plan pkg<br/>apply approved deviations and change files, verified against code"]
+  READY -->|"all DONE, surface check PASS"| SYNC["architect: sync-plan pkg<br/>apply approved deviations and change files, verified against code"]
+  READY -->|"all DONE, surface check FAIL"| ASK
   READY -->|"ready set R"| PROBE["researcher ×P (probe)<br/>api sources with no pkg/section entry yet"]
   PROBE -->|"docs/sources/source.md extended"| DESIGN["designer ×R<br/>contract row · dep READMEs · probe · decisions"]
   DESIGN -->|"design/section.md"| TEST["tester ×R<br/>intent tests from documents only, all red<br/>hook: ruff on every edit"]
   TEST -->|"design-gap"| DESIGN
   TEST -->|"tests/intent/section/"| IMPL["implementer ×N, one batch<br/>code · unit tests · README (surface: interface.md)<br/>hooks: ruff on every edit · write guard to its section · no shell writes"]
-  IMPL --> GATE[["SubagentStop hook, per section<br/>intent + unit suites · package rows · repo pytest SKIPPED · Guarded grep since the last review<br/>exit 2 until green; a per-section marker or 3 attempts lets it stop"]]
+  IMPL --> GATE[["SubagentStop hook, per section<br/>intent + unit suites · README name check · package rows · repo pytest SKIPPED · Guarded grep since the last review<br/>exit 2 until green; a per-section marker or 3 attempts lets it stop"]]
+  GATE -->|"commit and result, every stop"| REC[(".dev-team/gate/pkg/section.txt")]
+  REC -->|"blocked or let through, for the current commit: BLOCKED"| STATE
   GATE --> REVIEW["reviewer ×2, round 1: A conformance and seams (coverage table) · B correctness and security<br/>reviewer ×1, round 2+: diff-scoped, prior findings fixed/unfixed, count only shrinks"]
   REVIEW -->|"docs/packages/pkg/reviews/section/date-rN-a, -b or -s .md"| STATE
   REVIEW -->|"request changes, round below cap"| IMPL
@@ -85,7 +88,8 @@ flowchart TB
   ARCH -->|"stopped: D-n"| ASK{"driver asks the user<br/>main thread"}
   PROBE -->|"blocked: credential"| ASK
   DESIGN -->|"stopped: decision"| ASK
-  IMPL -->|"blocked"| ASK
+  IMPL -->|"blocked, first hand-back"| ASK
+  STATE -->|"gate-BLOCKED row: run again, review anyway, stop"| ASK
   REVIEW -->|"cap: 3 rounds, 2 if unfixed"| ASK
   ASK -->|"answer to docs/decisions.md, retry the step"| STATE
   ASK -->|"nobody present, or --defer"| SUM(["summary: sections built/reviewed · agent runs · commits · stopped because · next command"])
@@ -94,7 +98,13 @@ flowchart TB
 
 The driver branches on each return's first line only. It relays a whole return in two cases:
 a tester's `design-gap` goes to the designer, and a `blocked` or `stopped` return is the
-question it asks. A `spec-change` is never relayed: its entry is on disk in
+question it asks. An implementer hands back once, before its stop gate runs; what happens
+after — a retry, a block, a third red attempt — reaches the driver through the gate's record,
+which `status.py` reads: a section whose implementer blocked or was let through for its current
+commit is BLOCKED, and the driver asks *run the implementer again*, *review anyway* or *stop
+here*. When every section is DONE and the surface check fails, it quotes the check's `FAIL`
+lines and asks *fixed, retry* or *stop here*; the close waits. A free-text answer ends the run
+with the Summary. A `spec-change` is never relayed: its entry is on disk in
 `docs/packages/<pkg>/deviations/<section>.md`, and the next `status.py` re-opens the step its
 level names. Every state
 the driver acts on is derived, so a re-run after a crash, a hand edit or a week away behaves
@@ -127,7 +137,8 @@ sequenceDiagram
   Tst-->>Drv: Result: done | design-gap | spec-change
   Drv->>Impl: IMPLEMENT: Section · Design · Intent tests · Review · Round · …
   Note over Impl: one per ready section, in one message; each section's stop gate runs until green
-  Impl-->>Drv: Result: done | blocked | spec-change
+  Impl-->>Drv: Result: done | blocked | spec-change (the first hand-back, the only one)
+  Note over Impl,Drv: after it, the gate's record carries every stop; status.py reads it
   Drv->>Rev: REVIEW round 1: Focus conformance, letter a · Focus correctness, letter b
   Rev-->>Drv: Result · Verdict: approve | request changes | spec-change
   Note over Drv,Rev: FIX n: implementer, then one Focus full reviewer on the diff
@@ -172,11 +183,11 @@ upstream `interface.md`, a probe doc — wins over every plan-time document abou
 | `docs/architecture.md` | architect (plan-repo, map-repo phase 3, sync-plan) | every agent; `status.py` (Packages table) | the brief differs from `docs/history/brief-contracted.md`; a repo-level change file is open |
 | `docs/packages/<pkg>/contract.md` | architect (plan-package, map-repo phase 2, sync-plan) | `status.py` (Sections table), designer, tester, implementer, reviewer, documenter | `docs/architecture.md` changed after it; an open `spec-change:contract` or change file names it |
 | `docs/packages/<pkg>/design/<section>.md` | designer | tester, implementer, reviewer A, `status.py` | its contract row changed; a cited probe doc is newer; an open change file or `spec-change:design` names it |
-| `docs/sources/<source>.md` (+ sample or stats, probe or profile script) | researcher | designer, implementer, reviewer, architect, `status.py` | `probe-source` re-ran; a new consuming section has no entry yet (it needs PROBE) |
+| `docs/sources/<source>.md` (+ sample or stats, probe or profile script) | researcher; the shared body only grows, and a line is rewritten only when the observation changed | designer, implementer, reviewer, architect, `status.py` | a new consuming section has no entry yet (it needs PROBE); for a consumer's design, when a line the design was written against is gone or reworded (added lines re-open nothing) |
 | `tests/intent/<section>/` | tester | implementer, reviewer, the stop gate, `status.py` | the design is newer than the tree |
 | section `README.md`; the `surface` section's is `docs/packages/<pkg>/interface.md` | implementer; `pair` at wrap-up | dependents' designer, tester and implementer, reviewer, documenter, architect, `status.py` | the code is newer than it |
 | `docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<a, b or s>.md` (2.0: `docs/reviews/…`, still read) | reviewer | `status.py`, the fix-round implementer, the next reviewer | the code is newer than its `Commit:` |
-| `docs/packages/<pkg>/deviations/<section>.md` (one per section; the 2.0 `docs/deviations/…` still read) | implementer, designer, tester, reviewer, architect; `pair` at wrap-up | reviewer, tester, architect, `status.py`, the stop gate | never; entries close by status |
+| `docs/packages/<pkg>/deviations/<section>.md` (one per section; the 2.0 `docs/deviations/…` still read) | implementer, designer, tester, reviewer, architect; `pair` at wrap-up | reviewer, tester, architect, `status.py`, the stop gate | never; an entry speaks while its `Status:` is `open` |
 | `docs/packages/<pkg>/changes/<slug>.md` (one per affected package; the 2.0 `docs/changes/…` still read) | architect (a CHANGE outcome) | `status.py`, designer (delta), implementer, reviewer, architect (sync-plan) | its sections are DONE and `sync-plan` has not run |
 | `docs/decisions.md` | `sync_decisions.py` from the inboxes; architect (stubs); you, the driver or `pair` (`Decision:`, `Status:`) | every agent; `status.py`; documenter | never; retired by `superseded` |
 | `docs/packages/<pkg>/decisions/<section>.md` (the inbox) | designer (`D?` stubs), implementer (`Applied:`) | `sync_decisions.py`; `status.py --run-gate` | an entry not yet in `docs/decisions.md` (`sync_decisions.py --all` repairs) |
@@ -184,5 +195,5 @@ upstream `interface.md`, a probe doc — wins over every plan-time document abou
 | `docs/followups.md` | reviewer (out-of-diff WARNINGs, `ELSEWHERE` lines, defer), architect (map-repo defects) | the fix-round implementer (entries for its section), documenter, you | never counted, never a gate |
 | `docs/history/<date>-<name>.md` | architect, before every contract edit | you | never |
 | `docs/index.md`, `packages/*/README.md`, root `README.md` | documenter | you | a shipped document changed after it |
-| `.dev-team/gate/<pkg>/<section>.txt` | the stop gate; `gate_on_stop.py --report` (`pair` at wrap-up) | reviewer (its evidence) | the next implementer stop or `--report` run |
+| `.dev-team/gate/<pkg>/<section>.txt` | the stop gate, on every implementer stop; `gate_on_stop.py --report` (`pair` at wrap-up) | `status.py` (holds a blocked or let-through section BLOCKED), the reviewer (its evidence), the driver (quotes it when it asks about a gate-BLOCKED row) | its `commit:` is not the section's current commit, or it has none (written before 2.4) |
 | `.dev-team/stop/<pkg>/<section>` | implementer (`blocked` or `spec-change`) | the stop gate, for that section only | deleted by the gate |

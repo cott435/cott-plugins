@@ -1,5 +1,5 @@
 {
-  "note": "the probe doc's shared headings changed after the design",
+  "note": "a shared line of the probe doc reworded after the design: the design-time line is gone, so the design is stale",
   "steps": [
     {
       "do": "base"
@@ -11,7 +11,10 @@
     {
       "do": "edit",
       "path": "docs/sources/trades.md",
-      "append": "\n- one timestamp out of order\n",
+      "replace": [
+        "- two exact duplicate rows\n",
+        "- two exact duplicate rows, both on 2026-09-03\n"
+      ],
       "message": "docs/sources: trades re-probed"
     }
   ],

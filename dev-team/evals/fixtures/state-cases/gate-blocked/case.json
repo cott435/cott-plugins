@@ -1,0 +1,32 @@
+{
+  "note": "a blocked marker stop recorded for the current commit: BLOCKED, with the two-command next line",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "BLOCKED",
+    "evidence": "^gate blocked: status\\.py --surface data fails on a sibling README$",
+    "contains": [
+      "next: /dev-team:run-package data ingest --step IMPLEMENT (run it again) or /dev-team:run-package data ingest --step REVIEW (review anyway)"
+    ]
+  },
+  "gate": {
+    "ingest": "dev-team gate — blocked — 2026-10-01 10:00:00 — section data/ingest\ncommit: {SECTION}\nFAIL unit data/ingest: pytest exited 1: 1 failed\nblocked: status.py --surface data fails on a sibling README\nresult: blocked\n"
+  }
+}

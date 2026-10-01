@@ -1,0 +1,14 @@
+dev-team gate — attempt 3 — 2026-09-27 07:48:19 — section data/surface
+commit: 2f8c6d1
+PASS Floor lint `uv run ruff check packages/data` — 0 errors
+PASS Floor format `uv run ruff format --check packages/data` — 0 files would be reformatted
+PASS section unit tests `uv run pytest packages/data/tests/unit/surface -q` — 3 passed
+PASS section intent tests `uv run pytest packages/data/tests/intent/surface -q` — 8 passed, 1 xpassed, 0 tolerated
+PASS Enforced unit tests `uv run pytest packages/data/tests/unit -q` — 8 passed
+PASS Enforced intent tests `uv run pytest packages/data/tests/intent -q` — 17 passed, 1 xpassed, 0 tolerated
+PASS Enforced coverage `uv run pytest packages/data --cov=packages/data/src --cov-report=term` — 93% ≥ 85%
+PASS Guarded grep over the section's paths since the empty tree — 0 hits
+FAIL surface: surface: FAIL | - clean_bars: in __all__, not in interface.md Public names | - fetch_bars: in __all__, not in interface.md Public names | - data.clean_bars: in interface.md Public names, not in README Public: yes rows | - data.fetch_bars: in interface.md Public names, not in README Public: yes rows
+MEASURED complexity `uv run radon cc packages/data/src -s -a` — surface: max A (4) daily, average A (2.5)
+MEASURED module size `wc -l packages/data/src/**/*.py` — __init__.py 28, pipelines.py 85
+result: letting the run stop after 3 attempts with 1 failure

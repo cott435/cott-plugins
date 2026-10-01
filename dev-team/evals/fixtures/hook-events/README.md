@@ -97,6 +97,64 @@ central `Applied:` lines follow its inbox; another section's are untouched);
 `pyproject.toml` and `docs/api/<pkg>/index.md`, while `guard-implementer-section-pyproject`
 still refuses the package `pyproject.toml` to `ingest`).
 
+**The 2.4 record** (`site/notes/2.4-02-gate-record.md`). Every record now carries a
+`commit:` line on line 2, the newest commit touching the section's code, unit tree and README
+(`status.py`'s `gate_commit`), so `status.py` can tell which commit it speaks for; `--report`
+records carry it too. A marker stop is recorded instead of leaving no trace: header slot
+`blocked` or `spec-change`, the `commit:` line, the earlier attempt's check lines when this
+agent already ran a gate attempt, `blocked: <the marker's second line>` (or `spec-change:
+<heading>`), and `result: blocked` (or `spec-change`). `check.py` substitutes `{RUN_SHA}` in
+`expect` strings as in `setup.files`, and `gate_only` skips `commit:`, `blocked:` and
+`spec-change:` lines. The cases: `gate-record-commit` (`gate-pass`'s setup; `commit:
+{RUN_SHA}`, `result: pass`); `gate-own-marker` and `gate-marker` (unchanged setups, the record
+now written: `blocked: (no reason given)` and `blocked: D4 needs an answer`, `result:
+blocked`); `gate-marker-after-fail` (an `attempt 1` record with a `FAIL intent …` line and
+`result: not done`, then a `blocked` marker: the FAIL line is carried, the old header and
+result are gone); `gate-marker-spec-change` (`spec-change: data/ingest — 2026-09-27 —
+spec-change:test — 1`, `result: spec-change`); `gate-marker-no-reason` (a one-line marker:
+`blocked: (no reason given)`); and `gate-report-base`, which also checks for the `commit:`
+line.
+
+**The 2.4 guards** (`site/notes/2.4-04-entry-points-and-guards.md`). Both guards also act in a
+repo that has `docs/brief.md` and no `docs/architecture.md` (`bash-brief-only-refused`,
+`guard-brief-only-refused`, `guard-brief-only-allowed`, in a `plain` repo plus the brief). A
+refused redirect now reads `may not redirect to <target>: it is outside .dev-team/tmp/`
+(`bash-redirect-wording`), so `bash-append-refused`, `bash-chain-refused`,
+`bash-locked-sh-refused`, `bash-redirect-refused` and `bash-reviewer-refused` expect that text
+instead of `redirect: <target>`; every other refusal keeps `may not write a repo file from the
+shell (…)`. A researcher may redirect outside the repo root (`bash-researcher-outside-allowed`)
+and not inside it (`bash-researcher-inside-refused`). `entry_point.py` is let through only under
+`locked.py deps` for the package the caller's `Section:` names, with the `ingest`/`clean`/`surface`
+contract and a `Section: data/ingest` transcript as in the `guard-implementer-section-*` cases:
+`bash-locked-entry-point-allowed`; refused for another package
+(`bash-locked-entry-point-other-pkg-refused`), unwrapped (`bash-entry-point-unwrapped-refused`)
+and with no transcript (`bash-locked-entry-point-no-section-refused`). The write guard refuses a
+`surface` implementer a sibling section's code, naming its owner
+(`guard-surface-sibling-code-refused`), while the package's own `__init__.py` stays allowed
+(`guard-surface-own-init-allowed`); and refuses a tester a Write or Edit that adds a suppression
+comment under `tests/intent/` (`guard-tester-noqa-write-refused`,
+`guard-tester-type-ignore-edit-refused`), counting old against new, so an Edit that keeps an
+existing `# noqa` passes (`guard-tester-noqa-existing-kept`) and an event with no text fails open
+(`guard-tester-no-text-allowed`).
+
+**The 2.4 gate checks** (`site/notes/2.4-05-gate-checks.md`). `build.py`'s README now has an
+**Entry points and interfaces** table with one row, `` `load_trades` ``, `Public: yes`, and the
+contract a **Public surface (intent)** item naming it, so every `data/ingest` record carries
+`PASS surface names data/ingest` (`gate-surface-names-pass`) and a grouped cell fails it
+(`gate-surface-names-grouped-fail`). Removed asserts are a net count per file and per kind:
+`gate-assert-rewritten-pass` rewrites the unit test's one assert (`load_trades(csv_file)` to
+`load_trades(str(csv_file))`) and passes, while `gate-assert-dropped-fail` deletes it
+(`(1 removed, 0 added)`) and `gate-raises-dropped-fail` replaces a `with pytest.raises(…)`
+block, committed under `prior`, with a plain call; all three put a round-1 review at
+`{RUN_SHA}`, so the diff starts there and has removed lines at all. A wrapped
+`@pytest.mark.xfail(` call is read to its closing bracket: `reason="D3 open"` two lines down
+passes (`gate-xfail-wrapped-pass`), `reason="later"` fails at the decorator's line
+(`gate-xfail-wrapped-no-decision-fail`). `gate-tail-ruff-arrow` stands a Floor row in for ruff
+0.15, printing ` --> <path>:3:1` under its message with three lines after it; the FAIL line
+keeps the arrow line. The command builds the path from two strings, so only the output, not
+the command echoed in the FAIL line, can hold it. No earlier case removed or rewrote an assert,
+so none changed its expectation.
+
 **The 2.2 layout here.** `build.py` still writes the section's ledger at the 2.0 path,
 `docs/deviations/data/ingest.md`, so the tolerated case also proves the gate reads the old
 location; the new one, `docs/packages/data/deviations/ingest.md`, is written by

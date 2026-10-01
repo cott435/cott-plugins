@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """PreToolUse hook on Write|Edit: each dev-team role writes only where its job is.
 
-Input: the hook JSON on stdin (`cwd`, `agent_type`, `tool_input.file_path`).
+Input: the hook JSON on stdin (`cwd`, `agent_type`, `tool_input.file_path`, and the new text:
+`tool_input.content` for Write, `tool_input.old_string` and `new_string` for Edit).
 
-Exit 0 unless `<cwd>/docs/architecture.md` exists and `agent_type` is a row of ALLOWED; the
+Exit 0 unless `<cwd>/docs/brief.md` or `<cwd>/docs/architecture.md` exists and `agent_type` is
+a row of ALLOWED, so `plan-repo`'s agents are guarded before the repo contract is written; the
 main thread, `Explore`, `general-purpose` and any other agent are never guarded. The path is
 made relative to `cwd`; a path outside `cwd` is refused for every guarded role. A path is
 allowed when it matches one of the role's globs and none of its exclusions, or one of its
@@ -18,6 +20,13 @@ the pre-split `docs/deviations.md`) and `docs/reviews/` stay writable wherever t
 so an entry is edited in the file that holds it. A designer or implementer writes its section's
 decisions inbox, `docs/packages/<pkg>/decisions/<section>.md`, never `docs/decisions.md`.
 
+Suppression comments: a Write or Edit under `**/tests/intent/**` that adds `# noqa`, `# type:
+ignore` or `# pragma: no cover` (SUPPRESS, the gate's own patterns) is refused, exit 2. "Adds" is
+a count: a Write whose `content` holds more matches than the file on disk (none when it does not
+exist), an Edit whose `new_string` holds more than its `old_string`; an edit that keeps an
+existing comment in place passes. An event with no `content` or `new_string` skips the check and
+the path rule decides alone.
+
 Section scope: an implementer whose spawn prompt carries `Section: <pkg>/<section>` (read from
 its transcript by `status.cached_section`) may write only its section's files, SECTION_SCOPE:
 the section's path from the package contract and everything under it, its
@@ -26,9 +35,12 @@ the section's path from the package contract and everything under it, its
 `.dev-team/stop/<pkg>/<section>`, and for `surface` also `docs/packages/<pkg>/interface.md`,
 the API page `docs/api/<pkg>/index.md` (and the pre-2.2 `docs/api/<pkg>.md`), the package's own
 `<package root>/pyproject.toml` (its `[project.scripts]`), the root `pyproject.toml` and
-`mkdocs.yml`. A `Scaffold:` run, a
-transcript with no `Section:` line or none readable, or a section the contract does not list
-falls back to the role-wide rule.
+`mkdocs.yml`. A path under another section's `path` is that section's, whatever the globs say;
+for `surface` that is every sibling, and for a parent section its nested ones. It is refused
+before the globs are tried. An entry point in the package `pyproject.toml` goes through
+`locked.py` and `entry_point.py`, so no section but `surface` has the file in scope. A
+`Scaffold:` run, a transcript with no `Section:` line or none readable, or a section the
+contract does not list falls back to the role-wide rule.
 """
 
 from __future__ import annotations
@@ -59,7 +71,16 @@ ALLOWED: dict[str, tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]] = {
     "dev-team:implementer": (("**",), ("docs/**",),
                              (*LEDGERS, *INBOXES, "docs/packages/*/interface.md", "docs/api/*.md", "docs/api/*/index.md")),
 }
-SHARED = "Shared edits — pyproject.toml, uv.lock, .gitignore — go through locked.py."
+SHARED = "Shared edits — pyproject.toml (dependencies, entry points), uv.lock, .gitignore — go through locked.py."
+
+# The gate's ADDED patterns (gate_on_stop.py): a suppression comment an intent test may not gain.
+SUPPRESS = (
+    ("# noqa", re.compile(r"#\s*noqa\b", re.I)),
+    ("# type: ignore", re.compile(r"#\s*type:\s*ignore\b")),
+    ("# pragma: no cover", re.compile(r"#\s*pragma:\s*no\s*cover\b")),
+)
+SUPPRESS_RULE = ("Write the assertion the design supports; a check that still fires is a `Not written:` line, "
+                 "and an Exceptions row is the user's call.")
 
 
 def _regex(glob: str) -> re.Pattern[str]:
@@ -106,8 +127,25 @@ def SECTION_SCOPE(pkg: str, section: str, row: dict[str, str], package_root: str
     return scope
 
 
-def section_scope(event: dict, cwd: Path) -> tuple[str, str, tuple[str, ...]] | None:
-    """(pkg, section, globs) for an implementer spawned on a section the contract lists; else None."""
+def added_suppression(event: dict, path: str) -> str | None:
+    """The first SUPPRESS item the write adds to an intent test (more matches new than old); else None."""
+    ti = event.get("tool_input") or {}
+    if isinstance(ti.get("content"), str):
+        new = ti["content"]
+        try:
+            old = Path(path).read_text() if os.path.isfile(path) else ""
+        except (OSError, UnicodeDecodeError):
+            old = ""
+    elif isinstance(ti.get("new_string"), str):
+        new, old = ti["new_string"], ti.get("old_string") or ""
+    else:
+        return None  # no text to judge: fail open, the path rule decides alone
+    return next((item for item, rx in SUPPRESS if len(rx.findall(new)) > len(rx.findall(old))), None)
+
+
+def section_scope(event: dict, cwd: Path) -> tuple[str, str, tuple[str, ...], list[tuple[str, str]]] | None:
+    """(pkg, section, globs, nested) for an implementer spawned on a section the contract lists; else
+    None. nested is (section, path) for every other section whose path lies under this one's."""
     try:
         plugin = Path(os.environ.get("CLAUDE_PLUGIN_ROOT") or Path(__file__).resolve().parents[1])
         sys.path.insert(0, str(plugin / "skills" / "status" / "scripts"))
@@ -123,7 +161,10 @@ def section_scope(event: dict, cwd: Path) -> tuple[str, str, tuple[str, ...]] | 
         if row is None:
             return None
         root = os.path.relpath(os.path.realpath(status.package_root(pkg)), os.path.realpath(cwd)).replace(os.sep, "/")
-        return pkg, section, SECTION_SCOPE(pkg, section, row, root)
+        prefix = row["path"].rstrip("/") + "/"
+        nested = [(r["section"], r["path"]) for r in status.sections(pkg)
+                  if r["section"] != section and r["path"].startswith(prefix)]
+        return pkg, section, SECTION_SCOPE(pkg, section, row, root), nested
     except Exception:  # a guard that cannot read the section keeps the role-wide rule
         return None
 
@@ -136,7 +177,7 @@ def main() -> int:
         raw = (event.get("tool_input") or {}).get("file_path") or ""
     except (ValueError, KeyError, TypeError, AttributeError):
         return 0
-    if agent not in ALLOWED or not (cwd / "docs" / "architecture.md").exists() or not raw:
+    if agent not in ALLOWED or not raw or not any((cwd / "docs" / f).exists() for f in ("brief.md", "architecture.md")):
         return 0
     root = os.path.realpath(cwd)
     path = os.path.realpath(raw if os.path.isabs(raw) else os.path.join(cwd, raw))
@@ -145,7 +186,12 @@ def main() -> int:
     shown = raw if outside else rel
     scoped = section_scope(event, cwd) if agent == "dev-team:implementer" else None
     if scoped is not None:
-        pkg, section, scope = scoped
+        pkg, section, scope, nested = scoped
+        other = next((s for s, p in nested if not outside and (rel == p or rel.startswith(p.rstrip("/") + "/"))), None)
+        if other is not None:
+            print(f"dev-team write guard: {agent} ({pkg}/{section}) may not write {shown}: it is {pkg}/{other}'s. "
+                  f"{SHARED}", file=sys.stderr)
+            return 2
         if not outside and (_match(MEMORY, rel) or (not _match(INTENT, rel) and any(_match(g, rel) for g in scope))):
             return 0
         files = ", ".join(scope)
@@ -153,7 +199,12 @@ def main() -> int:
               f"(and {MEMORY}). {SHARED}", file=sys.stderr)
         return 2
     if not outside and allowed(agent, rel):
-        return 0
+        item = added_suppression(event, path) if _match(INTENT, rel) else None
+        if item is None:
+            return 0
+        print(f"dev-team write guard: {agent} may not add `{item}` under tests/intent/ ({shown}). {SUPPRESS_RULE}",
+              file=sys.stderr)
+        return 2
     allow, exclude, carve = ALLOWED[agent]
     rule = ", ".join(allow) + (f" except {', '.join(exclude)}" if exclude else "")
     rule += f" (but {', '.join(carve)})" if carve else ""

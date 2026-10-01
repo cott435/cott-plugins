@@ -1,0 +1,39 @@
+{
+  "note": "two open spec-change:test entries in one commit, then a regeneration whose commit sets only entry 1 resolved: TEST, and the evidence names only entry 2 (2.4, phase 3)",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "files": {
+        "docs/packages/data/deviations/ingest.md": "# Deviations — data/ingest\n\n## data/ingest — 2026-09-27 — spec-change:test — 1\n\nClause: design §5 load_trades\nSaid: \"one thing\"\nFound: src/x.py:1\nWhy: the data says otherwise\nStatus: open\nRaised by: implementer — run-package data\nResolved by: —\n\n## data/ingest — 2026-09-27 — spec-change:test — 2\n\nClause: design §5 other_item\nSaid: \"one thing\"\nFound: src/x.py:1\nWhy: the data says otherwise\nStatus: open\nRaised by: implementer — run-package data\nResolved by: —\n"
+      },
+      "message": "data/ingest: spec-change:test open (two)"
+    },
+    {
+      "files": {
+        "packages/data/tests/intent/ingest/test_ingest.py": "def test_ingest():\n    \"\"\"Design §5 load_trades: the entry point answers (deviation data/ingest — 2026-09-27).\"\"\"\n    assert True\n",
+        "docs/packages/data/deviations/ingest.md": "# Deviations — data/ingest\n\n## data/ingest — 2026-09-27 — spec-change:test — 1\n\nClause: design §5 load_trades\nSaid: \"one thing\"\nFound: src/x.py:1\nWhy: the data says otherwise\nStatus: resolved\nRaised by: implementer — run-package data\nResolved by: tester — run-package data\n\n## data/ingest — 2026-09-27 — spec-change:test — 2\n\nClause: design §5 other_item\nSaid: \"one thing\"\nFound: src/x.py:1\nWhy: the data says otherwise\nStatus: open\nRaised by: implementer — run-package data\nResolved by: —\n"
+      },
+      "message": "data/ingest: regenerate 1 intent tests"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "TEST",
+    "evidence": "^open data/ingest — 2026-09-27 — spec-change:test — 2$"
+  }
+}

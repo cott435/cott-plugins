@@ -1,0 +1,37 @@
+{
+  "note": "a blocked record, then a round-1 pair approves the same code: the review speaks, DONE",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 1,
+      "reports": {
+        "a": "approve",
+        "b": "approve"
+      }
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "DONE"
+  },
+  "gate": {
+    "ingest": "dev-team gate — blocked — 2026-10-01 10:00:00 — section data/ingest\ncommit: {SECTION}\nFAIL unit data/ingest: pytest exited 1: 1 failed\nblocked: status.py --surface data fails on a sibling README\nresult: blocked\n"
+  }
+}

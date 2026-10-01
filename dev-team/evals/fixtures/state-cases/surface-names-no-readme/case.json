@@ -1,0 +1,24 @@
+{
+  "note": "--surface --section (2.4 phase 5): a section designed and not built has no README to check",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    }
+  ],
+  "args": [
+    "--surface",
+    "data",
+    "--section",
+    "ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "surface names data/ingest: n/a (no README)"
+    ]
+  }
+}

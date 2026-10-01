@@ -20,7 +20,7 @@
     "exit": 2,
     "stderr_startswith": "dev-team bash guard: ",
     "stderr_contains": [
-      "redirect: .gitignore"
+      "may not redirect to .gitignore: it is outside .dev-team/tmp/"
     ]
   }
 }

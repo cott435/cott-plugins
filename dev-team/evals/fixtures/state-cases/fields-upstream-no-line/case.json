@@ -1,0 +1,29 @@
+{
+  "note": "--fields on a section whose design has no Upstream packages: line: every upstream package, as before 2.4",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "files": {
+        "docs/packages/analysis/contract.md": "# analysis — package contract\n\n## Sections\n\n| section | responsibility | path | owner doc | builds with | depends on | source |\n|---|---|---|---|---|---|---|\n| vwap | rolling VWAP | packages/analysis/src/analysis/vwap/ | docs/packages/analysis/design/vwap.md | — | — | — |\n| surface | the public surface | packages/analysis/src/analysis/ | docs/packages/analysis/design/surface.md | — | vwap | — |\n",
+        "docs/packages/analysis/design/vwap.md": "Mode: new\n\n# analysis/vwap — design\n\n## 1. Purpose and scope\n\nRolling VWAP over trades.\n\n## 2. Inputs and outputs\n\nTrades in, a VWAP series out.\n\n## 3. Module plan\n\n- `vwap.py`\n"
+      },
+      "message": "docs: analysis contract, vwap design"
+    }
+  ],
+  "args": [
+    "--fields",
+    "analysis/vwap"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "upstream interfaces: provisional: docs/packages/data/contract.md\n"
+    ]
+  }
+}

@@ -153,6 +153,110 @@
         "No file exists under outputs/ other than docs/packages/data/design/clean.md, docs/packages/data/deviations/clean.md, commit.txt and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/; in particular outputs/docs/decisions.md and outputs/docs/packages/data/decisions/ do not exist"
       ],
       "added_in": "2.2 phase 0, run from phase 7"
+    },
+    {
+      "id": 6,
+      "name": "ingest-two-spec-changes-resolved",
+      "kind": "behavioral",
+      "baseline": "dev-team-v2.3.0",
+      "harness": "evals/sets/files/designer/eval-6-ingest-two-spec-changes.md",
+      "prompt": "Repo root for this run: evals/sets/files/designer/repo (every path below is relative to it). One substitution: read docs/packages/data/deviations/ingest.md, which that tree lacks, as evals/sets/files/designer/eval-6-ingest-ledger.md (relative to the plugin directory, not to the repo root).\n\nSection: data/ingest\nMode: delta\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: own: packages/data/src/data/ingest/README.md\nUpstream interfaces: none\nSource probes: none\nChange file: docs/changes/ingest-tz-aware-bars.md\nSpec-change: data/ingest — 2026-09-28 — spec-change:design — 1\ndata/ingest — 2026-09-29 — spec-change:design — 2\nDesign-gap: none\nSkills to invoke: none\nWrite to: docs/packages/data/design/ingest.md\nRun: run-package data",
+      "expected_output": "The ingest design rewritten whole at outputs/docs/packages/data/design/ingest.md (`Mode: delta`) so that it answers both ledger entries it was handed — `_parse_row` is no longer a §5 interface §5 lacks, and the delimiter case has a step that reads the setting and data that shows it — with both entries in outputs/docs/packages/data/deviations/ingest.md set `Status: resolved` and `Resolved by: designer — run-package data`, nothing else in them changed, one commit `data/ingest: design (delta)` holding the design and the ledger, and a return of twelve lines or fewer with a `Resolved:` line naming both entries and `Left open: none`.",
+      "files": [
+        "evals/sets/files/designer/repo/docs/architecture.md",
+        "evals/sets/files/designer/repo/docs/packages/data/contract.md",
+        "evals/sets/files/designer/repo/docs/packages/data/design/ingest.md",
+        "evals/sets/files/designer/repo/docs/changes/ingest-tz-aware-bars.md",
+        "evals/sets/files/designer/repo/docs/decisions.md",
+        "evals/sets/files/designer/repo/packages/data/src/data/ingest/README.md",
+        "evals/sets/files/designer/eval-6-ingest-ledger.md"
+      ],
+      "expectations": [
+        "outputs/docs/packages/data/design/ingest.md exists; its first line is exactly `Mode: delta` and its second line is exactly `Change: docs/changes/ingest-tz-aware-bars.md`",
+        "The design contains, in this order, headings whose text includes: Purpose and scope; Inputs and outputs; Data model / internal contracts; Workflow / pipeline; Interfaces; Error handling and logging; Tests; Pitfalls and risks; Skills used; Contract deviations; Open questions; it has no heading named `Revision` or `As shipped`, and no heading that lists only what changed",
+        "Entry 1 is answered in the design: the Module plan no longer marks `_parse_row` as a §5 interface that the Interfaces table lacks — either the Interfaces table has a `_parse_row` row with a signature, or the Module plan and the Workflow / pipeline steps no longer present `_parse_row` as an interface (it is gone, or named as a private helper that is not a §5 name)",
+        "Entry 2 is answered in the design: a Workflow / pipeline step states that the CSV is read with the delimiter from `DATA_INGEST_DELIMITER` (or `IngestSettings`), and the Tests case for the delimiter names fixture data whose delimiter is not a comma, so the case no longer rests on `tests/fixtures/ingest/aapl-3d.csv` alone",
+        "outputs/docs/packages/data/deviations/ingest.md exists, its first line is exactly `# Deviations — data/ingest`, and it holds the fixture's two entries under their headings unchanged and in order: `## data/ingest — 2026-09-28 — spec-change:design — 1` and `## data/ingest — 2026-09-29 — spec-change:design — 2`; any further entry is a `deviation` the design cites under Contract deviations, and no further entry's heading contains `spec-change`",
+        "In outputs/docs/packages/data/deviations/ingest.md each of the two entries has the line `Status: resolved`, and the file has no line `Status: open`",
+        "In that file each of the two entries has the line `Resolved by: designer — run-package data`, and neither still reads `Resolved by: —`",
+        "In that file the `Clause:`, `Said:`, `Found:`, `Why:` and `Raised by:` lines of both entries are the same text as in evals/sets/files/designer/eval-6-ingest-ledger.md: the `Status:` and `Resolved by:` lines are the only lines of an entry that differ",
+        "The final message in transcript.md is twelve lines or fewer, its first line is exactly `Result: done`, and it has a line beginning `Resolved:` that names both entries (each by its heading, or at least by its ending `spec-change:design — 1` and `spec-change:design — 2`) and a line that reads exactly `Left open: none` (baseline 2.3.0 fails this: its return has no `Resolved:` and no `Left open:` line)",
+        "The final message in transcript.md also has a line beginning `Design: docs/packages/data/design/ingest.md` and a line beginning `Commit:`",
+        "transcript.md records reading, before the design is written, both ledger entries (from evals/sets/files/designer/eval-6-ingest-ledger.md, read as docs/packages/data/deviations/ingest.md), the existing docs/packages/data/design/ingest.md, packages/data/src/data/ingest/README.md and docs/changes/ingest-tz-aware-bars.md",
+        "outputs/commit.txt exists, its first line is exactly `data/ingest: design (delta)`, it has a trailer line `Dev-Team-Run: run-package data`, and the paths after its `---` line are docs/packages/data/design/ingest.md and docs/packages/data/deviations/ingest.md and no other: the two status edits are in the design's commit, not in one of their own",
+        "No file exists under outputs/ other than docs/packages/data/design/ingest.md, docs/packages/data/deviations/ingest.md, commit.txt and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/; in particular outputs/docs/decisions.md, outputs/docs/changes/ and outputs/docs/packages/data/contract.md do not exist, and the return is not `stopped` or `spec-change`"
+      ],
+      "added_in": "2.4 phase 0, run from phase 7",
+      "note_2_4": "The `repo` tree has no ledger for data/ingest; eval-6-ingest-ledger.md stands in for it by the prompt's substitution. The prompt sends the change file as well as the two headings: with `Change file: none` the shipped README's naive `Bar.ts` contradicts the repo contract's Boundaries and a designer would be right to raise `spec-change:contract` and write no design. The second heading is on its own line under the `Spec-change:` field, the design's 'one per line in the field'."
+    },
+    {
+      "id": 7,
+      "name": "samples-entry-point-upstream-decision-binds",
+      "kind": "behavioral",
+      "baseline": "dev-team-v2.3.0",
+      "harness": "evals/sets/files/designer/eval-7-samples-entry-point.md",
+      "prompt": "Repo root for this run: evals/sets/files/designer/repo (every path below is relative to it). Two substitutions, both relative to the plugin directory and not to the repo root: read docs/packages/data/contract.md as evals/sets/files/designer/eval-7-8-contract.md, and docs/decisions.md as evals/sets/files/designer/eval-7-8-decisions.md.\n\nSection: data/samples\nMode: new\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: packages/data/src/data/ingest/README.md\nUpstream interfaces: none\nSource probes: none\nChange file: none\nSpec-change: none\nDesign-gap: none\nSkills to invoke: none\nWrite to: docs/packages/data/design/samples.md\nRun: run-package data",
+      "expected_output": "A new design at outputs/docs/packages/data/design/samples.md for a pytest plugin section, whose Inputs and outputs ends with `Upstream packages: none`, whose Module plan holds `entry point: pytest11 marketlab_samples = <a module the plan lists>` and says it is registered through `locked.py`, never by hand, and whose Open questions holds `D2 binds data/prices, not this one` for the open package-scoped decision about Alpaca's `adjustment`, committed as `data/samples: design` with a return beginning `Result: done`.",
+      "files": [
+        "evals/sets/files/designer/repo/docs/architecture.md",
+        "evals/sets/files/designer/repo/packages/data/src/data/ingest/README.md",
+        "evals/sets/files/designer/eval-7-8-contract.md",
+        "evals/sets/files/designer/eval-7-8-decisions.md"
+      ],
+      "expectations": [
+        "outputs/docs/packages/data/design/samples.md exists and its first line is exactly `Mode: new`",
+        "The design contains, in this order, headings whose text includes: Purpose and scope; Inputs and outputs; Data model / internal contracts; Workflow / pipeline; Interfaces; Error handling and logging; Tests; Pitfalls and risks; Skills used; Contract deviations; Open questions; it has no heading named `Revision` or `As shipped`",
+        "Under the Inputs and outputs heading the design has a line that reads `Upstream packages: none` (the key may be in bold), and it is the last line of that heading's body (baseline 2.3.0 fails this: it writes no `Upstream packages:` line)",
+        "The Module plan, under the Data model / internal contracts heading, has a line of the form `entry point: pytest11 marketlab_samples = <target>`, where `<target>` is a module under `data.samples` (for example `data.samples.plugin`) (baseline 2.3.0 fails this: it writes no `entry point:` line)",
+        "The module that `<target>` names is one of the files the Module plan lists under packages/data/src/data/samples/",
+        "The design says the entry point is registered through `locked.py` (the implementer adds it under the dependency lock, never by hand); it does not tell anyone to edit `packages/data/pyproject.toml` directly, and `pyproject.toml` is not one of the Module plan's files",
+        "Under the Open questions heading the design has a line that reads `D2 binds data/prices, not this one` (baseline 2.3.0 fails this: it writes no `D<n> binds` line)",
+        "No line of the design reads `D2 binds this section`, and none contains `D1 binds`: D1 is `decided` and scoped to data/storage, so it gets no such line",
+        "The Interfaces table has a row for `make_bars` whose signature is the contract's callable — `symbol: str`, `days: int` and a keyword-only `start: date` with a default, returning `list[Bar]` — and the row names its error case `SamplesError` (`data.samples.bad_request`)",
+        "Under Inputs and outputs, `Bar` is cited by the path `packages/data/src/data/ingest/README.md` as the document it comes from, and the design does not redefine Bar's fields",
+        "transcript.md records reading, before the design is written, the package contract (from evals/sets/files/designer/eval-7-8-contract.md), docs/decisions.md (from evals/sets/files/designer/eval-7-8-decisions.md, both of its entries), docs/architecture.md and packages/data/src/data/ingest/README.md",
+        "The final message in transcript.md is twelve lines or fewer, its first line is exactly `Result: done`, and it has lines beginning `Design: docs/packages/data/design/samples.md`, `Open questions:`, `Deviations:` and `Commit:`",
+        "The final message in transcript.md has a line that reads `Resolved: none` and a line that reads `Left open: none`: this run was handed no entry (baseline 2.3.0 fails this: its return has neither line)",
+        "outputs/commit.txt exists, its first line is exactly `data/samples: design`, it has a trailer line `Dev-Team-Run: run-package data`, and the paths after its `---` line include docs/packages/data/design/samples.md and no path outside docs/packages/data/",
+        "No file exists under outputs/ other than docs/packages/data/design/samples.md, commit.txt, docs/packages/data/deviations/samples.md (only when every entry in it is a `deviation` headed `## data/samples — <YYYY-MM-DD> — deviation — <k>` with `Status: proposed`, each cited under the design's Contract deviations) and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/; in particular outputs/docs/decisions.md, outputs/docs/packages/data/decisions/ and any `pyproject.toml` do not exist, and the return is not `stopped` or `spec-change`"
+      ],
+      "added_in": "2.4 phase 0, run from phase 7",
+      "note_2_4": "eval-7-8-contract.md is the `repo` tree's data contract with a `samples` section (a `pytest11` plugin) added and the `prices` entry rewritten to match docs/sources/alpaca.md, so that neither eval 7 nor eval 8 meets the planted `adjusted_close` fault eval 3 is about. eval-7-8-decisions.md adds D2, open, scope `data`, about the `adjustment` `fetch_bars` sends: for data/samples it binds another section, for data/prices (eval 8) it binds this one. `data` has no upstream package, so the line is `Upstream packages: none`; a design that names an upstream package is not exercised by this set."
+    },
+    {
+      "id": 8,
+      "name": "prices-tests-substitutes-error-check",
+      "kind": "behavioral",
+      "baseline": "dev-team-v2.3.0",
+      "harness": "evals/sets/files/designer/eval-8-prices-tests.md",
+      "prompt": "Repo root for this run: evals/sets/files/designer/repo (every path below is relative to it). Two substitutions, both relative to the plugin directory and not to the repo root: read docs/packages/data/contract.md as evals/sets/files/designer/eval-7-8-contract.md, and docs/decisions.md as evals/sets/files/designer/eval-7-8-decisions.md.\n\nSection: data/prices\nMode: new\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: packages/data/src/data/ingest/README.md\nUpstream interfaces: none\nSource probes: docs/sources/alpaca.md\nChange file: none\nSpec-change: none\nDesign-gap: none\nSkills to invoke: none\nWrite to: docs/packages/data/design/prices.md\nRun: run-package data",
+      "expected_output": "A new design at outputs/docs/packages/data/design/prices.md for the Alpaca client in which every Tests case that makes a request names what stands in for the service (a recorded response or a fake transport), none is skipped, needs the keys or the network, or runs a subprocess, every error case of the Interfaces table has under Error handling and logging the same exception type (`PricesError` for the contract's five codes), the transcript shows the design checked against itself before the commit, and the document holds `Upstream packages: none` and `D2 binds this section: …`; committed as `data/prices: design`, return `Result: done`.",
+      "files": [
+        "evals/sets/files/designer/repo/docs/architecture.md",
+        "evals/sets/files/designer/repo/docs/sources/alpaca.md",
+        "evals/sets/files/designer/repo/docs/deviations/data/prices.md",
+        "evals/sets/files/designer/repo/packages/data/src/data/ingest/README.md",
+        "evals/sets/files/designer/eval-7-8-contract.md",
+        "evals/sets/files/designer/eval-7-8-decisions.md"
+      ],
+      "expectations": [
+        "outputs/docs/packages/data/design/prices.md exists and its first line is exactly `Mode: new`; no file under outputs/ has a heading containing `spec-change`",
+        "The design contains, in this order, headings whose text includes: Purpose and scope; Inputs and outputs; Data model / internal contracts; Workflow / pipeline; Interfaces; Error handling and logging; Tests; Pitfalls and risks; Skills used; Contract deviations; Open questions; it has no heading named `Revision` or `As shipped`",
+        "Under the Tests heading, every case that exercises a request to Alpaca names what stands in for the service in that case — a recorded response (a file under `tests/fixtures/`), or a fake transport or client built to the real signature — and no case calls the live endpoint or needs `ALPACA_API_KEY`, `ALPACA_API_SECRET` or network access to run",
+        "No case under the Tests heading is skipped or run only under a condition (`skip`, `skipif`, `importorskip`, a marker that deselects it when the keys or the network are missing), and no case runs a subprocess",
+        "The Interfaces row for `fetch_bars` lists its error cases, the contract's five among them (`bad_range`, `unauthorized`, `bad_request`, `rate_limited`, `unavailable`, each as a `data.prices.<reason>` code or by that reason name), and Error handling and logging names each of those five with the exception type `PricesError`",
+        "No error case of any Interfaces row is missing from Error handling and logging or given a different exception type there than the Interfaces row gives it: wherever both headings name a type for one case, it is the same type",
+        "transcript.md records, after the design document is written and before commit.txt is written, a step that checks the design against itself: each Interfaces error case against the exception type Error handling and logging gives it, and each Tests case against the Data model and Workflow items it uses, with what was corrected or that nothing differed (baseline 2.3.0 fails this: its procedure goes from writing the design to the commit with no such step)",
+        "Under the Inputs and outputs heading the design has a line that reads `Upstream packages: none` (the key may be in bold) (baseline 2.3.0 fails this: it writes no `Upstream packages:` line)",
+        "Under the Open questions heading the design has a line beginning `D2 binds this section: ` that names the item D2 affects — the `adjustment` parameter `fetch_bars` sends — and no line containing `D1 binds` (baseline 2.3.0 fails this: it writes no `D<n> binds` line)",
+        "The design sends `adjustment=all`, the assumption D2 carries, cites D2 for it, and does not present the value as decided; `close` is read from the response's `c`, not from an `adjusted_close` field",
+        "transcript.md records reading, before the design is written, docs/sources/alpaca.md, the package contract (from evals/sets/files/designer/eval-7-8-contract.md), docs/decisions.md (from evals/sets/files/designer/eval-7-8-decisions.md), docs/architecture.md and packages/data/src/data/ingest/README.md",
+        "The final message in transcript.md is twelve lines or fewer, its first line is exactly `Result: done`, and it has lines beginning `Design: docs/packages/data/design/prices.md` and `Commit:`",
+        "outputs/commit.txt exists, its first line is exactly `data/prices: design`, it has a trailer line `Dev-Team-Run: run-package data`, and the paths after its `---` line include docs/packages/data/design/prices.md and no path outside docs/packages/data/",
+        "No file exists under outputs/ other than docs/packages/data/design/prices.md, commit.txt, docs/packages/data/deviations/prices.md (only when every entry in it is a `deviation` headed `## data/prices — <YYYY-MM-DD> — deviation — <k>` with `Status: proposed`, each cited under the design's Contract deviations) and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/; in particular outputs/docs/decisions.md, outputs/docs/packages/data/decisions/ and outputs/docs/deviations/ do not exist, and the return is not `stopped` or `spec-change`"
+      ],
+      "added_in": "2.4 phase 0, run from phase 7",
+      "note_2_4": "Uses the same two substituted documents as eval 7 (see its note). The harness states that CI has no Alpaca keys and no outbound network: the fact that makes a live or skipped case the natural one to name, and the substitute the thing the 2.4 designer must name instead. Expectations 3 to 6 are the row's subject and a 2.3.0 designer may pass them by its own good sense; 7, 8 and 9 are the ones it cannot."
     }
   ]
 }

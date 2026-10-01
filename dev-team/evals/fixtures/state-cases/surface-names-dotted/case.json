@@ -1,0 +1,45 @@
+{
+  "note": "--surface --section (2.4 phase 5): a dotted name cell (a method with its own row) fails the one-name rule",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "edit",
+      "path": "packages/data/src/data/ingest/README.md",
+      "message": "data/ingest: dotted name cell",
+      "replace": [
+        "| `load_trades` | `load_trades(path)` | ingest the trades | yes |",
+        "| `load_trades` | `load_trades(path)` | ingest the trades | yes |\n| `Loader.load` | `Loader.load(path)` | load through the class | no |"
+      ]
+    }
+  ],
+  "args": [
+    "--surface",
+    "data",
+    "--section",
+    "ingest"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "surface names data/ingest: FAIL",
+      "`Loader.load`: name cell is not one backticked identifier"
+    ],
+    "absent": [
+      "`load_trades`: name cell"
+    ]
+  }
+}

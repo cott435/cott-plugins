@@ -8,7 +8,9 @@ commits an empty root on `main`, and works on branch `build`. Commit 1 holds the
 `docs/constraints.md` (Floor rows that pass with `ruff` on PATH), a section ledger
 `docs/deviations/data/ingest.md` with
 one `proposed` entry whose `Clause:` is `design §5 load_trades`, and the package skeleton.
-Commit 2 holds `data/ingest` — code, README, `tests/intent/ingest/` with two tests, one
+Commit 2 holds `data/ingest` — code, README (one **Entry points and interfaces** row,
+`` `load_trades` ``, `Public: yes`, which the contract's **Public surface (intent)** names),
+`tests/intent/ingest/` with two tests, one
 green and one red that cites `Design §5 load_trades`, and `tests/unit/ingest/` with one green
 test — under the summary `data/ingest: …` and the trailer `Dev-Team-Run: run-package data`, so
 the gate reads it as the run's own commit. Prints dest.
@@ -53,6 +55,10 @@ CONTRACT = """# data — package contract
 |---|---|---|---|---|---|---|
 | ingest | read the export | packages/data/src/data/ingest | docs/packages/data/design/ingest.md | csv | — | — |
 | surface | §4 Pipelines and §5 Public surface | packages/data/src/data | docs/packages/data/design/surface.md | — | ingest | — |
+
+## Public surface (intent)
+
+- `load_trades`, realized by ingest, consumed by the CLI
 """
 
 CONSTRAINTS = """# Constraints
@@ -171,10 +177,23 @@ def test_load_trades_empty_file_has_no_rows(tmp_path: Path) -> None:
     assert load_trades(csv_file) == []
 '''
 
+README = """# ingest
+
+## Purpose
+
+Read the trade export.
+
+## Entry points and interfaces
+
+| name | signature | one-line use case | Public |
+|---|---|---|---|
+| `load_trades` | `load_trades(path)` | read the export | yes |
+"""
+
 FILES_RUN = {
     "packages/data/src/data/ingest/__init__.py": '"""Ingest."""\n\nfrom data.ingest.loader import load_trades\n\n__all__ = ["load_trades"]\n',
     "packages/data/src/data/ingest/loader.py": LOADER,
-    "packages/data/src/data/ingest/README.md": "# ingest\n\n## Purpose\n\nRead the trade export.\n",
+    "packages/data/src/data/ingest/README.md": README,
     "packages/data/tests/intent/ingest/test_loader.py": TESTS,
     "packages/data/tests/unit/ingest/test_loader_unit.py": UNIT_TESTS,
 }

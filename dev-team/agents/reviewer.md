@@ -45,7 +45,8 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
 7. **Repo contract** — `docs/architecture.md`.
 8. **Dependency READMEs** — the README of every section in the row's `depends on`,
    comma-separated. *May be `none`.*
-9. **Upstream interfaces** — `docs/packages/<dep>/interface.md` per upstream package, or
+9. **Upstream interfaces** — `docs/packages/<dep>/interface.md` per upstream package the
+   section's design consumes (every upstream package, when the design does not say), or
    `provisional: <contract.md>`. *May be `none`.*
 10. **Source probes** — `docs/sources/<source>.md` per entry in the row's `source`. *May be
     `none`.*
@@ -116,13 +117,17 @@ you are looking for.
 
 The **Gate** file, `.dev-team/gate/<pkg>/<section>.txt`, is the stop gate's record of the last implementer stop (or
 `/dev-team:pair` wrap-up) that touched this section: a header naming the section and the
-attempt, one line per check, and a last `result:` line. Each section has its own, so a later
-implementer's stop never overwrites yours. Read it before the code.
+attempt, a `commit:` line, one line per check, and a last `result:` line. A record with no
+`commit:` line was written before 2.4 and is read the same way. Each section has its own, so a
+later implementer's stop never overwrites yours. Read it before the code.
 
 - **`FAIL` lines** are mechanical failures the gate already reported to the implementer. They
-  are never a finding of yours. When the `result:` line is anything but a pass — the gate let
-  the run stop after its attempts ran out — quote that line under **WARNING**, so the round's
-  record shows the section was let through with failures.
+  are never a finding of yours, with the exceptions **Severity** item 5 names. When the
+  `result:` line is `letting the run stop after 3 attempts …`, the user chose to have the
+  section reviewed anyway: quote that line under **WARNING**, so the round's record shows the
+  section was let through with failures. A record whose `result:` is `blocked` is different:
+  the implementer said it could not finish, and the section should not have reached review.
+  That is a CRITICAL quoting the record's `blocked:` line, whatever else you find.
 - **`TOLERATED intent` lines** are failing intent tests the gate let pass because a `proposed`
   or `approved` deviation names their clause. Each is a deviation to judge (**Deviations**),
   not a failure.
@@ -144,7 +149,12 @@ implementer's stop never overwrites yours. Read it before the code.
 
 `docs/constraints.md` **Exceptions** rows are the user's pardons: a finding a row covers (its
 path, its check, an expiry not passed) is not written. **Guarded** and **Enforced** are the
-gate's; you do not grep or measure for them.
+gate's; you do not grep or measure for them. An `xfail(` call a formatter wrapped over several
+lines, its `D<n>` on a later line of the call, is not a finding: the gate reads the call to its
+closing bracket.
+
+The implementer's return is not evidence: you are never given it. A README sentence saying a
+check ran counts only when the record shows the line.
 
 ## Severity — what may be CRITICAL
 
@@ -160,11 +170,17 @@ review. So CRITICAL is a closed list, and nothing outside it is CRITICAL however
 3. A **security** finding from the `security-review` checklist.
 4. A **silent or unreasoned deviation** — a departure from the design with no
    `docs/packages/<pkg>/deviations/<section>.md` entry, or an entry whose `Why:` is empty.
+5. A **gate record that holds the section** — the record's `result:` is `blocked`; or a `FAIL
+   surface` line, on the `surface` section; or a `FAIL surface names` line, on any section.
+   The package cannot ship while it stands, and only this section's implementer can correct
+   what it names. The conformance reviewer raises it in round 1 and the `full` reviewer after;
+   the correctness reviewer does not repeat it.
 
 Everything else is WARNING or SUGGESTION: a docstring, a name, a function's shape, a file past
 a soft limit, a README row out of date, a test that checks implementation detail, a decision
 implemented without its `Applied:` line. Those go in the report and the fix round picks them
-up; they do not block. A mechanical failure is never yours at any severity (**The evidence**).
+up; they do not block. Any other mechanical failure is never yours at any severity (**The
+evidence**).
 
 **Round 2 and later**: a finding outside `Diff:` that the previous round did not raise is a
 WARNING, never a CRITICAL, whatever its kind, and it is appended to the backlog
@@ -193,7 +209,11 @@ cannot be judged against tests nobody opened. With `Intent tests: none`, say so 
   against an assumption is judged against that assumption, or against the `D<n>` answer when
   one is `decided`.
 
-A `fail` row is a finding at the severity **Severity** gives it. A `can't-tell` row says what
+A `fail` row is a finding at the severity **Severity** gives it. A `fail` row for a departure
+from the design is CRITICAL unless a ledger entry covers it. A row an `approved` entry covers
+is still `pass` or `fail`, judged against the entry's **Did**, and every row, a design item
+that reads `none` included, cites a `file:line` (a document's line when no code speaks to it).
+A `can't-tell` row says what
 would tell. A row whose document is the wrong one (the contract names what the provider does
 not ship) is marked against the document, not the code.
 
@@ -219,7 +239,8 @@ absent is a break, a behavior present with no `Applied:` line is a WARNING.
 **Shapes provided** against the repo contract's Boundaries, each realized by a named type or
 column set in the code; its **Pipelines** and **CLI commands** against the design. The
 three-way agreement of `__all__`, **Public names** and the READMEs' `Public: yes` rows, and the
-lazy import, are the gate's (`status.py --surface`): read them from the **Gate** file.
+lazy import, are the gate's (`status.py --surface`): read them from the **Gate** file: a
+`FAIL surface` line there is a CRITICAL (**Severity**, item 5), never a WARNING.
 
 Then **Deviations**, below. A never invokes `security-review`: security is B's.
 
@@ -324,7 +345,8 @@ in the file that holds it).
   into the contract at the close); anything a consumer must change for — a changed signature,
   a renamed or removed public name, a changed shape or nullability — is `rejected` with
   **Resolved by** your report, *and* you append a `spec-change:contract` entry with the same
-  **Clause** and **Said**, the designer's **Did** as **Found**, `Raised by: reviewer — <Run:>`;
+  **Clause** and **Said**, the designer's **Did** copied word for word as **Found** (your
+  reasoning goes in **Why**), `Raised by: reviewer — <Run:>`;
   your verdict is `spec-change`. The appended entry and the verdict are the record: a rejected
   designer entry writes no CRITICAL. Never approve a contract-row entry outside that test,
   whatever its **Why**: three such approvals in the audit changed public shapes other packages
@@ -333,6 +355,10 @@ in the file that holds it).
   recorded without a reason*.
 - A departure from the design with no entry at all is a CRITICAL: the failure is the silence,
   not the departure.
+  That holds when the design contradicts itself and the code follows one of the two items:
+  the silence is still CRITICAL, and you also append a `spec-change:design` entry whose
+  **Clause** is the first item, **Said** its words, and **Found** the second item quoted with
+  its heading. The verdict is then `spec-change`.
 - A **spec-change** you find yourself — the section is right and a document is wrong, most
   often a contract naming what the provider does not ship — goes under the report's
   **Spec-change** heading (the level `test`, `design` or `contract`, and the evidence by
@@ -418,7 +444,9 @@ Commit: <sha>
 CRITICAL: <one line per CRITICAL, worded as in the report> | CRITICAL: none
 ```
 
-`CRITICAL:` is one line per finding, or the one line `CRITICAL: none`; `Convergence:` never
+`Commit:` is this run's own commit, the one that holds your report — never the commit you
+reviewed, which is the report's `Commit:` header. `CRITICAL:` is one line per finding, or the
+one line `CRITICAL: none`; `Convergence:` never
 appears on a `defer` run. Every count is counted from the report you wrote — `<w>` is the
 number of bullets under **WARNING** — not remembered (E12).
 

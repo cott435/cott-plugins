@@ -20,7 +20,7 @@
     "exit": 2,
     "stderr_startswith": "dev-team bash guard: ",
     "stderr_contains": [
-      "redirect: packages/data/src/data/ingest/y.py"
+      "may not redirect to packages/data/src/data/ingest/y.py: it is outside .dev-team/tmp/"
     ]
   }
 }

@@ -1,0 +1,42 @@
+{
+  "note": "--surface --section (2.4 phase 5): a grouped name cell fails the one-name rule",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "edit",
+      "path": "packages/data/src/data/ingest/README.md",
+      "message": "data/ingest: grouped name cell",
+      "replace": [
+        "| `load_trades` | `load_trades(path)` | ingest the trades | yes |",
+        "| `load_trades`, `Trade` | `load_trades(path)` | ingest the trades | yes |"
+      ]
+    }
+  ],
+  "args": [
+    "--surface",
+    "data",
+    "--section",
+    "ingest"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "surface names data/ingest: FAIL",
+      "`load_trades`, `Trade`: name cell is not one backticked identifier"
+    ]
+  }
+}

@@ -20,8 +20,8 @@
     "exit": 2,
     "stderr_startswith": "dev-team bash guard: ",
     "stderr_contains": [
-      "dev-team:reviewer may not write",
-      "redirect: docs/followups.md"
+      "dev-team:reviewer may not redirect",
+      "may not redirect to docs/followups.md: it is outside .dev-team/tmp/"
     ]
   }
 }

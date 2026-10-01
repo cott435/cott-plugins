@@ -1,0 +1,29 @@
+{
+  "note": "the probe doc's title line changed (its date) after the design: the title line is not compared, so the design is not stale (2.4, phase 3)",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "edit",
+      "path": "docs/sources/trades.md",
+      "replace": [
+        "# trades — dataset\n",
+        "# trades — dataset — 2026-10-01\n"
+      ],
+      "message": "docs/sources: trades re-probed"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "TEST",
+    "absent": [
+      "newer than design"
+    ]
+  }
+}

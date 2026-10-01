@@ -6,9 +6,10 @@ Usage:  python3 locked.py <name> -- <command> [args…]
 Agents run in parallel and two of them editing `pyproject.toml`, `uv.lock` or the root
 `.gitignore` at once lose one another's lines; this is the one way an implementer touches those
 files (implementer.md, **Files outside your section**). `<name>` is `[a-z0-9-]+` — `deps` for
-`uv add`, `gitignore` for the `.gitignore` block. Waits up to 600 s polling every 0.2 s; a lock
-older than 600 s is a crashed holder's and is removed. Exits with the command's exit code; 2 on
-usage; 75 when the wait runs out. The command inherits stdin, stdout and stderr and runs in the
+`uv add` and for `entry_point.py`, the third shared edit (one entry-point line in the package
+`pyproject.toml`), `gitignore` for the `.gitignore` block. Waits up to 600 s polling every
+0.2 s; a lock older than 600 s is a crashed holder's and is removed. Exits with the command's
+exit code; 2 on usage; 75 when the wait runs out. The command inherits stdin, stdout and stderr and runs in the
 current directory. `guard_bash.py` lets a command through when its program is this script.
 """
 

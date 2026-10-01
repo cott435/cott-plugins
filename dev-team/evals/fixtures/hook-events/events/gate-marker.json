@@ -28,9 +28,14 @@
   "expect": {
     "exit": 0,
     "absent": [
-      ".dev-team/stop/data/ingest",
-      ".dev-team/gate"
+      ".dev-team/stop/data/ingest"
     ],
-    "counter": null
+    "counter": null,
+    "gate_contains": [
+      "dev-team gate — blocked — ",
+      "commit: ",
+      "blocked: D4 needs an answer",
+      "result: blocked"
+    ]
   }
 }

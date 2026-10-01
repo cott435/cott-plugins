@@ -47,7 +47,10 @@ forbid:
     # Both exceptions are in the pattern, not in `unless`, because `unless` exempts the whole
     # line: a bare command written beside /reload-plugins would have been exempted with it.
     # /reload-plugins is Claude Code's own command.
-    pattern: '(^|[\s"(\[`])/(?!dev-team:|reload-plugins)(?:[a-z][a-z0-9]*-[a-z0-9-]+|status)\b'
+    # A plugin-dev command (the same slash form, with `plugin-dev:` after the slash) is
+    # prefixed too: the notes under site/notes/ name them, and they are typeable wherever
+    # plugin-dev is installed.
+    pattern: '(^|[\s"(\[`])/(?!dev-team:|plugin-dev:|reload-plugins)(?:[a-z][a-z0-9]*-[a-z0-9-]+|status)\b'
 
   - name: no agent or skill stages everything
     # §Project convention stages by explicit path, so a run never commits a file it did not
@@ -182,6 +185,12 @@ forbid:
     near: 120
     unless: ['--serial']
     files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/flow.md', 'site/workflows/*.md']
+  - name: nothing counts on a hand-back after the first
+    # With SubagentHandback a caller receives an agent's first report and nothing after it
+    # (plugin-anatomy, agents.md, What reaches its caller). An agent told to amend its report,
+    # or a hook telling it to, writes text nobody reads; the outcome is in the gate's record.
+    pattern: 'Amends:|hand back an amendment|takes your \*\*last\*\* turn|takes your last turn|its \*\*last\*\* hand-back'
+    files: ['agents/*.md', 'skills/**/*.md', 'hooks/*.py']
 
 # Every heading a reader parses is one the owner's template defines.
 headings:
@@ -252,7 +261,7 @@ headings:
     # plan is a bolded term inside item 3, not a numbered item, so the owner parser cannot see
     # it; the tester cites item 3 by name, and the Module plan rides on that. The design's
     # first line, `Mode:`, is not a numbered item either; the tester reads it beside its
-    # `Adopted code:` field. No reader cites `As shipped` or `Revision`: the template has none.
+    # `Design mode:` field. No reader cites `As shipped` or `Revision`: the template has none.
     owner: agents/designer.md
     owner_span: ['## Design document template', null]
     readers:
@@ -398,6 +407,32 @@ headings:
         cites: ['BLOCKED', 'PLAN', 'PROBE', 'DESIGN', 'TEST', 'IMPLEMENT', 'REVIEW', 'FIX n', 'DONE']
       - file: README.md
         span: ['## The states', 'A package is **shipped**']
+
+  - name: gate record lines and result values their readers parse are ones the gate writes
+    # status.py holds a row on the record's slot, commit and result; the reviewer reads the
+    # check lines and the result. The owner is the three numbered lists at the end of the
+    # gate's docstring. A renamed value leaves status.py deriving REVIEW for a section whose
+    # implementer blocked, which is the fault 2.4 exists to close.
+    owner: hooks/gate_on_stop.py
+    owner_span: ["The record's lines, in order", "The parsers are status.py's"]
+    readers:
+      - file: skills/status/scripts/status.py
+        cites: ['header', 'commit', 'result', 'attempt', 'blocked', 'spec-change', 'report',
+                'not done', 'letting the run stop']
+      - file: agents/reviewer.md
+        cites: ['header', 'commit', 'checks', 'result', 'pass', 'blocked', 'letting the run stop']
+      - file: skills/run-package/SKILL.md
+        cites: ['result', 'blocked', 'letting the run stop']
+
+  - name: evidence forms the driver copies are ones status.py prints
+    # The driver builds the tester's Regenerate field and the designer's and architect's
+    # Spec-change fields by copying headings out of a row's evidence, and asks about a row
+    # whose evidence starts `gate `. The owner is the docstring's numbered Evidence list.
+    owner: skills/status/scripts/status.py
+    owner_span: ['**Evidence.**', '**Gate record.**']
+    readers:
+      - file: skills/run-package/SKILL.md
+        cites: ['open', 'regenerate', 'gate blocked', 'gate let through']
 
   - name: every field the driver sends the researcher is one the researcher's Inputs defines
     # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.

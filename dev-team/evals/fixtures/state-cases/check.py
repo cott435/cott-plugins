@@ -4,7 +4,9 @@
 Usage:  python3 check.py [case ...]
 
 Builds each case (build.py) into a temporary directory, runs the plugin's status.py there
-with the case's `args`, and checks `expect`:
+with the case's `args`, and checks `expect`. A case's `gate` key (build.py) writes stop-gate
+records under `.dev-team/gate/data/`, with `.dev-team/` excluded from git so an untracked
+record never fails `--run-gate`.
 
 - `section`, `state`, `ready`, `rounds`, `evidence` (a regex): the `<section> · …` row.
 - `contains` / `absent`: substrings the output must / must not hold.

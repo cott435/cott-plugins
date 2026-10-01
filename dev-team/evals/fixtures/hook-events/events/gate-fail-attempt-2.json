@@ -30,11 +30,13 @@
     "stderr_contains": [
       "attempt 2 of 3",
       "debugging-and-error-recovery",
-      "This is your last retry",
-      "Gate: let through after 3 attempts",
-      "hand back an amendment, not the full report again",
-      "This is your last retry",
-      "Gate: let through after 3 attempts"
+      "A FAIL you cannot clear is a block",
+      "end your turn with the one line `Result: done`",
+      "This is your last retry"
+    ],
+    "stderr_lacks": [
+      "Amends:",
+      "let through after 3 attempts"
     ],
     "counter": 2
   }

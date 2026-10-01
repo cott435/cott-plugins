@@ -20,7 +20,7 @@
     "exit": 2,
     "stderr_startswith": "dev-team bash guard: ",
     "stderr_contains": [
-      "redirect: log.txt"
+      "may not redirect to log.txt: it is outside .dev-team/tmp/"
     ]
   }
 }

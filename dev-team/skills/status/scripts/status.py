@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Derive where every package and section stands from docs/ and the code. Nothing is stored.
 
-Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--repo]
+Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg> [--section <s>]] [--repo]
                           [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]
 
 A section is in exactly one state, decided in this order, first match wins:
@@ -9,24 +9,28 @@ A section is in exactly one state, decided in this order, first match wins:
 1. **BLOCKED** — an open decision with no assumption binds the section (`docs/decisions.md`
    entry with `Status: open`, no `Assumption if unanswered:`, `Scope:` covering `repo`, the
    package or the section); or the newest review round says `request changes` and the cap is
-   hit: round 3 or later, or round 2 whose `Convergence:` line has one or more prior unfixed.
+   hit: round 3 or later, or round 2 whose `Convergence:` line has one or more prior unfixed;
+   or the section has a README, no review round covers its code, and the stop gate's record
+   for its current commit ends `result: blocked` or `result: letting the run stop after 3
+   attempts …`.
 2. **PLAN** — an open `spec-change:contract` names the section.
 3. **PROBE** — a source in the row's `source` column needs probing: an `api:` source whose
    `docs/sources/<token>.md` lacks a `## <pkg>/<section>` heading, or a `dataset:` source with
    no `docs/sources/<token>.md` at all.
 4. **DESIGN** — no design at `docs/packages/<pkg>/design/<section>.md`; or an open
    `spec-change:design` entry; or an open change file whose **Affected sections**
-   names the section and is newer than the design; or a probe doc the row names is newer than
-   the design. A `spec-change:design` entry counts only until the design is committed after
-   the commit that added it: the designer's rewrite answers it, and nobody sets its `Status:`.
+   names the section and is newer than the design; or a probe doc the row names lost or
+   reworded a line the design was written against (added lines, the title line and other
+   sections' entries do not count).
 5. **TEST** — no `tests/intent/<section>/` under the package root; or the design is newer than
-   the intent tree; or an open `spec-change:test` entry the intent tree has not been committed
-   after (the tester's regeneration answers it); or an `approved` deviation entry whose
+   the intent tree; or an open `spec-change:test` entry; or an `approved` deviation entry whose
    `Clause:` is cited by an intent test docstring that carries no `(deviation ` tag
    (regenerate).
 6. **IMPLEMENT** — no README (`<section path>/README.md`; for `surface`,
    `docs/packages/<pkg>/interface.md`); or the intent tree, regeneration and `intent tests current with design`
-   commits skipped, is newer than the README.
+   commits skipped, is newer than the README; or the section has a README, no review round
+   covers its code, and the gate's record for its current commit ends `result: not done
+   (attempt <n> of 3)`, a run that died between attempts.
 7. **REVIEW** — no review round; or round 1 lacks its `a` or `b` report; or the section's code
    (its path, `tests/unit/<section>`, `tests/intent/<section>` less those same commits, its
    README) is newer than the newest round's `Commit:`; or the newest round's verdict is
@@ -55,14 +59,17 @@ script never writes it; `--run-gate` fails on an inbox holding anything the cent
 does not, and on a central `Applied: <pkg>/<section>, …` line the section's inbox entry for
 that `D<n>` no longer holds (the hook mirrors a section's own lines).
 
-An **open spec-change** is an entry `spec-change:<level>`
-with `Status: open`, or a review report of the newest round whose verdict is `spec-change`:
-each level its **Spec-change** heading names counts as open until a ledger entry of that level
-for the section is committed with or after the report (then the entry speaks), or the
-document the level names (the design, the intent tree, the package contract) is committed
-after it. So a round-1 `b` reviewer, which never writes the ledger, still re-opens the step.
-A `spec-change:design` or `:test` counts only until the design or intent tree is committed
-after it; a `spec-change:contract` entry until the architect closes it.
+An **open spec-change** is a ledger entry `spec-change:<level>` with `Status: open`, or a
+review report of the newest round whose verdict is `spec-change`. A ledger entry whose heading
+ends `— <k>` (written by 2.2 or later) is open until the agent that answers it sets its
+`Status:` to `resolved` — the tester for `test`, the designer for `design`, the architect for
+`contract` — and is never closed by commit order. A ledger entry without `— <k>`, and each
+level a report's **Spec-change** heading names, keep the older rule: open until the document
+the level names (the design, the intent tree, the package contract) is committed after it, or,
+for a report's, until a ledger entry of that level for the section is committed with or after
+the report (then the entry speaks). So a round-1 `b` reviewer, which never writes the ledger,
+still re-opens the step. An older `spec-change:contract` ledger entry is closed by the
+architect only.
 
 Round 1 is a pair: a round whose reports carry letters and lack `a` or `b` is REVIEW (rule 7)
 whatever the other says, so one reviewer's approval never ships a section alone.
@@ -72,12 +79,41 @@ A Sections `path` cell written as `…/<name>/` (or `.../<name>/`) is the defaul
 
 Ready: a section whose state is neither DONE nor BLOCKED and whose every in-package `depends
 on` is DONE. The `surface` row depends on every other row whatever its cell says.
-Shipped: the `surface` section is DONE. Rounds: the highest `n` over the section's review
-reports, at either location; a round's verdict is the worst of its
+Shipped: the `surface` section is DONE and `--surface <pkg>` passes; otherwise the block prints
+`shipped: no (surface <STATE>)` or `shipped: no (surface check FAIL)`. Rounds: the highest `n`
+over the section's review reports, at either location; a round's verdict is the worst of its
 reports (request changes > spec-change > approve); a report with no `-r<n>-` is round 1.
+
+`--surface <pkg> --section <s>` checks one section's README, the per-section half the stop
+gate runs for every section but `surface`: a row of **Entry points and interfaces** whose name
+cell is not exactly one backticked Python identifier, and a `Public: yes` name the contract's
+**Public surface (intent)** does not name as a whole word (skipped when it has no such item),
+are each one reason; it prints `surface names <pkg>/<s>: PASS`, `FAIL` with one `  - <reason>`
+line each (exit 1), or `n/a (no README)`.
 `--rounds <pkg>/<section>` prints a third line, `commit: <short sha>`, the newest commit
 touching the section's path, `tests/unit/<section>`, `tests/intent/<section>` and its README,
 or `commit: none` — the reviewer copies it as its report's `Commit:` (F12).
+
+**Evidence.** The strings the driver copies out of a row's evidence cell:
+
+1. **open** — `open <heading>; <heading>; …`: every open spec-change of the level that won
+   the row (PLAN, DESIGN or TEST), ledger headings and `<report path> — spec-change:<level>`
+   alike, `; `-separated.
+2. **regenerate** — `regenerate: <heading>`: an approved deviation whose clause an untagged
+   intent test cites.
+3. **gate blocked** — `gate blocked: <the marker's reason>`.
+4. **gate let through** — `gate let through after 3 attempts, <k> failures`.
+5. **gate not done** — `gate not done (attempt <n> of 3)`.
+
+**Gate record.** `.dev-team/gate/<pkg>/<section>.txt`, written by `hooks/gate_on_stop.py` on
+every implementer stop. It speaks for the commit its `commit:` line names: the newest commit
+touching the section's code, `tests/unit/<section>` and its README, the intent tree left out.
+A record whose `commit:` is not that commit, a record with no `commit:` line (written before
+2.4), a missing record, and a record read while those paths have uncommitted changes are all
+treated as absent, and the row is derived without it. A record whose header slot is `report`
+(`/dev-team:pair`'s wrap-up) or `spec-change` never holds a row. Once a review round's
+`Commit:` covers the code the review speaks and the record is not read, which is what makes
+the user's *review anyway* stick.
 
 **Scaffold.** A package is ready to be built in when its workspace exists: a root
 `pyproject.toml`, and, when that root is a uv workspace (`[tool.uv.workspace]`), a
@@ -98,8 +134,9 @@ it names before touching the section. One `<Field>: <value>` line per field, in 
 3. **Contract** — `docs/packages/<pkg>/contract.md`.
 4. **Repo contract** — `docs/architecture.md`.
 5. **Dependency READMEs** — `<path>/README.md` per section in the row's `depends on`.
-6. **Upstream interfaces** — per package in the Packages row's `depends on`,
-   `docs/packages/<dep>/interface.md` when it exists, else `provisional:
+6. **Upstream interfaces** — per package in the Packages row's `depends on` that the
+   design's `Upstream packages:` line names (every one when the design is missing or has no
+   such line), `docs/packages/<dep>/interface.md` when it exists, else `provisional:
    docs/packages/<dep>/contract.md`.
 7. **Source probes** — `docs/sources/<token>.md` per entry in the row's `source`.
 8. **Intent tests** — `<package root>/tests/intent/<section>/` when it exists.
@@ -112,7 +149,7 @@ it names before touching the section. One `<Field>: <value>` line per field, in 
 12. **Run** — `run-package <pkg>`.
 
 `--fields <pkg>/<section>` prints the spawn fields run-package would otherwise resolve by
-reading files, four `key: value` lines in this order, and exits 0 (2 on a section the contract
+reading files, five `key: value` lines in this order, and exits 0 (2 on a section the contract
 lacks):
 
 1. `mode: new | document | delta` — `delta` when an open change file names the section, or the
@@ -128,6 +165,8 @@ lacks):
 4. `diff base: <sha> | none` — from the newest round `n` ≥ 1, the `Commit:` of round `n`'s
    `-s` report, or its `-a` report when `n` is 1, or its one report when it has no letter;
    `none` with no round or no `Commit:`. The next reviewer's `Diff:` field is `<sha>..HEAD`.
+5. `upstream interfaces: <path>, … | none` — as **Upstream interfaces** in `--inputs`. The
+   tester's and the reviewer's field; the designer is sent every upstream package.
 """
 
 from __future__ import annotations
@@ -641,9 +680,13 @@ def entry_rev(entry: dict[str, str]) -> str | None:
 
 
 def answered(entry: dict[str, str], rev: str | None) -> bool:
-    """True when a spec-change is answered: rev (the design, the intent tree, or for one a report
-    raised, the contract) was committed after it. A contract-level ledger entry is closed by the
-    architect only."""
+    """True when a spec-change is answered. A ledger entry whose heading carries `— <k>` (2.2 or
+    later) speaks through its `Status:`: it is live while that reads `open`, whatever was
+    committed since. An older ledger entry and a report-raised one keep the commit-order rule:
+    answered when rev (the design, the intent tree, or for a report's, the contract) was
+    committed after it. An older contract-level ledger entry is closed by the architect only."""
+    if entry.get("source") != "report" and entry.get("k"):
+        return False
     if entry["kind"] == "spec-change:contract" and entry.get("source") != "report":
         return False
     return _newer(rev, entry_rev(entry))
@@ -865,11 +908,29 @@ def _strip_other_sections(text: str, pkg: str, section: str) -> str:
     return "\n".join(keep).strip()
 
 
-def _probe_newer(doc: Path, design_rev: str | None, pkg: str, section: str) -> str | None:
-    """The probe doc's revision when it is newer than the design for this section, else None.
+def _shared_lines(text: str, pkg: str, section: str) -> list[str]:
+    """A probe doc's non-blank lines, less its title line (the first line starting `# `) and
+    every `## <pkg>/<section>` entry but this section's own."""
+    lines = [line for line in _strip_other_sections(text, pkg, section).splitlines() if line.strip()]
+    title = next((i for i, line in enumerate(lines) if line.startswith("# ")), None)
+    if title is not None:
+        del lines[title]
+    return lines
 
-    A commit that only appends or edits another section's `## <pkg>/<section>` entry does not
-    count: a new consuming section makes that section need PROBE, not this design stale.
+
+def _is_subsequence(needle: list[str], hay: list[str]) -> bool:
+    """True when every item of needle appears in hay, in order."""
+    it = iter(hay)
+    return all(any(x == y for y in it) for x in needle)
+
+
+def _probe_newer(doc: Path, design_rev: str | None, pkg: str, section: str) -> str | None:
+    """The probe doc's revision when it changed the design's view of the source, else None.
+
+    The doc as it stood at the design's commit is compared with the doc now, line by line, each
+    reduced by `_shared_lines`. Added lines, the title line (its date) and other sections'
+    `## <pkg>/<section>` entries re-open nothing: a new consuming section makes that section
+    need PROBE, not this design stale. A design-time line that is gone or reworded does.
     """
     doc_rev = _rev(doc)
     if not _newer(doc_rev, design_rev):
@@ -880,7 +941,7 @@ def _probe_newer(doc: Path, design_rev: str | None, pkg: str, section: str) -> s
     if before is None:
         return doc_rev
     now = doc.read_text() if doc.exists() else ""
-    if _strip_other_sections(before, pkg, section) == _strip_other_sections(now, pkg, section):
+    if _is_subsequence(_shared_lines(before, pkg, section), _shared_lines(now, pkg, section)):
         return None
     return doc_rev
 
@@ -920,13 +981,98 @@ def _cap_hit(n: int, verdict: str, fields: dict[str, str]) -> bool:
     return verdict == "request changes" and (n >= 3 or (n == 2 and _prior_unfixed(fields) >= 1))
 
 
+# ---------------------------------------------------------------------------------------------
+# The stop gate's record
+# ---------------------------------------------------------------------------------------------
+
+
+GATE_HEADER = re.compile(r"^dev-team gate — (attempt (\d+)|blocked|spec-change|report) — ")
+
+
+def _gate_paths(pkg: str, section: str) -> list[Path | str]:
+    """What the implementer writes for the section: its code (nested sections excluded),
+    `tests/unit/<section>` and its README (`interface.md` for `surface`). Not the intent tree."""
+    p = _paths(pkg, section)
+    return [*p["code"], p["unit"], p["readme"]]  # type: ignore[list-item]
+
+
+def gate_commit(pkg: str, section: str) -> str | None:
+    """Full sha of the newest commit touching the section's code, unit tree and README: the commit
+    a gate record speaks for. None when no commit does. The stop gate imports it, so the record's
+    writer and its reader compute the same commit."""
+    return last_commit(*_gate_paths(pkg, section))
+
+
+def gate_record(pkg: str, section: str) -> dict[str, object] | None:
+    """The stop gate's record for the section's current commit, parsed; None when it is absent or stale.
+
+    Keys: slot (`attempt`, `blocked`, `spec-change` or `report`), attempt (int or None),
+    result (the text after `result: ` on the last non-empty line), fails (every line starting
+    `FAIL`), blocked (the text after `blocked: `, or "").
+    """
+    f = ROOT / ".dev-team" / "gate" / pkg / f"{section}.txt"
+    try:
+        lines = [line.rstrip("\n") for line in f.read_text().splitlines()]
+    except (OSError, UnicodeDecodeError):
+        return None
+    if len(lines) < 3:
+        return None
+    head = GATE_HEADER.match(lines[0])
+    if head is None:
+        return None
+    value = next((line[len("commit:"):].strip() for line in lines if line.startswith("commit:")), None)
+    if value is None:
+        return None
+    if uncommitted(*_gate_paths(pkg, section)):
+        return None
+    sha = gate_commit(pkg, section)
+    if value == "none":
+        if sha is not None:
+            return None
+    elif len(value) < 7 or sha is None or not sha.startswith(value):
+        return None
+    last = next((line for line in reversed(lines) if line.strip()), "")
+    slot = "attempt" if head.group(2) else head.group(1)
+    return {
+        "slot": slot,
+        "attempt": int(head.group(2)) if head.group(2) else None,
+        "result": last[len("result: "):].strip() if last.startswith("result: ") else "",
+        "fails": [line for line in lines if line.startswith("FAIL")],
+        "blocked": next((line[len("blocked: "):].strip() for line in lines if line.startswith("blocked: ")), ""),
+    }
+
+
+def _code_after_review(pkg: str, section: str, rsha: str) -> str | None:
+    """The first change to the section's code (its path, `tests/unit/<section>`,
+    `tests/intent/<section>` less regeneration commits, its README) after review commit rsha;
+    None when there is none. Rule 7 and `_review_covers` both read it."""
+    p = _paths(pkg, section)
+    return changed_since(rsha, *p["code"], p["unit"], p["intent"], p["readme"], skip_regen=(pkg, section))  # type: ignore[misc]
+
+
+def _review_covers(pkg: str, section: str) -> bool:
+    """True when a review round exists, its `Commit:` is readable, and the section's code is not
+    newer than it: rule 7's expression."""
+    n, _, rsha, _ = newest_round(pkg, section)
+    if n == 0 or rsha is None:
+        return False
+    return _code_after_review(pkg, section, rsha) is None
+
+
+def _gate_hold(pkg: str, section: str, readme: Path) -> dict[str, object] | None:
+    """The gate record that may hold the row: the README exists, no review round covers the
+    code, and the record is current; else None."""
+    if not readme.exists() or _review_covers(pkg, section):
+        return None
+    return gate_record(pkg, section)
+
+
 def section_state(pkg: str, section: str) -> tuple[str, str]:
     """(STATE, evidence) for one section: the first rule in the module docstring that fires."""
     p = _paths(pkg, section)
     row: dict[str, str] = p["row"]  # type: ignore[assignment]
     design: Path = p["design"]  # type: ignore[assignment]
     intent: Path = p["intent"]  # type: ignore[assignment]
-    unit: Path = p["unit"]  # type: ignore[assignment]
     readme: Path = p["readme"]  # type: ignore[assignment]
     code: list[str] = p["code"]  # type: ignore[assignment]
     regen = (pkg, section)
@@ -938,14 +1084,23 @@ def section_state(pkg: str, section: str) -> tuple[str, str]:
     if _cap_hit(n, verdict, fields):
         k = _prior_unfixed(fields)
         return "BLOCKED", f"review r{n} request changes" + (f", {k} prior unfixed" if k else "") + " (cap)"
+    record = _gate_hold(pkg, section, readme)
+    if record is not None:
+        result = str(record["result"])
+        if record["slot"] == "blocked" and result == "blocked":
+            why = str(record["blocked"]).replace(" · ", ", ") or "(no reason given)"
+            return "BLOCKED", f"gate blocked: {why}"
+        if record["slot"] == "attempt" and result.startswith("letting the run stop"):
+            m = re.search(r"with (\d+) failure", result)
+            return "BLOCKED", f"gate let through after 3 attempts, {m.group(1) if m else '?'} failures"
 
     spec = live_spec_changes(pkg, section)
     kinds = {e["kind"] for e in spec}
 
     # 2. PLAN
     if "spec-change:contract" in kinds:
-        e = next(e for e in spec if e["kind"] == "spec-change:contract")
-        return "PLAN", f"open {e['heading']}"
+        heads = [e["heading"] for e in spec if e["kind"] == "spec-change:contract"]
+        return "PLAN", "open " + "; ".join(heads)
 
     # 3. PROBE
     for kind, token in _sources(row.get("source", "")):
@@ -959,8 +1114,8 @@ def section_state(pkg: str, section: str) -> tuple[str, str]:
     if not design.exists():
         return "DESIGN", "no design"
     if "spec-change:design" in kinds:
-        e = next(e for e in spec if e["kind"] == "spec-change:design")
-        return "DESIGN", f"open {e['heading']}"
+        heads = [e["heading"] for e in spec if e["kind"] == "spec-change:design"]
+        return "DESIGN", "open " + "; ".join(heads)
     design_rev = _rev(design)
     for c in open_changes(pkg, section):
         crev = _rev(c["path"])  # type: ignore[arg-type]
@@ -1000,16 +1155,17 @@ def section_state(pkg: str, section: str) -> tuple[str, str]:
         if intent_rev_nr == UNCOMMITTED:
             return "IMPLEMENT", f"uncommitted: {_rel(intent)}"
         return "IMPLEMENT", f"tests {_short(intent_rev_nr)} newer than README {_short(readme_rev)}"
+    if record is not None and record["slot"] == "attempt" and str(record["result"]).startswith("not done (attempt "):
+        return "IMPLEMENT", f"gate {record['result']}"
 
     # 7. REVIEW
     if n == 0:
         return "REVIEW", "no review"
     if n == 1 and (missing := _missing_letters(pkg, section)):
         return "REVIEW", f"review r1 lacks its {' and '.join(missing)} report"
-    code_paths = (*code, unit, intent, readme)
     if rsha is None:
         return "REVIEW", f"review r{n} has no Commit:"
-    if (after := changed_since(rsha, *code_paths, skip_regen=regen)) is not None:
+    if (after := _code_after_review(pkg, section, rsha)) is not None:
         if after == UNCOMMITTED:
             return "REVIEW", f"uncommitted: {code[0]}"
         return "REVIEW", f"code {_short(after)} newer than review r{n} {rsha[:7]}"
@@ -1074,12 +1230,18 @@ def next_command(pkg: str, table: list[dict[str, object]] | None = None) -> str:
             d = str(r["evidence"]).split(",")[0].split()[0]
             return f"answer {d} in docs/decisions.md, then /dev-team:run-package {pkg}"
     for r in table:
+        if r["state"] == "BLOCKED" and str(r["evidence"]).startswith("gate "):
+            return (f"/dev-team:run-package {pkg} {r['section']} --step IMPLEMENT (run it again) or "
+                    f"/dev-team:run-package {pkg} {r['section']} --step REVIEW (review anyway)")
+    for r in table:
         if r["state"] == "BLOCKED":
             return f"/dev-team:run-package {pkg} {r['section']} --step REVIEW (one more round) or /dev-team:run-package {pkg} --defer"
     if any(r["ready"] for r in table):
         return f"/dev-team:run-package {pkg}"
     if any(r["state"] != "DONE" for r in table):
         return f"/dev-team:run-package {pkg}"
+    if shipped_line(pkg, table) == "shipped: no (surface check FAIL)":
+        return f"correct the README rows status.py --surface {pkg} names, then /dev-team:run-package {pkg}"
     if _to_sync(pkg):
         return f"/dev-team:sync-plan {pkg}"
     others = [name for name, _ in packages() if name != pkg]
@@ -1107,6 +1269,17 @@ def scaffold_needed(pkg: str) -> list[str]:
     return []
 
 
+def shipped_line(pkg: str, table: list[dict[str, object]]) -> str:
+    """The block's `shipped:` line: yes only when `surface` is DONE and `--surface <pkg>` passes.
+    The check runs only once `surface` is DONE."""
+    surface = next((r for r in table if r["section"] == "surface"), None)
+    if surface is None:
+        return "shipped: no (no surface row)"
+    if surface["state"] != "DONE":
+        return f"shipped: no (surface {surface['state']})"
+    return "shipped: yes" if surface_check(pkg)[0] == "PASS" else "shipped: no (surface check FAIL)"
+
+
 def package_report(pkg: str) -> list[str]:
     lines = [f"## {pkg}", "section · state · evidence · ready · round · open spec-change · last commit"]
     if not contract_path(pkg).exists():
@@ -1119,11 +1292,7 @@ def package_report(pkg: str) -> list[str]:
                                  str(r["spec"]), str(r["commit"])]))
     if needed := scaffold_needed(pkg):
         lines.append(f"scaffold: needed ({', '.join(needed)})")
-    surface = next((r for r in table if r["section"] == "surface"), None)
-    if surface is None:
-        lines.append("shipped: no (no surface row)")
-    else:
-        lines.append("shipped: yes" if surface["state"] == "DONE" else f"shipped: no (surface {surface['state']})")
+    lines.append(shipped_line(pkg, table))
     lines.append(f"next: {next_command(pkg, table)}")
     return lines
 
@@ -1312,11 +1481,63 @@ def _dunder_all(init: Path) -> set[str] | None:
 
 
 def _name_cell(row: dict[str, str]) -> str:
-    """A table row's name: the first backticked span of its `name` cell (`` `Trade` (`models.py`) ``
-    is `Trade`), else the cell up to its first `(`."""
+    """An interface.md **Public names** row's name: the first backticked span of its `name` cell
+    (`` `Trade` (`models.py`) `` is `Trade`), else the cell up to its first `(`. A section
+    README's rows are read by `_name_cells`."""
     raw = next((v for h, v in row.items() if "name" in h), "")
     m = re.match(r"\s*`([^`]+)`", raw)
     return (m.group(1) if m else raw.split("(")[0]).strip("`* ").strip()
+
+
+ONE_NAME = re.compile(r"^\s*`[A-Za-z_]\w*`\s*$")
+
+
+def _name_cells(row: dict[str, str]) -> tuple[list[str], str | None]:
+    """A README row's names: every backticked span of its `name` cell that is a Python identifier,
+    and a reason when the cell is not exactly one backticked identifier, else None.
+
+    One exported name per row: `` `load_trades`, `Trade` `` and `` `Loader.load` `` each give a
+    reason, and so does a file hint, `` `load_trades` (`__init__.py`) ``.
+    """
+    raw = next((v for h, v in row.items() if "name" in h), "")
+    names = [s for s in re.findall(r"`([^`]+)`", raw) if s.isidentifier()]
+    reason = None if ONE_NAME.match(raw) else f"{raw.strip()}: name cell is not one backticked identifier"
+    return names, reason
+
+
+def _public_intent(pkg: str) -> str | None:
+    """The body of the contract's **Public surface (intent)** item, or None when it has none."""
+    f = contract_path(pkg)
+    if not f.exists():
+        return None
+    text = f.read_text()
+    body = _item(text, "Public surface (intent)") or _item(text, "Public surface")
+    if not body:
+        return None
+    lines = body.splitlines()
+    if lines and lines[0].lstrip().startswith("#"):  # the heading line itself names nothing
+        lines = lines[1:]
+    return "\n".join(lines)
+
+
+def surface_names(pkg: str, section: str) -> tuple[str, list[str]]:
+    """(PASS | FAIL | n/a, reasons): one section README's **Entry points and interfaces** rows,
+    each name cell exactly one backticked identifier, and each `Public: yes` name one the
+    contract's **Public surface (intent)** names as a whole word."""
+    readme: Path = _paths(pkg, section)["readme"]  # type: ignore[assignment]
+    if not readme.exists():
+        return "n/a", []
+    intent = _public_intent(pkg)
+    fails = []
+    for er in table_rows(_item(readme.read_text(), "Entry points and interfaces"), ("name",)):
+        names, reason = _name_cells(er)
+        if reason:
+            fails.append(reason)
+        if intent is not None and col(er, "public").lower().startswith("yes"):
+            for name in names:
+                if not re.search(rf"(?<!\w){re.escape(name)}(?!\w)", intent):
+                    fails.append(f"{name}: Public: yes, not in the contract's Public surface (intent)")
+    return ("FAIL" if fails else "PASS"), fails
 
 
 def surface_check(pkg: str) -> tuple[str, list[str]]:
@@ -1353,8 +1574,12 @@ def surface_check(pkg: str) -> tuple[str, list[str]]:
         f = ROOT / r["path"] / "README.md"
         if f.exists():
             for er in table_rows(_item(f.read_text(), "Entry points and interfaces"), ("name",)):
-                if col(er, "public").lower().startswith("yes") and _name_cell(er):
-                    readmes.add(_name_cell(er))
+                names, reason = _name_cells(er)
+                if reason:
+                    fails.append(f"{pkg}/{r['section']} README: {reason}")
+                # Every name the cell holds counts, so a grouped cell's second name is not lost.
+                if col(er, "public").lower().startswith("yes"):
+                    readmes.update(names)
     for a, an, b, bn in ((all_names, "__all__", public, "interface.md Public names"),
                          (public - surface_own, "interface.md Public names", readmes, "README Public: yes rows"),
                          (readmes, "README Public: yes rows", all_names, "__all__")):
@@ -1388,9 +1613,11 @@ def repo_report() -> list[str]:
             continue
         table = package_table(pkg)
         done = sum(1 for r in table if r["state"] == "DONE")
-        surface = next((r for r in table if r["section"] == "surface"), None)
-        if surface and surface["state"] == "DONE":
+        shipped = shipped_line(pkg, table)
+        if shipped == "shipped: yes":
             pk.append(f"{pkg}: shipped")
+        elif shipped == "shipped: no (surface check FAIL)":
+            pk.append(f"{pkg}: building ({done}/{len(table)} DONE, surface check FAIL)")
         elif not any(_paths(pkg, str(r["section"]))["design"].exists() for r in table):  # type: ignore[union-attr]
             pk.append(f"{pkg}: planned")
         else:
@@ -1426,6 +1653,35 @@ def upstream_packages(pkg: str) -> list[str]:
     return []
 
 
+def design_upstream(pkg: str, section: str) -> list[str] | None:
+    """The names on the design's `Upstream packages:` line, the first match; `none` gives [].
+
+    None when there is no design or no such line.
+    """
+    design: Path = _paths(pkg, section)["design"]  # type: ignore[assignment]
+    if not design.exists():
+        return None
+    m = re.search(r"^\**Upstream packages:\**\s*(.*)$", design.read_text(), re.M)
+    return _names(m.group(1)) if m else None
+
+
+def _upstream_interfaces(pkg: str, section: str) -> list[str]:
+    """Per upstream package the design's `Upstream packages:` line names (every one when the
+    design is missing or has no such line): its interface.md, else `provisional: <contract>`.
+
+    A name on the line that is not in the Packages row's `depends on` is ignored: the line
+    narrows the row and cannot widen it.
+    """
+    named = design_upstream(pkg, section)
+    ups = []
+    for dep in upstream_packages(pkg):
+        if named is not None and dep not in named:
+            continue
+        iface = DOCS / "packages" / dep / "interface.md"
+        ups.append(_rel(iface) if iface.exists() else f"provisional: {_rel(contract_path(dep))}")
+    return ups
+
+
 def implementer_inputs(pkg: str, section: str) -> list[str]:
     """The implementer's spawn block for one section, one `<Field>: <value>` line per field.
 
@@ -1435,10 +1691,7 @@ def implementer_inputs(pkg: str, section: str) -> list[str]:
     rows = {r["section"]: r for r in sections(pkg)}
     p = _paths(pkg, section)
     deps = [f"{rows[d]['path']}/README.md" for d in _names(row.get("depends on", "")) if d in rows and d != section]
-    ups = []
-    for dep in upstream_packages(pkg):
-        iface = DOCS / "packages" / dep / "interface.md"
-        ups.append(_rel(iface) if iface.exists() else f"provisional: {_rel(contract_path(dep))}")
+    ups = _upstream_interfaces(pkg, section)
     probes = [f"docs/sources/{token}.md" for _, token in _sources(row.get("source", ""))]
     intent: Path = p["intent"]  # type: ignore[assignment]
     n, verdict, _, _ = newest_round(pkg, section)
@@ -1510,6 +1763,7 @@ def spawn_fields(pkg: str, section: str) -> list[str]:
         f"change file: {', '.join(changes) or 'none'}",
         f"design mode: {design_mode}",
         f"diff base: {base}",
+        f"upstream interfaces: {', '.join(_upstream_interfaces(pkg, section)) or 'none'}",
     ]
 
 
@@ -1528,6 +1782,7 @@ def main() -> int:
     argv = sys.argv[1:]
     has_rounds, rounds_target = _flag_value(argv, "--rounds")
     has_surface, surface_pkg = _flag_value(argv, "--surface")
+    has_section, section_name = _flag_value(argv, "--section")
     has_gate, gate_pkg = _flag_value(argv, "--run-gate")
     has_inputs, inputs_target = _flag_value(argv, "--inputs")
     has_scaffold, scaffold_pkg = _flag_value(argv, "--scaffold")
@@ -1555,7 +1810,25 @@ def main() -> int:
         for f in fails:
             print(f"  - {f}")
         code |= 1 if fails else 0
-    if has_surface:
+    if has_section and not has_surface:
+        print("--section needs --surface <pkg>")
+        return 2
+    if has_surface and has_section:
+        if not surface_pkg or not section_name:
+            print("--surface needs a package and --section a section: status.py --surface <pkg> --section <s>")
+            return 2
+        if section_name == "surface":
+            print(f"--section surface is the package-wide check: status.py --surface {surface_pkg}")
+            return 2
+        if _row(surface_pkg, section_name) is None:
+            print(f"no section {section_name} in {_rel(contract_path(surface_pkg))}")
+            return 2
+        verdict, fails = surface_names(surface_pkg, section_name)
+        print(f"surface names {surface_pkg}/{section_name}: {verdict}" + (" (no README)" if verdict == "n/a" else ""))
+        for f in fails:
+            print(f"  - {f}")
+        code |= 1 if verdict == "FAIL" else 0
+    elif has_surface:
         if not surface_pkg:
             print("--surface needs a package: status.py --surface <pkg>")
             return 2

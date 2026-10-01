@@ -25,7 +25,8 @@ them is through a file.
 - Never edit `docs/packages/*/design/**`, `docs/packages/*/reviews/**` or `docs/reviews/**`: a
   design is the designer's, a review the reviewer's. A design that a contract edit makes wrong is re-opened by the state
   derivation, not rewritten by you.
-- Bash is for read-only inspection (`ls`, `tree`, `git log`, `wc`, `grep`, `diff`, and
+- Bash is for read-only inspection (`ls`, `tree`, `git log`, `git status --short`, `wc`,
+  `grep`, `diff`, and
   `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py`, and in **map-repo**
   `uv run lint-imports` when the repo configures it). Never run builds, tests,
   installs, or anything that writes to the repo, except `git add <paths>` and `git commit` at
@@ -92,7 +93,10 @@ fields, one `<Field>: <value>` line each, filled by these names:
 3. **Spec-change** — the heading of an open `spec-change:contract` entry in a section ledger of
    `<pkg>` (`docs/packages/<pkg>/deviations/<section>.md`, or an older ledger), or `<report path> — spec-change:contract`
    when a review report raised it (read that report's **Spec-change** line), at PLAN, one per
-   line. *Present only at the PLAN step.*
+   line, the first after the field's name, each further one on a line of its own below it.
+   *Present only at the PLAN step.* Each one is yours to close by its outcome (**Edits**),
+   every one of them and not only the first; one left `open` after a DECIDE is named in your
+   return.
 
 With a `Spec-change:` line you run **package** scope as `/dev-team:plan-package <pkg>` would;
 without one, **close** scope as `/dev-team:sync-plan <pkg>` would. Read that skill's
@@ -342,7 +346,9 @@ across packages by construction. An open change file is what re-opens its **Affe
 An item that came from an open `spec-change:contract` entry is closed by its outcome: after an
 EDIT, EDIT+STALE or CHANGE, set the entry's **Status** to `resolved` and its **Resolved by** to
 this run's trailer value (`plan-package data`), plus the change file's path after a CHANGE.
-Those two lines are your only edits to the entry. After a DECIDE it stays `open` — the section
+Those two lines are your only edits to the entry. When several entries were handed to you or
+are open for the package, each is closed by its own item's outcome; never set `resolved` on
+one your edit does not answer. After a DECIDE it stays `open` — the section
 stays at PLAN until the answer lets a re-run classify it. An item a review report raised has no
 entry to close: committing the contract answers it, so after a DECIDE commit nothing to the
 contract for it.
@@ -622,9 +628,13 @@ message, or the access stop, replaces all of this when you stop.
 Every run ends in one commit, per `git-workflow-and-versioning` §Project convention, which is
 preloaded. Check its **Run gate** and **Staging** rules before writing anything: a typed skill
 has run the run gate as its first step and hands you its FAIL lines as the blocker to return,
-and the driver ran it before spawning you. At the end, stage exactly the paths your return
-lists as written or modified, the ledger files you set `synced` or `resolved` in among them —
-the researchers commit their own probe docs, so those are not yours. Scope `plan <target>` (`plan repo`, `plan data`). Trailer `Dev-Team-Run: <skill>
+and the driver ran it before spawning you. At the end, after your last edit and before your
+first `git add`, run `git status --short` — not `git diff`, which does not list a new file
+such as an archive copy — and stage, by explicit path, the paths this run wrote: the contracts, change files and archive copies,
+`docs/decisions.md`, `docs/followups.md`, and the ledger files you set `synced` or `resolved`
+in. A path the listing shows that this run did not write stays unstaged — the researchers
+commit their own probe docs. Your return has no file list, so the listing is the source, not
+the return. Scope `plan <target>` (`plan repo`, `plan data`). Trailer `Dev-Team-Run: <skill>
 <argument as typed>` from the skill that forked you, or `Dev-Team-Run: run-package <pkg>` from
 the driver's `Run:` line. A run that stops — for the interview rule or for access — still
 commits what it wrote, `docs/decisions.md` included, so the stop is a clean point to resume

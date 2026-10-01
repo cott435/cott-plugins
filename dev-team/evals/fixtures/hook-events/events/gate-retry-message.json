@@ -34,6 +34,9 @@
       "git commit --amend --no-edit -- <paths>",
       "second commit with the same summary and trailer",
       "attempt 1 of 3"
+    ],
+    "stderr_lacks": [
+      "Amends:"
     ]
   }
 }

@@ -1,10 +1,10 @@
 {
-  "note": "an open spec-change:design the design was rewritten after: answered, so the tests are next",
+  "note": "(legacy layout, no — <k>: commit order still answers it) an open spec-change:design the design was rewritten after: answered, so the tests are next",
   "steps": [
     {"do": "base"},
     {"do": "design", "section": "ingest"},
     {"do": "tests", "section": "ingest"},
-    {"do": "deviation", "section": "ingest", "kind": "spec-change:design", "status": "open"},
+    {"do": "deviation", "section": "ingest", "kind": "spec-change:design", "status": "open", "layout": "old"},
     {"do": "edit", "path": "docs/packages/data/design/ingest.md", "append": "\n- the entry point, corrected\n", "message": "data/ingest: design"}
   ],
   "args": [],

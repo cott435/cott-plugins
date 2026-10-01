@@ -1,0 +1,26 @@
+{
+  "note": "a line appended to the probe doc after the design: every design-time line is still there, so the design is not stale (2.4, phase 3)",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "edit",
+      "path": "docs/sources/trades.md",
+      "append": "- one timestamp out of order\n",
+      "message": "docs/sources: trades re-probed"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "TEST",
+    "absent": [
+      "newer than design"
+    ]
+  }
+}

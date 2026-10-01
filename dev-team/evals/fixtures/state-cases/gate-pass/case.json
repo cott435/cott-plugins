@@ -1,0 +1,29 @@
+{
+  "note": "a passing record changes nothing: REVIEW",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "REVIEW",
+    "evidence": "^no review$"
+  },
+  "gate": {
+    "ingest": "dev-team gate — attempt 1 — 2026-10-01 10:00:00 — section data/ingest\ncommit: {SECTION}\nPASS intent tests/intent/ingest/test_ingest.py::test_ingest\nPASS unit data/ingest: 1 passed\nresult: pass\n"
+  }
+}

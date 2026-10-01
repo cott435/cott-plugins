@@ -9,7 +9,7 @@
       "kind": "behavioral",
       "baseline": "previous",
       "harness": null,
-      "prompt": "You are the dev-team documenter, invoked by `/dev-team:finalize-project`.\n\nThe repo's shipped documents are the tree at `evals/sets/files/documenter/repo/`, relative to the plugin directory holding this eval set (the one with `.claude-plugin/plugin.json`). Treat that directory as the repo root and read it read-only.\n\nAssemble the package README for `data`, the docs-site API page for `data`, and the root README, and report everything still open.\n\nHarness rules: write every file you would write into `outputs/`, keeping its repo-relative path \u2014 `outputs/packages/data/README.md`, `outputs/docs/api/data.md`, `outputs/README.md`. Write nothing anywhere else.",
+      "prompt": "You are the dev-team documenter, invoked by `/dev-team:finalize-project`.\n\nThe repo's shipped documents are the tree at `evals/sets/files/documenter/repo/`, relative to the plugin directory holding this eval set (the one with `.claude-plugin/plugin.json`). Treat that directory as the repo root and read it read-only.\n\nAssemble the package README for `data`, the docs-site API page for `data`, and the root README, and report everything still open.\n\nHarness rules: write every file you would write into `outputs/`, keeping its repo-relative path \u2014 `outputs/packages/data/README.md`, `outputs/docs/api/data/index.md`, `outputs/README.md`. Write nothing anywhere else.",
       "expected_output": "the package README carries the data-daily command read from interface.md's CLI commands table, and Known gaps reports the real gaps",
       "files": [
         "evals/sets/files/documenter/repo/"
@@ -21,7 +21,8 @@
         "Known gaps names D2 as an open decision; D1 appears under Key decisions with its decision (the paid tier) and is not reported anywhere as decided-but-unbuilt, since it carries an Applied line",
         "The README's account of the daily pipeline's failure behavior matches interface.md's Pipelines wording \u2014 three retries on a vendor 429, then VendorUnavailable \u2014 rather than anything read out of the section's source"
       ],
-      "added_in": "0.9-evals phase 6"
+      "added_in": "0.9-evals phase 6",
+      "note_2_4": "2.4 phase 1: the API page is docs/api/<pkg>/index.md since 2.2 phase 12; the path this eval names was the pre-2.2 one."
     },
     {
       "id": 2,
@@ -29,7 +30,7 @@
       "kind": "behavioral",
       "baseline": "previous",
       "harness": null,
-      "prompt": "You are the dev-team documenter, invoked by `/dev-team:finalize-project`.\n\nThe repo's shipped documents are the tree at `evals/sets/files/documenter/repo/`, relative to the plugin directory holding this eval set (the one with `.claude-plugin/plugin.json`). Treat that directory as the repo root and read it read-only. One substitution: read `evals/sets/files/documenter/interface-missing-shapes.md` as `docs/packages/data/interface.md`, in place of the copy in the tree.\n\nAssemble the package README for `data`, the docs-site API page for `data`, and the root README, and report everything still open.\n\nHarness rules: write every file you would write into `outputs/`, keeping its repo-relative path \u2014 `outputs/packages/data/README.md`, `outputs/docs/api/data.md`, `outputs/README.md`. Write nothing anywhere else.",
+      "prompt": "You are the dev-team documenter, invoked by `/dev-team:finalize-project`.\n\nThe repo's shipped documents are the tree at `evals/sets/files/documenter/repo/`, relative to the plugin directory holding this eval set (the one with `.claude-plugin/plugin.json`). Treat that directory as the repo root and read it read-only. One substitution: read `evals/sets/files/documenter/interface-missing-shapes.md` as `docs/packages/data/interface.md`, in place of the copy in the tree.\n\nAssemble the package README for `data`, the docs-site API page for `data`, and the root README, and report everything still open.\n\nHarness rules: write every file you would write into `outputs/`, keeping its repo-relative path \u2014 `outputs/packages/data/README.md`, `outputs/docs/api/data/index.md`, `outputs/README.md`. Write nothing anywhere else.",
       "expected_output": "the absent Shapes provided heading becomes a Known gaps entry naming the package and the heading, with nothing substituted for it",
       "files": [
         "evals/sets/files/documenter/repo/",
@@ -41,7 +42,8 @@
         "The shapes are not inferred from source: `BAR_COLUMNS` from `clean/rules.py` appears nowhere as the package's provided shape",
         "outputs/packages/data/README.md still lists the `data-daily` command with its entry point, so the missing heading cost only its own section"
       ],
-      "added_in": "0.9-evals phase 6"
+      "added_in": "0.9-evals phase 6",
+      "note_2_4": "2.4 phase 1: the API page is docs/api/<pkg>/index.md since 2.2 phase 12; the path this eval names was the pre-2.2 one."
     },
     {
       "id": 3,
@@ -58,13 +60,14 @@
       ],
       "expectations": [
         "Under a `Known gaps` heading in outputs/README.md, every non-empty line of `evals/sets/files/documenter/status-repo.txt` appears verbatim (the six group labels `packages:` through `backlog:` and each item under them), as one contiguous block, and that block comes before any gap the documenter found itself, such as the `DATA_RETRIES` conflict or the missing API page",
-        "Nothing is written under outputs/docs/api/ (no `outputs/docs/api/data.md`), and Known gaps holds a line saying the shipped package `data` has no `docs/api/data.md`",
+        "Nothing is written under outputs/docs/api/ (no `outputs/docs/api/data/index.md` and no `outputs/docs/api/data.md`), and Known gaps holds a line saying the shipped package `data` has no `docs/api/data/index.md`",
         "Known gaps reports that `DATA_RETRIES` is declared with default `3` by `data/ingest` and default `5` by `data/clean`, naming both sections and both values; outputs/packages/data/README.md's Configuration does not present one of the two as the default without pointing at that conflict",
         "The Packages table in outputs/README.md gives `data` the status `shipped`, `analysis` the status `building (1/2 DONE)` and `report` the status `planned`, spelled exactly so",
         "No output file, and no Known gaps entry, mentions `docs/plans/` or `synced.md`",
         "outputs/docs/index.md and outputs/packages/analysis/README.md both exist; the analysis README says the package has no `interface.md` and lists no public name taken from `build.py` (`ROLLING_MEAN` appears nowhere in the outputs)"
       ],
-      "added_in": "remake phase 0, run from phase 9"
+      "added_in": "remake phase 0, run from phase 9",
+      "note_2_4": "2.4 phase 1: the API page is docs/api/<pkg>/index.md since 2.2 phase 12; the path this eval names was the pre-2.2 one."
     }
   ]
 }

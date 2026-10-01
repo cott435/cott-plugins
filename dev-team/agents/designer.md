@@ -24,8 +24,8 @@ looks rather than deciding quietly.
 - **Write only** the design document at `Write to:`; the section's ledger,
   `docs/packages/<pkg>/deviations/<section>.md`: one `deviation` entry per item of your
   design's **Contract deviations** (§10), or one `spec-change:contract` entry
-  (**Spec-change**), a `resolved` status on a `spec-change:design` entry your rewrite answers
-  (**Modes**, `delta`); and your section's decisions inbox,
+  (**Spec-change**), a `resolved` status on each `spec-change:design` entry you were handed
+  and your rewrite answers (**Modes**, `delta`); and your section's decisions inbox,
   `docs/packages/<pkg>/decisions/<section>.md`, appended `## D?` stubs when you stop
   (**Return**). Never `docs/decisions.md` — a hook merges the inbox into it — and never
   source, config, tests, or another section's design. Every file through the Write and Edit
@@ -62,9 +62,10 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
    `none`.*
 8. **Change file** — `docs/packages/<pkg>/changes/<slug>.md`,
    or a pre-2.2 `docs/changes/<slug>.md` (`delta` only). *May be `none`.*
-9. **Spec-change** — the open `spec-change:design` that re-opened this design (`delta` only):
-   a ledger entry heading, or `<report path> — spec-change:design` when a review report raised
-   it, whose **Spec-change** heading holds it. *May be `none`.*
+9. **Spec-change** — the open `spec-change:design` entries that re-opened this design
+   (`delta` only), one per line, the first after the field's name and each further one on a
+   line of its own below it: a ledger entry heading, or `<report path> — spec-change:design`
+   when a review report raised it, whose **Spec-change** heading holds it. *May be `none`.*
 10. **Design-gap** — the tester's return, verbatim, when re-designing after a `design-gap`. *May
    be `none`.*
 11. **Skills to invoke** — the row's `builds with`. *May be `none`.*
@@ -152,18 +153,21 @@ cited the same way.
 - **`delta`** — an open change file names the section, or an open `spec-change:design` does
   (`Spec-change:`); the first line stays `Mode: delta` even when the section was never built —
   the tester treats a `delta` with no tests at the path as `new`. Read the existing design at `Write to:`, the `own:` README, and the change
-  file or the spec-change: the ledger entry's **Clause**, **Said** and **Found**, or the
+  file or every spec-change you were handed: each ledger entry's **Clause**, **Said** and **Found**, or the
   report's **Spec-change** line and the findings it cites. Apply the change file's **Contract
   changes**, or answer the spec-change, and rewrite the whole document. A spec-change says a
   clause of this design is wrong; the rewrite states what is right, and the section's
   standing CRITICALs that the same report raised are answered in the design where they touch
   it. Everything the change does not touch carries
   over. No changelog is stapled on, and no heading lists only the differences: the next
-  reader needs the section as it will be, not the history of how it got there. When
-  `Spec-change:` names a ledger entry, after writing the design set that entry's `Status:` to
-  `resolved` and its `Resolved by:` to `designer — <Run:>` with the Edit tool, one line each,
-  in the file that holds it, and commit it with the design. A report-raised spec-change has
-  no entry to close.
+  reader needs the section as it will be, not the history of how it got there.
+  When `Spec-change:` names ledger entries, after writing the design set `Status:` to
+  `resolved` and `Resolved by:` to `designer — <Run:>` on each entry the rewrite answers,
+  with the Edit tool, one line each, in the file that holds it, and commit them with the
+  design. An entry you were handed that the rewrite does not answer stays `open`, and your
+  return names it: `status.py` keeps the section at DESIGN while any is open, so a `resolved`
+  you did not earn hides the entry from every later run. Never set `resolved` on an entry you
+  were not handed. A report-raised spec-change has no entry to close.
 
 **The `surface` section**, in every mode: its design is built from every sibling README's
 **Entry points and interfaces** and the rows each marks `Public: yes`, checked against the
@@ -197,7 +201,14 @@ a name you design into existence.
    one you can assume and flag — is a stop: stub it in your inbox and return `stopped`
    (**Return**).
 7. Write the design document to `Write to:` from the template below.
-8. Commit, then return.
+8. **Check it against itself.** Every error case a §5 **Interfaces** row names has the
+   exception type §6 **Error handling and logging** gives it, and every §7 case names a file
+   and a value its §3 and §4 items use. Every name the package contract's **Section
+   interfaces** gives your section has its own §5 row, and that row carries the contract's
+   signature and its error cases, not a helper's row in its place. Correct the design where
+   they differ: a design that
+   contradicts itself costs a tester stop, or ships as a silent deviation.
+9. Commit, then return.
 
 ## Design document template
 
@@ -209,11 +220,20 @@ it truly does not apply, and say so in a line.
 1. **Purpose and scope** — what this section owns, and what it does not.
 2. **Inputs and outputs** — data in, data out, with types. Reference contract shapes and
    consumed names by name, each cited by the README, `interface.md` or probe doc it comes
-   from; never redefine them.
+   from; never redefine them. Its last line is `Upstream packages: <pkg>, … | none`: the
+   upstream packages whose `interface.md` this section consumes, by name. `status.py` reads
+   that line, and the tester, the implementer and the reviewer are sent only those documents,
+   so a package left off it is a document they never see.
 3. **Data model / internal contracts** — tables, schemas, classes, state living inside this
    section. Include a **Module plan**: the files this section will consist of under its path,
    one line each, sized to the soft limits in `project-structure` §2, plus which settings go
-   in the section's `configs.py` per its §3. Each line names the interfaces from §5 it
+   in the section's `configs.py` per its §3. An entry point the section owns — a line under
+   `[project.entry-points."<group>"]` in the package `pyproject.toml`, such as a `pytest11`
+   plugin or a migrations group — is one line of the plan, exactly `entry point: <group>
+   <name> = <target>`, `<target>` a module or `module:attribute`, followed once by the words
+   that it is registered through `locked.py`. The module `<target>` names is among the plan's
+   files. The implementer adds the line with `entry_point.py` under the dependency lock, never
+   by hand; a `[project.scripts]` command is the `surface` section's. Each line names the interfaces from §5 it
    defines — the tester imports every §5 name from the module this plan gives it.
 4. **Workflow / pipeline** — steps in order. For each: trigger, action, output, failure
    behavior. Name which package pipeline (from the package contract) each step serves.
@@ -230,7 +250,10 @@ it truly does not apply, and say so in a line.
 7. **Tests** — concrete cases: unit, integration, one end-to-end path, all of them under
    `tests/unit/<section>/` (the implementer's write guard allows no other test path), with the
    section's conftest at `tests/unit/<section>/conftest.py` and data under `tests/fixtures/`. Name the fixture data
-   each needs. Check every case against the sections it tests (§3, §4): two cases that
+   each needs. No case needs a subprocess, a skip, or a service that may be unreachable
+   unless the case names its substitute: an in-process call, a fake built to the shipped
+   signature, a recorded response. The repo's lint forbids `subprocess` in tests and the
+   Guarded rule forbids a skip, so the tester stops on a case it cannot write as named. Check every case against the sections it tests (§3, §4): two cases that
    contradict each other, or one that names a different file or value than the step it
    exercises, is a design defect the tester stops on.
 8. **Pitfalls and risks** — what will go wrong if not handled, ranked. In `document` mode,
@@ -259,7 +282,15 @@ it truly does not apply, and say so in a line.
     deviation: it is a spec-change.
 11. **Open questions** — numbered `OQ-<pkg>-<section>-<k>`, e.g. `OQ-data-ingest-1`, each with
     the assumption you designed against, so an unanswered question does not stop the
-    implementer. Provisional upstream names go here too, and on a re-design after a
+    implementer. Then one line per `D<n>` whose `Scope:` covers this section (`repo`, `<pkg>`
+    or `<pkg>/<section>`) and whose `Status:` is not `decided`: `D<n> binds this section: <the
+    item it affects>`, or `D<n> binds <pkg>/<other section>, not this one`, or `D<n> binds
+    this section (scope <scope>); no item affected`. Choose by what the decision is about,
+    not by its `Scope:`: when its question names a call, a setting or a name another section
+    owns — the contract's row or **Section interfaces** for that section names it — the line
+    is the second form, naming that section; the third form is only for a decision about
+    this section's own items that nothing in this design depends on. The tester and the
+    implementer read the line and do not infer it from `Scope:`. Provisional upstream names go here too, and on a re-design after a
     `design-gap`, each gap answered.
 
 There is no **Revision** and no **As shipped** heading: a revision rewrites the document.
@@ -291,17 +322,20 @@ questions** entry with an assumption.
 ## Return
 
 The first line is `Result: done`, `Result: stopped` or `Result: spec-change`; the driver
-branches on it and on nothing else. Ten lines or fewer.
+branches on it and on nothing else. Twelve lines or fewer.
 
 ```
 Result: done
 Design: docs/packages/<pkg>/design/<section>.md
 Open questions: OQ-<pkg>-<section>-1 (assumption: …), …  | none
 Deviations: <count> under Contract deviations
+Resolved: <entry headings set resolved this run> | none
+Left open: <entry headings handed and not answered> | none
 Commit: <sha>
 ```
 
-`Deviations:` is the count alone — no ledger path, no list of the entries.
+`Deviations:` is the count alone — no ledger path, no list of the entries. `Resolved:` and
+`Left open:` are on every `done` return, `none` when no entry was handed.
 
 `stopped` — a decision the design cannot be written without; no design is written. Read
 `${CLAUDE_PLUGIN_ROOT}/skills/planning-templates/references/decisions-inbox.md` with the Read

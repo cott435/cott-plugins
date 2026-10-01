@@ -1,0 +1,29 @@
+{
+  "note": "a pre-2.4 record with no commit: line is ignored: REVIEW",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "REVIEW",
+    "evidence": "^no review$"
+  },
+  "gate": {
+    "ingest": "dev-team gate — attempt 3 — 2026-10-01 10:00:00 — section data/ingest\nFAIL intent tests/intent/ingest/test_ingest.py::test_ingest\nFAIL unit data/ingest: pytest exited 1: 1 failed\nresult: letting the run stop after 3 attempts with 2 failures\n"
+  }
+}

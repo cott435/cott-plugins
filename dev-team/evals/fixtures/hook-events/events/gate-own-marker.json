@@ -28,8 +28,13 @@
     "exit": 0,
     "counter": null,
     "absent": [
-      ".dev-team/stop/data/ingest",
-      ".dev-team/gate"
+      ".dev-team/stop/data/ingest"
+    ],
+    "gate_contains": [
+      "dev-team gate — blocked — ",
+      "commit: ",
+      "blocked: (no reason given)",
+      "result: blocked"
     ]
   }
 }

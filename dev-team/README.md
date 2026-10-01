@@ -36,7 +36,7 @@ dev-team/
 │   ├── sync_decisions.py     PostToolUse: a section's decisions inbox folded into docs/decisions.md under a lock
 │   ├── gate_on_stop.py       SubagentStop: the implementer may not finish while its section's checks are red; --report by hand
 │   ├── guard_writes.py       PreToolUse: each role writes only where its job is; an implementer only in its section
-│   └── guard_bash.py         PreToolUse Bash: no repo file written from the shell; locked.py exempt
+│   └── guard_bash.py         PreToolUse Bash: no repo file written from the shell; locked.py and entry_point.py exempt
 ├── pyproject-lint-config.toml  merge into the root pyproject.toml; enforces the hard limits
 └── skills/
     ├── shape-brief/        (inline)        idea → docs/brief.md, discussed with you: now / later / out
@@ -53,7 +53,8 @@ dev-team/
     ├── finalize-project/   → documenter    package READMEs, docs/index.md, root README
     ├── status/             (inline)        every section's state, the ready set, the next command
     │   └── scripts/status.py               the one state derivation; the driver, the hooks and the documenter run it too
-    │       + locked.py                     a mkdir lock around the two shared edits (uv add, the .gitignore block)
+    │       + locked.py                     a mkdir lock around the three shared edits (uv add, an entry-point line, the .gitignore block)
+    │       + entry_point.py                one entry-point line in the package pyproject.toml, under the deps lock
     ├── planning-templates/   headings for every document the loop writes and parses, the decisions inbox included
     ├── project-structure/    layout, size limits, config placement        (preloaded: 5 agents)
     ├── python-style-guide/   inside a file: docstrings, function shape, … (preloaded: impl, test, review)
@@ -158,8 +159,9 @@ last, then closes the package. It runs in your conversation and spawns every age
    each row is at — with one exception: a PLAN row runs the architect alone, since it edits
    what designers read. Implementers run in parallel: the write guard confines each to its
    section, the stop gate judges each on its own paths, the marker and the decisions inbox are
-   per section, and `locked.py` serializes the two shared edits (`uv add`, the `.gitignore`
-   block). `--serial` restores the 2.1 loop, one implementer at a time: the first kind of step
+   per section, and `locked.py` serializes the three shared edits (`uv add`, an entry-point
+   line through `entry_point.py`, the `.gitignore` block).
+   `--serial` restores the 2.1 loop, one implementer at a time: the first kind of step
    in the order PLAN, PROBE, DESIGN, TEST, IMPLEMENT/FIX, REVIEW.
 4. **Branch** on each return's first line, `Result: done | blocked | stopped | spec-change |
    design-gap`. A tester's `design-gap` goes back to the designer with the tester's reasons
@@ -167,8 +169,10 @@ last, then closes the package. It runs in your conversation and spawns every age
    items contradicting each other returns `spec-change` instead. A `spec-change` needs no
    relay: its entry is in `docs/packages/<pkg>/deviations/<section>.md`, and the next
    `status.py` re-opens the step it names.
-   `blocked` and `stopped` are asked, whatever row the next `status.py` shows: an implementer
-   can block after its commit, when the gate's FAIL comes.
+   `blocked` and `stopped` are asked, whatever row the next `status.py` shows. A return is the
+   agent's first hand-back, and the only one the driver receives: what an implementer does
+   after it — a gate retry, a block, a third red attempt — reaches the driver as a row, since
+   the stop gate writes every stop to the section's record and `status.py` reads it.
 5. **Re-derive** and loop.
 6. **The close.** When every section is DONE, the architect runs as `sync-plan`: approved
    deviations and pending change files go into the contracts, each verified against the code.
@@ -184,7 +188,22 @@ to `docs/followups.md`, and the section is DONE.
 `design-gap` stops the ready set for that section. The driver asks you once per block, writes
 your answer into `docs/decisions.md` (`Decision:` and `Status: decided`) and runs the step
 again. That ledger edit is the only file it ever writes, and it runs no git command that
-writes. With nobody to ask — a headless run — it ends in the summary instead.
+writes. With nobody to ask — a headless run — it ends in the summary instead. Two more
+questions come from the stop gate's record:
+
+- **A section whose implementer blocked, or was let through after three red attempts,**
+  after its hand-back: the row is BLOCKED with `gate …` evidence, and the driver quotes the
+  record's `result:`, `FAIL` and `blocked:` lines and offers *run the implementer again*,
+  *review anyway* or *stop here*. Neither answer touches `docs/decisions.md`; once a review
+  round covers the code, the record is no longer read, so *review anyway* holds.
+- **A package whose surface check fails** (`shipped: no (surface check FAIL)`, every section
+  DONE): the driver quotes the `FAIL` lines of `status.py --surface <pkg>` and offers *fixed,
+  retry* or *stop here*. The close waits until the check passes; the faulty rows are usually
+  in sibling READMEs, which you correct.
+
+An answer that is none of the options — free text typed in place of a choice — ends the run
+where it stands with the Summary. The driver does not act on the text; you read the Summary
+and type what you want next.
 
 `<section>` walks one section; `--step` runs one step of it once, whatever its state, which is
 how *one more round* is typed by hand.
@@ -196,18 +215,19 @@ every call and never stored:
 
 | State | When |
 |---|---|
-| **BLOCKED** | an open decision with no assumption binds the section, or the review cap is hit (round 3, or round 2 with a prior unfixed) |
-| **PLAN** | an open `spec-change:contract` entry names the section — the architect edits the contract |
+| **BLOCKED** | an open decision with no assumption binds the section; or the review cap is hit (round 3, or round 2 with a prior unfixed); or the stop gate's record for the section's current commit says the implementer blocked, or was let through after three attempts, and no review round covers that code |
+| **PLAN** | an open `spec-change:contract` entry names the section — the architect edits the contract and sets the entry `resolved` |
 | **PROBE** | an `api:` source has no `## <pkg>/<section>` entry in its probe doc, or a `dataset:` source has no probe doc |
-| **DESIGN** | no design; or an open `spec-change:design` the design has not been rewritten since; or an open change file naming the section is newer than the design; or a probe doc it names is newer |
-| **TEST** | no intent tests; or the design is newer than them; or an open `spec-change:test` the tests have not been regenerated since; or an `approved` deviation's clause is cited by a test not yet regenerated |
-| **IMPLEMENT** | no README (for `surface`, no `interface.md`); or the intent tests are newer than it |
-| **REVIEW** | no review round, or the code is newer than the newest round's `Commit:`, or a `spec-change` verdict has no open entry left |
+| **DESIGN** | no design; or an open `spec-change:design` entry (one written since 2.2 stays open until its `Status:` is `resolved`); or an open change file naming the section is newer than the design; or a probe doc it names lost or reworded a line the design was written against |
+| **TEST** | no intent tests; or the design is newer than them; or an open `spec-change:test` entry; or an `approved` deviation's clause is cited by a test not yet regenerated |
+| **IMPLEMENT** | no README (for `surface`, no `interface.md`); or the intent tests are newer than it (a regeneration commit, or one marked `intent tests current with design`, does not count); or the gate's record for the current commit says `not done`, a run that died between attempts |
+| **REVIEW** | no review round; or round 1 lacks its `a` or `b` report; or the code is newer than the newest round's `Commit:`; or a `spec-change` verdict has no open entry left |
 | **FIX n** | round `n` says `request changes`, under the cap, and nothing changed since |
 | **DONE** | the newest round approves and the code is not newer than its `Commit:` |
 
-A package is **shipped** when its `surface` section is DONE. A round is the set of reports
-sharing `-r<n>`; its verdict is the worst of them.
+A package is **shipped** when its `surface` section is DONE and `status.py --surface <pkg>`
+passes; a package whose check fails prints `shipped: no (surface check FAIL)`. A round is the
+set of reports sharing `-r<n>`; its verdict is the worst of them.
 
 ## Pairing on a section
 
@@ -229,7 +249,9 @@ the spec-change's level re-opened first.
 
 ## Hooks
 
-`hooks/hooks.json` registers five, and each exits 0 outside a repo with `docs/architecture.md`:
+`hooks/hooks.json` registers five, and each exits 0 outside a repo with `docs/architecture.md`.
+The two guards also act in a repo with only `docs/brief.md`, so `plan-repo`'s agents are
+guarded before the repo contract exists:
 
 - **`format_on_edit.py`** (`PostToolUse` on `Write|Edit`) — for the implementer and the tester,
   on a `.py` file: `ruff format`, `ruff check --fix`, `ruff format`, then `ruff check`. What
@@ -251,22 +273,39 @@ the spec-change's level re-opened first.
   last review `Commit:` (else the empty tree), so a sibling's work under parallel implementers
   is never its own. It runs the section's intent and unit suites — an intent failure tolerated
   only when the test cites the clause of a `proposed` or `approved` deviation — a **Guarded**
-  grep of that diff, `status.py --surface` for the `surface` section, then the **Floor** and
+  grep of that diff, `status.py --surface` for the `surface` section and, for every other
+  section, the per-section name check `status.py --surface <pkg> --section <section>` (each
+  row of the README's **Entry points and interfaces** names one exported identifier, in
+  backticks, and every `Public: yes` name is one the contract's **Public surface (intent)**
+  names), so a README's author meets a bad row in its own run; then the **Floor** and
   **Enforced** rows of `docs/constraints.md` for the package (else the Toolchain commands of
   `docs/architecture.md`). A `repo`-scope pytest row is CI's: the record says `SKIPPED <row>:
   repo-scope pytest is CI's` and never runs it. A check whose every located failure lies
   outside the section's paths, or in an intent-test file (a lint, type or Guarded hit in the
   tester's lines), is `ELSEWHERE`, not `FAIL`: the implementer may not edit there, and the
   reviewer carries each such line to `docs/followups.md`. A failing
-  intent test is still `FAIL`, since what fails is the code. An `xfail` cites a decision when
-  its line holds a `D<n>` not followed by a digit (`D5:`, `D5_OPEN`).
+  intent test is still `FAIL`, since what fails is the code. Guarded's removed items are a
+  test file that lost more `assert` lines than it gained, or more `pytest.raises`, counted per
+  file, so a rewritten or moved assert is not a removal. An `xfail` cites a decision when its
+  `xfail(` call, read to its closing bracket, holds a `D<n>` not followed by a digit (`D5:`,
+  `D5_OPEN`), so a formatter's wrap is harmless.
   The package-wide rows share a time budget under the hook's timeout: a row that runs out of
   time is `TIMEOUT`, not `FAIL`. Every line goes to the section's own record,
-  `.dev-team/gate/<pkg>/<section>.txt`, headed `dev-team gate — attempt n — <stamp> — section
-  <pkg>/<section>`, which the reviewer reads as its evidence. It lets the agent stop on a green
-  run, on its section's marker `.dev-team/stop/<pkg>/<section>` (the implementer writes it when
-  it returns `blocked` or `spec-change`; a sibling's marker is never read), or on the third
-  attempt, counted per agent under `${CLAUDE_PLUGIN_DATA}/gate/`. A retry amends only when
+  `.dev-team/gate/<pkg>/<section>.txt`: the header `dev-team gate — attempt n — <stamp> —
+  section <pkg>/<section>`, then `commit: <short sha>` (the newest commit touching the
+  section's code, unit tests and README), the check lines, and a last `result:` line. The
+  reviewer reads it as its evidence, and `status.py` derives the row from it (**The states**);
+  a record whose `commit:` is not the section's current commit is ignored. It lets the agent
+  stop on a green run; on its section's marker `.dev-team/stop/<pkg>/<section>` (the
+  implementer writes it when it stops `blocked` or `spec-change`; a sibling's marker is never
+  read), which is recorded, not silent: `blocked` or `spec-change` in the header's attempt
+  slot, the earlier attempt's check lines, a `blocked: <reason>` or `spec-change: <heading>`
+  line, and `result: blocked` or `result: spec-change`; or on the third red attempt, counted
+  per agent under `${CLAUDE_PLUGIN_DATA}/gate/`, which leaves the section BLOCKED until you
+  answer. A FAIL the implementer cannot clear — in a file it may not edit, or false in its own
+  file — is a block, with the gate line quoted in the marker. The implementer hands back once:
+  after a retry it fixes, commits and ends its turn with the one line `Result: done`, and the
+  record is what the driver reads. A retry amends only when
   `git log -1 --format=%s` starts with the section's own scope, else it is a second commit with
   the same trailer; from the second attempt the message names `debugging-and-error-recovery`.
   By hand, `gate_on_stop.py --report [--base <rev>]` runs the same checks over
@@ -281,19 +320,29 @@ the spec-change's level re-opened first.
   An implementer with a `Section:` line is confined to its section's files — its code,
   `tests/unit/<section>/`, fixtures, its ledger and inbox, `.dev-team/tmp/`, and for `surface`
   also `interface.md`, the API page `docs/api/<pkg>/index.md`, the package `pyproject.toml` (its
-  `[project.scripts]`), the root `pyproject.toml` and `mkdocs.yml`; a scaffold
-  run or an unreadable transcript falls back to the role-wide rule. Every role's globs cover the
-  2.2 paths, and the old locations stay writable for status edits. Nobody but the tester writes
-  under `tests/intent/`.
+  `[project.scripts]`), the root `pyproject.toml` and `mkdocs.yml`. A path under another
+  section's `path` is that section's and is refused first, which stops `surface` at its
+  siblings and a parent section at its nested ones. An entry-point line in the package
+  `pyproject.toml` goes through `locked.py` and `entry_point.py`, so no section but `surface`
+  has that file in scope. A scaffold run or an unreadable transcript falls back to the
+  role-wide rule. Every role's globs cover the 2.2 paths, and the old locations stay writable
+  for status edits. Nobody but the tester writes under `tests/intent/`, and a Write or Edit
+  there that adds `# noqa`, `# type: ignore` or `# pragma: no cover` is refused.
 - **`guard_bash.py`** (`PreToolUse` on `Bash`) — no dev-team agent writes a repo file from the
-  shell: a redirect (`>`, `>>`) to anything but `/dev/null` or a path under `.dev-team/tmp/`,
-  `sed -i`, `tee`, and python code that opens a file for writing — as `python -c`, or as a
+  shell: a redirect (`>`, `>>`) to anything but `/dev/null` or a path under `.dev-team/tmp/`
+  (refused as `may not redirect to <target>: it is outside .dev-team/tmp/`; a researcher may
+  also redirect to a path outside the repo, its scratch), `sed -i`, `tee`, and python code
+  that opens a file for writing — as `python -c`, or as a
   here-document script (`python3 - <<'EOF'`) — are refused, with the rule on stderr; an
   `sh -c` script is checked like a command of its own. `locked.py` is the one way an
   implementer runs `uv add`, `uv remove`, `uv lock` or `uv sync`, or appends the `.gitignore`
   block (`sh -c "printf … >> .gitignore"`), holding `.dev-team/locks/<name>/` while the command
   runs; those are let through, and any other command wrapped in `locked.py` is checked as if it
-  were not. A command it cannot parse is let through with the rule on stderr.
+  were not. The third shared edit is an entry point: `locked.py deps -- python3
+  …/entry_point.py <pkg> <group> <name> <target>` is let through for the caller's own package
+  (the `<pkg>` of its spawn prompt's `Section:` line) and refused unwrapped, under another
+  lock, or for another package. A command it cannot parse is let through with the rule on
+  stderr.
 
 ## Questions
 
@@ -370,12 +419,22 @@ tolerated clause `(deviation <date>-<k>)`.
   `open` with its evidence, and `status.py` re-opens the step for its level: `test` → TEST,
   `design` → DESIGN, `contract` → PLAN, where the architect edits the contract and sets it
   `resolved`. A tester that finds two design items contradicting each other appends a
-  `spec-change:design` citing both under **Found** and returns `Result: spec-change`. A `test`
-  or `design` entry is answered by the next commit of the intent tests or the design, and
-  `status.py` reads that from git; its writer closes it too — the designer sets `resolved` on
-  the `spec-change:design` entries its rewrite answers, the tester on the `spec-change:test`
-  entries it regenerates — and `sync-plan` sweeps any answered one still `open` at the close. A
-  spec-change is a normal exit, not a failure.
+  `spec-change:design` citing both under **Found** and returns `Result: spec-change`. An entry
+  written since 2.2 (its heading ends `— <k>`) is open until the agent that answers it sets
+  its `Status:` to `resolved` — the tester for `test`, the designer for `design`, the
+  architect for `contract` — whatever was committed since, and every open entry of a level
+  reaches that agent in one spawn: `status.py`'s evidence lists them all (`open <h1>; <h2>`),
+  and the driver sends each on its own line. An agent handed several sets `resolved` only on
+  those its commit answers. An older entry without `— <k>`, and a review report's
+  `spec-change` verdict, keep the earlier rule: answered by the next commit of the level's
+  document, and `sync-plan` sweeps any such entry still `open` at the close. A spec-change is
+  a normal exit, not a failure.
+- **Two cases agents used to guess at.** An intent test that fails before it reaches the
+  section's code — its own helper, fixture or import is broken — is a `spec-change:test`,
+  with the test's docstring citation as **Clause** and the traceback line as **Found**. A
+  signature the contract's **Section interfaces** states for a name that is not public is a
+  seam: changing how a caller calls it is a `spec-change:contract`, while an additive,
+  compatible change, such as a new optional parameter, is a `deviation`.
 
 ## Reviews
 
@@ -421,7 +480,7 @@ mechanism in Claude Code that scopes by agent.
 | `workspace-scaffold` — pyproject, import-linter, mkdocs, CI skeletons | invoked | — | invoked | — | — | — | — |
 | `planning-templates` — headings for every document the loop parses | invoked | read | read | read | read | — | invoked |
 | `security-review` — checklist | — | — | invoked | — | invoked | — | — |
-| `test-driven-development` — red-green-refactor, test design, pytest | — | — | ✓ | read | — | — | — |
+| `test-driven-development` — red-green-refactor, test design, pytest | — | — | ✓ | ✓ | — | — | — |
 | `debugging-and-error-recovery` — root-cause triage for tests and builds | — | — | invoked | — | — | — | — |
 | `git-workflow-and-versioning` — §Project convention, the commit rule | ✓ | ✓ | ✓ | ✓ | ✓ | invoked | invoked |
 
@@ -429,9 +488,10 @@ mechanism in Claude Code that scopes by agent.
 reference file or paragraph opened with the Read tool. `git-workflow-and-versioning` §Project convention is the
 one copy of the commit rule every agent follows: the run gate, staging by explicit path
 (`git add <paths>` then `git commit -m … -- <paths>`), `<scope>: <summary>` with one
-`Dev-Team-Run:` trailer, one commit per run, and a retry on `.git/index.lock`. The tester
-reads the RED step of `test-driven-development`; the implementer uses its Prove-It pattern on
-review findings that are bugs. `security-review` goes to the implementer on its triggers, to
+`Dev-Team-Run:` trailer, one commit per run, and a retry on `.git/index.lock`.
+`test-driven-development` is preloaded for the tester and the implementer: the tester writes
+to its RED step, and the implementer uses its Prove-It pattern on review findings that are
+bugs. `security-review` goes to the implementer on its triggers, to
 reviewer B in round 1, and to a round-2+ reviewer when the diff hits a trigger. The last three
 skills are vendored from `addyosmani/agent-skills` (MIT) and adapted to this stack.
 
@@ -496,15 +556,18 @@ docs/
 
 Outside `docs/`: each section's code and `README.md` (the implementer's), its
 `tests/unit/<section>/` (the implementer's) and `tests/intent/<section>/` (the tester's alone),
-and under the gitignored `.dev-team/`: `gate/<pkg>/<section>.txt`, the stop gate's last output
-for each section; `stop/<pkg>/<section>`, an implementer's blocked or spec-change marker;
+and under the gitignored `.dev-team/`: `gate/<pkg>/<section>.txt`, the stop gate's record for
+each section, which the reviewer reads as evidence and `status.py` reads to hold a blocked or
+let-through section BLOCKED; `stop/<pkg>/<section>`, an implementer's blocked or spec-change
+marker;
 `locks/`, the mkdir locks of `locked.py` and the sync hook; `tmp/`, agents' shell scratch.
 
 **Canonical contracts describe code that exists.** An edit to a contract that touches a built
 or shipped package becomes a change file instead; `sync-plan` applies it to the contracts once
 the sections it names are DONE, after checking the code. Every contract is copied to
 `docs/history/` before it is edited. Package status is derived, never written down:
-`contract.md` exists → planned; section code exists → built; `surface` DONE → shipped.
+`contract.md` exists → planned; section code exists → built; `surface` DONE and its check
+passing → shipped.
 
 ## Gotchas
 
@@ -543,7 +606,21 @@ the sections it names are DONE, after checking the code. Every contract is copie
   that way could never get its design or probe doc. The architect names it after what it
   produces, one word such as `digest` (`project-structure` §4).
 - **Implementers are parallel.** Two sections that must edit one file the write guard cannot
-  split are the `--serial` case; the two edits every section shares go through `locked.py`.
+  split are the `--serial` case; the three edits every section shares — `uv add`, an
+  entry-point line, the `.gitignore` block — go through `locked.py`.
+- **A blocked or let-through implementer is a BLOCKED row.** A section whose implementer
+  blocked, or was let through after three red attempts, shows BLOCKED with `gate …` evidence,
+  and `/dev-team:run-package` asks about it. Answer the question, or type the `next:` line.
+  An implementer's return no longer lists test or lint results: read
+  `.dev-team/gate/<pkg>/<section>.txt`.
+- **A package shipped under 2.3 may now print `shipped: no (surface check FAIL)`.** Run
+  `status.py --surface <pkg>` and correct the README rows it names: one exported name per row,
+  in backticks, no grouped or dotted names.
+- **A README with grouped or dotted name cells fails its section's next gate.** The same
+  correction, in that section.
+- **A 2.2-or-later ledger entry still `open` re-opens its step** even when its document was
+  committed since. Run `/dev-team:run-package <pkg>`: the answering agent is handed it. If it
+  was in fact answered, set its `Status:` to `resolved` by hand.
 - **A hookless session leaves inboxes unsynced.** A session or harness that runs the agents
   without this plugin's hooks writes an inbox no hook merges; the run gate says so and names
   `sync_decisions.py --all`.

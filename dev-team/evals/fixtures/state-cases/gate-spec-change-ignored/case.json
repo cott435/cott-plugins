@@ -1,0 +1,29 @@
+{
+  "note": "a spec-change marker record never holds the row: REVIEW",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "REVIEW",
+    "evidence": "^no review$"
+  },
+  "gate": {
+    "ingest": "dev-team gate — spec-change — 2026-10-01 10:00:00 — section data/ingest\ncommit: {SECTION}\nspec-change: data/ingest — 2026-09-27 — spec-change:test — 1\nresult: spec-change\n"
+  }
+}

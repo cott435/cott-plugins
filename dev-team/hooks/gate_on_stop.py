@@ -16,8 +16,13 @@ Input: the hook JSON on stdin (`cwd`, `agent_id`, `agent_type`, `stop_hook_activ
    `docs/packages/<pkg>/design/surface.md` exists; no section: exit 0) — with ` (from diff)`
    in the record header.
 3. Marker: `<cwd>/.dev-team/stop/<pkg>/<section>` whose first line is `blocked` or
-   `spec-change` (the implementer writes it before returning either) is deleted with the
-   counter; exit 0 with nothing run. A sibling's marker is never read.
+   `spec-change` (the implementer writes it before returning either) is recorded, then
+   deleted with the counter; exit 0 with no check run. The record: header with `blocked` or
+   `spec-change` in the attempt slot, the `commit:` line, the check lines of this run's
+   earlier record when the counter exists (a gate attempt of this agent wrote it), the line
+   `<reason>: <the marker's second line>` (`(no reason given)` when it has none), and
+   `result: <reason>`. The fallback records each section whose marker it found, with
+   ` (from diff)` after the section name. A sibling's marker is never read.
    Counter: `${CLAUDE_PLUGIN_DATA}/gate/<agent_id>` (else `<cwd>/.dev-team/gate-attempts/
    <agent_id>`) holds the attempt number; this stop adds one.
 4. The run's diff: the section's paths (its code, `tests/unit/<section>`,
@@ -27,7 +32,9 @@ Input: the hook JSON on stdin (`cwd`, `agent_id`, `agent_type`, `stop_hook_activ
    Guarded sees only what was added since the last review, and no commit ordering is assumed.
    Untracked files under those paths count as added in full.
 5. Checks, every one run: the section's intent suite and its unit suite (`tests/unit/<section>`)
-   first, then the Guarded grep of the diff, then `status.py --surface` for `surface`; then
+   first, then the Guarded grep of the diff, then `status.py --surface` for `surface` and the
+   per-section name check, `status.py --surface <pkg> --section <section>`, for every section
+   but `surface`; then
    the Floor and Enforced rows of `docs/constraints.md` for the section's package — a `repo`
    row once, except a `repo` row whose command runs `pytest`, which is CI's and is written
    `SKIPPED <row>: … repo-scope pytest is CI's` (never run: it never finished inside any
@@ -42,23 +49,31 @@ Input: the hook JSON on stdin (`cwd`, `agent_id`, `agent_type`, `stop_hook_activ
    under `<pkg>/tests/intent/` is `ELSEWHERE` too, whether or not the run touched it: the tester
    owns those lines (a lint, type or Guarded hit there — a Guarded hit is written `ELSEWHERE
    guarded <item> at <path>:<n> (the tester's file)`). The intent suite's own failures stay
-   `FAIL` (or tolerated by a deviation), since what fails there is the code. An `xfail` cites a
-   decision when a `D<n>` not followed by a digit appears on its line (`D5:`, `D5_OPEN`). The
-   line stays in the record for the reviewer. The rows share what is left of a time budget below
+   `FAIL` (or tolerated by a deviation), since what fails there is the code. Guarded's removed
+   items are a test file that lost more `assert` lines than it gained, or more `pytest.raises`,
+   counted per file and per kind, so a rewritten or moved assert is not a removal. An `xfail`
+   cites a decision when a `D<n>` not followed by a digit appears anywhere in its call, read to
+   the closing bracket (`D5:`, `D5_OPEN`; a wrapped call over the following added lines, at
+   most twenty). The line stays in the record for the reviewer. The rows share what is left of a time budget below
    the hook's 600 s timeout (`DEV_TEAM_GATE_BUDGET`, default 540 s; each row at most
    `DEV_TEAM_GATE_TIMEOUT`, default 240 s). A row that runs out of time, or never starts because
    the budget is spent, is TIMEOUT, not FAIL: nothing the implementer edits makes a package-wide
    suite faster, and a hang in its own code still fails its own suites.
 6. Every line goes to `<cwd>/.dev-team/gate/<pkg>/<section>.txt`, header `dev-team gate —
-   attempt n — <stamp> — section <pkg>/<section>`, the stamp the time the record is written.
-   The fallback writes the same record for each section it found.
+   attempt n — <stamp> — section <pkg>/<section>`, the stamp the time the record is written,
+   then the `commit:` line, the check lines and the `result:` line. The fallback writes the
+   same record for each section it found, each with its own `commit:` line.
 7. No FAIL: delete the counter, exit 0. A FAIL before attempt 3: the FAIL lines to stderr,
    exit 2, the text naming the 2.2 retry rule (§Project convention rule 4: amend when
    `git log -1 --format=%s` starts with the section's scope, else a second commit with the same
    summary and trailer; from attempt 2 naming `debugging-and-error-recovery`), and saying that
-   every finish is a hand-back whose first line is `Result:` — a FAIL in a file the implementer
-   may not edit is `Result: blocked` with the gate lines. Attempt 3: the FAIL lines to stderr,
-   delete the counter, exit 0.
+   a FAIL the implementer cannot clear (in a file it may not edit, or false in its own file) is
+   a block: the marker, a commit of what it built, and the one line `Result: blocked`. The
+   implementer's report was delivered at its first hand-back and nothing after it reaches the
+   caller, so a fixed retry ends with the one line `Result: done`, and this record is what the
+   caller reads. Attempt 3: the FAIL lines to stderr, saying status.py holds the section
+   BLOCKED until the user answers (the record ends `result: letting the run stop …`), delete
+   the counter, exit 0.
 8. Malformed stdin or any exception: report it on stderr and exit 0 (fail open, reported).
 
 By hand, `python3 gate_on_stop.py --report [--base <rev>]` from the repo root runs the same
@@ -68,6 +83,33 @@ goes.
 It prints the file and exits 1 on a FAIL line, 2 on a bad argument. The pair skill runs it at
 wrap-up, so the reviewer of hand-made code reads a gate record of that code, not of the last
 implementer's.
+
+The record's lines, in order (status.py and the reviewer read them by these names):
+
+1. **header** — `dev-team gate — <slot> — <stamp> — section <pkg>/<section>`.
+2. **commit** — `commit: <short sha>`, the newest commit touching the section's code, unit
+   tree and README (status.py's `gate_commit`), or `commit: none`.
+3. **checks** — one line per check; its first word is PASS, FAIL, ELSEWHERE, TOLERATED,
+   TIMEOUT, SKIPPED or MEASURED.
+4. **marker** — `blocked: <the marker's second line>` or `spec-change: <the entry heading>`,
+   on a marker stop only.
+5. **result** — the last line, `result: <value>`.
+
+The header's slot:
+
+1. **attempt** — `attempt <n>`, a stop that ran the checks.
+2. **blocked** — the implementer's marker said `blocked`.
+3. **spec-change** — the marker said `spec-change`.
+4. **report** — `--report`, run by hand.
+
+The `result:` values:
+
+1. **pass** — no FAIL line; a note follows for ELSEWHERE, TIMEOUT and SKIPPED lines.
+2. **not done** — `not done (attempt <n> of 3)`: a FAIL before the third attempt.
+3. **letting the run stop** — `letting the run stop after 3 attempts with <k> failures`.
+4. **blocked** — a `blocked` marker stop.
+5. **spec-change** — a `spec-change` marker stop.
+6. **fail** — `fail (<k> failures, report since <rev>)`, `--report` only.
 
 The parsers are status.py's, imported; there is no copy of any of them here.
 """
@@ -129,9 +171,12 @@ def _run(cmd: list[str] | str, cwd: Path, timeout: int = TIMEOUT) -> tuple[int, 
 
 
 def _tail(text: str, n: int = 3) -> str:
-    """A failure's detail on one line: every `path:line` it names (up to ten), then its last n lines."""
+    """A failure's detail on one line: every `path:line` it names (up to ten), then its last n lines.
+
+    ruff 0.15 prints a location as ` --> path:line:col` under the message; the arrow is kept.
+    """
     lines = [line.strip() for line in text.strip().splitlines() if line.strip()]
-    located = [ln for ln in lines if re.match(r"[\w./-]+\.\w+:\d+", ln)][:10]
+    located = [ln for ln in lines if re.match(r"(?:-->\s*)?[\w./-]+\.\w+:\d+", ln)][:10]
     rest = [ln for ln in lines[-n:] if ln not in located]
     return " | ".join(located + rest) if lines else "no output"
 
@@ -487,6 +532,23 @@ def _thresholds(text: str) -> dict[str, list[float]]:
     return out
 
 
+def _xfail_call(path: str, n: int, text: str, added: dict[tuple[str, int], str]) -> str:
+    """An added `xfail` line from `xfail` on, read through to its closing bracket: when the line
+    leaves a `(` open, the following added lines of the same file with consecutive numbers are
+    joined, at most twenty, until the brackets balance. `ruff format` wraps a long decorator, so
+    the `D<n>` may sit on a later line. Lines not added in this diff are not read: the earlier
+    review saw them."""
+    depth = text.count("(") - text.count(")")
+    parts = [text]
+    k = n + 1
+    while depth > 0 and k <= n + 20 and (path, k) in added:
+        nxt = added[(path, k)]
+        parts.append(nxt)
+        depth += nxt.count("(") - nxt.count(")")
+        k += 1
+    return "\n".join(parts)
+
+
 def check_guarded(base: str, paths: list[str], pathspec: list[str] | None = None, before: str | None = None,
                   intent_elsewhere: bool = False) -> list[str]:
     """Guarded items on the lines added or removed since base (under pathspec when given); a
@@ -496,23 +558,32 @@ def check_guarded(base: str, paths: list[str], pathspec: list[str] | None = None
     exceptions = status.exceptions_rows()
     today = dt.date.today()
     lines = diff_lines(base, pathspec)
-    hits: list[tuple[str, str, int]] = []
-    added_by_file: dict[str, set[str]] = {}
-    for path, sign, _, text in lines:
-        if sign == "+":
-            added_by_file.setdefault(path, set()).add(text.strip())
+    hits: list[tuple[str, str, int, str]] = []
+    added: dict[tuple[str, int], str] = {(path, n): text for path, sign, n, text in lines if sign == "+"}
+    # Removed asserts are a net count per test file and per kind: a signature change rewrites
+    # every assert that calls the function, and a rewrite is not a removal. A moved, rewritten
+    # or split assert passes; a file that lost more than it gained fails, at its first removed line.
+    kinds = (("removed assert", lambda s: s.startswith("assert ")), ("removed pytest.raises", lambda s: "pytest.raises" in s))
+    counts: dict[tuple[str, str], list] = {}  # (path, kind) -> [removed, added, first removed line]
     for path, sign, n, text in lines:
         if not path.endswith(".py"):
             continue
         if sign == "+":
-            hits += [(name, path, n) for name, rx in ADDED if rx.search(text)]
-            if XFAIL.search(text) and not DECISION.search(text):
-                hits.append(("xfail without a D<n>", path, n))
-        elif _is_test(path) and (status.ROOT / path).exists() and text.strip() not in added_by_file.get(path, set()):
-            if text.strip().startswith("assert "):
-                hits.append(("removed assert", path, n))
-            elif "pytest.raises" in text:
-                hits.append(("removed pytest.raises", path, n))
+            hits += [(name, path, n, "") for name, rx in ADDED if rx.search(text)]
+            if (m := XFAIL.search(text)) and not DECISION.search(_xfail_call(path, n, text[m.start():], added)):
+                hits.append(("xfail without a D<n>", path, n, ""))
+        if _is_test(path) and (status.ROOT / path).exists():
+            for kind, holds in kinds:
+                if holds(text.strip()):
+                    c = counts.setdefault((path, kind), [0, 0, None])
+                    if sign == "-":
+                        c[0] += 1
+                        c[2] = n if c[2] is None else c[2]
+                    else:
+                        c[1] += 1
+    for (path, kind), (removed, gained, first) in counts.items():
+        if removed > gained:
+            hits.append((kind, path, first, f" ({removed} removed, {gained} added)"))
     if "docs/constraints.md" in paths:
         rev = before or base
         prior = status.git("show", f"{rev}:docs/constraints.md") if rev != EMPTY_TREE else None
@@ -521,18 +592,26 @@ def check_guarded(base: str, paths: list[str], pathspec: list[str] | None = None
             old, new = _thresholds(prior), _thresholds(after_file.read_text())
             for name, nums in old.items():
                 if name in new and any(b < a for a, b in zip(nums, new[name])):
-                    hits.append((f"lowered threshold {name}", "docs/constraints.md", 0))
+                    hits.append((f"lowered threshold {name}", "docs/constraints.md", 0, ""))
     out = []
-    for item, path, n in hits:
+    for item, path, n, note in hits:
         if _pardoned(item, path, exceptions, today):
-            out.append(f"PASS guarded {item} at {path}:{n} (Exceptions row)")
+            out.append(f"PASS guarded {item} at {path}:{n}{note} (Exceptions row)")
         elif intent_elsewhere and _is_intent(path):
-            out.append(f"ELSEWHERE guarded {item} at {path}:{n} (the tester's file)")
+            out.append(f"ELSEWHERE guarded {item} at {path}:{n}{note} (the tester's file)")
         else:
-            out.append(f"FAIL guarded {item} at {path}:{n}")
+            out.append(f"FAIL guarded {item} at {path}:{n}{note}")
     if not hits:
         out.append("PASS guarded: nothing in the diff")
     return out
+
+
+def check_surface_names(pkg: str, section: str) -> list[str]:
+    """The per-section half of the surface check, run for every section but `surface`: the
+    section README's name cells and its `Public: yes` names against the contract."""
+    code, out = _run([sys.executable, str(STATUS_PY), "--surface", pkg, "--section", section], status.ROOT, 60)
+    return ([f"PASS surface names {pkg}/{section}"] if code == 0
+            else [f"FAIL surface names: {' | '.join(ln.strip() for ln in out.strip().splitlines())}"])
 
 
 def check_surface(pkg: str) -> list[str]:
@@ -573,8 +652,7 @@ def run_checks(base: str, section: tuple[str, str]) -> tuple[list[tuple[str, str
     before = base if base != EMPTY_TREE else ("HEAD~1" if _own_head(pkg, sec) and status.git(
         "rev-parse", "--verify", "-q", "HEAD~1") else "HEAD")
     own += check_guarded(base, sorted(touched), spec, before, intent_elsewhere=True)
-    if sec == "surface":
-        own += check_surface(pkg)
+    own += check_surface(pkg) if sec == "surface" else check_surface_names(pkg, sec)
     lines = check_rows([pkg], touched, start + BUDGET, section)
     return [section], lines + own
 
@@ -595,19 +673,29 @@ def run_checks_legacy(base: str | None) -> tuple[list[tuple[str, str]], list[str
     for pkg, section in targets:
         own += check_intent(pkg, section)
     own += check_guarded(base, paths)
+    for pkg, section in targets:
+        if section != "surface":
+            own += check_surface_names(pkg, section)
     for pkg in sorted({pkg for pkg, section in targets if section == "surface"}):
         own += check_surface(pkg)
     lines = check_rows(pkgs, set(paths), start + BUDGET)
     return targets, lines + own
 
 
-def write_records(cwd: Path, targets: list[tuple[str, str]], text: str) -> list[Path]:
-    """The record, once per section in the run: `.dev-team/gate/<pkg>/<section>.txt`."""
+def _record_path(cwd: Path, pkg: str, section: str) -> Path:
+    return cwd / ".dev-team" / "gate" / pkg / f"{section}.txt"
+
+
+def write_records(cwd: Path, targets: list[tuple[str, str]], header: str, lines: list[str],
+                  outcome: str) -> list[Path]:
+    """The record, once per section in the run: `.dev-team/gate/<pkg>/<section>.txt` — header,
+    `commit: <short sha>` (status.py's `gate_commit` for that section, or `none`), lines, outcome."""
     out = []
     for pkg, section in targets:
-        path = cwd / ".dev-team" / "gate" / pkg / f"{section}.txt"
+        sha = status.gate_commit(pkg, section)
+        path = _record_path(cwd, pkg, section)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text)
+        path.write_text("\n".join([header, f"commit: {sha[:7] if sha else 'none'}", *lines, outcome]) + "\n")
         out.append(path)
     return out
 
@@ -643,9 +731,8 @@ def report(cwd: Path, base: str) -> int:
     stamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     outcome = ("result: pass" + _outcome_note(lines) if not fails
                else f"result: fail ({len(fails)} failure{'s' * (len(fails) != 1)}, report since {base})")
-    text = "\n".join([f"dev-team gate — report — {stamp} — sections {names}", *lines, outcome]) + "\n"
-    write_records(cwd, targets, text)
-    print(text, end="")
+    records = write_records(cwd, targets, f"dev-team gate — report — {stamp} — sections {names}", lines, outcome)
+    print("".join(r.read_text() for r in records), end="")
     return 1 if fails else 0
 
 
@@ -657,6 +744,26 @@ def _stop_reason(marker: Path) -> bool:
     return first in MARKER_REASONS
 
 
+CHECK_WORDS = ("PASS", "FAIL", "ELSEWHERE", "TOLERATED", "TIMEOUT", "SKIPPED", "MEASURED")
+
+
+def record_marker(cwd: Path, marker: Path, section: tuple[str, str], counter: Path, suffix: str = "") -> Path:
+    """The record of a marker stop: a header with the marker's reason in the attempt slot, the
+    `commit:` line, the check lines of this run's earlier record (kept only when the attempt
+    counter exists, i.e. this agent already ran a gate attempt), `<reason>: <detail>`, and
+    `result: <reason>`."""
+    text = marker.read_text().strip().splitlines()
+    reason = text[0].strip().lower()
+    detail = (text[1].strip() if len(text) > 1 else "") or "(no reason given)"
+    carried: list[str] = []
+    old = _record_path(cwd, *section)
+    if counter.is_file() and old.is_file():
+        carried = [ln for ln in old.read_text().splitlines() if ln.split(" ", 1)[0] in CHECK_WORDS]
+    stamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    header = f"dev-team gate — {reason} — {stamp} — section {'/'.join(section)}{suffix}"
+    return write_records(cwd, [section], header, [*carried, f"{reason}: {detail}"], f"result: {reason}")[0]
+
+
 def _retry_message(n: int, targets: list[tuple[str, str]], fails: list[str]) -> str:
     scope = ", ".join(f"`{p}/{s}:`" for p, s in targets)
     msg = [f"dev-team gate: not done — fix these, stage the fix, then commit per §Project convention rule 4: "
@@ -665,14 +772,15 @@ def _retry_message(n: int, targets: list[tuple[str, str]], fails: list[str]) -> 
            f"(attempt {n} of {MAX_ATTEMPTS}):", *fails]
     if n == 2:
         msg.append("Two attempts: invoke `debugging-and-error-recovery` with the Skill tool before the third.")
-    msg.append("Every finish is a hand-back whose first line is `Result:`. A FAIL in a file you may not edit "
-               "is not yours to fix: write your marker and hand back `Result: blocked` with these lines.")
-    msg.append("When you finish, hand back an amendment, not the full report again: `Result:`, `Amends:`, "
-               "`Gate:`, `Fixed:` and the amended `Commit:` (implementer.md, Return message), as your final "
-               "text: your hand-back tool delivers one report and your first report used it. The caller "
-               "already holds that report and takes your last turn as your answer."
-               + (" This is your last retry: the next finish ends the run whatever the checks find, so "
-                  "if anything is still red, write `Gate: let through after 3 attempts`." if n == 2 else ""))
+    msg.append("A FAIL you cannot clear is a block, not another attempt: one in a file you may not "
+               "edit, or one in your own file that reports something your change did not do. Write your "
+               "marker (first line `blocked`, second line the FAIL line), commit what you built, and end "
+               "your turn with the one line `Result: blocked`.")
+    msg.append("Your report was delivered at your first hand-back and nothing after it reaches your "
+               "caller. When the fix is committed, end your turn with the one line `Result: done`; this "
+               "gate's record is what the caller reads."
+               + (" This is your last retry: if the next finish is still red, the record says so and "
+                  "status.py holds the section BLOCKED until the user answers." if n == 2 else ""))
     return "\n".join(msg)
 
 
@@ -695,16 +803,20 @@ def gate(event: dict) -> int:
 
     base: str | None = None
     if section is not None:
-        markers = [stop / section[0] / section[1]]
+        markers = [(section, stop / section[0] / section[1], "")]
     else:
         base = _base()
         paths = diff_paths(base) if base else []
-        markers = [stop / pkg / sec for pkg, sec in gated_sections(paths)]
-    for marker in markers:
+        markers = [((pkg, sec), stop / pkg / sec, " (from diff)") for pkg, sec in gated_sections(paths)]
+    stopped = False
+    for target_section, marker, suffix in markers:
         if _stop_reason(marker):
+            record_marker(cwd, marker, target_section, counter, suffix)
             marker.unlink()
-            _clear(counter)
-            return 0
+            stopped = True
+    if stopped:
+        _clear(counter)
+        return 0
     try:
         n = int(counter.read_text().strip()) + 1
     except (OSError, ValueError):
@@ -731,8 +843,7 @@ def gate(event: dict) -> int:
     else:
         outcome = f"result: letting the run stop after {MAX_ATTEMPTS} attempts with {len(fails)} failure{'s' * (len(fails) != 1)}"
     stamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    records = write_records(cwd, targets, "\n".join(
-        [f"dev-team gate — attempt {n} — {stamp} — {names}", *lines, outcome]) + "\n")
+    records = write_records(cwd, targets, f"dev-team gate — attempt {n} — {stamp} — {names}", lines, outcome)
     where = ", ".join(p.relative_to(cwd).as_posix() for p in records)
 
     if not fails:
@@ -742,7 +853,8 @@ def gate(event: dict) -> int:
         print(_retry_message(n, targets, fails), file=sys.stderr)
         return 2
     print("\n".join([f"dev-team gate: letting the run stop after {MAX_ATTEMPTS} attempts with these failures — "
-                     f"the reviewer will see them in {where}:", *fails]), file=sys.stderr)
+                     f"status.py holds the section BLOCKED until the user answers; the record is {where}:",
+                     *fails]), file=sys.stderr)
     _clear(counter)
     return 0
 

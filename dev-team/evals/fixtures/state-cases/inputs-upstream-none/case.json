@@ -1,0 +1,30 @@
+{
+  "note": "--inputs on a section whose design says Upstream packages: none: the implementer is sent no upstream interface",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "files": {
+        "docs/packages/analysis/contract.md": "# analysis — package contract\n\n## Sections\n\n| section | responsibility | path | owner doc | builds with | depends on | source |\n|---|---|---|---|---|---|---|\n| vwap | rolling VWAP | packages/analysis/src/analysis/vwap/ | docs/packages/analysis/design/vwap.md | — | — | — |\n| surface | the public surface | packages/analysis/src/analysis/ | docs/packages/analysis/design/surface.md | — | vwap | — |\n",
+        "docs/packages/analysis/design/vwap.md": "Mode: new\n\n# analysis/vwap — design\n\n## 1. Purpose and scope\n\nRolling VWAP over trades.\n\n## 2. Inputs and outputs\n\nTrades in, a VWAP series out.\nUpstream packages: none\n\n## 3. Module plan\n\n- `vwap.py`\n"
+      },
+      "message": "docs: analysis contract, vwap design"
+    }
+  ],
+  "args": [
+    "--inputs",
+    "analysis/vwap"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "Section: analysis/vwap\n",
+      "Upstream interfaces: none\n"
+    ]
+  }
+}
