@@ -6,6 +6,24 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [0.15.0] - 2026-10-01
+
+### Added
+- **`run-evals` names its plugin root** (2c0a04f): `init`'s manifest gives every run a `plugin_root` and the iteration a `baseline_plugin_root`, and the executor prompt tells the executor to read every `${CLAUDE_PLUGIN_ROOT}` path under it.
+- **`run-evals` warnings** (2c0a04f): `init` warns, on stderr and in the manifest's `warnings`, when `previous` fell back to HEAD and when the baseline is identical to the working tree. It still exits 0.
+- **`run-evals` rules for its agents** (2c0a04f): an executor ended by an API error is rerun once; grader material is not staged where an executor may read; every eval agent runs on Sonnet 5.5 unless you name another model (`VERSIONING.md`).
+- **`plugin-anatomy` facts** (2c0a04f): inside a subagent a hook's `transcript_path` is the parent's, with the subagent transcript's own path and `agent_transcript_path` on `SubagentStop`; `claude -p --model sonnet` was Sonnet 5 in CLI 2.1.283 while the Agent tool's `sonnet` was Sonnet 5.5; a subagent's Write is refused for a `.md` whose name starts `analysis`, `report`, `summary` or `findings`. All `[proven]` by dev-team logs.
+
+### Fixed
+- **The baseline snapshot is the whole plugin** (2c0a04f): it used to hold only the target's directory, so a baseline that read another skill of its plugin got the working tree's copy and a change there showed on both sides. `evals/` is left out. Eval: mechanical 15/15 vs 6/15, probe 6/6 vs 2/6 (`evals/2026-10-01-run-evals-harness-fixes.md`).
+- **Executors can no longer read what they are graded on, or share a scratch copy** (2c0a04f): the executor prompt forbids reading the iteration outside its own run directory and `evals/sets/`, requires a fixture copy to live in its own `mktemp -d` directory, and makes the first tool call a Read of the target.
+- **`previous` in a clone with no local `main`** (2c0a04f): it also tries `origin/main` and `origin/master` before falling back to HEAD.
+- **Blind comparators get only what they can check** (2c0a04f): `blind` withholds expectations that name the transcript, which a comparator does not see, and prints how many as `withheld_expectations`.
+- **`plugin-anatomy`: what reaches an agent's caller** (2c0a04f): with `SubagentHandback` the caller receives the agent's first hand-back and nothing after it; a second call is refused. 0.12.1 said "the last hand-back" and that an agent "must hand back again", which was wrong (`evals/2026-10-01-handback-delivery.md`).
+
+### Changed
+- **`plugin-anatomy`: the 20-subagent limit is proven** (2c0a04f): the 21st spawn fails and is not queued.
+
 ## [0.14.0] - 2026-09-29
 
 ### Added
