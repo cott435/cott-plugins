@@ -12,7 +12,7 @@ Each case is `events/<case>.json`:
 - `setup`: `prior`, files committed just before the run's commit (so they are in the repo
   but not in the run's diff); `files` written into the repo (uncommitted unless `commit` names
   a message, which commits everything; `{RUN_SHA}` in their text is the short sha of the
-  run's commit, after `prior`); `remove`, paths deleted from the working tree after
+  run's commit, after `prior`, and is substituted the same way in every `expect` string); `remove`, paths deleted from the working tree after
   `files`; `counter`, the gate's attempt count before this stop;
   `stale_lock`, a name whose `.dev-team/locks/<name>/` is created with its mtime set 1200 s
   back (a crashed holder's lock); `transcript`, a spawn prompt written as the one `user` record
@@ -32,7 +32,8 @@ Each case is `events/<case>.json`:
   exist); `gate_contains`, `gate_lacks`, and `gate_only` (every line of the gate's record for
   `gate_section`, default `data/ingest`, at `.dev-team/gate/<pkg>/<section>.txt`, between the
   header and the `result:` line starts with one of these: `PASS`, `FAIL`, `ELSEWHERE`,
-  `TIMEOUT`, `MEASURED`, `TOLERATED`, `SKIPPED`); `counter` (the attempt
+  `TIMEOUT`, `MEASURED`, `TOLERATED`, `SKIPPED`; a line starting `commit:`, `blocked:` or
+  `spec-change:`, which every 2.4 record carries, is skipped); `counter` (the attempt
   count after, `null` for no counter file).
 
 The script runs with `CLAUDE_PLUGIN_ROOT` set to this plugin and `CLAUDE_PLUGIN_DATA` to a
@@ -71,6 +72,21 @@ def _repo(kind: str, dest: Path) -> Path:
     return dest
 
 
+# Record lines gate_only never judges: the 2.4 `commit:` line and a marker stop's line.
+GATE_ONLY_SKIP = ("commit:", "blocked:", "spec-change:")
+
+
+def _sub(value: object, run_sha: str) -> object:
+    """value with `{RUN_SHA}` replaced in every string it holds."""
+    if isinstance(value, str):
+        return value.replace("{RUN_SHA}", run_sha)
+    if isinstance(value, list):
+        return [_sub(v, run_sha) for v in value]
+    if isinstance(value, dict):
+        return {k: _sub(v, run_sha) for k, v in value.items()}
+    return value
+
+
 def check(case: Path) -> list[str]:
     spec = json.loads(case.read_text())
     exp, setup = spec["expect"], spec.get("setup", {})
@@ -91,6 +107,7 @@ def check(case: Path) -> list[str]:
                            cwd=repo, check=True)
             subprocess.run([*git, "commit", "-q", "-m", msg], cwd=repo, check=True)
         run_sha = build.run_sha(repo) if spec["repo"] == "built" else ""
+        exp = _sub(exp, run_sha)
         for rel, text in setup.get("files", {}).items():
             (repo / rel).parent.mkdir(parents=True, exist_ok=True)
             (repo / rel).write_text(text.replace("{RUN_SHA}", run_sha))
@@ -156,7 +173,8 @@ def check(case: Path) -> list[str]:
         problems += [f"gate.txt has {s!r}" for s in exp.get("gate_lacks", []) if s in gate]
         if "gate_only" in exp and gate:
             body = gate.strip().splitlines()[1:-1]
-            problems += [f"gate.txt line {ln!r}" for ln in body if not ln.startswith(tuple(exp["gate_only"]))]
+            problems += [f"gate.txt line {ln!r}" for ln in body
+                         if not ln.startswith((*exp["gate_only"], *GATE_ONLY_SKIP))]
         if "counter" in exp:
             now = int(counter.read_text()) if agent_id and counter.exists() else None
             if now != exp["counter"]:

@@ -1,0 +1,29 @@
+{
+  "note": "a run that died between attempts (result: not done): IMPLEMENT",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "IMPLEMENT",
+    "evidence": "^gate not done \\(attempt 1 of 3\\)$"
+  },
+  "gate": {
+    "ingest": "dev-team gate — attempt 1 — 2026-10-01 10:00:00 — section data/ingest\ncommit: {SECTION}\nFAIL unit data/ingest: pytest exited 1: 1 failed\nresult: not done (attempt 1 of 3)\n"
+  }
+}

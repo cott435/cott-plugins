@@ -9,7 +9,10 @@ A section is in exactly one state, decided in this order, first match wins:
 1. **BLOCKED** — an open decision with no assumption binds the section (`docs/decisions.md`
    entry with `Status: open`, no `Assumption if unanswered:`, `Scope:` covering `repo`, the
    package or the section); or the newest review round says `request changes` and the cap is
-   hit: round 3 or later, or round 2 whose `Convergence:` line has one or more prior unfixed.
+   hit: round 3 or later, or round 2 whose `Convergence:` line has one or more prior unfixed;
+   or the section has a README, no review round covers its code, and the stop gate's record
+   for its current commit ends `result: blocked` or `result: letting the run stop after 3
+   attempts …`.
 2. **PLAN** — an open `spec-change:contract` names the section.
 3. **PROBE** — a source in the row's `source` column needs probing: an `api:` source whose
    `docs/sources/<token>.md` lacks a `## <pkg>/<section>` heading, or a `dataset:` source with
@@ -26,7 +29,9 @@ A section is in exactly one state, decided in this order, first match wins:
    (regenerate).
 6. **IMPLEMENT** — no README (`<section path>/README.md`; for `surface`,
    `docs/packages/<pkg>/interface.md`); or the intent tree, regeneration and `intent tests current with design`
-   commits skipped, is newer than the README.
+   commits skipped, is newer than the README; or the section has a README, no review round
+   covers its code, and the gate's record for its current commit ends `result: not done
+   (attempt <n> of 3)`, a run that died between attempts.
 7. **REVIEW** — no review round; or round 1 lacks its `a` or `b` report; or the section's code
    (its path, `tests/unit/<section>`, `tests/intent/<section>` less those same commits, its
    README) is newer than the newest round's `Commit:`; or the newest round's verdict is
@@ -78,6 +83,16 @@ reports (request changes > spec-change > approve); a report with no `-r<n>-` is 
 `--rounds <pkg>/<section>` prints a third line, `commit: <short sha>`, the newest commit
 touching the section's path, `tests/unit/<section>`, `tests/intent/<section>` and its README,
 or `commit: none` — the reviewer copies it as its report's `Commit:` (F12).
+
+**Gate record.** `.dev-team/gate/<pkg>/<section>.txt`, written by `hooks/gate_on_stop.py` on
+every implementer stop. It speaks for the commit its `commit:` line names: the newest commit
+touching the section's code, `tests/unit/<section>` and its README, the intent tree left out.
+A record whose `commit:` is not that commit, a record with no `commit:` line (written before
+2.4), a missing record, and a record read while those paths have uncommitted changes are all
+treated as absent, and the row is derived without it. A record whose header slot is `report`
+(`/dev-team:pair`'s wrap-up) or `spec-change` never holds a row. Once a review round's
+`Commit:` covers the code the review speaks and the record is not read, which is what makes
+the user's *review anyway* stick.
 
 **Scaffold.** A package is ready to be built in when its workspace exists: a root
 `pyproject.toml`, and, when that root is a uv workspace (`[tool.uv.workspace]`), a
@@ -920,13 +935,98 @@ def _cap_hit(n: int, verdict: str, fields: dict[str, str]) -> bool:
     return verdict == "request changes" and (n >= 3 or (n == 2 and _prior_unfixed(fields) >= 1))
 
 
+# ---------------------------------------------------------------------------------------------
+# The stop gate's record
+# ---------------------------------------------------------------------------------------------
+
+
+GATE_HEADER = re.compile(r"^dev-team gate — (attempt (\d+)|blocked|spec-change|report) — ")
+
+
+def _gate_paths(pkg: str, section: str) -> list[Path | str]:
+    """What the implementer writes for the section: its code (nested sections excluded),
+    `tests/unit/<section>` and its README (`interface.md` for `surface`). Not the intent tree."""
+    p = _paths(pkg, section)
+    return [*p["code"], p["unit"], p["readme"]]  # type: ignore[list-item]
+
+
+def gate_commit(pkg: str, section: str) -> str | None:
+    """Full sha of the newest commit touching the section's code, unit tree and README: the commit
+    a gate record speaks for. None when no commit does. The stop gate imports it, so the record's
+    writer and its reader compute the same commit."""
+    return last_commit(*_gate_paths(pkg, section))
+
+
+def gate_record(pkg: str, section: str) -> dict[str, object] | None:
+    """The stop gate's record for the section's current commit, parsed; None when it is absent or stale.
+
+    Keys: slot (`attempt`, `blocked`, `spec-change` or `report`), attempt (int or None),
+    result (the text after `result: ` on the last non-empty line), fails (every line starting
+    `FAIL`), blocked (the text after `blocked: `, or "").
+    """
+    f = ROOT / ".dev-team" / "gate" / pkg / f"{section}.txt"
+    try:
+        lines = [line.rstrip("\n") for line in f.read_text().splitlines()]
+    except (OSError, UnicodeDecodeError):
+        return None
+    if len(lines) < 3:
+        return None
+    head = GATE_HEADER.match(lines[0])
+    if head is None:
+        return None
+    value = next((line[len("commit:"):].strip() for line in lines if line.startswith("commit:")), None)
+    if value is None:
+        return None
+    if uncommitted(*_gate_paths(pkg, section)):
+        return None
+    sha = gate_commit(pkg, section)
+    if value == "none":
+        if sha is not None:
+            return None
+    elif len(value) < 7 or sha is None or not sha.startswith(value):
+        return None
+    last = next((line for line in reversed(lines) if line.strip()), "")
+    slot = "attempt" if head.group(2) else head.group(1)
+    return {
+        "slot": slot,
+        "attempt": int(head.group(2)) if head.group(2) else None,
+        "result": last[len("result: "):].strip() if last.startswith("result: ") else "",
+        "fails": [line for line in lines if line.startswith("FAIL")],
+        "blocked": next((line[len("blocked: "):].strip() for line in lines if line.startswith("blocked: ")), ""),
+    }
+
+
+def _code_after_review(pkg: str, section: str, rsha: str) -> str | None:
+    """The first change to the section's code (its path, `tests/unit/<section>`,
+    `tests/intent/<section>` less regeneration commits, its README) after review commit rsha;
+    None when there is none. Rule 7 and `_review_covers` both read it."""
+    p = _paths(pkg, section)
+    return changed_since(rsha, *p["code"], p["unit"], p["intent"], p["readme"], skip_regen=(pkg, section))  # type: ignore[misc]
+
+
+def _review_covers(pkg: str, section: str) -> bool:
+    """True when a review round exists, its `Commit:` is readable, and the section's code is not
+    newer than it: rule 7's expression."""
+    n, _, rsha, _ = newest_round(pkg, section)
+    if n == 0 or rsha is None:
+        return False
+    return _code_after_review(pkg, section, rsha) is None
+
+
+def _gate_hold(pkg: str, section: str, readme: Path) -> dict[str, object] | None:
+    """The gate record that may hold the row: the README exists, no review round covers the
+    code, and the record is current; else None."""
+    if not readme.exists() or _review_covers(pkg, section):
+        return None
+    return gate_record(pkg, section)
+
+
 def section_state(pkg: str, section: str) -> tuple[str, str]:
     """(STATE, evidence) for one section: the first rule in the module docstring that fires."""
     p = _paths(pkg, section)
     row: dict[str, str] = p["row"]  # type: ignore[assignment]
     design: Path = p["design"]  # type: ignore[assignment]
     intent: Path = p["intent"]  # type: ignore[assignment]
-    unit: Path = p["unit"]  # type: ignore[assignment]
     readme: Path = p["readme"]  # type: ignore[assignment]
     code: list[str] = p["code"]  # type: ignore[assignment]
     regen = (pkg, section)
@@ -938,6 +1038,15 @@ def section_state(pkg: str, section: str) -> tuple[str, str]:
     if _cap_hit(n, verdict, fields):
         k = _prior_unfixed(fields)
         return "BLOCKED", f"review r{n} request changes" + (f", {k} prior unfixed" if k else "") + " (cap)"
+    record = _gate_hold(pkg, section, readme)
+    if record is not None:
+        result = str(record["result"])
+        if record["slot"] == "blocked" and result == "blocked":
+            why = str(record["blocked"]).replace(" · ", ", ") or "(no reason given)"
+            return "BLOCKED", f"gate blocked: {why}"
+        if record["slot"] == "attempt" and result.startswith("letting the run stop"):
+            m = re.search(r"with (\d+) failure", result)
+            return "BLOCKED", f"gate let through after 3 attempts, {m.group(1) if m else '?'} failures"
 
     spec = live_spec_changes(pkg, section)
     kinds = {e["kind"] for e in spec}
@@ -1000,16 +1109,17 @@ def section_state(pkg: str, section: str) -> tuple[str, str]:
         if intent_rev_nr == UNCOMMITTED:
             return "IMPLEMENT", f"uncommitted: {_rel(intent)}"
         return "IMPLEMENT", f"tests {_short(intent_rev_nr)} newer than README {_short(readme_rev)}"
+    if record is not None and record["slot"] == "attempt" and str(record["result"]).startswith("not done (attempt "):
+        return "IMPLEMENT", f"gate {record['result']}"
 
     # 7. REVIEW
     if n == 0:
         return "REVIEW", "no review"
     if n == 1 and (missing := _missing_letters(pkg, section)):
         return "REVIEW", f"review r1 lacks its {' and '.join(missing)} report"
-    code_paths = (*code, unit, intent, readme)
     if rsha is None:
         return "REVIEW", f"review r{n} has no Commit:"
-    if (after := changed_since(rsha, *code_paths, skip_regen=regen)) is not None:
+    if (after := _code_after_review(pkg, section, rsha)) is not None:
         if after == UNCOMMITTED:
             return "REVIEW", f"uncommitted: {code[0]}"
         return "REVIEW", f"code {_short(after)} newer than review r{n} {rsha[:7]}"
@@ -1073,6 +1183,10 @@ def next_command(pkg: str, table: list[dict[str, object]] | None = None) -> str:
         if r["state"] == "BLOCKED" and str(r["evidence"]).startswith("D"):
             d = str(r["evidence"]).split(",")[0].split()[0]
             return f"answer {d} in docs/decisions.md, then /dev-team:run-package {pkg}"
+    for r in table:
+        if r["state"] == "BLOCKED" and str(r["evidence"]).startswith("gate "):
+            return (f"/dev-team:run-package {pkg} {r['section']} --step IMPLEMENT (run it again) or "
+                    f"/dev-team:run-package {pkg} {r['section']} --step REVIEW (review anyway)")
     for r in table:
         if r["state"] == "BLOCKED":
             return f"/dev-team:run-package {pkg} {r['section']} --step REVIEW (one more round) or /dev-team:run-package {pkg} --defer"

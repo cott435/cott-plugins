@@ -39,7 +39,14 @@ and its inbox at `docs/packages/<pkg>/decisions/<section>.md`; `"layout": "old"`
 `"legacy": true` pin the 2.0 and pre-2.0 spellings `status.py` still reads, and
 `review-both-layouts` and `ledger-moved-new` mix the two in one repo.
 
-The 2.2 cases (phase 1 of `site/notes/2.2-01-status-paths.md`) are the last fifteen rows. The eight phase-12 cases (`site/notes/2.2-12-run-fixes.md`) follow them: `--fields` for new, document, delta by a change file, delta by a `spec-change:design`, round 2 and a bad target, and the run gate's stale-`Applied:` FAIL and its other-section PASS. Six
+**The gate record (2.4).** The eleven `gate-*` cases (`site/notes/2.4-02-gate-record.md`,
+the last eleven rows) carry a top-level `gate` key: section → the text of its stop-gate
+record, written to `.dev-team/gate/data/<section>.txt` after `dirty`, `{SECTION}` the short
+sha of the newest commit touching the section's code and unit tree (resolved after every
+step, so a review commit, which touches only `docs/`, leaves it naming the build). The key
+also puts `.dev-team/` in `.git/info/exclude`, as a scaffolded repo's `.gitignore` would.
+
+The 2.2 cases (phase 1 of `site/notes/2.2-01-status-paths.md`) are fifteen rows before the phase-12 ones. The eight phase-12 cases (`site/notes/2.2-12-run-fixes.md`) follow them: `--fields` for new, document, delta by a change file, delta by a `spec-change:design`, round 2 and a bad target, and the run gate's stale-`Applied:` FAIL and its other-section PASS. Six
 older cases whose expectations spell a 2.0 path or heading (`inputs-fix-round`,
 `inputs-spec-change-review`, `report-spec-change-b`, `report-spec-change-recorded`,
 `test-regenerate`, `test-spec-change-test`) set `"layout": "old"`, so they keep pinning the old
@@ -123,3 +130,14 @@ optional flag).
 | `run-gate-stale-applied-other-section` | central D3 holds a `data/clean` line and the inbox's `data/ingest` line | `--run-gate data` | `run gate: PASS`; exit 0 |
 | `surface-name-cell-and-pipeline` | surface DONE; a README name cell `` `load_trades` (`__init__.py`) ``; `run_load` provided by `data.pipelines.load` with no README row (phase 12, the 12.7 stop) | `--surface data` | `surface: PASS` |
 | `surface-section-name-no-readme-row` | the same with ingest's row `Public: no` | `--surface data` | `surface: FAIL`; `load_trades: in interface.md Public names, not in README Public: yes rows`; no `run_load` line; exit 1 |
+| `gate-blocked` | `base`, `design`, `tests`, `build`; a `blocked` record for ingest's current commit (2.4, phase 2) | `—` | `ingest · BLOCKED`, evidence `/^gate blocked: status\.py --surface data fails on a sibling README$/`; `next: /dev-team:run-package data ingest --step IMPLEMENT (run it again) or /dev-team:run-package data ingest --step REVIEW (review anyway)` |
+| `gate-let-through` | the same build; an `attempt 3` record, two `FAIL` lines, `result: letting the run stop after 3 attempts with 2 failures` | `—` | `ingest · BLOCKED`, evidence `/^gate let through after 3 attempts, 2 failures$/` |
+| `gate-not-done` | an `attempt 1` record, one `FAIL`, `result: not done (attempt 1 of 3)` | `—` | `ingest · IMPLEMENT`, evidence `/^gate not done \(attempt 1 of 3\)$/` |
+| `gate-pass` | an `attempt 1` record, `PASS` lines, `result: pass` | `—` | `ingest · REVIEW`, evidence `/^no review$/` |
+| `gate-stale-commit` | the `blocked` record with `commit: 0000000` | `—` | `ingest · REVIEW`, evidence `/^no review$/` |
+| `gate-no-commit-line` | the let-through record without its `commit:` line (pre-2.4) | `—` | `ingest · REVIEW`, evidence `/^no review$/` |
+| `gate-report-ignored` | a `report` record with a `FAIL` and `result: fail (1 failure, report since HEAD)` | `—` | `ingest · REVIEW`, evidence `/^no review$/` |
+| `gate-spec-change-ignored` | a `spec-change` record, `result: spec-change` | `—` | `ingest · REVIEW`, evidence `/^no review$/` |
+| `gate-review-covers` | the `blocked` record, then round 1 `a` and `b` approve the same code | `—` | `ingest · DONE` |
+| `gate-blocked-half-pair` | the `blocked` record, then round 1 with only `a` | `—` | `ingest · REVIEW`, evidence `/^review r1 lacks its b report$/` |
+| `gate-blocked-dirty` | the `blocked` record, and an uncommitted `packages/data/src/data/ingest/extra.py` | `—` | `ingest · REVIEW`, evidence `/^no review$/` (the record is stale; with no review round rule 7 says `no review`) |

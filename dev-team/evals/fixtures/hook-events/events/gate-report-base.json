@@ -15,7 +15,8 @@
     ],
     "gate_contains": [
       "dev-team gate — report — ",
-      "TOLERATED intent tests/intent/ingest/test_loader.py::test_load_trades_price_is_float"
+      "TOLERATED intent tests/intent/ingest/test_loader.py::test_load_trades_price_is_float",
+      "commit: "
     ],
     "gate_lacks": [
       "FAIL"

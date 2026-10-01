@@ -97,6 +97,24 @@ central `Applied:` lines follow its inbox; another section's are untouched);
 `pyproject.toml` and `docs/api/<pkg>/index.md`, while `guard-implementer-section-pyproject`
 still refuses the package `pyproject.toml` to `ingest`).
 
+**The 2.4 record** (`site/notes/2.4-02-gate-record.md`). Every record now carries a
+`commit:` line on line 2, the newest commit touching the section's code, unit tree and README
+(`status.py`'s `gate_commit`), so `status.py` can tell which commit it speaks for; `--report`
+records carry it too. A marker stop is recorded instead of leaving no trace: header slot
+`blocked` or `spec-change`, the `commit:` line, the earlier attempt's check lines when this
+agent already ran a gate attempt, `blocked: <the marker's second line>` (or `spec-change:
+<heading>`), and `result: blocked` (or `spec-change`). `check.py` substitutes `{RUN_SHA}` in
+`expect` strings as in `setup.files`, and `gate_only` skips `commit:`, `blocked:` and
+`spec-change:` lines. The cases: `gate-record-commit` (`gate-pass`'s setup; `commit:
+{RUN_SHA}`, `result: pass`); `gate-own-marker` and `gate-marker` (unchanged setups, the record
+now written: `blocked: (no reason given)` and `blocked: D4 needs an answer`, `result:
+blocked`); `gate-marker-after-fail` (an `attempt 1` record with a `FAIL intent …` line and
+`result: not done`, then a `blocked` marker: the FAIL line is carried, the old header and
+result are gone); `gate-marker-spec-change` (`spec-change: data/ingest — 2026-09-27 —
+spec-change:test — 1`, `result: spec-change`); `gate-marker-no-reason` (a one-line marker:
+`blocked: (no reason given)`); and `gate-report-base`, which also checks for the `commit:`
+line.
+
 **The 2.2 layout here.** `build.py` still writes the section's ledger at the 2.0 path,
 `docs/deviations/data/ingest.md`, so the tolerated case also proves the gate reads the old
 location; the new one, `docs/packages/data/deviations/ingest.md`, is written by

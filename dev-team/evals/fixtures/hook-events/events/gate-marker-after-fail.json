@@ -4,8 +4,10 @@
   "setup": {
     "transcript": "Section: data/ingest\nDesign: docs/packages/data/design/ingest.md\nRun: run-package data",
     "files": {
-      ".dev-team/stop/data/ingest": "blocked\n"
-    }
+      ".dev-team/gate/data/ingest.txt": "dev-team gate — attempt 1 — 2026-10-01 10:00:00 — section data/ingest\ncommit: {RUN_SHA}\nPASS unit data/ingest: 1 passed\nFAIL intent tests/intent/ingest/test_loader.py::test_load_trades_price_is_float\nresult: not done (attempt 1 of 3)\n",
+      ".dev-team/stop/data/ingest": "blocked\nthe gate FAIL is in a sibling's file\n"
+    },
+    "counter": 1
   },
   "event": {
     "session_id": "9b1f0c52-3d4e-4a7b-8c21-5e6f7a8b9c0d",
@@ -32,9 +34,15 @@
     ],
     "gate_contains": [
       "dev-team gate — blocked — ",
-      "commit: ",
-      "blocked: (no reason given)",
+      "FAIL intent tests/intent/ingest/test_loader.py::test_load_trades_price_is_float",
+      "blocked: the gate FAIL is in a sibling's file",
       "result: blocked"
-    ]
+    ],
+    "file_lacks": {
+      ".dev-team/gate/data/ingest.txt": [
+        "result: not done",
+        "attempt 1 —"
+      ]
+    }
   }
 }

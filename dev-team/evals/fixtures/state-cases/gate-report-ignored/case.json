@@ -1,0 +1,29 @@
+{
+  "note": "a --report record never holds the row: REVIEW",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "REVIEW",
+    "evidence": "^no review$"
+  },
+  "gate": {
+    "ingest": "dev-team gate — report — 2026-10-01 10:00:00 — sections data/ingest\ncommit: {SECTION}\nFAIL unit data/ingest: pytest exited 1: 1 failed\nresult: fail (1 failure, report since HEAD)\n"
+  }
+}

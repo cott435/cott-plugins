@@ -4,7 +4,7 @@
   "setup": {
     "transcript": "Section: data/ingest\nDesign: docs/packages/data/design/ingest.md\nRun: run-package data",
     "files": {
-      ".dev-team/stop/data/ingest": "blocked\n"
+      ".dev-team/stop/data/ingest": "blocked"
     }
   },
   "event": {
@@ -31,10 +31,12 @@
       ".dev-team/stop/data/ingest"
     ],
     "gate_contains": [
-      "dev-team gate — blocked — ",
-      "commit: ",
       "blocked: (no reason given)",
       "result: blocked"
+    ],
+    "gate_only": [
+      "PASS",
+      "FAIL"
     ]
   }
 }

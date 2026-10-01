@@ -402,6 +402,20 @@ headings:
       - file: README.md
         span: ['## The states', 'A package is **shipped**']
 
+  - name: gate record lines and result values their readers parse are ones the gate writes
+    # status.py holds a row on the record's slot, commit and result; the reviewer reads the
+    # check lines and the result. The owner is the three numbered lists at the end of the
+    # gate's docstring. A renamed value leaves status.py deriving REVIEW for a section whose
+    # implementer blocked, which is the fault 2.4 exists to close.
+    owner: hooks/gate_on_stop.py
+    owner_span: ["The record's lines, in order", "The parsers are status.py's"]
+    readers:
+      - file: skills/status/scripts/status.py
+        cites: ['header', 'commit', 'result', 'attempt', 'blocked', 'spec-change', 'report',
+                'not done', 'letting the run stop']
+      - file: agents/reviewer.md
+        cites: ['header', 'checks', 'result', 'pass']
+
   - name: every field the driver sends the researcher is one the researcher's Inputs defines
     # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.
     owner: agents/researcher.md

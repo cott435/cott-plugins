@@ -7,7 +7,11 @@ Copies two-package/'s brief and dataset into dest (which must not exist), runs `
 commits an empty root on `main`, creates branch `build` (unless the case says
 `"branch": "main"`), commits the brief and dataset, then applies the case's steps in order,
 one commit per step, so commit order is the evidence. Files listed under the case's `dirty`
-are written last and left uncommitted. Prints dest.
+are written last and left uncommitted. A top-level `gate` key maps a section to the text of
+its stop-gate record, written to `.dev-team/gate/data/<section>.txt` after `dirty`, with
+`{SECTION}` replaced by the first seven characters of the newest commit touching
+`packages/data/src/data/<section>` and `packages/data/tests/unit/<section>`; the key also adds
+`.dev-team/` to `.git/info/exclude`, as a scaffolded repo's `.gitignore` would. Prints dest.
 
 A step is either explicit, `{"files": {"<path>": "<content>"}, "message": "<summary>"}`, or a
 macro, `{"do": "<macro>", ...}`; the macros are the functions named `m_<macro>` below. In any
@@ -340,7 +344,24 @@ def build(case: Path, dest: Path) -> Path:
     for step in spec.get("steps", []):
         apply(dest, step)
     write(dest, spec.get("dirty", {}))
+    if "gate" in spec:
+        write_gate(dest, spec["gate"])
     return dest
+
+
+def write_gate(dest: Path, records: dict[str, str]) -> None:
+    """Write each section's stop-gate record to `.dev-team/gate/data/<section>.txt`, `{SECTION}`
+    the short sha of the newest commit touching its code and unit tree, and exclude `.dev-team/`
+    from git as a scaffolded repo's `.gitignore` would."""
+    for section, text in records.items():
+        sha = run(dest, "log", "-1", "--format=%H", "--", f"packages/{PKG}/src/{PKG}/{section}",
+                  f"packages/{PKG}/tests/unit/{section}")
+        p = dest / ".dev-team" / "gate" / PKG / f"{section}.txt"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(text.replace("{SECTION}", sha[:7]))
+    exclude = dest / ".git" / "info" / "exclude"
+    exclude.parent.mkdir(parents=True, exist_ok=True)
+    exclude.write_text((exclude.read_text() if exclude.exists() else "") + ".dev-team/\n")
 
 
 def main() -> int:

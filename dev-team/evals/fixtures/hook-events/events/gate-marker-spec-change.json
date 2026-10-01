@@ -4,7 +4,7 @@
   "setup": {
     "transcript": "Section: data/ingest\nDesign: docs/packages/data/design/ingest.md\nRun: run-package data",
     "files": {
-      ".dev-team/stop/data/ingest": "blocked\n"
+      ".dev-team/stop/data/ingest": "spec-change\ndata/ingest — 2026-09-27 — spec-change:test — 1\n"
     }
   },
   "event": {
@@ -31,10 +31,10 @@
       ".dev-team/stop/data/ingest"
     ],
     "gate_contains": [
-      "dev-team gate — blocked — ",
+      "dev-team gate — spec-change — ",
       "commit: ",
-      "blocked: (no reason given)",
-      "result: blocked"
+      "spec-change: data/ingest — 2026-09-27 — spec-change:test — 1",
+      "result: spec-change"
     ]
   }
 }
