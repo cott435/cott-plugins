@@ -67,9 +67,13 @@ Input: the hook JSON on stdin (`cwd`, `agent_id`, `agent_type`, `stop_hook_activ
    exit 2, the text naming the 2.2 retry rule (§Project convention rule 4: amend when
    `git log -1 --format=%s` starts with the section's scope, else a second commit with the same
    summary and trailer; from attempt 2 naming `debugging-and-error-recovery`), and saying that
-   every finish is a hand-back whose first line is `Result:` — a FAIL in a file the implementer
-   may not edit is `Result: blocked` with the gate lines. Attempt 3: the FAIL lines to stderr,
-   delete the counter, exit 0.
+   a FAIL the implementer cannot clear (in a file it may not edit, or false in its own file) is
+   a block: the marker, a commit of what it built, and the one line `Result: blocked`. The
+   implementer's report was delivered at its first hand-back and nothing after it reaches the
+   caller, so a fixed retry ends with the one line `Result: done`, and this record is what the
+   caller reads. Attempt 3: the FAIL lines to stderr, saying status.py holds the section
+   BLOCKED until the user answers (the record ends `result: letting the run stop …`), delete
+   the counter, exit 0.
 8. Malformed stdin or any exception: report it on stderr and exit 0 (fail open, reported).
 
 By hand, `python3 gate_on_stop.py --report [--base <rev>]` from the repo root runs the same
@@ -768,14 +772,15 @@ def _retry_message(n: int, targets: list[tuple[str, str]], fails: list[str]) -> 
            f"(attempt {n} of {MAX_ATTEMPTS}):", *fails]
     if n == 2:
         msg.append("Two attempts: invoke `debugging-and-error-recovery` with the Skill tool before the third.")
-    msg.append("Every finish is a hand-back whose first line is `Result:`. A FAIL in a file you may not edit "
-               "is not yours to fix: write your marker and hand back `Result: blocked` with these lines.")
-    msg.append("When you finish, hand back an amendment, not the full report again: `Result:`, `Amends:`, "
-               "`Gate:`, `Fixed:` and the amended `Commit:` (implementer.md, Return message), as your final "
-               "text: your hand-back tool delivers one report and your first report used it. The caller "
-               "already holds that report and takes your last turn as your answer."
-               + (" This is your last retry: the next finish ends the run whatever the checks find, so "
-                  "if anything is still red, write `Gate: let through after 3 attempts`." if n == 2 else ""))
+    msg.append("A FAIL you cannot clear is a block, not another attempt: one in a file you may not "
+               "edit, or one in your own file that reports something your change did not do. Write your "
+               "marker (first line `blocked`, second line the FAIL line), commit what you built, and end "
+               "your turn with the one line `Result: blocked`.")
+    msg.append("Your report was delivered at your first hand-back and nothing after it reaches your "
+               "caller. When the fix is committed, end your turn with the one line `Result: done`; this "
+               "gate's record is what the caller reads."
+               + (" This is your last retry: if the next finish is still red, the record says so and "
+                  "status.py holds the section BLOCKED until the user answers." if n == 2 else ""))
     return "\n".join(msg)
 
 
@@ -848,7 +853,8 @@ def gate(event: dict) -> int:
         print(_retry_message(n, targets, fails), file=sys.stderr)
         return 2
     print("\n".join([f"dev-team gate: letting the run stop after {MAX_ATTEMPTS} attempts with these failures — "
-                     f"the reviewer will see them in {where}:", *fails]), file=sys.stderr)
+                     f"status.py holds the section BLOCKED until the user answers; the record is {where}:",
+                     *fails]), file=sys.stderr)
     _clear(counter)
     return 0
 

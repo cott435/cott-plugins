@@ -30,7 +30,11 @@
     "stderr_contains": [
       "letting the run stop after 3 attempts",
       "FAIL intent",
-      "the reviewer will see them in .dev-team/gate/data/ingest.txt"
+      "status.py holds the section BLOCKED",
+      "the record is .dev-team/gate/data/ingest.txt"
+    ],
+    "stderr_lacks": [
+      "the reviewer will see them"
     ],
     "gate_contains": [
       "letting the run stop after 3 attempts"
