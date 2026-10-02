@@ -1,0 +1,28 @@
+{
+  "note": "--paths (2.5 phase 4): run_load calls read_trades through a module-level dict",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands",
+      "files": {
+        "packages/data/src/data/pipelines/load.py": "\"\"\"The load pipeline.\"\"\"\n\nfrom data.ingest.reader import read_trades\n\n_RUNNERS = {\"trades\": read_trades}\n\n\ndef run_load(path: str) -> int:\n    \"\"\"Read the trades at path and return their count.\"\"\"\n    rows = _RUNNERS[\"trades\"](path)\n    return len(rows)\n"
+      }
+    }
+  ],
+  "args": [
+    "--paths",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "matches": [
+      "^    read_trades \\(packages/data/src/data/ingest/reader\\.py:7\\) \\[indirect\\]$"
+    ],
+    "contains": [
+      "indirect frames: 1",
+      "depth to first effect: 2"
+    ]
+  }
+}

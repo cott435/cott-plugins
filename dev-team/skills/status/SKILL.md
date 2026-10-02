@@ -1,7 +1,7 @@
 ---
 name: status
 description: Print where every package and section stands — one state per section (PROBE, DESIGN, TEST, IMPLEMENT, REVIEW, FIX n, PLAN, DONE, BLOCKED), the ready set, whether the package shipped, and the exact next command — derived from docs/ and the code every time, never from a status file. Use whenever you have lost track, before planning the next package, or to see why run-package stopped.
-argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--shape <pkg> --section <s>] [--repo] [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]"
+argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--shape <pkg> --section <s>] [--paths <pkg>] [--repo] [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]"
 disable-model-invocation: true
 ---
 
@@ -54,6 +54,13 @@ row; a name cell is read as its first backticked span (`` `Trade` (`models.py`) 
 into its record: `FAIL shape: <file>:<line> trivial-helper <name>` for a private helper added
 since the section's last review that has one call site in the package and three statements or
 fewer, then `PASS shape <pkg>/<s>` when nothing failed. Exit 1 on a FAIL line.
+
+`--paths <pkg>` prints one call tree per `[project.scripts]` command of the package, followed
+statically through the package's own code: a frame per line, `[indirect]` on a frame reached
+through a lambda, a closure or a mapping, `[effect: <callee>]` on a call that leaves the
+package for a third-party module or for I/O, `[unresolved]` on a call the script could not
+follow, then `depth to first effect`, `deepest effect` and `indirect frames`. The paths
+reviewer reads it. With no commands it prints `paths: no commands`.
 
 `--repo` prints the repo-wide gap list the documenter copies under **Known gaps**: `packages:`,
 `sections:` (every section not DONE), `decisions:` (every `D<n>` open or deferred),

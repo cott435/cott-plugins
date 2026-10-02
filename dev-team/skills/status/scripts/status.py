@@ -3,7 +3,7 @@
 
 Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg> [--section <s>]] [--repo]
                           [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]
-                          [--shape <pkg> --section <s>]
+                          [--shape <pkg> --section <s>] [--paths <pkg>]
 
 A section is in exactly one state, decided in this order, first match wins:
 
@@ -133,6 +133,47 @@ tree.
 
 Exit 1 on a FAIL line, else 0; 2 on a missing `--section` or a section the contract lacks.
 
+**Paths.** `--paths <pkg>` prints one call tree per command in the `[project.scripts]` table of
+`<package root>/pyproject.toml`, in the table's order, followed statically through the
+package's own code. The module index is every non-test `.py` under the package's source root
+(the `surface` row's path, else `<package root>/src/<pkg>`), each named by its dotted path from
+the root's parent. Inside one function every call is read in source order, the bodies of
+nested functions and lambdas left out (each is a frame of its own):
+
+- a frame — a call to a function of the same module, to one imported from a module of the
+  package, or to a function nested in the current one; `self.m(…)` or `cls.m(…)` when the class
+  or a base class of the package defines `m` (`Class.m`); `mod.f(…)` or `pkg.mod.f(…)` through
+  an imported package module; `C.m(…)`; and `C(…)`, a package class, as `C.__init__` when it
+  has one (else nothing).
+- `[indirect]` frames — `NAME[key](…)`, `NAME` a module-level dict literal of package
+  functions: one frame per distinct value, in the dict's order. A lambda, a nested function's
+  name or a package function's name passed as an argument: under the callee, after the callee's
+  own calls, when the call resolved to a package function; else under the current function. A
+  passed lambda or nested function whose own body makes no frame and no leaf is not printed.
+- an effect leaf, `[effect: <callee as written>] (<file>:<line>)` — a call into a module
+  outside the package whose root is not in `sys.stdlib_module_names` and is not `logging`,
+  `loguru` or `structlog`; a call into `subprocess`, `socket`, `urllib`, `http`, `sqlite3` or
+  `shutil`; or the builtin `open` or `print`. Any other outside call, builtin or method of a
+  literal prints nothing, and so does a call on a module-level name assigned from a logging
+  library's call (`log = logging.getLogger(__name__)`).
+- an `[unresolved]` leaf, `<source text> (<file>:<line>) [unresolved]` — anything else: a
+  parameter called, a local variable's method, `self.x.m(…)`, a subscript of something unknown.
+
+Each block is `command: <name> = <target>`, then one line per frame, two spaces of indent per
+level, `name (<file>:<line>)` at the line of the `def` or the lambda, marks after the
+parenthesis: `[indirect]`, then `[seen]` for a function already printed in full or
+`[recursive]` for one on the current path, neither expanded again (callables passed to it at
+that call site still print under it). Then three footer lines, counted on the call graph from
+the command function at depth 0, a callable passed to a callee two levels below the caller:
+`depth to first effect: <n>` (the smallest depth of a frame that makes an effect call),
+`deepest effect: <m>` (the largest, back edges ignored), each `none` without an effect, and
+`indirect frames: <k>` (the `[indirect]` frames of the command's tree, each counted once). A
+target whose module is not in the package prints `target outside the package`, and one whose
+function the module lacks prints `target not found in the package`, with no footer. Blocks are
+separated by a blank line; with no `[project.scripts]` table, an empty one, or no package
+`pyproject.toml`, the one line `paths: no commands`. Exit 0; 2 with no package, or with no
+`docs/packages/<pkg>/contract.md`.
+
 **Scaffold.** A package is ready to be built in when its workspace exists: a root
 `pyproject.toml`, and, when that root is a uv workspace (`[tool.uv.workspace]`), a
 `pyproject.toml` at the package root. `--scaffold <pkg>` prints `scaffold: done` and exits 0,
@@ -190,11 +231,14 @@ lacks):
 from __future__ import annotations
 
 import ast
+import builtins
+import heapq
 import json
 import os
 import re
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 ROOT = Path.cwd().resolve()
@@ -1804,6 +1848,424 @@ def shape_check(pkg: str, section: str) -> list[str]:
     return [f"FAIL shape: {rel}:{n} trivial-helper {name}" for rel, n, name in sorted(fails)]
 
 
+# ---------------------------------------------------------------------------------------------
+# Paths: the static call tree of each [project.scripts] command
+# ---------------------------------------------------------------------------------------------
+
+LOGGING_LIBRARIES = frozenset({"logging", "loguru", "structlog"})
+IO_MODULES = frozenset({"subprocess", "socket", "urllib", "http", "sqlite3", "shutil"})
+IO_BUILTINS = frozenset({"open", "print"})
+LITERALS = (ast.Constant, ast.JoinedStr, ast.List, ast.Dict, ast.Set, ast.Tuple,
+            ast.ListComp, ast.DictComp, ast.SetComp)
+DEFS = (ast.FunctionDef, ast.AsyncFunctionDef)
+UNRESOLVED_WIDTH = 80
+
+Resolved = tuple[str, object] | None
+
+
+class _Module:
+    """One module of the package as the resolver reads it: its functions, classes, imports,
+    name-valued dict literals and module-level names assigned from a call."""
+
+    def __init__(self, name: str, rel: str, source: str, tree: ast.Module, is_init: bool) -> None:
+        self.name, self.rel, self.source = name, rel, source
+        self.package = name if is_init else name.rpartition(".")[0]
+        self.functions = {n.name: n for n in tree.body if isinstance(n, DEFS)}
+        self.classes = {n.name: n for n in tree.body if isinstance(n, ast.ClassDef)}
+        self.dicts: dict[str, ast.Dict] = {}
+        self.assigned_calls: dict[str, ast.Call] = {}
+        for node in tree.body:
+            if isinstance(node, ast.Assign) and len(node.targets) == 1:
+                target = node.targets[0]
+            elif isinstance(node, ast.AnnAssign):
+                target = node.target
+            else:
+                continue
+            if not isinstance(target, ast.Name):
+                continue
+            if isinstance(node.value, ast.Dict) and node.value.values and all(
+                    isinstance(v, ast.Name) for v in node.value.values):
+                self.dicts[target.id] = node.value
+            elif isinstance(node.value, ast.Call):
+                self.assigned_calls[target.id] = node.value
+        # local name -> (module, attribute), attribute None for `import a.b`. A module-level
+        # import wins over the same name imported inside a function.
+        self.imports: dict[str, tuple[str, str | None]] = {}
+        top = [n for n in tree.body if isinstance(n, (ast.Import, ast.ImportFrom))]
+        top_ids = {id(n) for n in top}
+        nested = [n for n in ast.walk(tree) if isinstance(n, (ast.Import, ast.ImportFrom)) and id(n) not in top_ids]
+        for node in [*top, *nested]:
+            if isinstance(node, ast.Import):
+                for a in node.names:
+                    local = a.asname or a.name.split(".")[0]
+                    self.imports.setdefault(local, (a.name if a.asname else local, None))
+            else:
+                source_module = self.absolute(node)
+                for a in node.names:
+                    if a.name != "*":
+                        self.imports.setdefault(a.asname or a.name, (source_module, a.name))
+
+    def absolute(self, node: ast.ImportFrom) -> str:
+        """The dotted module a `from … import` names, a relative one resolved against this
+        module's package."""
+        if not node.level:
+            return node.module or ""
+        parts = self.package.split(".")
+        base = parts[: len(parts) - (node.level - 1)]
+        return ".".join([*base, *([node.module] if node.module else [])])
+
+
+class _Fn:
+    """A function, method, nested function or lambda: a frame of the call tree, with the names
+    its own body defines (nested functions, parameters, assigned variables)."""
+
+    def __init__(self, node: ast.AST, name: str, module: _Module, cls: str | None, parent: _Fn | None) -> None:
+        self.node, self.name, self.module, self.cls, self.parent = node, name, module, cls, parent
+        self.key = f"{module.rel}:{node.lineno}:{node.col_offset}"
+        self.line = node.lineno
+        # The function's own body: nested functions, lambdas and classes are listed but not
+        # entered, since each is a frame (or a scope) of its own.
+        stack = list(node.body) if isinstance(node, DEFS) else [node.body]
+        self.own: list[ast.AST] = []
+        while stack:
+            n = stack.pop()
+            self.own.append(n)
+            if not isinstance(n, (*DEFS, ast.Lambda, ast.ClassDef)):
+                stack.extend(ast.iter_child_nodes(n))
+        self.nested = {n.name: n for n in self.own if isinstance(n, DEFS)}
+        args = node.args
+        self.locals = {a.arg for a in [*args.posonlyargs, *args.args, *args.kwonlyargs, args.vararg, args.kwarg] if a}
+        self.locals |= {n.id for n in self.own if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)}
+
+
+class _CallGraph:
+    """The package's module index, and the call graph `--paths` prints, built per function on
+    first use.
+
+    A name resolves to a pair: ("function", key), ("class", (module, name)), ("module", dotted
+    name), ("dict", (module, name)), ("outside", root module), ("logger", None) or ("builtin",
+    name); None is a name the resolver does not follow.
+    """
+
+    def __init__(self, pkg: str) -> None:
+        surface = _row(pkg, "surface")
+        top = (ROOT / surface["path"]) if surface else package_root(pkg) / "src" / pkg
+        self.root_name = top.name
+        self.modules: dict[str, _Module] = {}
+        for rel in _py_files(top):
+            parts = list((ROOT / rel).relative_to(top.parent).with_suffix("").parts)
+            is_init = parts[-1] == "__init__"
+            name = ".".join(parts[:-1] if is_init else parts)
+            try:
+                source = (ROOT / rel).read_text()
+                self.modules[name] = _Module(name, rel, source, ast.parse(source), is_init)
+            except (OSError, SyntaxError, UnicodeDecodeError, ValueError):
+                continue
+        # every module and every package above one, `__init__.py` or not
+        self.known = {".".join(n.split(".")[:i]) for n in self.modules for i in range(1, n.count(".") + 2)}
+        self.fns: dict[str, _Fn] = {}
+        self._by_node: dict[int, _Fn] = {}
+        self._entries: dict[str, list[dict[str, object]]] = {}
+        self._building: set[str] = set()
+        self._resolving: set[tuple[str, str]] = set()
+
+    def fn_for(self, node: ast.AST, module: _Module, cls: str | None, parent: _Fn | None) -> _Fn:
+        """The one _Fn for node, made on first sight."""
+        if id(node) not in self._by_node:
+            if isinstance(node, ast.Lambda):
+                name = "lambda"
+            elif parent is None and cls:
+                name = f"{cls}.{node.name}"
+            else:
+                name = node.name
+            fn = _Fn(node, name, module, cls, parent)
+            self._by_node[id(node)] = fn
+            self.fns[fn.key] = fn
+        return self._by_node[id(node)]
+
+    def method(self, module: _Module, cls: str, attr: str, seen: frozenset[tuple[str, str]] = frozenset()) -> str | None:
+        """The key of the method attr of class cls, from cls or else its package base classes."""
+        node = module.classes[cls]
+        for item in node.body:
+            if isinstance(item, DEFS) and item.name == attr:
+                return self.fn_for(item, module, cls, None).key
+        seen = seen | {(module.name, cls)}
+        for base in node.bases:
+            found = self.resolve(module, None, base)
+            if found and found[0] == "class" and found[1] not in seen:
+                key = self.method(self.modules[found[1][0]], found[1][1], attr, seen)
+                if key:
+                    return key
+        return None
+
+    def resolve(self, module: _Module, fn: _Fn | None, node: ast.AST) -> Resolved:
+        """What the expression node names, read inside fn, or at module level when fn is None."""
+        if isinstance(node, ast.Name):
+            return self.lookup(fn, node.id) if fn else self.resolve_name(module, node.id, with_builtins=True)
+        if isinstance(node, ast.Attribute):
+            if isinstance(node.value, ast.Name) and node.value.id in ("self", "cls") and fn and fn.cls:
+                key = self.method(module, fn.cls, node.attr)
+                return ("function", key) if key else None
+            return self.attribute(self.resolve(module, fn, node.value), node.attr)
+        if isinstance(node, LITERALS):
+            return ("builtin", "literal")
+        return None
+
+    def lookup(self, fn: _Fn, name: str) -> Resolved:
+        """name read inside fn: a function nested in fn or in a function around it; None for any
+        other local name (a parameter, an assigned variable); else the module's own name."""
+        scope: _Fn | None = fn
+        while scope is not None:
+            if name in scope.nested:
+                return ("function", self.fn_for(scope.nested[name], scope.module, scope.cls, scope).key)
+            if name in scope.locals:
+                return None
+            scope = scope.parent
+        return self.resolve_name(fn.module, name, with_builtins=True)
+
+    def resolve_name(self, module: _Module, name: str, *, with_builtins: bool) -> Resolved:
+        """name at the top level of module, followed through its imports."""
+        if name in module.functions:
+            return ("function", self.fn_for(module.functions[name], module, None, None).key)
+        if name in module.classes:
+            return ("class", (module.name, name))
+        if name in module.dicts:
+            return ("dict", (module.name, name))
+        if name in module.assigned_calls:
+            maker = self.resolve(module, None, module.assigned_calls[name].func)
+            return ("logger", None) if maker and maker[0] == "outside" and maker[1] in LOGGING_LIBRARIES else None
+        if name in module.imports and (module.name, name) not in self._resolving:
+            self._resolving.add((module.name, name))
+            try:
+                return self.binding(*module.imports[name])
+            finally:
+                self._resolving.discard((module.name, name))
+        if with_builtins and hasattr(builtins, name):
+            return ("builtin", name)
+        return None
+
+    def binding(self, source: str, attr: str | None) -> Resolved:
+        """What an import of attr from module source binds, or of source itself when attr is None."""
+        if attr is None:
+            return ("module", source) if source in self.known else self.outside(source)
+        if f"{source}.{attr}" in self.known:
+            return ("module", f"{source}.{attr}")
+        if source in self.modules:
+            return self.resolve_name(self.modules[source], attr, with_builtins=False)
+        return self.outside(source)
+
+    def outside(self, source: str) -> Resolved:
+        """An import from source, not a module of the package: ("outside", its root module), or
+        None when that root is the package's own name (a module the index lacks)."""
+        root = source.split(".")[0]
+        return ("outside", root) if root and root != self.root_name else None
+
+    def attribute(self, target: Resolved, attr: str) -> Resolved:
+        """What `<target>.attr` names."""
+        if target is None:
+            return None
+        kind, value = target
+        if kind == "module":
+            if f"{value}.{attr}" in self.known:
+                return ("module", f"{value}.{attr}")
+            return self.resolve_name(self.modules[value], attr, with_builtins=False) if value in self.modules else None
+        if kind == "class":
+            key = self.method(self.modules[value[0]], value[1], attr)
+            return ("function", key) if key else None
+        if kind in ("outside", "logger", "builtin"):
+            return target
+        return None
+
+    def entries(self, fn: _Fn) -> list[dict[str, object]]:
+        """fn's children, in the source order of its calls: `{"frame": key, "indirect": bool,
+        "under": [keys]}` (under: the callables passed to that callee at this call site) or
+        `{"leaf": text, "effect": bool}`."""
+        if fn.key in self._entries:
+            return self._entries[fn.key]
+        self._building.add(fn.key)
+        calls = sorted((n for n in fn.own if isinstance(n, ast.Call)), key=lambda c: (c.lineno, c.col_offset))
+        out: list[dict[str, object]] = []
+        for call in calls:
+            callee, own = self.callee(fn, call)
+            passed = [self.passed(fn, arg) for arg in [*call.args, *(k.value for k in call.keywords)]]
+            passed = [key for key in passed if key and self.worth_printing(key)]
+            if callee:
+                out.append({"frame": callee, "indirect": False, "under": passed})
+            else:
+                out += own
+                out += [{"frame": key, "indirect": True, "under": []} for key in passed]
+        self._building.discard(fn.key)
+        self._entries[fn.key] = out
+        return out
+
+    def callee(self, fn: _Fn, call: ast.Call) -> tuple[str | None, list[dict[str, object]]]:
+        """(the package function call resolves to, or None; the entries it makes otherwise)."""
+        module, func = fn.module, call.func
+        if isinstance(func, ast.Subscript):
+            table = self.resolve(module, fn, func.value)
+            if table and table[0] == "dict":
+                owner = self.modules[table[1][0]]
+                keys: list[str] = []
+                for value in owner.dicts[table[1][1]].values:
+                    found = self.resolve(owner, None, value)
+                    if found and found[0] == "function" and found[1] not in keys:
+                        keys.append(found[1])
+                if keys:
+                    return None, [{"frame": key, "indirect": True, "under": []} for key in keys]
+            return None, [self.unresolved(fn, call)]
+        found = self.resolve(module, fn, func)
+        if found is None or found[0] in ("module", "dict"):
+            return None, [self.unresolved(fn, call)]
+        kind, value = found
+        if kind == "function":
+            return value, []
+        if kind == "class":
+            return self.method(self.modules[value[0]], value[1], "__init__"), []
+        effect = (kind == "outside" and (value in IO_MODULES or (
+            value not in sys.stdlib_module_names and value not in LOGGING_LIBRARIES))) or (
+            kind == "builtin" and isinstance(func, ast.Name) and value in IO_BUILTINS)
+        leaf = {"leaf": f"[effect: {ast.unparse(func)}] ({module.rel}:{call.lineno})", "effect": True}
+        return None, [leaf] if effect else []
+
+    def unresolved(self, fn: _Fn, call: ast.Call) -> dict[str, object]:
+        """The `[unresolved]` leaf for call: its source text on one line, then where it is."""
+        text = " ".join((ast.get_source_segment(fn.module.source, call) or ast.unparse(call)).split())
+        if len(text) > UNRESOLVED_WIDTH:
+            text = text[: UNRESOLVED_WIDTH - 1] + "…"
+        return {"leaf": f"{text} ({fn.module.rel}:{call.lineno}) [unresolved]", "effect": False}
+
+    def passed(self, fn: _Fn, arg: ast.AST) -> str | None:
+        """The key of the callable arg hands over: a lambda, or a name of a package function."""
+        if isinstance(arg, ast.Lambda):
+            return self.fn_for(arg, fn.module, fn.cls, fn).key
+        found = self.resolve(fn.module, fn, arg) if isinstance(arg, (ast.Name, ast.Attribute)) else None
+        return found[1] if found and found[0] == "function" else None
+
+    def worth_printing(self, key: str) -> bool:
+        """False for a passed lambda or nested function whose body makes no frame and no leaf."""
+        fn = self.fns[key]
+        if fn.parent is None or key in self._building:
+            return True
+        return bool(self.entries(fn))
+
+    def edges(self, key: str) -> list[tuple[str, int, bool]]:
+        """(child, depth added, indirect) per frame under key; a callable passed to a callee sits
+        under that callee, two levels down."""
+        out = []
+        for entry in self.entries(self.fns[key]):
+            if "frame" in entry:
+                out.append((entry["frame"], 1, entry["indirect"]))
+                out += [(under, 2, True) for under in entry["under"]]
+        return out
+
+    def footer(self, root: str) -> list[str]:
+        """The three footer lines, from the call graph rather than the printed tree."""
+        makes_effect = {key: any(e.get("effect") for e in self.entries(self.fns[key])) for key in self.reachable(root)}
+        dist, heap, first = {root: 0}, [(0, root)], None
+        while heap:
+            d, key = heapq.heappop(heap)
+            if d > dist[key]:
+                continue
+            if makes_effect[key]:
+                first = d
+                break
+            for child, step, _ in self.edges(key):
+                if d + step < dist.get(child, d + step + 1):
+                    dist[child] = d + step
+                    heapq.heappush(heap, (d + step, child))
+        longest: dict[str, int | None] = {}
+        on_path: set[str] = set()
+
+        def deepest(key: str) -> int | None:
+            on_path.add(key)
+            best = 0 if makes_effect[key] else None
+            for child, step, _ in self.edges(key):
+                if child in on_path:
+                    continue
+                below = longest[child] if child in longest else deepest(child)
+                if below is not None and (best is None or step + below > best):
+                    best = step + below
+            on_path.discard(key)
+            longest[key] = best
+            return best
+
+        last = deepest(root)
+        indirect = sum(1 for key in makes_effect for _, _, ind in self.edges(key) if ind)
+        return [f"depth to first effect: {'none' if first is None else first}",
+                f"deepest effect: {'none' if last is None else last}",
+                f"indirect frames: {indirect}"]
+
+    def reachable(self, root: str) -> list[str]:
+        seen, stack = [root], [root]
+        while stack:
+            for child, _, _ in self.edges(stack.pop()):
+                if child not in seen:
+                    seen.append(child)
+                    stack.append(child)
+        return seen
+
+    def tree(self, key: str, depth: int, indirect: bool, path: list[str], seen: set[str], out: list[str],
+             under: list[str] | tuple[str, ...] = ()) -> None:
+        """Print key's frame and, the first time it is met, its children; then the callables
+        handed to it at this call site."""
+        fn = self.fns[key]
+        mark = " [indirect]" if indirect else ""
+        if key in path:
+            mark += " [recursive]"
+        elif key in seen:
+            mark += " [seen]"
+        out.append(f"{'  ' * depth}{fn.name} ({fn.module.rel}:{fn.line}){mark}")
+        expand = key not in path and key not in seen
+        path.append(key)
+        if expand:
+            seen.add(key)
+            for entry in self.entries(fn):
+                if "leaf" in entry:
+                    out.append(f"{'  ' * (depth + 1)}{entry['leaf']}")
+                else:
+                    self.tree(entry["frame"], depth + 1, entry["indirect"], path, seen, out, entry["under"])
+        for child in under:
+            self.tree(child, depth + 1, True, path, seen, out)
+        path.pop()
+
+    def command(self, target: str) -> str | None:
+        """The key of the function a `module:attr` script target names, None when it names none."""
+        module_name, _, attr = target.strip().partition(":")
+        module = self.modules.get(module_name)
+        if module is None or not attr:
+            return None
+        first, *rest = attr.strip().split(".")
+        found = self.resolve_name(module, first, with_builtins=False)
+        for part in rest:
+            found = self.attribute(found, part)
+        return found[1] if found and found[0] == "function" else None
+
+
+def paths_report(pkg: str) -> list[str]:
+    """`--paths <pkg>`: one call tree per `[project.scripts]` command, or `paths: no commands`."""
+    pyproject = package_root(pkg) / "pyproject.toml"
+    try:
+        scripts = tomllib.loads(pyproject.read_text()).get("project", {}).get("scripts", {})
+    except (OSError, tomllib.TOMLDecodeError):
+        scripts = {}
+    if not scripts:
+        return ["paths: no commands"]
+    graph = _CallGraph(pkg)
+    blocks = []
+    for name, target in scripts.items():
+        lines = [f"command: {name} = {target}"]
+        root = graph.command(target)
+        if target.partition(":")[0].strip() not in graph.modules:
+            lines.append("target outside the package")
+        elif root is None:
+            lines.append("target not found in the package")
+        else:
+            graph.tree(root, 0, False, [], set(), lines)
+            lines += graph.footer(root)
+        blocks.append("\n".join(lines))
+    return "\n\n".join(blocks).split("\n")
+
+
 def repo_report() -> list[str]:
     """The repo-wide gap list, six groups, for the documenter's Known gaps."""
     pk, secs, specs, chg = [], [], [], []
@@ -1983,6 +2445,7 @@ def main() -> int:
     has_rounds, rounds_target = _flag_value(argv, "--rounds")
     has_surface, surface_pkg = _flag_value(argv, "--surface")
     has_shape, shape_pkg = _flag_value(argv, "--shape")
+    has_paths, paths_pkg = _flag_value(argv, "--paths")
     has_section, section_name = _flag_value(argv, "--section")
     has_gate, gate_pkg = _flag_value(argv, "--run-gate")
     has_inputs, inputs_target = _flag_value(argv, "--inputs")
@@ -2024,6 +2487,14 @@ def main() -> int:
         lines = shape_check(shape_pkg, section_name)
         print("\n".join(lines))
         code |= 1 if any(ln.startswith("FAIL") for ln in lines) else 0
+    if has_paths:
+        if not paths_pkg:
+            print("--paths needs a package: status.py --paths <pkg>")
+            return 2
+        if not contract_path(paths_pkg).exists():
+            print(f"{paths_pkg}: missing {_rel(contract_path(paths_pkg))}")
+            return 2
+        print("\n".join(paths_report(paths_pkg)))
     if has_surface and has_section:
         if not surface_pkg or not section_name:
             print("--surface needs a package and --section a section: status.py --surface <pkg> --section <s>")
@@ -2078,7 +2549,7 @@ def main() -> int:
         needed = scaffold_needed(scaffold_pkg)
         print(f"scaffold: needed ({', '.join(needed)})" if needed else "scaffold: done")
         code |= 1 if needed else 0
-    if has_rounds or has_gate or has_surface or has_shape or has_repo or has_inputs or has_scaffold or has_fields:
+    if has_rounds or has_gate or has_surface or has_shape or has_paths or has_repo or has_inputs or has_scaffold or has_fields:
         return code
     if not DOCS.exists():
         print("no docs/ directory here — run from the repo root")

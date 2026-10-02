@@ -180,6 +180,51 @@ def __getattr__(name):
 
 ENTRY = {"ingest": ("load_trades", "yes"), "clean": ("dedupe", "no"), "storage": ("store", "no")}
 
+# The `commands` macro's package (2.5, phase 4): one command whose call tree reaches two
+# effects at depth 2, the block `calltree-direct` expects line for line.
+COMMANDS = {
+    "packages/data/pyproject.toml": """[project]
+name = "data"
+version = "0.0.0"
+
+[project.scripts]
+data-load = "data.cli:load"
+""",
+    "packages/data/src/data/cli.py": '''"""Commands."""
+
+from data.pipelines.load import run_load
+
+
+def load(path: str) -> None:
+    """Load the trades at path."""
+    run_load(path)
+''',
+    "packages/data/src/data/pipelines/__init__.py": "",
+    "packages/data/src/data/pipelines/load.py": '''"""The load pipeline."""
+
+from data.ingest.reader import read_trades
+
+
+def run_load(path: str) -> int:
+    """Read the trades at path and return their count."""
+    # Read the file into rows.
+    rows = read_trades(path)
+    return len(rows)
+''',
+    "packages/data/src/data/ingest/reader.py": '''"""Read trades."""
+
+import csv
+import shutil
+
+
+def read_trades(path: str) -> list[dict[str, str]]:
+    """Copy path to a scratch file and parse the copy."""
+    shutil.copy(path, path + ".bak")
+    with open(path + ".bak") as handle:
+        return list(csv.DictReader(handle))
+''',
+}
+
 
 def run(dest: Path, *args: str) -> str:
     out = subprocess.run(["git", "-c", "user.name=fixture", "-c", "user.email=fixture@example.invalid",
@@ -250,6 +295,11 @@ def m_build(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
         files = {f"packages/{PKG}/src/{PKG}/{s}/__init__.py": f'"""{s}."""\n\n\ndef {name}(path):\n    return []\n',
                  f"packages/{PKG}/src/{PKG}/{s}/README.md": README.format(section=s, name=name, public=public), **unit}
     return [(files, f"{PKG}/{s}: build")]
+
+
+def m_commands(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
+    """The five files of a package with one command, `files` replacing or adding any of them."""
+    return [({**COMMANDS, **step.get("files", {})}, f"{PKG}/surface: commands")]
 
 
 def m_review(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:

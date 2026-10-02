@@ -22,8 +22,9 @@ round 1 `a` and `b` approving), `fix`, `edit`, `regenerate` (a
 `<pkg>/<section>: regenerate 1 intent tests` commit), `deviation` (one entry in the
 section's ledger, `docs/packages/<pkg>/deviations/<section>.md` with the heading's `— <k>`, or
 with `"legacy": true` in the pre-split `docs/deviations.md`), `change` (`slug`, `sections`,
-`status`, `pkg`: a change file at `docs/packages/<pkg>/changes/<slug>.md`) and `inbox`
-(`section`, `entries`: the section's decisions inbox, entries verbatim). `review`,
+`status`, `pkg`: a change file at `docs/packages/<pkg>/changes/<slug>.md`), `inbox`
+(`section`, `entries`: the section's decisions inbox, entries verbatim) and `commands` (a
+package with one `[project.scripts]` command, **The call tree (2.5)** below). `review`,
 `deviation` and `change` take `"layout": "old"` for the 2.0 paths (`docs/reviews/…`,
 `docs/deviations/<pkg>/<section>.md` with no `— <k>`, `docs/changes/<slug>.md`); the
 default is the 2.2 layout, so every case that sets no layout runs under it. `review` takes
@@ -79,6 +80,18 @@ statement, a test file, a dunder, a `@property` and a method name two classes de
 pass. A round-1 review whose `Commit:` covers the helper is the base, so the helper is not
 added (`shape-helper-before-review`); a helper committed after the review is
 (`shape-helper-after-review`).
+
+**The call tree (2.5).** Nine cases (`site/notes/2.5-readability-04-paths-resolver.md`, the
+nine `calltree-*` rows at the end). Each runs `base`, then the `commands` macro: one commit,
+`data/surface: commands`, of a package `pyproject.toml` with one command (`data-load =
+"data.cli:load"`), `cli.py`, `pipelines/__init__.py`, `pipelines/load.py` and
+`ingest/reader.py`, whose tree reaches `shutil.copy` and `open` at depth 2; its `files` key
+replaces or adds any file in the same commit. Each runs `--paths data`. A lambda handed to a
+package function prints under that function, a dict dispatch prints every value, both
+`[indirect]`; a method on a local is `[unresolved]`; `loguru` and `re` are not effects and
+`requests` is; a method called through `self` is a frame; a self-call is `[recursive]`. The
+macro goes before any `done` step, so a section's review covers its files. The `paths-*` names
+are left for the package line phase 7 adds.
 
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
@@ -198,3 +211,12 @@ optional flag).
 | `shape-exempt-kinds` | a commit adding `kinds.py`: `__repr__`, a `@property` `_size`, and `_fetch` (two statements) in two classes, called once through `self` | the same | `PASS shape data/ingest` |
 | `shape-test-file-exempt` | `helper.py`'s two functions committed as `packages/data/tests/unit/ingest/test_helper.py` | the same | `PASS shape data/ingest` |
 | `shape-bad-target` | `base`, `design`, `tests`, `build` for ingest | `--shape data --section nope` | `no section nope in docs/packages/data/contract.md`; exit 2 |
+| `calltree-direct` | `base`, `commands` | `--paths data` | the macro's whole block, line for line: `command: data-load = data.cli:load`, frames `load`, `run_load`, `read_trades`, leaves `[effect: shutil.copy]` and `[effect: open]`, `depth to first effect: 2`, `deepest effect: 2`, `indirect frames: 0`; exit 0 |
+| `calltree-lambda` | `commands` with `load.py` holding `guarded(step)` (`return step()`) and `rows = guarded(lambda: read_trades(path))` | the same | `guarded (…load.py:6)`; under it `step() (…load.py:8) [unresolved]` and `lambda (…load.py:13) [indirect]`; `read_trades` under the lambda; `depth to first effect: 4`; `indirect frames: 1` |
+| `calltree-mapping` | `load.py` with `_RUNNERS = {"trades": read_trades}` and `rows = _RUNNERS["trades"](path)` | the same | `read_trades (…reader.py:7) [indirect]`; `indirect frames: 1`; `depth to first effect: 2` |
+| `calltree-unresolved` | `load.py` with `reader = make_reader()` (a package function returning a `TradeReader`) and `rows = reader.read(path)` | the same | a line holding `reader.read(path)` ending `[unresolved]`; `depth to first effect: none` |
+| `calltree-logging-not-effect` | `cli.py` calling `logger.info("x")` (`loguru`) and `re.compile("x")` before `run_load` | the same | no `[effect: logger.info]`, no `[effect: re.compile]`; `depth to first effect: 2` |
+| `calltree-third-party` | `reader.py` calling `requests.get(path, timeout=10)` in place of the copy and the open | the same | `[effect: requests.get]`; `depth to first effect: 2` |
+| `calltree-self-method` | `reader.py` with a class `Reader` whose `read` calls `self._copy(path)`, `_copy` calling `shutil.copy`, and `read_trades` returning `Reader.read(Reader(), path)` | the same | frames `Reader.read (…reader.py:9)` and `Reader._copy (…reader.py:14)`; `depth to first effect: 4` |
+| `calltree-recursive` | `load.py` whose `run_load` calls itself under an `if` before `read_trades` | the same | `run_load (…load.py:6) [recursive]`; `depth to first effect: 2` |
+| `calltree-no-commands` | the package `pyproject.toml` without `[project.scripts]` | the same | the one line `paths: no commands`; exit 0 |
