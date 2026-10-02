@@ -37,7 +37,9 @@ A section is in exactly one state, decided in this order, first match wins:
    README) is newer than the newest round's `Commit:`; or the newest round's verdict is
    `spec-change` with no open spec-change left.
 8. **FIX n** — the newest round `n` says `request changes`, the cap is not hit, and the code is
-   not newer than its `Commit:`.
+   not newer than its `Commit:`; or the newest round approves, the code is not newer than its
+   `Commit:`, and the package's newest paths report is current, says `request changes`, is
+   below its cap (round 3), and names the section on a line under **CRITICAL**.
 9. **DONE** — the newest round approves and the code is not newer than its `Commit:`.
 
 The **ledger** is one file per section, `docs/deviations/<pkg>/<section>.md`, so agents that
@@ -81,8 +83,9 @@ A Sections `path` cell written as `…/<name>/` (or `.../<name>/`) is the defaul
 
 Ready: a section whose state is neither DONE nor BLOCKED and whose every in-package `depends
 on` is DONE. The `surface` row depends on every other row whatever its cell says.
-Shipped: the `surface` section is DONE and `--surface <pkg>` passes; otherwise the block prints
-`shipped: no (surface <STATE>)` or `shipped: no (surface check FAIL)`. Rounds: the highest `n`
+Shipped: the `surface` section is DONE, `--surface <pkg>` passes, and the paths review
+approves; otherwise the block prints `shipped: no (surface <STATE>)`, `shipped: no (surface
+check FAIL)`, `shipped: no (paths needed)` or `shipped: no (paths round <n>)`. Rounds: the highest `n`
 over the section's review reports, at either location; a round's verdict is the worst of its
 reports (request changes > spec-change > approve); a report with no `-r<n>-` is round 1.
 
@@ -110,6 +113,8 @@ without one.
 3. **gate blocked** — `gate blocked: <the marker's reason>`.
 4. **gate let through** — `gate let through after 3 attempts, <k> failures`.
 5. **gate not done** — `gate not done (attempt <n> of 3)`.
+6. **paths** — `paths r<m> request changes (<report path>)`: the package's paths report
+   re-opened the section.
 
 **Gate record.** `.dev-team/gate/<pkg>/<section>.txt`, written by `hooks/gate_on_stop.py` on
 every implementer stop. It speaks for the commit its `commit:` line names: the newest commit
@@ -202,6 +207,26 @@ separated by a blank line; with no `[project.scripts]` table, an empty one, or n
 `pyproject.toml`, the one line `paths: no commands`. Exit 0; 2 with no package, or with no
 `docs/packages/<pkg>/contract.md`.
 
+**Paths review.** The package block's `paths:` line, printed after `scaffold:` and before
+`shipped:` once every section row is DONE or a paths report exists, says where the package's
+paths review stands, decided in this order:
+
+- no `[project.scripts]` entry in `<package root>/pyproject.toml` (no file, no table, an empty
+  table): approved, with no review to run;
+- no paths report: needed;
+- the newest report is stale when its `Commit:` is unreadable, or when any section's code (as
+  rule 7 reads it) changed after that `Commit:`: needed;
+- the newest report is current and approves: approved;
+- otherwise a round: `n` is the report's round, its sections are the package's section names
+  that start a line under its **CRITICAL** heading (`- <section>: …`, the name optionally
+  backticked), in the Sections table's order, and the round is at its cap from round 3. Below
+  the cap each named section that would otherwise be DONE is FIX n (rule 8); at the cap none
+  is re-opened, and the driver asks first.
+
+The line is `paths: needed`, `paths: approved (<report path>)` or `paths: approved (no
+commands)`, or `paths: round <n> (request changes: <section>, …)`, with `no section named` in
+place of the list when no CRITICAL line names a section, and ` (cap)` appended at the cap.
+
 **Scaffold.** A package is ready to be built in when its workspace exists: a root
 `pyproject.toml`, and, when that root is a uv workspace (`[tool.uv.workspace]`), a
 `pyproject.toml` at the package root. `--scaffold <pkg>` prints `scaffold: done` and exits 0,
@@ -229,14 +254,15 @@ it names before touching the section. One `<Field>: <value>` line per field, in 
 8. **Intent tests** — `<package root>/tests/intent/<section>/` when it exists.
 9. **Review** — from either location, the newest round's reports when its verdict is `request changes` (FIX n, or a
    cap granted one more round) or `spec-change` (a rebuild after the step it re-opened: its
-   CRITICALs still stand).
+   CRITICALs still stand), and the package's paths report while it names the section and no
+   review round of the section is newer than it.
 10. **Round** — the newest round plus one.
 11. **Change file** — from either location, every open `docs/packages/<pkg>/changes/<slug>.md`
     or `docs/changes/<slug>.md` whose Affected sections names the section.
 12. **Run** — `run-package <pkg>`.
 
 `--fields <pkg>/<section>` prints the spawn fields run-package would otherwise resolve by
-reading files, five `key: value` lines in this order, and exits 0 (2 on a section the contract
+reading files, six `key: value` lines in this order, and exits 0 (2 on a section the contract
 lacks):
 
 1. `mode: new | document | delta` — `delta` when an open change file names the section, or the
@@ -254,6 +280,10 @@ lacks):
    `none` with no round or no `Commit:`. The next reviewer's `Diff:` field is `<sha>..HEAD`.
 5. `upstream interfaces: <path>, … | none` — as **Upstream interfaces** in `--inputs`. The
    tester's and the reviewer's field; the designer is sent every upstream package.
+6. `paths report: <path> | none` — the package's newest paths report while its verdict is not
+   `approve`, a line under its CRITICAL heading names the section, and the section's newest
+   review round's `Commit:` is not newer than the report's: the same report `--inputs` adds to
+   **Review**. The `full` reviewer's previous round after a paths FIX.
 """
 
 from __future__ import annotations
@@ -1208,8 +1238,12 @@ def _gate_hold(pkg: str, section: str, readme: Path) -> dict[str, object] | None
     return gate_record(pkg, section)
 
 
-def section_state(pkg: str, section: str) -> tuple[str, str]:
-    """(STATE, evidence) for one section: the first rule in the module docstring that fires."""
+def section_state(pkg: str, section: str, paths: dict[str, object] | None = None) -> tuple[str, str]:
+    """(STATE, evidence) for one section: the first rule in the module docstring that fires.
+
+    paths is the package's `paths_state`, computed here when not given; `package_table` passes
+    it once for every row.
+    """
     p = _paths(pkg, section)
     row: dict[str, str] = p["row"]  # type: ignore[assignment]
     design: Path = p["design"]  # type: ignore[assignment]
@@ -1316,6 +1350,10 @@ def section_state(pkg: str, section: str) -> tuple[str, str]:
     # 8. FIX n
     if verdict == "request changes":
         return f"FIX {n}", f"review r{n} request changes"
+    if paths is None:
+        paths = paths_state(pkg)
+    if paths["kind"] == "round" and not paths["cap"] and section in paths["sections"]:  # type: ignore[operator]
+        return f"FIX {n}", f"paths r{paths['n']} request changes ({_rel(paths['report'])})"  # type: ignore[arg-type]
 
     # 9. DONE
     return "DONE", f"review r{n} approve @{rsha[:7]}"
@@ -1371,6 +1409,75 @@ def paths_rounds(pkg: str) -> list[str]:
     ]
 
 
+def _report_sha(fields: dict[str, str]) -> str | None:
+    """A report's `Commit:` value as a sha, None when it is unreadable."""
+    m = re.match(r"[0-9a-f]{7,40}", fields.get("Commit", "").strip("`"))
+    return m.group(0) if m else None
+
+
+def _critical_sections(pkg: str, report: Path) -> list[str]:
+    """The package's section names that start a line under the report's **CRITICAL** heading,
+    in the Sections table's order."""
+    body = _block(report.read_text(), "CRITICAL")
+    return [s for s in (r["section"] for r in sections(pkg))
+            if re.search(rf"^\s*(?:[-*]\s+)?`?{re.escape(s)}`?:\s", body, re.M)]
+
+
+def paths_state(pkg: str) -> dict[str, object]:
+    """Where the package's paths review stands; the module docstring's **Paths review.**.
+
+    Keys: kind (`approved`, `needed` or `round`), n (the newest report's round, 0 without
+    one), verdict, report (its path, or None), sections (the names its CRITICAL lines start
+    with, for `round`), cap (`round` at round 3 or later).
+    """
+    out: dict[str, object] = {"kind": "needed", "n": 0, "verdict": "", "report": None, "sections": [], "cap": False}
+    if not package_scripts(pkg):
+        return {**out, "kind": "approved"}
+    reps = paths_reports(pkg)
+    if not reps:
+        return out
+    n = max(reps)
+    report = reps[n]
+    fields = _report_fields(report)
+    sha = _report_sha(fields)
+    if sha is None or any(_code_after_review(pkg, r["section"], sha) is not None for r in sections(pkg)):
+        return out
+    verdict = _verdict(fields.get("Verdict"))
+    if verdict == "approve":
+        return {**out, "kind": "approved", "n": n, "verdict": verdict, "report": report}
+    return {**out, "kind": "round", "n": n, "verdict": verdict, "report": report,
+            "sections": _critical_sections(pkg, report), "cap": n >= 3}
+
+
+def paths_line(state: dict[str, object]) -> str:
+    """The package block's `paths:` line for a `paths_state`."""
+    report = state["report"]
+    if state["kind"] == "approved":
+        return f"paths: approved ({_rel(report) if report else 'no commands'})"  # type: ignore[arg-type]
+    if state["kind"] == "needed":
+        return "paths: needed"
+    named = ", ".join(state["sections"]) or "no section named"  # type: ignore[arg-type]
+    return f"paths: round {state['n']} (request changes: {named})" + (" (cap)" if state["cap"] else "")
+
+
+def section_paths_report(pkg: str, section: str) -> Path | None:
+    """The newest paths report while it speaks to the section: its verdict is not `approve`, a
+    CRITICAL line names the section, and no review round of the section is newer than its
+    `Commit:`. `--inputs`' Review and `--fields`' `paths report:` both read it."""
+    reps = paths_reports(pkg)
+    if not reps:
+        return None
+    report = reps[max(reps)]
+    fields = _report_fields(report)
+    psha = _report_sha(fields)
+    if psha is None or _verdict(fields.get("Verdict")) == "approve" or section not in _critical_sections(pkg, report):
+        return None
+    rsha = newest_round(pkg, section)[2]
+    if rsha and git("merge-base", "--is-ancestor", psha, rsha) is not None and git("rev-parse", psha) != git("rev-parse", rsha):
+        return None
+    return report
+
+
 def _section_rev(pkg: str, section: str) -> str | None:
     p = _paths(pkg, section)
     return _rev(p["design"], p["intent"], p["unit"], p["readme"], *p["code"])  # type: ignore[arg-type]
@@ -1379,7 +1486,8 @@ def _section_rev(pkg: str, section: str) -> str | None:
 def package_table(pkg: str) -> list[dict[str, object]]:
     """One dict per section: section, state, evidence, ready, round, spec, commit."""
     rows = sections(pkg)
-    states = {r["section"]: section_state(pkg, r["section"]) for r in rows}
+    paths = paths_state(pkg)
+    states = {r["section"]: section_state(pkg, r["section"], paths) for r in rows}
     names = set(states)
     out = []
     for r in rows:
@@ -1426,6 +1534,11 @@ def next_command(pkg: str, table: list[dict[str, object]] | None = None) -> str:
         return f"/dev-team:run-package {pkg}"
     if shipped_line(pkg, table) == "shipped: no (surface check FAIL)":
         return f"correct the README rows status.py --surface {pkg} names, then /dev-team:run-package {pkg}"
+    paths = paths_state(pkg)
+    if paths["kind"] == "round" and paths["cap"]:
+        return f"/dev-team:run-package {pkg} or /dev-team:run-package {pkg} --defer"
+    if paths["kind"] != "approved":
+        return f"/dev-team:run-package {pkg}"
     if _to_sync(pkg):
         return f"/dev-team:sync-plan {pkg}"
     others = [name for name, _ in packages() if name != pkg]
@@ -1454,14 +1567,21 @@ def scaffold_needed(pkg: str) -> list[str]:
 
 
 def shipped_line(pkg: str, table: list[dict[str, object]]) -> str:
-    """The block's `shipped:` line: yes only when `surface` is DONE and `--surface <pkg>` passes.
-    The check runs only once `surface` is DONE."""
+    """The block's `shipped:` line: yes only when `surface` is DONE, `--surface <pkg>` passes and
+    the paths review approves. The check runs only once `surface` is DONE."""
     surface = next((r for r in table if r["section"] == "surface"), None)
     if surface is None:
         return "shipped: no (no surface row)"
     if surface["state"] != "DONE":
         return f"shipped: no (surface {surface['state']})"
-    return "shipped: yes" if surface_check(pkg)[0] == "PASS" else "shipped: no (surface check FAIL)"
+    if surface_check(pkg)[0] != "PASS":
+        return "shipped: no (surface check FAIL)"
+    paths = paths_state(pkg)
+    if paths["kind"] == "approved":
+        return "shipped: yes"
+    if paths["kind"] == "needed":
+        return "shipped: no (paths needed)"
+    return f"shipped: no (paths round {paths['n']})"
 
 
 def package_report(pkg: str) -> list[str]:
@@ -1476,6 +1596,8 @@ def package_report(pkg: str) -> list[str]:
                                  str(r["spec"]), str(r["commit"])]))
     if needed := scaffold_needed(pkg):
         lines.append(f"scaffold: needed ({', '.join(needed)})")
+    if all(r["state"] == "DONE" for r in table) or paths_reports(pkg):
+        lines.append(paths_line(paths_state(pkg)))
     lines.append(shipped_line(pkg, table))
     lines.append(f"next: {next_command(pkg, table)}")
     return lines
@@ -2473,6 +2595,8 @@ def repo_report() -> list[str]:
             pk.append(f"{pkg}: shipped")
         elif shipped == "shipped: no (surface check FAIL)":
             pk.append(f"{pkg}: building ({done}/{len(table)} DONE, surface check FAIL)")
+        elif shipped.startswith("shipped: no (paths "):
+            pk.append(f"{pkg}: building ({done}/{len(table)} DONE, {shipped[len('shipped: no ('):-1]})")
         elif not any(_paths(pkg, str(r["section"]))["design"].exists() for r in table):  # type: ignore[union-attr]
             pk.append(f"{pkg}: planned")
         else:
@@ -2551,6 +2675,8 @@ def implementer_inputs(pkg: str, section: str) -> list[str]:
     intent: Path = p["intent"]  # type: ignore[assignment]
     n, verdict, _, _ = newest_round(pkg, section)
     review = sorted(_rel(f) for f in _reports(pkg, section).get(n, [])) if verdict in ("request changes", "spec-change") else []
+    if (report := section_paths_report(pkg, section)) is not None:
+        review.append(_rel(report))
     changes = [_rel(c["path"]) for c in open_changes(pkg, section)]  # type: ignore[arg-type]
 
     def cell(values: list[str]) -> str:
@@ -2624,6 +2750,7 @@ def spawn_fields(pkg: str, section: str) -> list[str]:
         f"design mode: {design_mode}",
         f"diff base: {base}",
         f"upstream interfaces: {', '.join(_upstream_interfaces(pkg, section)) or 'none'}",
+        f"paths report: {_rel(report) if (report := section_paths_report(pkg, section)) else 'none'}",
     ]
 
 

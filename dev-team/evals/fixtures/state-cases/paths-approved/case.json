@@ -1,8 +1,11 @@
 {
-  "note": "surface DONE, nothing to sync: next package",
+  "note": "a current paths report that approves",
   "steps": [
     {
       "do": "base"
+    },
+    {
+      "do": "commands"
     },
     {
       "do": "done",
@@ -19,16 +22,18 @@
     {
       "do": "done",
       "section": "surface"
+    },
+    {
+      "do": "paths_review",
+      "round": 1,
+      "verdict": "approve"
     }
   ],
   "args": [],
   "expect": {
-    "section": "surface",
-    "state": "DONE",
     "contains": [
-      "shipped: yes",
-      "next: /dev-team:plan-package analysis",
-      "paths: approved (no commands)"
+      "paths: approved (docs/packages/data/reviews/paths/2026-09-27-r1-p.md)",
+      "shipped: yes"
     ]
   }
 }

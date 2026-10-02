@@ -1,8 +1,11 @@
 {
-  "note": "surface DONE, nothing to sync: next package",
+  "note": "--repo with every section DONE and the paths review needed",
   "steps": [
     {
       "do": "base"
+    },
+    {
+      "do": "commands"
     },
     {
       "do": "done",
@@ -21,14 +24,13 @@
       "section": "surface"
     }
   ],
-  "args": [],
+  "args": [
+    "--repo"
+  ],
   "expect": {
-    "section": "surface",
-    "state": "DONE",
+    "exit": 0,
     "contains": [
-      "shipped: yes",
-      "next: /dev-team:plan-package analysis",
-      "paths: approved (no commands)"
+      "  - data: building (4/4 DONE, paths needed)"
     ]
   }
 }

@@ -114,6 +114,21 @@ r<n>-p: <verdict> (<k> critical)`, its `Commit:` the newest commit touching the 
 code, tests or `interface.md` before it, and its headings written `## <name>`. `--rounds
 data/paths` prints five lines; a paths report is never a section's round.
 
+**The paths review (2.5).** Fourteen cases (`site/notes/2.5-readability-07-state-and-driver.md`,
+the fourteen rows after the `rounds-*` ones). "All done" is `base`, `commands`, then `done` for
+`ingest`, `clean`, `storage` and `surface`; the P2 line is `ingest: P2 —
+packages/data/src/data/ingest/reader.py:7 — a lambda on the main path — call the step by name`.
+Once every row is DONE, or a paths report exists, the block prints `paths:` after `scaffold:`:
+`needed` with no current report, `approved (<report>)` or `approved (no commands)`, or `round
+<n> (request changes: <sections>)`, ` (cap)` from round 3. Below the cap a named section that
+is otherwise DONE is `FIX n` with the evidence `paths r<m> request changes (<report>)`; a fix
+to its code makes the report stale, so the section reads REVIEW and the line `paths: needed`.
+`shipped: yes` needs `paths: approved`. `--inputs` adds the paths report to `Review:`, and
+`--fields` prints it as a sixth line, `paths report:`, until a review round of the section is
+newer than it; every other `fields-*` case now also expects `paths report: none`
+(`fields-bad-target` prints no fields). `shipped` and `shipped-sync` build no package
+`pyproject.toml`, so they stay `shipped: yes` and also expect `paths: approved (no commands)`.
+
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
 section's entry does not make an existing design stale, per the design's *Stale when* for a
@@ -252,3 +267,17 @@ optional flag).
 | `rounds-paths-none` | `base`, `design`, `tests`, `build` for ingest | `--rounds data/paths` | `rounds: 0`; `next round: 1`; a line matching `/^commit: [0-9a-f]{7}$/`; `previous: none`; `diff base: none`; exit 0 |
 | `rounds-paths-one` | the same, then `paths_review` round 1, `request changes`, one `ingest: P2 — …` critical | the same | `rounds: 1`; `next round: 2`; `previous: docs/packages/data/reviews/paths/2026-09-27-r1-p.md`; a line matching `/^diff base: [0-9a-f]{7}$/` |
 | `rounds-section-unaffected` | the same as `rounds-paths-one` | `--rounds data/ingest` | `rounds: 0`; no `previous:`, no `diff base:` (a paths report is not a section's round) |
+| `paths-needed` | all done | `—` | `paths: needed`; `shipped: no (paths needed)`; `next: /dev-team:run-package data` |
+| `paths-no-commands` | all done, without `commands` | `—` | `paths: approved (no commands)`; `shipped: yes` |
+| `paths-approved` | all done; `paths_review` round 1 `approve` | `—` | `paths: approved (docs/packages/data/reviews/paths/2026-09-27-r1-p.md)`; `shipped: yes` |
+| `paths-request-changes` | all done; `paths_review` round 1 `request changes`, the P2 line | `—` | `ingest · FIX 1`, evidence `/^paths r1 request changes \(docs/packages/data/reviews/paths/2026-09-27-r1-p\.md\)$/`; `clean · DONE`; `paths: round 1 (request changes: ingest)`; `shipped: no (paths round 1)`; `next: /dev-team:run-package data` |
+| `paths-stale-after-fix` | the same; then an `edit` of `ingest/reader.py` | `—` | `ingest · REVIEW`; `paths: needed` |
+| `paths-reviewed-after-fix` | the same; then a round-2 `s` review of `ingest` that approves | `—` | `ingest · DONE`; `paths: needed`; `shipped: no (paths needed)` |
+| `paths-round-2-approved` | the same; then `paths_review` round 2 `approve` | `—` | `paths: approved (docs/packages/data/reviews/paths/2026-09-27-r2-p.md)`; `shipped: yes` |
+| `paths-cap` | all done; `paths_review` rounds 1, 2 and 3, each `request changes` with the P2 line | `—` | `ingest · DONE`; `paths: round 3 (request changes: ingest) (cap)`; `shipped: no (paths round 3)`; `next: /dev-team:run-package data or /dev-team:run-package data --defer` |
+| `paths-defer-approved` | the same; then `paths_review` round 4, `approve`, `"focus": "defer"` | `—` | `paths: approved (docs/packages/data/reviews/paths/2026-09-27-r4-p.md)`; `shipped: yes` |
+| `paths-no-section-named` | all done; `paths_review` round 1 `request changes`, critical `the build command is too deep` | `—` | `ingest · DONE`; `paths: round 1 (request changes: no section named)` |
+| `paths-not-all-done` | `base`, `commands`, `done` for `ingest` only | `—` | no `paths:` |
+| `inputs-paths-fix` | as `paths-request-changes` | `--inputs data/ingest` | a line `/^Review: docs/packages/data/reviews/paths/2026-09-27-r1-p\.md$/`; `Round: 2`; exit 0 |
+| `fields-paths-report` | as `paths-stale-after-fix` | `--fields data/ingest` | sixth line `paths report: docs/packages/data/reviews/paths/2026-09-27-r1-p.md`, after `upstream interfaces: none`; exit 0 |
+| `repo-paths-needed` | as `paths-needed` | `--repo` | `  - data: building (4/4 DONE, paths needed)`; exit 0 |

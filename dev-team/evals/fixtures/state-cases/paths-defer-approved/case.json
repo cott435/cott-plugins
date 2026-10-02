@@ -1,0 +1,64 @@
+{
+  "note": "the cap answered defer: a round-4 report with Focus: defer approves",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    },
+    {
+      "do": "paths_review",
+      "round": 1,
+      "verdict": "request changes",
+      "critical": [
+        "ingest: P2 — packages/data/src/data/ingest/reader.py:7 — a lambda on the main path — call the step by name"
+      ]
+    },
+    {
+      "do": "paths_review",
+      "round": 2,
+      "verdict": "request changes",
+      "critical": [
+        "ingest: P2 — packages/data/src/data/ingest/reader.py:7 — a lambda on the main path — call the step by name"
+      ]
+    },
+    {
+      "do": "paths_review",
+      "round": 3,
+      "verdict": "request changes",
+      "critical": [
+        "ingest: P2 — packages/data/src/data/ingest/reader.py:7 — a lambda on the main path — call the step by name"
+      ]
+    },
+    {
+      "do": "paths_review",
+      "round": 4,
+      "verdict": "approve",
+      "focus": "defer"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "contains": [
+      "paths: approved (docs/packages/data/reviews/paths/2026-09-27-r4-p.md)",
+      "shipped: yes"
+    ]
+  }
+}

@@ -17,8 +17,11 @@ nothing else — no edits, no fixes, no command run on the user's behalf.
 
 With no flag, the script prints one block per package in `docs/architecture.md`'s Packages
 table (with a package name, only that one): a `section · state · evidence · ready · round ·
-open spec-change · last commit` row per row of the contract's Sections table, then `shipped:
-yes` or `shipped: no (surface <STATE>)`, then `next: <exact command>`. Each state is the first
+open spec-change · last commit` row per row of the contract's Sections table, then `scaffold:
+needed (<reasons>)` when it applies, then `paths: needed`, `paths: round <n> (request changes:
+<sections>)` (ending ` (cap)` from round 3) or `paths: approved (<report>)` once every section
+is DONE or a paths report exists, then `shipped: yes` or `shipped: no (<why>)`, then `next:
+<exact command>`. Each state is the first
 of the nine rules in the script's docstring that fires, and the evidence names the file or
 commit it fired on. "Newer than" is commit order, never file times; a path with uncommitted
 changes counts as newest of all and says so in the evidence. A section is ready when it is
@@ -87,10 +90,12 @@ to the implementer, and `/dev-team:pair` reads the files it names. The script's 
 the fields and how each resolves. A section the contract lacks prints one line and exits 2.
 
 `--fields <pkg>/<section>` prints the other spawn fields run-package would otherwise read files
-for, four lines: `mode: new | document | delta` (the designer's **Mode**), `change file: <path>
+for, six lines: `mode: new | document | delta` (the designer's **Mode**), `change file: <path>
 | none`, `design mode: <word> | none` (the tester's **Design mode**, from the design's `Mode:`
-line) and `diff base: <sha> | none` (the `Commit:` a round-2-or-later reviewer's **Diff**
-starts from). The docstring gives each rule. A section the contract lacks exits 2.
+line), `diff base: <sha> | none` (the `Commit:` a round-2-or-later reviewer's **Diff**
+starts from), `upstream interfaces: <path>, … | none` and `paths report: <path> | none` (the
+package's paths report while it names the section and no review of the section is newer, the
+`full` reviewer's **Previous round** after a paths FIX). The docstring gives each rule. A section the contract lacks exits 2.
 
 The script runs no test and no constraint command. The stop hook runs `docs/constraints.md`'s
 **Floor** and **Enforced** rows through the same parser this script exposes, so the rows the

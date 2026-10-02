@@ -222,11 +222,13 @@ every call and never stored:
 | **TEST** | no intent tests; or the design is newer than them; or an open `spec-change:test` entry; or an `approved` deviation's clause is cited by a test not yet regenerated |
 | **IMPLEMENT** | no README (for `surface`, no `interface.md`); or the intent tests are newer than it (a regeneration commit, or one marked `intent tests current with design`, does not count); or the gate's record for the current commit says `not done`, a run that died between attempts |
 | **REVIEW** | no review round; or round 1 lacks its `a` or `b` report; or the code is newer than the newest round's `Commit:`; or a `spec-change` verdict has no open entry left |
-| **FIX n** | round `n` says `request changes`, under the cap, and nothing changed since |
+| **FIX n** | round `n` says `request changes`, under the cap, and nothing changed since; or the section is DONE and the package's paths review names it |
 | **DONE** | the newest round approves and the code is not newer than its `Commit:` |
 
-A package is **shipped** when its `surface` section is DONE and `status.py --surface <pkg>`
-passes; a package whose check fails prints `shipped: no (surface check FAIL)`. A round is the
+A package is **shipped** when its `surface` section is DONE, `status.py --surface <pkg>`
+passes, and its paths review approves (`paths: approved`). A package whose check fails prints
+`shipped: no (surface check FAIL)`; one whose commands have not been reviewed prints `shipped:
+no (paths needed)` until `/dev-team:run-package <pkg>` has run the review. A round is the
 set of reports sharing `-r<n>`; its verdict is the worst of them.
 
 ## Pairing on a section

@@ -1,5 +1,5 @@
 {
-  "note": "surface DONE, nothing to sync: next package",
+  "note": "every section DONE, no [project.scripts]: approved with nothing to review",
   "steps": [
     {
       "do": "base"
@@ -23,12 +23,9 @@
   ],
   "args": [],
   "expect": {
-    "section": "surface",
-    "state": "DONE",
     "contains": [
-      "shipped: yes",
-      "next: /dev-team:plan-package analysis",
-      "paths: approved (no commands)"
+      "paths: approved (no commands)",
+      "shipped: yes"
     ]
   }
 }

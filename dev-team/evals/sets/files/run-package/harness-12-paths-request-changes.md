@@ -81,8 +81,11 @@ Then, after the final message, read-only copies from `<copy>`. These are the har
 the driver's:
 
 - `<outputs>/status-log.txt` — every `status.py` invocation the driver made, in order, each
-  with its arguments and full output; `<outputs>/status-final.txt` — `status.py data` run once
-  more.
+  with its arguments and full output, copied from what the driver's own calls printed. Keep
+  that output as you go; do not rebuild the log afterwards by re-running the commands from a
+  list, which joins each command's arguments into one word (`status.py "--inputs data/ingest"`
+  prints `unknown flag`) and records calls the driver never made. `<outputs>/status-final.txt`
+  — `status.py data` run once more.
 - `<outputs>/git-status.txt` — `git -C <copy> status --porcelain`;
   `<outputs>/git-log.txt` — `git -C <copy> log --format='%h %s'`.
 - `transcript.md` — every tool call you made as the driver, in order, each with its tool (Bash,

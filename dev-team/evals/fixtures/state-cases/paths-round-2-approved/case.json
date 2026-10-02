@@ -1,0 +1,61 @@
+{
+  "note": "paths round 2 approves after the fix",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    },
+    {
+      "do": "paths_review",
+      "round": 1,
+      "verdict": "request changes",
+      "critical": [
+        "ingest: P2 — packages/data/src/data/ingest/reader.py:7 — a lambda on the main path — call the step by name"
+      ]
+    },
+    {
+      "do": "edit",
+      "path": "packages/data/src/data/ingest/reader.py",
+      "append": "\n# the step called by name\n",
+      "message": "data/ingest: call the step by name"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 2,
+      "reports": {
+        "s": "approve"
+      }
+    },
+    {
+      "do": "paths_review",
+      "round": 2,
+      "verdict": "approve"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "contains": [
+      "paths: approved (docs/packages/data/reviews/paths/2026-09-27-r2-p.md)",
+      "shipped: yes"
+    ]
+  }
+}

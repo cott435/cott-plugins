@@ -1,8 +1,11 @@
 {
-  "note": "surface DONE, nothing to sync: next package",
+  "note": "a request changes whose CRITICAL names no section: nothing re-opens",
   "steps": [
     {
       "do": "base"
+    },
+    {
+      "do": "commands"
     },
     {
       "do": "done",
@@ -19,16 +22,22 @@
     {
       "do": "done",
       "section": "surface"
+    },
+    {
+      "do": "paths_review",
+      "round": 1,
+      "verdict": "request changes",
+      "critical": [
+        "the build command is too deep"
+      ]
     }
   ],
   "args": [],
   "expect": {
-    "section": "surface",
+    "section": "ingest",
     "state": "DONE",
     "contains": [
-      "shipped: yes",
-      "next: /dev-team:plan-package analysis",
-      "paths: approved (no commands)"
+      "paths: round 1 (request changes: no section named)"
     ]
   }
 }
