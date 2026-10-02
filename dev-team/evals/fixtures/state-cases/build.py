@@ -319,6 +319,19 @@ def m_review(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
     return [(files, f"{PKG}/{s}: review r{n}")]
 
 
+def m_paths_review(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
+    """A paths report, `Commit:` the newest commit touching the package's code, tests or interface."""
+    n, verdict = step.get("round", 1), step["verdict"]
+    critical = step.get("critical", [])
+    sha = run(dest, "log", "-1", "--format=%h", "--", f"packages/{PKG}/src", f"packages/{PKG}/tests",
+              f"docs/packages/{PKG}/interface.md") or "none"
+    head = [f"# Review — {PKG} paths — round {n}", f"Scope: every command of {PKG}", f"Commit: {sha}",
+            f"Verdict: {verdict}", f"Round: {n}", f"Focus: {step.get('focus', 'paths')}"]
+    body = "\n\n## CRITICAL\n\n" + ("\n".join(f"- {c}" for c in critical) or "- none") + "\n\n## WARNING\n\n- none\n"
+    rel = f"docs/packages/{PKG}/reviews/paths/{DATE}-r{n}-p.md"
+    return [({rel: "\n".join(head) + body}, f"review {PKG}/paths: r{n}-p: {verdict} ({len(critical)} critical)")]
+
+
 def m_done(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
     s = {"section": step["section"]}
     return [*m_design(dest, s), *m_tests(dest, s), *m_build(dest, s),

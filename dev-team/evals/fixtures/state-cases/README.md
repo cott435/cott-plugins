@@ -23,8 +23,9 @@ round 1 `a` and `b` approving), `fix`, `edit`, `regenerate` (a
 section's ledger, `docs/packages/<pkg>/deviations/<section>.md` with the heading's `— <k>`, or
 with `"legacy": true` in the pre-split `docs/deviations.md`), `change` (`slug`, `sections`,
 `status`, `pkg`: a change file at `docs/packages/<pkg>/changes/<slug>.md`), `inbox`
-(`section`, `entries`: the section's decisions inbox, entries verbatim) and `commands` (a
-package with one `[project.scripts]` command, **The call tree (2.5)** below). `review`,
+(`section`, `entries`: the section's decisions inbox, entries verbatim), `commands` (a
+package with one `[project.scripts]` command, **The call tree (2.5)** below) and
+`paths_review` (a package's paths report, **The paths report (2.5)** below). `review`,
 `deviation` and `change` take `"layout": "old"` for the 2.0 paths (`docs/reviews/…`,
 `docs/deviations/<pkg>/<section>.md` with no `— <k>`, `docs/changes/<slug>.md`); the
 default is the 2.2 layout, so every case that sets no layout runs under it. `review` takes
@@ -104,6 +105,14 @@ package function prints under that function, a dict dispatch prints every value,
 `requests` is; a method called through `self` is a frame; a self-call is `[recursive]`. The
 macro goes before any `done` step, so a section's review covers its files. The `paths-*` names
 are left for the package line phase 7 adds.
+
+**The paths report (2.5).** Three cases (`site/notes/2.5-readability-06-paths-reviewer.md`,
+the three `rounds-*` rows at the end). The `paths_review` macro (`round`, `verdict`,
+`critical`, `focus`, defaulting to `paths`) commits
+`docs/packages/data/reviews/paths/2026-09-27-r<n>-p.md` with the summary `review data/paths:
+r<n>-p: <verdict> (<k> critical)`, its `Commit:` the newest commit touching the package's
+code, tests or `interface.md` before it, and its headings written `## <name>`. `--rounds
+data/paths` prints five lines; a paths report is never a section's round.
 
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
@@ -240,3 +249,6 @@ optional flag).
 | `shape-depth` | `base`, `commands`, then `design`, `tests`, `build` for ingest, then an `edit` giving the README a second row, `` `read_trades` `` | the same | `MEASURED shape depth load_trades: none`; `MEASURED shape depth read_trades: 0` |
 | `shape-adopted-document` | `base`; a commit adding `helper.py` under ingest; a design whose first line is `Mode: document`; `tests`, `build` | the same | `PASS shape data/ingest`; no `FAIL shape` (the helper predates the design) |
 | `shape-adopted-added-after` | the same, then a commit adding `bag.py` | the same | the `shape-options-bag` FAIL line; no `trivial-helper`, no `PASS shape`; exit 1 |
+| `rounds-paths-none` | `base`, `design`, `tests`, `build` for ingest | `--rounds data/paths` | `rounds: 0`; `next round: 1`; a line matching `/^commit: [0-9a-f]{7}$/`; `previous: none`; `diff base: none`; exit 0 |
+| `rounds-paths-one` | the same, then `paths_review` round 1, `request changes`, one `ingest: P2 — …` critical | the same | `rounds: 1`; `next round: 2`; `previous: docs/packages/data/reviews/paths/2026-09-27-r1-p.md`; a line matching `/^diff base: [0-9a-f]{7}$/` |
+| `rounds-section-unaffected` | the same as `rounds-paths-one` | `--rounds data/ingest` | `rounds: 0`; no `previous:`, no `diff base:` (a paths report is not a section's round) |

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Derive where every package and section stands from docs/ and the code. Nothing is stored.
 
-Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg> [--section <s>]] [--repo]
+Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>|<pkg>/paths] [--surface <pkg> [--section <s>]] [--repo]
                           [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]
                           [--shape <pkg> --section <s>] [--paths <pkg>]
 
@@ -48,7 +48,8 @@ the commit that first added it, so a move answers nothing and re-opens nothing.
 Since 2.2 the section's ledger is `docs/packages/<pkg>/deviations/<section>.md`; the 2.0
 location `docs/deviations/<pkg>/<section>.md` and the pre-2.0 `docs/deviations.md` are still
 read, and an entry is edited in the file that holds it. Review reports are
-`docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<a|b|s>.md`; the 2.0 names
+`docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<a|b|s>.md`, and a package's paths reports
+`docs/packages/<pkg>/reviews/paths/<date>-r<n>-p.md`, letter `p`; the 2.0 names
 `docs/reviews/<date>-<pkg>-<section>-r<n>-<letter>.md` are still read as round `n`. Change
 files are `docs/packages/<pkg>/changes/<slug>.md`, one per affected package; a
 `docs/changes/<slug>.md` is still read as naming every package its **Affected sections**
@@ -94,6 +95,10 @@ line each (exit 1), or `n/a (no README)`.
 `--rounds <pkg>/<section>` prints a third line, `commit: <short sha>`, the newest commit
 touching the section's path, `tests/unit/<section>`, `tests/intent/<section>` and its README,
 or `commit: none` — the reviewer copies it as its report's `Commit:` (F12).
+`--rounds <pkg>/paths` prints the same three lines for the package's paths reports, `commit:`
+the newest commit touching any section's code, then `previous:` and `diff base:` — the newest
+paths report's path and its `Commit:` as `git rev-parse --short` gives it, each `none`
+without one.
 
 **Evidence.** The strings the driver copies out of a row's evidence cell:
 
@@ -1321,6 +1326,49 @@ def section_commit(pkg: str, section: str) -> str | None:
     README (not its design): the commit a reviewer reviews, and its report's `Commit:` (F12)."""
     p = _paths(pkg, section)
     return git("log", "-1", "--format=%h", "--", *map(_rel, (*p["code"], p["unit"], p["intent"], p["readme"]))) or None  # type: ignore[misc]
+
+
+def package_commit(pkg: str) -> str | None:
+    """Short sha of the newest commit touching any section's code, unit tree, intent tree or
+    README, over every row of the Sections table: a paths report's `Commit:`."""
+    paths: list[str] = []
+    for r in sections(pkg):
+        p = _paths(pkg, r["section"])
+        # A section's code pathspec excludes its nested sections; across every row those are
+        # covered by their own rows, and a global exclude would hide them, so it is dropped.
+        code = [c for c in p["code"] if not c.startswith(":(")]  # type: ignore[union-attr]
+        paths += map(_rel, (*code, p["unit"], p["intent"], p["readme"]))  # type: ignore[arg-type]
+    if not paths:
+        return None
+    return git("log", "-1", "--format=%h", "--", *paths) or None
+
+
+def paths_reports(pkg: str) -> dict[int, Path]:
+    """A package's paths reports by round, `docs/packages/<pkg>/reviews/paths/<date>-r<n>-p.md`;
+    the newest file name wins when two share a round."""
+    out: dict[int, Path] = {}
+    for f in sorted((DOCS / "packages" / pkg / "reviews" / "paths").glob("*.md")):
+        if m := re.fullmatch(r"\d{4}-\d{2}-\d{2}-r(\d+)-p\.md", f.name):
+            out[int(m.group(1))] = f
+    return out
+
+
+def paths_rounds(pkg: str) -> list[str]:
+    """The five `--rounds <pkg>/paths` lines: rounds, next round, commit, previous, diff base."""
+    reps = paths_reports(pkg)
+    n = max(reps, default=0)
+    prev = reps.get(n)
+    base = None
+    if prev is not None:
+        m = re.match(r"[0-9a-f]{7,40}", _report_fields(prev).get("Commit", "").strip("`"))
+        base = git("rev-parse", "--short", m.group(0)) if m else None
+    return [
+        f"rounds: {n}",
+        f"next round: {n + 1}",
+        f"commit: {package_commit(pkg) or 'none'}",
+        f"previous: {_rel(prev) if prev else 'none'}",
+        f"diff base: {base or 'none'}",
+    ]
 
 
 def _section_rev(pkg: str, section: str) -> str | None:
@@ -2612,12 +2660,15 @@ def main() -> int:
     if has_rounds:
         pkg, _, sec = (rounds_target or "").partition("/")
         if not pkg or not sec:
-            print("--rounds needs a target: status.py --rounds <pkg>/<section>")
+            print("--rounds needs a target: status.py --rounds <pkg>/<section> or <pkg>/paths")
             return 2
-        n = rounds(pkg, sec)
-        print(f"rounds: {n}")
-        print(f"next round: {n + 1}")
-        print(f"commit: {section_commit(pkg, sec) or 'none'}")
+        if sec == "paths":
+            print("\n".join(paths_rounds(pkg)))
+        else:
+            n = rounds(pkg, sec)
+            print(f"rounds: {n}")
+            print(f"next round: {n + 1}")
+            print(f"commit: {section_commit(pkg, sec) or 'none'}")
     if has_gate:
         fails = run_gate(gate_pkg or only)
         print("run gate: PASS" if not fails else "run gate: FAIL")

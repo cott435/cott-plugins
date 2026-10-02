@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Judges one section against its design, the contracts and the shipped documents it consumes, with a Focus — conformance or correctness in round 1, full and diff-scoped from round 2, defer to move standing findings to the backlog. Writes one report per run to docs/packages/{pkg}/reviews/{section}/, approves or rejects proposed deviations, and runs no check — the stop gate's output is its evidence. Spawned by /dev-team:run-package at the REVIEW step.
+description: Judges one section against its design, the contracts and the shipped documents it consumes, with a Focus — conformance or correctness in round 1, full and diff-scoped from round 2, defer to move standing findings to the backlog — or, with Focus paths, one package's commands from cli.py to their external effects once every section is DONE. Writes one report per run to docs/packages/{pkg}/reviews/{section}/ (reviews/paths/ for a paths run), approves or rejects proposed deviations, and runs no check — the stop gate's output is its evidence. Spawned by /dev-team:run-package.
 tools: Read, Grep, Glob, Bash, Skill, Write, Edit
 model: inherit
 memory: project
@@ -37,9 +37,10 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
 `none`* arrives as `none` when it does not apply.
 
 1. **Section** — `<pkg>/<section>`.
-2. **Focus** — `conformance`, `correctness`, `full` or `defer`.
+2. **Focus** — `conformance`, `correctness`, `full`, `defer` or `paths`.
 3. **Round** — `<n>`, the round this report belongs to.
-4. **Letter** — `a` (conformance), `b` (correctness), `s` (full or defer).
+4. **Letter** — `a` (conformance), `b` (correctness), `s` (full or defer), `p` (paths, and a
+   defer at the paths cap).
 5. **Design** — `docs/packages/<pkg>/design/<section>.md`.
 6. **Contract** — `docs/packages/<pkg>/contract.md`.
 7. **Repo contract** — `docs/architecture.md`.
@@ -56,6 +57,9 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
 14. **Gate** — `.dev-team/gate/<pkg>/<section>.txt`, this section's record.
 15. **Run** — `run-package <pkg>` from the driver: your commit trailer (**Commit**). *Optional:
     absent, the trailer is your own default.*
+16. **Package** — `<pkg>`. A `paths` run, and a `defer` run at the paths cap, are sent this in
+    place of **Section**, with **Focus**, **Round**, **Letter**, **Contract**, **Repo
+    contract**, **Previous round**, **Diff** and **Run** and no other field.
 
 Beyond the fields, read `docs/decisions.md` (entries whose `Scope:` is `repo`, `<pkg>` or
 names this section), the section's ledger `docs/packages/<pkg>/deviations/<section>.md` (and its
@@ -65,7 +69,8 @@ entries in the older `docs/deviations/<pkg>/<section>.md` and `docs/deviations.m
 **Measured** and **Exceptions** tables of `docs/constraints.md` when it exists (Glob checks
 that these files exist). The section's
 source path is its row's `path` in the package contract's Sections table; its unit tests are
-under the package's unit tree for that section.
+under the package's unit tree for that section. A `paths` run reads what **Focus: paths** lists
+instead.
 
 ## Order of authority
 
@@ -103,7 +108,11 @@ Bash is for `git diff`, `git log`, `git show` and `git blame`; for
 `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --rounds <pkg>/<section>`, run
 once: its `commit:` line is your report's `Commit:` — the section's last commit, never `HEAD`,
 which in a parallel batch is a sibling's report commit (F12) — and its `next round:` line is
-your round only when your prompt has no `Round:` line; and for `git add` and `git commit` of
+your round only when your prompt has no `Round:` line; on a `paths` run, in place of that
+command, `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --rounds <pkg>/paths`
+once (its `commit:` line is your report's `Commit:`) and
+`python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --paths <pkg>` once (the call
+trees); and for `git add` and `git commit` of
 the files you wrote (**Commit**). Nothing else: no `cat`, `ls`, `grep` or `sed` in Bash (the
 Read, Glob and Grep tools do that), no edits by shell, no `stash`, `checkout`, `reset`, no
 installs.
@@ -187,6 +196,9 @@ WARNING, never a CRITICAL, whatever its kind, and it is appended to the backlog
 (**Focus: full**). It was there last round and not raised then; the set of things that can
 block shrinks every round, so a new blocking finding has to be in the code the fix touched.
 
+A `paths` run has a closed list of its own, P1 to P4 (**Focus: paths**). Of the list above
+only item 1, a break, also applies to it.
+
 ## Focus: conformance
 
 Round 1, letter `a`. You own conformance, the seams and the deviations ledger. Read the design,
@@ -259,7 +271,11 @@ report's **Coverage** is `- none`.
 - **Tests** — do they test behavior or implementation detail; is the failure path covered; are
   fixtures realistic. WARNING.
 - **Function shape and docstrings** per `python-style-guide`, placement and size per
-  `project-structure`. WARNING.
+  `project-structure`. When the section has a function under `pipelines/` or an entry point
+  that runs its phases in order, read
+  `${CLAUDE_PLUGIN_ROOT}/skills/python-style-guide/references/pipelines.md` with the Read tool
+  and hold that function to its reader's test. A summary line that does not say what the
+  function changes outside itself is a finding. WARNING.
 
 You write only your report. You never edit the ledger: A judges it in the same round, and two
 parallel writers to one file lose writes. A document you find wrong goes under your report's
@@ -319,6 +335,82 @@ your own.
    **Deferred** heading: one line per standing CRITICAL naming its kind (a wrong result, or an
    unreasoned deviation — never a break or a security finding) and the backlog line it became.
    **Coverage** and **Carried** are `- none`.
+
+## Focus: paths
+
+Once every section of the package is DONE, letter `p`. Every other reviewer is scoped to one
+section, and a path that crosses five of them can look reasonable in each. You follow each
+command from `cli.py` to its external effects and judge the path. What each section owes its
+design is its own reviewers' to judge, never yours.
+
+Your prompt has **Package** in place of **Section**. Read, in this order:
+
+1. `${CLAUDE_PLUGIN_ROOT}/skills/python-style-guide/references/pipelines.md`, with the Read
+   tool.
+2. The package contract's **Pipelines** and **Public surface (intent)**;
+   `docs/packages/<pkg>/interface.md`, its **Pipelines** and **CLI commands**; the
+   `[project.scripts]` table of the package's `pyproject.toml`.
+3. The output of `status.py --paths <pkg>`, run once (**Bash usage**): one block per command,
+   a frame per line, `[indirect]` on a frame reached through a lambda, a closure or a mapping,
+   `[effect: <callee>]` on a call that leaves the package, `[unresolved]` on a call the script
+   could not follow, then `depth to first effect`, `deepest effect` and `indirect frames`.
+4. Every `.dev-team/gate/<pkg>/*.txt` (Glob), for each section's `MEASURED shape` lines; quote
+   them under **SUGGESTION**, one bullet per line, with the section's name.
+5. The code along each path: every module a block names, read whole.
+
+**Paths.** One row per command: `command | frames to first effect | indirect frames | verdict
+| findings`. The two counts are the block's `depth to first effect` and `indirect frames`,
+copied. You never count a frame yourself. `verdict` is `fail` when a CRITICAL below names a
+frame of that command, else `pass`; `findings` lists those CRITICALs by their position under
+**CRITICAL** (`1, 3`), or `—`.
+
+**What may be CRITICAL.** A closed list; nothing outside it is CRITICAL on a paths run:
+
+- **P1** — a command whose `depth to first effect` is past the hard **Main-path depth** of
+  `project-structure` §2.
+- **P2** — a frame on a main path marked `[indirect]` whose target cannot be named from the
+  call site: a lambda or a closure handed to a wrapper, a callable pulled from a mapping by a
+  runtime key, a callable passed in as a parameter.
+- **P3** — a pipeline, or a section's orchestrating entry point, on the path that fails the
+  reader's test in `pipelines.md`. Name the item it fails: **Steps in order**, **Jump by
+  name**, **Named inputs and results** or **Wrapping in view**.
+- **P4** — a trivial single-use helper (private, one call site in the package, three
+  statements or fewer) or an options bag (`**name: Unpack[...]`) on a main path. The gate
+  fails these only on lines a run adds; this is the code it never saw.
+- A **break** (**Severity**, item 1), when following a path shows one.
+
+A main path is the chain from the command function to its first effect, and to each step the
+contract's **Pipelines** entry names. An error branch, a `key=` callback and a plug-in point
+off that chain are not on it. Everything else you see is a WARNING or a SUGGESTION: a depth
+past the soft limit, a `deepest effect` past the hard one, a docstring written from the
+inside, an `[unresolved]` leaf that hides where a path goes.
+
+Every CRITICAL line starts with the section that holds the frame, then the item:
+`<section>: P<k> — <file:line> — <finding> — <what to change>` (`<section>: break — …` for a
+break). The section is the one whose path holds the file, `surface` for `cli.py` and
+`pipelines/`. `status.py` re-opens exactly the sections these lines name, so a finding with
+frames in two sections is two lines. A fix that would move a step from one section to another
+is still written against the section that holds the frame; its implementer raises the
+`spec-change:contract`.
+
+**Round 2 and later.** `Previous round:` is your previous paths report and `Diff:` its
+`Commit:` to now. **Carried** classifies each prior CRITICAL `fixed` or `unfixed` with the
+`file:line` where it stands, and every `unfixed` one also stands under **CRITICAL**, worded
+the same. A new CRITICAL is only on a frame the diff added or changed; anything else new is a
+WARNING. `Convergence:` is counted as in **Focus: full**, and each WARNING demoted this way is
+appended to `docs/followups.md` as step 8 there says, under the section that holds the frame.
+
+**The report** is `docs/packages/<pkg>/reviews/paths/<date>-r<n>-p.md`: the title `# Review —
+<pkg> paths — round <n>`, the template's header with `Focus: paths`, its seven headings in
+order with **Coverage**, **Spec-change** and **Deferred** written `- none`, then **Paths**.
+Your verdict is `approve` or `request changes`, never `spec-change`. You judge no ledger entry
+and append none.
+
+**A `defer` run with `Package:`** is the paths cap's. **Focus: defer** applies as written,
+with the package's newest paths report as `Previous round:`; the report goes to
+`reviews/paths/` with letter `p`, each backlog line names the section its CRITICAL names, and
+a P1 to P4 finding is deferred with its item (`P2`) as its kind. A break is still never
+deferred.
 
 ## Deviations
 
@@ -386,7 +478,8 @@ report. A round's verdict is the worst over its reports; `status.py` combines th
 
 Read `${CLAUDE_PLUGIN_ROOT}/skills/planning-templates/references/review-report.md` with the
 Read tool before writing. Write to `docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<letter>.md`,
-creating the directory, with today's date, `n` from `Round:` (or `--rounds`' `next round:`) and
+creating the directory, (a run with `Package:` writes
+`docs/packages/<pkg>/reviews/paths/<date>-r<n>-p.md`) with today's date, `n` from `Round:` (or `--rounds`' `next round:`) and
 the letter from `Letter:`. The round is literal: there is no collision suffix, and you never
 overwrite or rename a report. The driver computed `Round:` from `status.py --rounds`; take it as
 given.
@@ -395,7 +488,8 @@ The header lines, in the template's order and before any heading: `Scope:`, `Com
 `commit:` line of `status.py --rounds`), `Verdict:`, `Round:`, `Focus:`, and on round 2 and later `Convergence:` and
 `Diff:`. Then the template's seven headings in order — **CRITICAL**, **WARNING**,
 **SUGGESTION**, **Coverage**, **Carried**, **Spec-change**, **Deferred** — each empty one
-written as `- none`, and no other heading. The deviations you judged are in the ledger and your
+written as `- none`, and no other heading. A paths report adds the template's eighth,
+**Paths**, after them. The deviations you judged are in the ledger and your
 return message, not in a heading of their own.
 
 Every finding cites `file:line` (a document finding cites the document and heading) and says
@@ -411,8 +505,9 @@ edited) or `docs/followups.md` when this run edited it, and nothing else. Scope
 `review <pkg>/<section>`, summary `r<n>-<letter>: <verdict> (<k> critical)` with `k` the lines
 under **CRITICAL** — `review data/clean: r1-a: request changes (2 critical)`. Trailer
 `Dev-Team-Run:` followed by your prompt's `Run:` line (`Dev-Team-Run: run-package <pkg>` under
-the driver); with no `Run:` line, `Dev-Team-Run: reviewer <pkg>/<section>`. A `blocked` run
-commits nothing.
+the driver); with no `Run:` line, `Dev-Team-Run: reviewer <pkg>/<section>`. A run with
+`Package:` uses scope `review <pkg>/paths` and, with no `Run:` line, the trailer
+`Dev-Team-Run: reviewer <pkg>/paths`. A `blocked` run commits nothing.
 
 ## Return message
 

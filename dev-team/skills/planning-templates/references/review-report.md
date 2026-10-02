@@ -9,6 +9,15 @@ from `status.py --rounds`, and so does `Commit:`: its `commit:` line, the sectio
 a sibling's report commit. A 2.0 report `docs/reviews/<date>-<pkg>-<section>-r<n>-<letter>.md`
 is still read as round `n`. Never overwrite a report; the filename is the round.
 
+A **paths** report is one per package per round, `docs/packages/<pkg>/reviews/paths/<date>-r<n>-p.md`,
+letter `p`, written by the reviewer with `Focus: paths` (or `Focus: defer` at the paths cap)
+once every section is DONE. `status.py` reads its header and the sections its **CRITICAL**
+lines name, the fix-round implementer of each named section reads those lines, and the next
+paths review reads **CRITICAL**. Its `n` and `Commit:` come from `status.py --rounds
+<pkg>/paths`; `Commit:` is the newest commit touching any section's code in the package. Its
+title is `# Review — <pkg> paths — round <n>`. No section is named `paths`, so the directory
+never holds a section's reports.
+
 Header, the first lines of the file, each `Key: value`:
 
 ```
@@ -17,7 +26,7 @@ Scope: <what was read — a conformance or full report names the intent-test fil
 Commit: <the commit: line of status.py --rounds>
 Verdict: approve | request changes | spec-change
 Round: <n>
-Focus: conformance | correctness | full | defer
+Focus: conformance | correctness | full | defer | paths
 Convergence: <k> prior unfixed, <m> new        (round 2 and later)
 Diff: <sha>..HEAD                              (round 2 and later)
 ```
@@ -26,7 +35,9 @@ Then these headings, in order; an empty one is written with `- none`:
 
 1. **CRITICAL** — one line per finding: `<file:line> — <finding> — <what to change>`. Only the
    closed list: a break (contract, decided `D<n>`, consumed shipped signature), a wrong result
-   on the main path, a security finding, a silent or unreasoned deviation.
+   on the main path, a security finding, a silent or unreasoned deviation. On a paths report
+   each line starts `<section>: P<k> — ` (or `<section>: break — `), and only P1 to P4 and a
+   break appear.
 2. **WARNING** — should fix; the fix round picks these up.
 3. **SUGGESTION** — consider; **Measured** values from the gate's output go here.
 4. **Coverage** — `conformance` and `full` only: table `clause or design item | pass / fail /
@@ -40,6 +51,9 @@ Then these headings, in order; an empty one is written with `- none`:
    record. An `a` or `s` reviewer also appends the matching entry to `docs/packages/<pkg>/deviations/<section>.md`.
 7. **Deferred** — `defer` runs only: each standing CRITICAL and the `docs/followups.md` line it
    became.
+8. **Paths** — paths reports only, after **Deferred**: table `command | frames to first effect
+   | indirect frames | verdict | findings`, one row per `[project.scripts]` command, the two
+   counts copied from `status.py --paths <pkg>`.
 
 A round's verdict is the worst over its reports. Never a mechanical failure (the gate owns
 those), never a fix, never a CRITICAL outside the closed list, and on round 2 or later never a

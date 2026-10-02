@@ -1,7 +1,7 @@
 ---
 name: status
 description: Print where every package and section stands — one state per section (PROBE, DESIGN, TEST, IMPLEMENT, REVIEW, FIX n, PLAN, DONE, BLOCKED), the ready set, whether the package shipped, and the exact next command — derived from docs/ and the code every time, never from a status file. Use whenever you have lost track, before planning the next package, or to see why run-package stopped.
-argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--shape <pkg> --section <s>] [--paths <pkg>] [--repo] [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]"
+argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>|<pkg>/paths] [--surface <pkg>] [--shape <pkg> --section <s>] [--paths <pkg>] [--repo] [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]"
 disable-model-invocation: true
 ---
 
@@ -40,7 +40,9 @@ check a run makes once, before its first agent.
 `-r<n>-` in the report filenames, 0 with none — `next round: <n+1>`, and `commit: <short sha>`
 — the newest commit touching the section's code, unit tests, intent tests and README, or
 `none`; the reviewer copies it as its report's `Commit:`. Nothing else runs; the reviewer names
-its report from it.
+its report from it. `--rounds <pkg>/paths` prints the same three lines for the package's paths
+reports, `commit:` the newest commit touching any section's code, then `previous:` and `diff
+base:` — the newest paths report's path and its `Commit:`, each `none` without one.
 
 `--surface <pkg>` prints `surface: PASS` or `surface: FAIL` with reasons: every name must be in
 all three of `__all__` in the package's `__init__.py`, the **Public names** table of

@@ -1,0 +1,47 @@
+{
+  "note": "--rounds <pkg>/paths (2.5 phase 6) after one paths report: its path and its Commit: as the diff base",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "paths_review",
+      "round": 1,
+      "verdict": "request changes",
+      "critical": [
+        "ingest: P2 — packages/data/src/data/ingest/__init__.py:4 — a lambda on the main path — call the step by name"
+      ]
+    }
+  ],
+  "args": [
+    "--rounds",
+    "data/paths"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "rounds: 1",
+      "next round: 2",
+      "previous: docs/packages/data/reviews/paths/2026-09-27-r1-p.md"
+    ],
+    "matches": [
+      "^diff base: [0-9a-f]{7}$",
+      "^commit: [0-9a-f]{7}$"
+    ],
+    "absent": [
+      "diff base: none"
+    ]
+  }
+}
