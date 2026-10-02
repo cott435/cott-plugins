@@ -81,6 +81,18 @@ pass. A round-1 review whose `Commit:` covers the helper is the base, so the hel
 added (`shape-helper-before-review`); a helper committed after the review is
 (`shape-helper-after-review`).
 
+**The shape check, complete (2.5).** Eight more cases
+(`site/notes/2.5-readability-05-shape-complete.md`, the eight `shape-*` rows after the
+`calltree-*` ones). `bag.py` is a function `load_with(path, **options: Unpack[LoadOptions])`
+at line 12: added, it fails as `options-bag`; under a round-1 review, or as keyword-only
+parameters, it passes. Every `--shape` run now prints `MEASURED shape indirect: <n>` (a lambda
+passed as `key=` plus a `_RUNNERS[kind](…)` call make 2) and one `MEASURED shape depth <name>:
+<n>` per README entry point (`none` for the built `load_trades`, which calls nothing; 0 for the
+`commands` macro's `read_trades`, which makes its effect calls itself), so `shape-pass` and
+`shape-trivial-helper` also expect `MEASURED shape indirect: 0`. A design whose first line is
+`Mode: document`, committed after `helper.py`, makes the design's commit the base: the adopted
+helper passes, and a bag committed after the design still fails.
+
 **The call tree (2.5).** Nine cases (`site/notes/2.5-readability-04-paths-resolver.md`, the
 nine `calltree-*` rows at the end). Each runs `base`, then the `commands` macro: one commit,
 `data/surface: commands`, of a package `pyproject.toml` with one command (`data-load =
@@ -201,8 +213,8 @@ optional flag).
 | `fields-upstream-none` | the same, the line `Upstream packages: none` | the same | `upstream interfaces: none` |
 | `fields-upstream-no-line` | the same, the design without the line | the same | `upstream interfaces: provisional: docs/packages/data/contract.md` (every upstream package, as before 2.4) |
 | `inputs-upstream-none` | the same as `fields-upstream-none` | `--inputs analysis/vwap` | `Upstream interfaces: none` |
-| `shape-pass` | `base`, `design`, `tests`, `build` for ingest | `--shape data --section ingest` | `PASS shape data/ingest`; exit 0 |
-| `shape-trivial-helper` | the same, then a commit adding `helper.py` (`load_rows` calls `_strip`, one statement) | the same | `FAIL shape: packages/data/src/data/ingest/helper.py:9 trivial-helper _strip`; no `PASS shape`; exit 1 |
+| `shape-pass` | `base`, `design`, `tests`, `build` for ingest | `--shape data --section ingest` | `PASS shape data/ingest`; `MEASURED shape indirect: 0` (2.5 phase 5); exit 0 |
+| `shape-trivial-helper` | the same, then a commit adding `helper.py` (`load_rows` calls `_strip`, one statement) | the same | `FAIL shape: packages/data/src/data/ingest/helper.py:9 trivial-helper _strip`; `MEASURED shape indirect: 0` (2.5 phase 5); no `PASS shape`; exit 1 |
 | `shape-helper-two-callers` | `helper.py` with a second function `load_text` that also calls `_strip` | the same | `PASS shape data/ingest`; exit 0 |
 | `shape-helper-callback` | `helper.py` whose `load_rows` returns `sorted(path, key=_strip)` | the same | `PASS shape data/ingest` |
 | `shape-helper-four-statements` | `helper.py` whose `_strip` has four statements | the same | `PASS shape data/ingest` |
@@ -220,3 +232,11 @@ optional flag).
 | `calltree-self-method` | `reader.py` with a class `Reader` whose `read` calls `self._copy(path)`, `_copy` calling `shutil.copy`, and `read_trades` returning `Reader.read(Reader(), path)` | the same | frames `Reader.read (…reader.py:9)` and `Reader._copy (…reader.py:14)`; `depth to first effect: 4` |
 | `calltree-recursive` | `load.py` whose `run_load` calls itself under an `if` before `read_trades` | the same | `run_load (…load.py:6) [recursive]`; `depth to first effect: 2` |
 | `calltree-no-commands` | the package `pyproject.toml` without `[project.scripts]` | the same | the one line `paths: no commands`; exit 0 |
+| `shape-options-bag` | `base`, `design`, `tests`, `build` for ingest, then a commit adding `bag.py` | `--shape data --section ingest` | `FAIL shape: packages/data/src/data/ingest/bag.py:12 options-bag load_with`; `MEASURED shape indirect: 0`; no `PASS shape`; exit 1 |
+| `shape-options-bag-before-review` | the `bag.py` commit, then round 1 `a` and `b` approving | the same | `PASS shape data/ingest`; no `FAIL shape`; exit 0 |
+| `shape-keyword-only-pass` | a commit adding `keywords.py`: `load_with(path, *, strict, limit, retries, since, until)` | the same | `PASS shape data/ingest`; no `FAIL shape`; exit 0 |
+| `shape-measured-indirect` | a commit adding `runners.py`: `sorted(rows, key=lambda r: r[0])` and `_RUNNERS[kind](path)` | the same | `MEASURED shape indirect: 2`; `PASS shape data/ingest` |
+| `shape-measured-zero` | `base`, `design`, `tests`, `build` for ingest | the same | `MEASURED shape indirect: 0`; `MEASURED shape depth load_trades: none`; `PASS shape data/ingest` |
+| `shape-depth` | `base`, `commands`, then `design`, `tests`, `build` for ingest, then an `edit` giving the README a second row, `` `read_trades` `` | the same | `MEASURED shape depth load_trades: none`; `MEASURED shape depth read_trades: 0` |
+| `shape-adopted-document` | `base`; a commit adding `helper.py` under ingest; a design whose first line is `Mode: document`; `tests`, `build` | the same | `PASS shape data/ingest`; no `FAIL shape` (the helper predates the design) |
+| `shape-adopted-added-after` | the same, then a commit adding `bag.py` | the same | the `shape-options-bag` FAIL line; no `trivial-helper`, no `PASS shape`; exit 1 |

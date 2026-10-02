@@ -4,7 +4,7 @@
   "setup": {
     "transcript": "Section: data/ingest\nDesign: docs/packages/data/design/ingest.md\nRun: run-package data",
     "files": {
-      "packages/data/src/data/ingest/loader.py": "\"\"\"Read the trade export.\"\"\"\n\nimport csv\nfrom pathlib import Path\n\n\ndef load_trades(path: str | Path) -> list[dict[str, object]]:\n    \"\"\"Return one dict per row of the CSV at ``path``, price as a float.\"\"\"\n    with Path(path).open(newline=\"\") as handle:\n        return [{**row, \"price\": float(row[\"price\"])} for row in csv.DictReader(handle)]\n"
+      "packages/data/src/data/ingest/bag.py": "\"\"\"Options.\"\"\"\n\nfrom typing import TypedDict, Unpack\n\n\nclass LoadOptions(TypedDict):\n    \"\"\"Options for a load.\"\"\"\n\n    strict: bool\n\n\ndef load_with(path, **options: Unpack[LoadOptions]):\n    \"\"\"Load path with options.\"\"\"\n    return path, options\n"
     }
   },
   "event": {
@@ -25,18 +25,14 @@
     "session_crons": []
   },
   "expect": {
-    "exit": 0,
-    "gate_only": [
-      "PASS",
-      "MEASURED"
+    "exit": 2,
+    "stderr_contains": [
+      "FAIL shape: packages/data/src/data/ingest/bag.py:12 options-bag load_with"
     ],
     "gate_contains": [
-      "— section data/ingest\n",
-      "PASS intent",
-      "PASS lint (data)",
-      "PASS format (data)",
-      "PASS unit data/ingest: 1 passed"
+      "FAIL shape: packages/data/src/data/ingest/bag.py:12 options-bag load_with",
+      "result: not done (attempt 1 of 3)"
     ],
-    "counter": null
+    "counter": 1
   }
 }

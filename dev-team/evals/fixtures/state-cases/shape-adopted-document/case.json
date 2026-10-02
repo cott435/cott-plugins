@@ -1,0 +1,43 @@
+{
+  "note": "--shape (2.5 phase 5): helper.py was there before the Mode: document design, so it is measured, not failed",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "files": {
+        "packages/data/src/data/ingest/helper.py": "\"\"\"Rows.\"\"\"\n\n\ndef load_rows(path):\n    \"\"\"Load rows.\"\"\"\n    return _strip(path)\n\n\ndef _strip(path):\n    \"\"\"Strip the path.\"\"\"\n    return str(path).strip()\n"
+      },
+      "message": "data/ingest: adopted helper"
+    },
+    {
+      "files": {
+        "docs/packages/data/design/ingest.md": "Mode: document\n\n# data/ingest — design\n\n## 5. Interfaces\n\n- the ingest entry point\n"
+      },
+      "message": "data/ingest: design (document)"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    }
+  ],
+  "args": [
+    "--shape",
+    "data",
+    "--section",
+    "ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "PASS shape data/ingest"
+    ],
+    "absent": [
+      "FAIL shape"
+    ]
+  }
+}

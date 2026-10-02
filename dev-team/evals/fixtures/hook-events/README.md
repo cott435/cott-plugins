@@ -174,6 +174,15 @@ with one call site, and the gate fails at its `def` line with the retry text tha
 puts a round-1 review at `{RUN_SHA}`, so the helper is not on an added line and passes.
 `helper.py` passes ruff's defaults, so no case gained a lint line, and no earlier case changed.
 
+**The 2.5 shape check, complete** (`site/notes/2.5-readability-05-shape-complete.md`). The gate
+itself is unchanged; `--shape` now also fails an added options bag and prints two `MEASURED`
+lines. `gate-shape-options-bag-fail` writes `packages/data/src/data/ingest/bag.py`, whose
+`load_with` takes `**options: Unpack[LoadOptions]`, and the gate fails at its `def` line;
+`gate-shape-measured` (`gate-pass`'s setup) passes with `MEASURED shape indirect: 0`, a
+`MEASURED shape depth load_trades:` line and `PASS shape data/ingest` in the record. Every
+`data/ingest` record now carries `MEASURED` lines, so `gate-pass` and `gate-elsewhere`, the two
+cases whose `gate_only` list would otherwise reject them, gained `MEASURED` there.
+
 **The 2.2 layout here.** `build.py` still writes the section's ledger at the 2.0 path,
 `docs/deviations/data/ingest.md`, so the tolerated case also proves the gate reads the old
 location; the new one, `docs/packages/data/deviations/ingest.md`, is written by

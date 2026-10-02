@@ -1,5 +1,5 @@
 {
-  "note": "--shape (2.5 phase 2): ingest built with no private helper",
+  "note": "--shape (2.5 phase 5): the built ingest has no indirect call, and load_trades calls nothing",
   "steps": [
     {
       "do": "base"
@@ -26,8 +26,9 @@
   "expect": {
     "exit": 0,
     "contains": [
-      "PASS shape data/ingest",
-      "MEASURED shape indirect: 0"
+      "MEASURED shape indirect: 0",
+      "MEASURED shape depth load_trades: none",
+      "PASS shape data/ingest"
     ]
   }
 }

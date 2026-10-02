@@ -26,16 +26,10 @@
   },
   "expect": {
     "exit": 0,
-    "gate_only": [
-      "PASS",
-      "MEASURED"
-    ],
     "gate_contains": [
-      "— section data/ingest\n",
-      "PASS intent",
-      "PASS lint (data)",
-      "PASS format (data)",
-      "PASS unit data/ingest: 1 passed"
+      "MEASURED shape indirect: 0",
+      "MEASURED shape depth load_trades:",
+      "PASS shape data/ingest"
     ],
     "counter": null
   }

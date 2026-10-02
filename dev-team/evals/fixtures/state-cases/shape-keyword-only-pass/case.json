@@ -1,0 +1,41 @@
+{
+  "note": "--shape (2.5 phase 5): one positional and five keyword-only parameters are not an options bag",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "files": {
+        "packages/data/src/data/ingest/keywords.py": "\"\"\"Keywords.\"\"\"\n\n\ndef load_with(path, *, strict, limit, retries, since, until):\n    \"\"\"Load path with explicit options.\"\"\"\n    return path, strict, limit, retries, since, until\n"
+      },
+      "message": "data/ingest: keyword-only"
+    }
+  ],
+  "args": [
+    "--shape",
+    "data",
+    "--section",
+    "ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "PASS shape data/ingest"
+    ],
+    "absent": [
+      "FAIL shape"
+    ]
+  }
+}

@@ -32,7 +32,8 @@
   "expect": {
     "exit": 1,
     "contains": [
-      "FAIL shape: packages/data/src/data/ingest/helper.py:9 trivial-helper _strip"
+      "FAIL shape: packages/data/src/data/ingest/helper.py:9 trivial-helper _strip",
+      "MEASURED shape indirect: 0"
     ],
     "absent": [
       "PASS shape"

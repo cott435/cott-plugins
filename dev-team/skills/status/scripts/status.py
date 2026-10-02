@@ -120,8 +120,16 @@ the user's *review anyway* stick.
 gate copies into its record. It judges the functions and methods defined in the section's
 non-test code (its path, nested sections excluded) whose `def` line the run added: a line
 `git diff -U0 <base>` adds under the section's code, or any line of an untracked file, where
-<base> is the newest review round's `Commit:` when it is an ancestor of `HEAD`, else the empty
-tree.
+<base> is, in order:
+
+1. the newest review round's `Commit:`, when it is an ancestor of `HEAD`;
+2. else, when the section's design exists, its mode word (the `design mode:` of `--fields`) is
+   `document`, and `git log --diff-filter=A` names the commit that added it: that commit, so
+   code adopted before the design is measured and never failed;
+3. else the empty tree.
+
+Lines, in this order: the FAIL lines sorted by file then line, the one `indirect` line, the
+`depth` lines, then `PASS`.
 
 - `FAIL shape: <file>:<line> trivial-helper <name>` — a private function or method (`_name`,
   not a dunder) with three statements or fewer, the docstring not counted, that is referenced
@@ -129,6 +137,21 @@ tree.
   `property`, `cached_property` or `<name>.setter`/`.getter`/`.deleter`; a method whose name is
   defined in more than one class of the package; a helper referenced anywhere other than as
   the function of a call (passed by name, stored, used as a decorator).
+- `FAIL shape: <file>:<line> options-bag <name>` — a function or method, public or private,
+  whose `**` parameter is annotated with a subscript of `Unpack` (`Unpack[...]` or
+  `<module>.Unpack[...]`); `<name>` is `Class.method` for a method.
+- `MEASURED shape indirect: <n>` — over every file judged, added lines or not: the lambdas that
+  are an argument of a call (positional or keyword), the names passed as an argument that are
+  functions nested in an enclosing function, and the calls whose function is a subscript
+  (`_RUNNERS[stage](…)`). Printed whether or not anything failed; never a failure.
+- `MEASURED shape depth <entry point>: <n>` — one per name in the section README's **Entry
+  points and interfaces** table, in row order (the first identifier of each name cell); for
+  `surface`, one per `[project.scripts]` command, named by the command. The value is the
+  deepest effect below the entry point on the `--paths` call graph (**Paths.** below), the
+  entry point's own frame at 0; a class's value is the largest over its public methods.
+  `none` when no effect lies below it; `unresolved` when the name is not a function or class
+  defined in the section's code. No `depth` line without a README, or for `surface` without
+  commands. Never a failure.
 - `PASS shape <pkg>/<s>` — when no FAIL line was printed.
 
 Exit 1 on a FAIL line, else 0; 2 on a missing `--section` or a section the contract lacks.
@@ -1810,9 +1833,113 @@ def _references(fn: ast.FunctionDef | ast.AsyncFunctionDef, scope: ast.AST, rel:
     return refs
 
 
+def shape_base(pkg: str, section: str) -> str:
+    """The commit the shape check reads added lines from: `review_base` when a review round
+    covers the section; else, for a design whose mode word is `document`, the commit that added
+    the design; else the empty tree."""
+    base = review_base(pkg, section)
+    if base != EMPTY_TREE:
+        return base
+    design: Path = _paths(pkg, section)["design"]  # type: ignore[assignment]
+    if _design_mode(design) == "document":
+        added = git("log", "--diff-filter=A", "--format=%H", "-1", "--", _rel(design))
+        if added:
+            return added
+    return EMPTY_TREE
+
+
+def _is_options_bag(fn: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """True when fn's `**` parameter is annotated `Unpack[...]` or `<module>.Unpack[...]`."""
+    annotation = fn.args.kwarg.annotation if fn.args.kwarg else None
+    if not isinstance(annotation, ast.Subscript):
+        return False
+    value = annotation.value
+    return (isinstance(value, ast.Name) and value.id == "Unpack") or (
+        isinstance(value, ast.Attribute) and value.attr == "Unpack")
+
+
+def _own_defs(node: ast.AST) -> set[str]:
+    """The names of the functions defined directly in a function's body, not inside a nested
+    function, lambda or class."""
+    names: set[str] = set()
+    stack = list(ast.iter_child_nodes(node))
+    while stack:
+        child = stack.pop()
+        if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            names.add(child.name)
+        elif not isinstance(child, (ast.Lambda, ast.ClassDef)):
+            stack.extend(ast.iter_child_nodes(child))
+    return names
+
+
+def _indirect_count(tree: ast.Module) -> int:
+    """The module's lambdas passed as an argument, names of nested functions passed as an
+    argument, and calls through a subscript."""
+    n = 0
+    stack: list[tuple[ast.AST, frozenset[str]]] = [(tree, frozenset())]
+    while stack:
+        node, closures = stack.pop()
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            closures = closures | _own_defs(node)
+        if isinstance(node, ast.Call):
+            n += isinstance(node.func, ast.Subscript)
+            for arg in [*node.args, *(k.value for k in node.keywords)]:
+                n += isinstance(arg, ast.Lambda) or (isinstance(arg, ast.Name) and arg.id in closures)
+        stack.extend((child, closures) for child in ast.iter_child_nodes(node))
+    return n
+
+
+def _deepest(graph: _CallGraph, roots: list[str]) -> str:
+    """The largest deepest-effect depth over roots, or `none` when no effect lies below any."""
+    found = [d for root in roots if (d := graph.effect_depths(root)[1]) is not None]
+    return str(max(found)) if found else "none"
+
+
+def shape_depths(pkg: str, section: str, judged: list[str]) -> list[str]:
+    """One `MEASURED shape depth` line per README entry point, or per command for `surface`."""
+    if section == "surface":
+        scripts = package_scripts(pkg)
+        if not scripts:
+            return []
+        graph = _CallGraph(pkg)
+        values = []
+        for name, target in scripts.items():
+            root = graph.command(target)
+            values.append((name, "unresolved" if root is None else _deepest(graph, [root])))
+        return [f"MEASURED shape depth {name}: {value}" for name, value in values]
+    readme: Path = _paths(pkg, section)["readme"]  # type: ignore[assignment]
+    if not readme.exists():
+        return []
+    rows = table_rows(_item(readme.read_text(), "Entry points and interfaces"), ("name",))
+    names = [cells[0] for row in rows if (cells := _name_cells(row)[0])]
+    if not names:
+        return []
+    graph = _CallGraph(pkg)
+    modules = [m for m in graph.modules.values() if m.rel in judged]
+    out = []
+    for name in names:
+        value = "unresolved"
+        for module in modules:
+            if name in module.functions:
+                value = _deepest(graph, [graph.fn_for(module.functions[name], module, None, None).key])
+            elif name in module.classes:
+                methods = [graph.fn_for(item, module, name, None).key for item in module.classes[name].body
+                           if isinstance(item, DEFS) and not item.name.startswith("_")]
+                value = _deepest(graph, methods)
+            else:
+                continue
+            break
+        out.append(f"MEASURED shape depth {name}: {value}")
+    return out
+
+
+SHAPE_KINDS = ("trivial-helper", "options-bag")
+
+
 def shape_check(pkg: str, section: str) -> list[str]:
-    """The section's shape check: a `FAIL shape: …` line per trivial single-use helper whose
-    `def` line was added since `review_base`, sorted by file then line; else one `PASS shape`."""
+    """The section's shape check, the lines the module docstring's **Shape.** lists: a `FAIL
+    shape: …` line per trivial single-use helper or options bag whose `def` line was added since
+    `shape_base`, then the two `MEASURED` kinds, then `PASS shape` when nothing failed."""
     p = _paths(pkg, section)
     code: list[str] = p["code"]  # type: ignore[assignment]
     spath, nested = code[0], [c.removeprefix(":(exclude)") for c in code[1:]]
@@ -1821,31 +1948,39 @@ def shape_check(pkg: str, section: str) -> list[str]:
     top = ROOT / (surface_row["path"] if surface_row else _rel(package_root(pkg) / "src" / pkg))
     judged = _py_files(ROOT / spath, tuple(nested))
     trees = {rel: t for rel in dict.fromkeys([*_py_files(top), *judged]) if (t := _parse(rel)) is not None}
-    added = {(path, n) for path, sign, n, _ in diff_lines(review_base(pkg, section), code) if sign == "+"}
+    added = {(path, n) for path, sign, n, _ in diff_lines(shape_base(pkg, section), code) if sign == "+"}
     classes: dict[str, int] = {}
     for tree in trees.values():
         for fn, scope in _definitions(tree):
             if isinstance(scope, ast.ClassDef):
                 classes[fn.name] = classes.get(fn.name, 0) + 1
     calls = {id(n.func) for tree in trees.values() for n in ast.walk(tree) if isinstance(n, ast.Call)}
-    fails: list[tuple[str, int, str]] = []
+    fails: list[tuple[str, int, int, str]] = []
     for rel in judged:
         if rel not in trees:
             continue
         for fn, scope in _definitions(trees[rel]):
+            if (rel, fn.lineno) not in added:
+                continue
             name = fn.name
+            if _is_options_bag(fn):
+                shown = f"{scope.name}.{name}" if isinstance(scope, ast.ClassDef) else name
+                fails.append((rel, fn.lineno, SHAPE_KINDS.index("options-bag"), shown))
             if not name.startswith("_") or (name.startswith("__") and name.endswith("__")):
                 continue
-            if (rel, fn.lineno) not in added or _statements(fn) > 3 or _is_property(fn):
+            if _statements(fn) > 3 or _is_property(fn):
                 continue
             if isinstance(scope, ast.ClassDef) and classes.get(name, 0) > 1:
                 continue
             refs = _references(fn, scope, rel, trees)
             if len(refs) == 1 and id(refs[0]) in calls:
-                fails.append((rel, fn.lineno, name))
+                fails.append((rel, fn.lineno, SHAPE_KINDS.index("trivial-helper"), name))
+    out = [f"FAIL shape: {rel}:{n} {SHAPE_KINDS[kind]} {name}" for rel, n, kind, name in sorted(fails)]
+    out.append(f"MEASURED shape indirect: {sum(_indirect_count(trees[rel]) for rel in judged if rel in trees)}")
+    out += shape_depths(pkg, section, judged)
     if not fails:
-        return [f"PASS shape {pkg}/{section}"]
-    return [f"FAIL shape: {rel}:{n} trivial-helper {name}" for rel, n, name in sorted(fails)]
+        out.append(f"PASS shape {pkg}/{section}")
+    return out
 
 
 # ---------------------------------------------------------------------------------------------
@@ -2160,6 +2295,15 @@ class _CallGraph:
 
     def footer(self, root: str) -> list[str]:
         """The three footer lines, from the call graph rather than the printed tree."""
+        first, last = self.effect_depths(root)
+        indirect = sum(1 for key in self.reachable(root) for _, _, ind in self.edges(key) if ind)
+        return [f"depth to first effect: {'none' if first is None else first}",
+                f"deepest effect: {'none' if last is None else last}",
+                f"indirect frames: {indirect}"]
+
+    def effect_depths(self, root: str) -> tuple[int | None, int | None]:
+        """(shallowest, deepest) depth below root of a frame that makes an effect call, root at
+        0 and back edges ignored; None for each when no effect lies below root."""
         makes_effect = {key: any(e.get("effect") for e in self.entries(self.fns[key])) for key in self.reachable(root)}
         dist, heap, first = {root: 0}, [(0, root)], None
         while heap:
@@ -2189,11 +2333,7 @@ class _CallGraph:
             longest[key] = best
             return best
 
-        last = deepest(root)
-        indirect = sum(1 for key in makes_effect for _, _, ind in self.edges(key) if ind)
-        return [f"depth to first effect: {'none' if first is None else first}",
-                f"deepest effect: {'none' if last is None else last}",
-                f"indirect frames: {indirect}"]
+        return first, deepest(root)
 
     def reachable(self, root: str) -> list[str]:
         seen, stack = [root], [root]
@@ -2241,13 +2381,18 @@ class _CallGraph:
         return found[1] if found and found[0] == "function" else None
 
 
-def paths_report(pkg: str) -> list[str]:
-    """`--paths <pkg>`: one call tree per `[project.scripts]` command, or `paths: no commands`."""
+def package_scripts(pkg: str) -> dict[str, str]:
+    """The package `pyproject.toml`'s `[project.scripts]` table; empty when it has none."""
     pyproject = package_root(pkg) / "pyproject.toml"
     try:
-        scripts = tomllib.loads(pyproject.read_text()).get("project", {}).get("scripts", {})
+        return tomllib.loads(pyproject.read_text()).get("project", {}).get("scripts", {})
     except (OSError, tomllib.TOMLDecodeError):
-        scripts = {}
+        return {}
+
+
+def paths_report(pkg: str) -> list[str]:
+    """`--paths <pkg>`: one call tree per `[project.scripts]` command, or `paths: no commands`."""
+    scripts = package_scripts(pkg)
     if not scripts:
         return ["paths: no commands"]
     graph = _CallGraph(pkg)
@@ -2393,6 +2538,15 @@ def _holds_code(pkg: str, section: str) -> bool:
                for f in base.rglob("*.py"))
 
 
+def _design_mode(design: Path) -> str:
+    """The word after `Mode:` in the design's first five lines; `none` with no design or no word."""
+    if not design.exists():
+        return "none"
+    head = design.read_text().strip().splitlines()[:5]
+    m = next((m for line in head if (m := re.match(r"\**Mode:\**\s*`?(\w+)", line.strip()))), None)
+    return m.group(1) if m else "none"
+
+
 def spawn_fields(pkg: str, section: str) -> list[str]:
     """The `--fields` lines for one section; the module docstring lists them."""
     p = _paths(pkg, section)
@@ -2405,11 +2559,7 @@ def spawn_fields(pkg: str, section: str) -> list[str]:
         mode = "document"
     else:
         mode = "new"
-    design_mode = "none"
-    if design.exists():
-        head = design.read_text().strip().splitlines()[:5]
-        if m := next((m for line in head if (m := re.match(r"\**Mode:\**\s*`?(\w+)", line.strip()))), None):
-            design_mode = m.group(1)
+    design_mode = _design_mode(design)
     base = "none"
     reps = _reports(pkg, section)
     if reps:

@@ -1,0 +1,46 @@
+{
+  "note": "--shape (2.5 phase 5): the commands package's read_trades, a second README row, makes its effect calls itself: depth 0",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "edit",
+      "path": "packages/data/src/data/ingest/README.md",
+      "replace": [
+        "| ingest the trades | yes |\n",
+        "| ingest the trades | yes |\n| `read_trades` | `read_trades(path)` | read the trades | no |\n"
+      ],
+      "message": "data/ingest: README names read_trades"
+    }
+  ],
+  "args": [
+    "--shape",
+    "data",
+    "--section",
+    "ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "MEASURED shape depth load_trades: none",
+      "MEASURED shape depth read_trades: 0",
+      "PASS shape data/ingest"
+    ]
+  }
+}

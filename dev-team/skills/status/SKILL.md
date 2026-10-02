@@ -51,9 +51,14 @@ row; a name cell is read as its first backticked span (`` `Trade` (`models.py`) 
 `interface.md` exists it prints `surface: n/a (no interface.md)` and exits 0.
 
 `--shape <pkg> --section <s>` prints the section's shape check, the lines the stop gate copies
-into its record: `FAIL shape: <file>:<line> trivial-helper <name>` for a private helper added
-since the section's last review that has one call site in the package and three statements or
-fewer, then `PASS shape <pkg>/<s>` when nothing failed. Exit 1 on a FAIL line.
+into its record. `FAIL shape: <file>:<line> trivial-helper <name>` is a private helper with one
+call site in the package and three statements or fewer; `FAIL shape: <file>:<line> options-bag
+<name>` is a signature taking `**name: Unpack[...]`. Both are judged only on lines added since
+the section's last review (for an adopted section not yet reviewed, since its `Mode: document`
+design was committed). `MEASURED shape indirect: <n>` counts the section's lambdas and closures
+passed as arguments and its calls through a mapping, and `MEASURED shape depth <entry point>:
+<n>` gives the deepest path from each README entry point to a call that leaves the package;
+neither fails. `PASS shape <pkg>/<s>` follows when nothing failed. Exit 1 on a FAIL line.
 
 `--paths <pkg>` prints one call tree per `[project.scripts]` command of the package, followed
 statically through the package's own code: a frame per line, `[indirect]` on a frame reached
