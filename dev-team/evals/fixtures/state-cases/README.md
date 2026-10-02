@@ -70,6 +70,16 @@ whose `surface` is DONE passes `--surface` and `shipped` and `shipped-sync` stil
 backticked identifier, each `Public: yes` name in the contract's intent. `shipped: yes` now also
 needs the package-wide check.
 
+**The shape check (2.5).** Ten cases (`site/notes/2.5-readability-02-shape-slice.md`, the
+ten `shape-*` rows at the end). Each builds `ingest`, then commits
+`packages/data/src/data/ingest/helper.py` or a variant of it, and runs `--shape data --section
+ingest`: a private helper of one statement whose one reference is a call fails at its `def`
+line, while a second caller, a reference that is not a call (`key=_strip`), a fourth
+statement, a test file, a dunder, a `@property` and a method name two classes define each
+pass. A round-1 review whose `Commit:` covers the helper is the base, so the helper is not
+added (`shape-helper-before-review`); a helper committed after the review is
+(`shape-helper-after-review`).
+
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
 section's entry does not make an existing design stale, per the design's *Stale when* for a
@@ -178,3 +188,13 @@ optional flag).
 | `fields-upstream-none` | the same, the line `Upstream packages: none` | the same | `upstream interfaces: none` |
 | `fields-upstream-no-line` | the same, the design without the line | the same | `upstream interfaces: provisional: docs/packages/data/contract.md` (every upstream package, as before 2.4) |
 | `inputs-upstream-none` | the same as `fields-upstream-none` | `--inputs analysis/vwap` | `Upstream interfaces: none` |
+| `shape-pass` | `base`, `design`, `tests`, `build` for ingest | `--shape data --section ingest` | `PASS shape data/ingest`; exit 0 |
+| `shape-trivial-helper` | the same, then a commit adding `helper.py` (`load_rows` calls `_strip`, one statement) | the same | `FAIL shape: packages/data/src/data/ingest/helper.py:9 trivial-helper _strip`; no `PASS shape`; exit 1 |
+| `shape-helper-two-callers` | `helper.py` with a second function `load_text` that also calls `_strip` | the same | `PASS shape data/ingest`; exit 0 |
+| `shape-helper-callback` | `helper.py` whose `load_rows` returns `sorted(path, key=_strip)` | the same | `PASS shape data/ingest` |
+| `shape-helper-four-statements` | `helper.py` whose `_strip` has four statements | the same | `PASS shape data/ingest` |
+| `shape-helper-before-review` | the `helper.py` commit, then round 1 `a` and `b` approving | the same | `PASS shape data/ingest` (the review's `Commit:` covers the helper) |
+| `shape-helper-after-review` | round 1 `a` and `b` approving, then the `helper.py` commit | the same | the `shape-trivial-helper` FAIL line; exit 1 |
+| `shape-exempt-kinds` | a commit adding `kinds.py`: `__repr__`, a `@property` `_size`, and `_fetch` (two statements) in two classes, called once through `self` | the same | `PASS shape data/ingest` |
+| `shape-test-file-exempt` | `helper.py`'s two functions committed as `packages/data/tests/unit/ingest/test_helper.py` | the same | `PASS shape data/ingest` |
+| `shape-bad-target` | `base`, `design`, `tests`, `build` for ingest | `--shape data --section nope` | `no section nope in docs/packages/data/contract.md`; exit 2 |

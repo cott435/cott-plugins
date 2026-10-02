@@ -1,7 +1,7 @@
 ---
 name: status
 description: Print where every package and section stands — one state per section (PROBE, DESIGN, TEST, IMPLEMENT, REVIEW, FIX n, PLAN, DONE, BLOCKED), the ready set, whether the package shipped, and the exact next command — derived from docs/ and the code every time, never from a status file. Use whenever you have lost track, before planning the next package, or to see why run-package stopped.
-argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--repo] [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]"
+argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--shape <pkg> --section <s>] [--repo] [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]"
 disable-model-invocation: true
 ---
 
@@ -49,6 +49,11 @@ points and interfaces** tables — except a name whose providing module lies out
 section (a pipeline, the CLI), which is the `surface` section's own and has no section README
 row; a name cell is read as its first backticked span (`` `Trade` (`models.py`) `` is `Trade`); and `import <pkg>` must load no section module. Before
 `interface.md` exists it prints `surface: n/a (no interface.md)` and exits 0.
+
+`--shape <pkg> --section <s>` prints the section's shape check, the lines the stop gate copies
+into its record: `FAIL shape: <file>:<line> trivial-helper <name>` for a private helper added
+since the section's last review that has one call site in the package and three statements or
+fewer, then `PASS shape <pkg>/<s>` when nothing failed. Exit 1 on a FAIL line.
 
 `--repo` prints the repo-wide gap list the documenter copies under **Known gaps**: `packages:`,
 `sections:` (every section not DONE), `decisions:` (every `D<n>` open or deferred),

@@ -1,0 +1,40 @@
+{
+  "note": "--shape (2.5 phase 2): a dunder, a private @property, and a two-statement _fetch defined in two classes and called once through self",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "files": {
+        "packages/data/src/data/ingest/kinds.py": "\"\"\"Kinds.\"\"\"\n\n\nclass Box:\n    \"\"\"A box.\"\"\"\n\n    def __init__(self, items):\n        \"\"\"Hold the items.\"\"\"\n        self.items = items\n\n    def __repr__(self):\n        \"\"\"Show the box.\"\"\"\n        return f\"Box({self.items!r})\"\n\n    @property\n    def _size(self):\n        \"\"\"The item count.\"\"\"\n        return len(self.items)\n\n    def count(self):\n        \"\"\"Count the items.\"\"\"\n        return self._size\n\n\nclass Source:\n    \"\"\"A source.\"\"\"\n\n    def read(self):\n        \"\"\"Read through the subclass.\"\"\"\n        return self._fetch()\n\n    def _fetch(self):\n        \"\"\"Fetch nothing.\"\"\"\n        rows = []\n        return rows\n\n\nclass FileSource(Source):\n    \"\"\"A file source.\"\"\"\n\n    def _fetch(self):\n        \"\"\"Fetch one row.\"\"\"\n        rows = [\"row\"]\n        return rows\n"
+      },
+      "message": "data/ingest: kinds"
+    }
+  ],
+  "args": [
+    "--shape",
+    "data",
+    "--section",
+    "ingest"
+  ],
+  "expect": {
+    "contains": [
+      "PASS shape data/ingest"
+    ],
+    "absent": [
+      "FAIL shape"
+    ]
+  }
+}

@@ -164,6 +164,16 @@ tripped a rule ruff's defaults gained were repaired without changing what they t
 `fmt-repo-config`, `gate-diff-before-review`, `gate-guarded-decision-constant`,
 `gate-guarded-exception`, `gate-report-fail`, `gate-xfail-wrapped-pass`.
 
+**The 2.5 shape check** (`site/notes/2.5-readability-02-shape-slice.md`). Every section run,
+and `--report`, now runs `status.py --shape <pkg> --section <section>` and copies its lines, so
+every `data/ingest` record carries `PASS shape data/ingest` (`gate-shape-pass`,
+`gate-report-shape`). `gate-shape-trivial-helper-fail` writes
+`packages/data/src/data/ingest/helper.py`, whose `_strip` is a one-statement private helper
+with one call site, and the gate fails at its `def` line with the retry text that explains a
+`FAIL shape` line. `gate-shape-helper-before-review` commits the same file under `prior` and
+puts a round-1 review at `{RUN_SHA}`, so the helper is not on an added line and passes.
+`helper.py` passes ruff's defaults, so no case gained a lint line, and no earlier case changed.
+
 **The 2.2 layout here.** `build.py` still writes the section's ledger at the 2.0 path,
 `docs/deviations/data/ingest.md`, so the tolerated case also proves the gate reads the old
 location; the new one, `docs/packages/data/deviations/ingest.md`, is written by

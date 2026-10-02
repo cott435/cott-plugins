@@ -1,0 +1,32 @@
+{
+  "note": "--shape (2.5 phase 2): a section the contract lacks",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    }
+  ],
+  "args": [
+    "--shape",
+    "data",
+    "--section",
+    "nope"
+  ],
+  "expect": {
+    "exit": 2,
+    "contains": [
+      "no section nope in docs/packages/data/contract.md"
+    ]
+  }
+}

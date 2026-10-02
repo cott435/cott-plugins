@@ -3,6 +3,7 @@
 
 Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg> [--section <s>]] [--repo]
                           [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]
+                          [--shape <pkg> --section <s>]
 
 A section is in exactly one state, decided in this order, first match wins:
 
@@ -115,6 +116,23 @@ treated as absent, and the row is derived without it. A record whose header slot
 `Commit:` covers the code the review speaks and the record is not read, which is what makes
 the user's *review anyway* stick.
 
+**Shape.** `--shape <pkg> --section <s>` prints the section's shape check, the lines the stop
+gate copies into its record. It judges the functions and methods defined in the section's
+non-test code (its path, nested sections excluded) whose `def` line the run added: a line
+`git diff -U0 <base>` adds under the section's code, or any line of an untracked file, where
+<base> is the newest review round's `Commit:` when it is an ancestor of `HEAD`, else the empty
+tree.
+
+- `FAIL shape: <file>:<line> trivial-helper <name>` — a private function or method (`_name`,
+  not a dunder) with three statements or fewer, the docstring not counted, that is referenced
+  exactly once in the package's non-test code, by a call. Exempt: a function decorated
+  `property`, `cached_property` or `<name>.setter`/`.getter`/`.deleter`; a method whose name is
+  defined in more than one class of the package; a helper referenced anywhere other than as
+  the function of a call (passed by name, stored, used as a decorator).
+- `PASS shape <pkg>/<s>` — when no FAIL line was printed.
+
+Exit 1 on a FAIL line, else 0; 2 on a missing `--section` or a section the contract lacks.
+
 **Scaffold.** A package is ready to be built in when its workspace exists: a root
 `pyproject.toml`, and, when that root is a uv workspace (`[tool.uv.workspace]`), a
 `pyproject.toml` at the package root. `--scaffold <pkg>` prints `scaffold: done` and exits 0,
@@ -193,6 +211,8 @@ BASELINE_EXEMPT = ("docs/decisions.md", "docs/brief.md", "docs/constraints.md", 
 VERDICT_RANK = {"approve": 0, "spec-change": 1, "request changes": 2}
 
 UNCOMMITTED = "U"
+
+EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
 
 def set_root(path: Path) -> None:
@@ -316,6 +336,47 @@ def last_commit(*paths: Path | str) -> str | None:
 def uncommitted(*paths: Path | str) -> bool:
     """True when any of paths has staged, unstaged or untracked changes."""
     return bool(git("status", "--porcelain", "--untracked-files=all", "--", *map(_rel, paths)))
+
+
+def _untracked(paths: list[str] | None = None) -> list[str]:
+    """Untracked, unignored files; under paths (git pathspecs) when given."""
+    spec = ["--", *paths] if paths else []
+    raw = git("ls-files", "--others", "--exclude-standard", "-z", *spec) or ""
+    return [p for p in raw.split("\0") if p]
+
+
+def diff_lines(base: str, paths: list[str] | None = None) -> list[tuple[str, str, int, str]]:
+    """(path, '+' or '-', line number, text) for every added and removed line since base, under
+    paths when given.
+
+    Added lines carry their new line number, removed lines their old one. An untracked file
+    counts as added in full.
+    """
+    out: list[tuple[str, str, int, str]] = []
+    spec = ["--", *paths] if paths else []
+    raw = git("diff", "-U0", "--no-color", "--no-ext-diff", base, *spec) or ""
+    path, old, new = "", 0, 0
+    for line in raw.splitlines():
+        if line.startswith("+++ "):
+            path = line[6:] if line.startswith("+++ b/") else ""
+        elif line.startswith("--- "):
+            continue
+        elif line.startswith("@@"):
+            m = re.match(r"@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@", line)
+            old, new = (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+        elif path and line.startswith("+"):
+            out.append((path, "+", new, line[1:]))
+            new += 1
+        elif path and line.startswith("-"):
+            out.append((path, "-", old, line[1:]))
+            old += 1
+    for rel in _untracked(paths):
+        try:
+            text = (ROOT / rel).read_text()
+        except (OSError, UnicodeDecodeError):
+            continue
+        out += [(rel, "+", i, t) for i, t in enumerate(text.splitlines(), 1)]
+    return out
 
 
 def _is_regen(summary: str, pkg: str, section: str) -> bool:
@@ -862,6 +923,14 @@ def newest_round(pkg: str, section: str) -> tuple[int, str, str | None, dict[str
             if git("merge-base", "--is-ancestor", m.group(0), sha) is not None:  # type: ignore[union-attr]
                 sha = m.group(0)  # type: ignore[union-attr]
     return n, _verdict(worst.get("Verdict")), sha, worst
+
+
+def review_base(pkg: str, section: str) -> str:
+    """The newest review round's `Commit:` when it is an ancestor of `HEAD`, else the empty tree."""
+    sha = newest_round(pkg, section)[2]
+    if sha and git("merge-base", "--is-ancestor", sha, "HEAD") is not None:
+        return sha
+    return EMPTY_TREE
 
 
 def _missing_letters(pkg: str, section: str) -> list[str]:
@@ -1604,6 +1673,137 @@ def surface_check(pkg: str) -> tuple[str, list[str]]:
     return ("FAIL" if fails else "PASS"), fails
 
 
+PROPERTY_DECORATORS = ("property", "cached_property", "setter", "getter", "deleter")
+
+
+def _is_test_file(rel: str) -> bool:
+    """True for a test file: a `tests` directory in its path, or a `test_*` / `*_test.py` name."""
+    parts = rel.split("/")
+    return "tests" in parts[:-1] or parts[-1].startswith("test_") or parts[-1].endswith("_test.py")
+
+
+def _py_files(top: Path, skip: tuple[str, ...] = ()) -> list[str]:
+    """Repo-relative paths of the non-test `.py` files under top, none under a path in skip."""
+    if not top.is_dir():
+        return []
+    out = []
+    for f in sorted(top.rglob("*.py")):
+        rel = _rel(f)
+        if not _is_test_file(rel) and not any(rel.startswith(s.rstrip("/") + "/") for s in skip):
+            out.append(rel)
+    return out
+
+
+def _parse(rel: str) -> ast.Module | None:
+    try:
+        return ast.parse((ROOT / rel).read_text())
+    except (OSError, SyntaxError, UnicodeDecodeError, ValueError):
+        return None
+
+
+def _statements(fn: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
+    """The statements inside fn, nested ones included, its leading docstring not counted."""
+    n = sum(1 for node in ast.walk(fn) if isinstance(node, ast.stmt)) - 1
+    first = fn.body[0] if fn.body else None
+    if isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant) and isinstance(first.value.value, str):
+        n -= 1
+    return n
+
+
+def _is_property(fn: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    for d in fn.decorator_list:
+        if (isinstance(d, ast.Name) and d.id in PROPERTY_DECORATORS) or (
+                isinstance(d, ast.Attribute) and d.attr in PROPERTY_DECORATORS):
+            return True
+    return False
+
+
+def _definitions(tree: ast.Module) -> list[tuple[ast.FunctionDef | ast.AsyncFunctionDef, ast.AST]]:
+    """(function, its nearest enclosing module, class or function) for every def in tree."""
+    out = []
+    stack: list[tuple[ast.AST, ast.AST]] = [(tree, tree)]
+    while stack:
+        node, scope = stack.pop()
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                out.append((child, scope))
+                stack.append((child, child))
+            elif isinstance(child, ast.ClassDef):
+                stack.append((child, child))
+            else:
+                stack.append((child, scope))
+    return out
+
+
+def _loads(tree: ast.AST, name: str, attribute: bool) -> list[ast.AST]:
+    """Every load of name in tree: `ast.Attribute` nodes whose attr it is, or `ast.Name` nodes."""
+    if attribute:
+        return [n for n in ast.walk(tree) if isinstance(n, ast.Attribute) and n.attr == name
+                and isinstance(n.ctx, ast.Load)]
+    return [n for n in ast.walk(tree) if isinstance(n, ast.Name) and n.id == name and isinstance(n.ctx, ast.Load)]
+
+
+def _imported_as(tree: ast.Module, name: str) -> list[str]:
+    """The names a `from … import name` in tree binds it to."""
+    return [a.asname or a.name for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)
+            for a in n.names if a.name == name]
+
+
+def _references(fn: ast.FunctionDef | ast.AsyncFunctionDef, scope: ast.AST, rel: str,
+                trees: dict[str, ast.Module]) -> list[ast.AST]:
+    """Every reference to fn's name the shape check counts, by the note's rules: by name, never
+    resolved, so a second caller it cannot place still counts."""
+    name = fn.name
+    if isinstance(scope, ast.ClassDef):
+        return [n for tree in trees.values() for n in _loads(tree, name, attribute=True)]
+    if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        return _loads(scope, name, attribute=False)
+    refs = _loads(trees[rel], name, attribute=False)
+    for other, tree in trees.items():
+        if other != rel:
+            refs += [n for bound in _imported_as(tree, name) for n in _loads(tree, bound, attribute=False)]
+        refs += _loads(tree, name, attribute=True)
+    return refs
+
+
+def shape_check(pkg: str, section: str) -> list[str]:
+    """The section's shape check: a `FAIL shape: …` line per trivial single-use helper whose
+    `def` line was added since `review_base`, sorted by file then line; else one `PASS shape`."""
+    p = _paths(pkg, section)
+    code: list[str] = p["code"]  # type: ignore[assignment]
+    spath, nested = code[0], [c.removeprefix(":(exclude)") for c in code[1:]]
+    rows = sections(pkg)
+    surface_row = next((r for r in rows if r["section"] == "surface"), None)
+    top = ROOT / (surface_row["path"] if surface_row else _rel(package_root(pkg) / "src" / pkg))
+    judged = _py_files(ROOT / spath, tuple(nested))
+    trees = {rel: t for rel in dict.fromkeys([*_py_files(top), *judged]) if (t := _parse(rel)) is not None}
+    added = {(path, n) for path, sign, n, _ in diff_lines(review_base(pkg, section), code) if sign == "+"}
+    classes: dict[str, int] = {}
+    for tree in trees.values():
+        for fn, scope in _definitions(tree):
+            if isinstance(scope, ast.ClassDef):
+                classes[fn.name] = classes.get(fn.name, 0) + 1
+    calls = {id(n.func) for tree in trees.values() for n in ast.walk(tree) if isinstance(n, ast.Call)}
+    fails: list[tuple[str, int, str]] = []
+    for rel in judged:
+        if rel not in trees:
+            continue
+        for fn, scope in _definitions(trees[rel]):
+            name = fn.name
+            if not name.startswith("_") or (name.startswith("__") and name.endswith("__")):
+                continue
+            if (rel, fn.lineno) not in added or _statements(fn) > 3 or _is_property(fn):
+                continue
+            if isinstance(scope, ast.ClassDef) and classes.get(name, 0) > 1:
+                continue
+            refs = _references(fn, scope, rel, trees)
+            if len(refs) == 1 and id(refs[0]) in calls:
+                fails.append((rel, fn.lineno, name))
+    if not fails:
+        return [f"PASS shape {pkg}/{section}"]
+    return [f"FAIL shape: {rel}:{n} trivial-helper {name}" for rel, n, name in sorted(fails)]
+
+
 def repo_report() -> list[str]:
     """The repo-wide gap list, six groups, for the documenter's Known gaps."""
     pk, secs, specs, chg = [], [], [], []
@@ -1782,6 +1982,7 @@ def main() -> int:
     argv = sys.argv[1:]
     has_rounds, rounds_target = _flag_value(argv, "--rounds")
     has_surface, surface_pkg = _flag_value(argv, "--surface")
+    has_shape, shape_pkg = _flag_value(argv, "--shape")
     has_section, section_name = _flag_value(argv, "--section")
     has_gate, gate_pkg = _flag_value(argv, "--run-gate")
     has_inputs, inputs_target = _flag_value(argv, "--inputs")
@@ -1810,9 +2011,19 @@ def main() -> int:
         for f in fails:
             print(f"  - {f}")
         code |= 1 if fails else 0
-    if has_section and not has_surface:
-        print("--section needs --surface <pkg>")
+    if has_section and not has_surface and not has_shape:
+        print("--section needs --surface <pkg> or --shape <pkg>")
         return 2
+    if has_shape:
+        if not shape_pkg or not section_name:
+            print("--shape needs a package and --section a section: status.py --shape <pkg> --section <s>")
+            return 2
+        if _row(shape_pkg, section_name) is None:
+            print(f"no section {section_name} in {_rel(contract_path(shape_pkg))}")
+            return 2
+        lines = shape_check(shape_pkg, section_name)
+        print("\n".join(lines))
+        code |= 1 if any(ln.startswith("FAIL") for ln in lines) else 0
     if has_surface and has_section:
         if not surface_pkg or not section_name:
             print("--surface needs a package and --section a section: status.py --surface <pkg> --section <s>")
@@ -1867,7 +2078,7 @@ def main() -> int:
         needed = scaffold_needed(scaffold_pkg)
         print(f"scaffold: needed ({', '.join(needed)})" if needed else "scaffold: done")
         code |= 1 if needed else 0
-    if has_rounds or has_gate or has_surface or has_repo or has_inputs or has_scaffold or has_fields:
+    if has_rounds or has_gate or has_surface or has_shape or has_repo or has_inputs or has_scaffold or has_fields:
         return code
     if not DOCS.exists():
         print("no docs/ directory here — run from the repo root")

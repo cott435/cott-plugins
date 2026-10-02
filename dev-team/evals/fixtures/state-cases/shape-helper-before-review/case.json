@@ -1,0 +1,49 @@
+{
+  "note": "--shape (2.5 phase 2): the helper is committed, then a round-1 pair reviews it; the review's Commit: is the base",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "files": {
+        "packages/data/src/data/ingest/helper.py": "\"\"\"Rows.\"\"\"\n\n\ndef load_rows(path):\n    \"\"\"Load rows.\"\"\"\n    return _strip(path)\n\n\ndef _strip(path):\n    \"\"\"Strip the path.\"\"\"\n    return str(path).strip()\n"
+      },
+      "message": "data/ingest: helper"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 1,
+      "reports": {
+        "a": "approve",
+        "b": "approve"
+      }
+    }
+  ],
+  "args": [
+    "--shape",
+    "data",
+    "--section",
+    "ingest"
+  ],
+  "expect": {
+    "contains": [
+      "PASS shape data/ingest"
+    ],
+    "absent": [
+      "FAIL shape"
+    ]
+  }
+}

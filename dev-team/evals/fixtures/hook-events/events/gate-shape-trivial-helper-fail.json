@@ -1,0 +1,39 @@
+{
+  "script": "gate",
+  "repo": "built",
+  "setup": {
+    "transcript": "Section: data/ingest\nDesign: docs/packages/data/design/ingest.md\nRun: run-package data",
+    "files": {
+      "packages/data/src/data/ingest/helper.py": "\"\"\"Rows.\"\"\"\n\n\ndef load_rows(path):\n    \"\"\"Load rows.\"\"\"\n    return _strip(path)\n\n\ndef _strip(path):\n    \"\"\"Strip the path.\"\"\"\n    return str(path).strip()\n"
+    }
+  },
+  "event": {
+    "session_id": "9b1f0c52-3d4e-4a7b-8c21-5e6f7a8b9c0d",
+    "transcript_path": "{cwd}/../transcript.jsonl",
+    "cwd": "{cwd}",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false,
+    "agent_id": "a3f09c2e71b8d4e65",
+    "agent_type": "dev-team:implementer",
+    "agent_transcript_path": "{cwd}/../subagents/agent-a3f09c2e71b8d4e65.jsonl",
+    "last_assistant_message": "Result: done\n…",
+    "background_tasks": [],
+    "effort": "high",
+    "prompt_id": "p-1",
+    "scratchpad_dir": "{cwd}/../scratch",
+    "session_crons": []
+  },
+  "expect": {
+    "exit": 2,
+    "stderr_contains": [
+      "FAIL shape: packages/data/src/data/ingest/helper.py:9 trivial-helper _strip",
+      "A `FAIL shape` line names a definition this run added"
+    ],
+    "gate_contains": [
+      "FAIL shape: packages/data/src/data/ingest/helper.py:9 trivial-helper _strip",
+      "result: not done (attempt 1 of 3)"
+    ],
+    "counter": 1
+  }
+}
