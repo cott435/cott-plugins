@@ -33,7 +33,7 @@ data = { workspace = true }
 analysis = { workspace = true }
 
 [dependency-groups]
-dev = ["pytest", "pytest-mock", "ruff", "pylint", "import-linter", "mkdocs-material", "mkdocstrings[python]"]
+dev = ["pytest", "pytest-mock", "ruff>=0.16.0", "pylint", "import-linter", "mkdocs-material", "mkdocstrings[python]"]
 
 [tool.pytest.ini_options]
 # every package ships its own `tests` tree, so two of them collide on module name

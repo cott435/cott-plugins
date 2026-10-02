@@ -105,7 +105,7 @@ Rules:
 | Module (lines) | 400 | 1000 | pylint `C0302` |
 | Function/method (statements) | 30 | 50 | ruff `PLR0915` |
 | Cyclomatic complexity | 8 | 10 | ruff `C901` |
-| Positional parameters | 4 | 5 | ruff `PLR0913` |
+| Positional parameters (keyword-only ones are free) | 4 | 5 | ruff `PLR0917` |
 | Class (lines) | 200 | 400 | review |
 | Public methods per class | 12 | 20 | pylint `R0904` |
 | Modules per package directory (excl. `__init__.py`, `configs.py`, `README.md`) | 8 | 12 | review |
@@ -115,6 +115,12 @@ statement limits match the linter defaults, so tooling rather than opinion decid
 modules-per-directory figure is this toolbox's own, sized so a directory listing fits on one
 screen. The soft statement limit is also the signal `python-style-guide` "Function shape"
 uses: it says look for a seam, not cut here.
+
+**A limit is met with a seam, never with a dodge.** A function past a limit is split where
+`python-style-guide` "Function shape" says a split buys something. A parameter past the
+positional cap becomes keyword-only (after `*`), which the cap does not count. A `**options`
+bag, a tuple packed to carry two parameters as one, and a helper that only moves three
+statements out of sight all pass the linter and cost the reader more than the limit saved.
 
 Who uses these, and how:
 

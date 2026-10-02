@@ -185,6 +185,12 @@ forbid:
     near: 120
     unless: ['--serial']
     files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/flow.md', 'site/workflows/*.md']
+  - name: no prompt names the argument-count rule the lint block dropped
+    # 2.5 caps positional parameters (PLR0917, max-positional-args). PLR0913 counted
+    # keyword-only ones too, which is what pushed implementers into options bags. A prompt
+    # that still names the old rule sends an agent to a check that no longer runs.
+    pattern: 'PLR0913|\bmax-args\b'
+    files: ['agents/*.md', 'skills/**/*.md', 'pyproject-lint-config.toml']
   - name: nothing counts on a hand-back after the first
     # With SubagentHandback a caller receives an agent's first report and nothing after it
     # (plugin-anatomy, agents.md, What reaches its caller). An agent told to amend its report,

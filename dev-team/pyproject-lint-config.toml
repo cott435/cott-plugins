@@ -8,6 +8,10 @@
 
 [tool.ruff]
 line-length = 88
+# PLR0917 (below) is preview-only before this version: an older ruff prints a warning, skips
+# the rule and exits 0, so a repo would lose its argument cap without anyone noticing. With
+# this line an older ruff refuses to run and says why.
+required-version = ">=0.16.0"
 # docs/ is planning documents and researcher probe scripts, never package source. ruff 0.16
 # formats Python blocks inside Markdown, and no run may edit a design to satisfy a formatter.
 # .claude/ holds project skills, whose reference code is extracted from an old repo as it was;
@@ -15,24 +19,24 @@ line-length = 88
 extend-exclude = ["docs", ".claude"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "C901", "PLR0913", "PLR0915", "S", "D"]
+select = ["E", "F", "I", "B", "C901", "PLR0917", "PLR0915", "S", "D"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"        # python-style-guide: docstrings on everything, Google style
 
 [tool.ruff.lint.per-file-ignores]
 # Asserts and undocumented tests are fine. So is a test or fixture with many arguments: pytest
-# injects one per fixture and one per parametrize name, so PLR0913's cap (project-structure's
+# injects one per fixture and one per parametrize name, so PLR0917's cap (project-structure's
 # limit on a function's design) would force contorted fixtures, not better code.
-"tests/**" = ["S101", "D", "PLR0913"]
-"**/tests/**" = ["S101", "D", "PLR0913"]
+"tests/**" = ["S101", "D", "PLR0917"]
+"**/tests/**" = ["S101", "D", "PLR0917"]
 # Intent tests are written from the design before the code exists, so a design that states
 # "raises on a bad row" without naming the type is asserted as written. B017/PT011 would make
 # that an error, and the only fixes available to the tester are an inline `# noqa` — which
 # docs/constraints.md §Guarded grades CRITICAL — or an assertion the design does not support.
 # The rule is kept for src, where the exception type is a choice someone made.
-"tests/intent/**" = ["S101", "D", "B017", "PT011", "PLR0913"]
-"**/tests/intent/**" = ["S101", "D", "B017", "PT011", "PLR0913"]
+"tests/intent/**" = ["S101", "D", "B017", "PT011", "PLR0917"]
+"**/tests/intent/**" = ["S101", "D", "B017", "PT011", "PLR0917"]
 "scripts/**" = ["D"]
 "**/scripts/**" = ["D"]
 # project-structure: every nested `__init__.py` is empty, so D104 (a docstring in every
@@ -44,7 +48,7 @@ convention = "google"        # python-style-guide: docstrings on everything, Goo
 max-complexity = 10          # project-structure §2 hard limit
 
 [tool.ruff.lint.pylint]
-max-args = 5                 # project-structure §2 hard limit
+max-positional-args = 5      # project-structure §2 hard limit; keyword-only parameters are free
 max-statements = 50          # project-structure §2 hard limit
 
 [tool.pylint.format]

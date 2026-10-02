@@ -155,6 +155,15 @@ keeps the arrow line. The command builds the path from two strings, so only the 
 the command echoed in the FAIL line, can hold it. No earlier case removed or rewrote an assert,
 so none changed its expectation.
 
+**The 2.5 lint floor** (`site/notes/2.5-readability-01-lint-floor-and-cap.md`). The plugin's
+lint block requires ruff 0.16.0 or later, so both suites run with such a ruff first on PATH; the
+plan's shim is `evals/workspace/bin/ruff`. `fmt-positional-cap` (six positional parameters:
+`PLR0917`) and `fmt-keyword-only-free` (three positional, four keyword-only: clean) pin the
+cap; `fmt-no-config` now lacks both the old and the new code. Six cases whose planted files
+tripped a rule ruff's defaults gained were repaired without changing what they test:
+`fmt-repo-config`, `gate-diff-before-review`, `gate-guarded-decision-constant`,
+`gate-guarded-exception`, `gate-report-fail`, `gate-xfail-wrapped-pass`.
+
 **The 2.2 layout here.** `build.py` still writes the section's ledger at the 2.0 path,
 `docs/deviations/data/ingest.md`, so the tolerated case also proves the gate reads the old
 location; the new one, `docs/packages/data/deviations/ingest.md`, is written by
@@ -165,4 +174,4 @@ the per-section `.dev-team/stop/<pkg>/<section>` (or `.dev-team/stop/scaffold`);
 writes the 2.1 single marker. Decision stubs and `Applied:` lines live in
 `docs/packages/data/decisions/<section>.md`, the `sync-*` cases' inbox.
 
-Needs `ruff` on PATH and `pytest` importable by `python3`.
+Needs ruff 0.16.0 or later on PATH and `pytest` importable by `python3`.

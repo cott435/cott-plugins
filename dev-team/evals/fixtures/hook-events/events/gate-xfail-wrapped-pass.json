@@ -4,7 +4,7 @@
   "setup": {
     "transcript": "Section: data/ingest\nDesign: docs/packages/data/design/ingest.md\nRun: run-package data",
     "files": {
-      "packages/data/tests/unit/ingest/test_open_unit.py": "\"\"\"Unit tests for the open decision.\"\"\"\n\nfrom pathlib import Path\n\nimport pytest\n\nfrom data.ingest.loader import load_trades\n\n\n@pytest.mark.xfail(\n    strict=False,\n    reason=\"D3 open\",\n)\ndef test_zero_size_row_dropped(tmp_path: Path) -> None:\n    \"\"\"A zero-size row is dropped.\"\"\"\n    csv_file = tmp_path / \"trades.csv\"\n    csv_file.write_text(\"ts,symbol,price,size,side\\nT,AAA,49.74,0,sell\\n\")\n    assert load_trades(csv_file) == []\n"
+      "packages/data/tests/unit/ingest/test_open_unit.py": "\"\"\"Unit tests for the open decision.\"\"\"\n\nfrom pathlib import Path\n\nimport pytest\nfrom data.ingest.loader import load_trades\n\n\n@pytest.mark.xfail(\n    strict=False,\n    reason=\"D3 open\",\n)\ndef test_zero_size_row_dropped(tmp_path: Path) -> None:\n    \"\"\"A zero-size row is dropped.\"\"\"\n    csv_file = tmp_path / \"trades.csv\"\n    csv_file.write_text(\"ts,symbol,price,size,side\\nT,AAA,49.74,0,sell\\n\")\n    assert load_trades(csv_file) == []\n"
     }
   },
   "event": {
