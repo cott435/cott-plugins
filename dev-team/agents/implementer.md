@@ -72,7 +72,9 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
 7. **Source probes** — `docs/sources/<source>.md` per entry in the row's `source`. *May be
    `none`.*
 8. **Intent tests** — `<package root>/tests/intent/<section>/`. *May be `none`.*
-9. **Review** — the newest round's report paths, comma-separated. *May be `none`.*
+9. **Review** — the newest round's report paths, comma-separated, and the package's paths
+   report (`docs/packages/<pkg>/reviews/paths/…-p.md`) when it names this section. *May be
+   `none`.*
 10. **Round** — `1` on the first build; `n+1` in FIX `n`.
 11. **Change file** — `docs/packages/<pkg>/changes/<slug>.md`
     (or a pre-2.2 `docs/changes/<slug>.md`) when an open change file names the section. *May be `none`.*
@@ -437,8 +439,19 @@ when the gate runs. You build no section and write nothing under `docs/`.
    **WARNING** that names a file of this section is part of your task; a finding that is a bug
    gets `test-driven-development`'s Prove-It pattern: write the test, run it, see it fail, then
    fix — in that order. A test written after the fix and green on its first run has never been
-   seen failing and proves nothing (E11); say in your return which tests you saw red. A
-   `rejected` deviation entry for your section means build the design as written, or, when it
+   seen failing and proves nothing (E11); say in your return which tests you saw red.
+
+   A report under `reviews/paths/` is the package's paths review. Each of its **CRITICAL**
+   lines starts `<section>: P<k>`, and only the lines that name your section are yours; a
+   line naming another section is that section's. Read
+   `${CLAUDE_PLUGIN_ROOT}/skills/python-style-guide/references/pipelines.md` with the Read
+   tool before fixing one, and fix the frame the line names, inside your section. When the fix
+   is to move a step into another section, or to change what a sibling's entry point takes,
+   that is a `spec-change:contract` (**Deviations and spec-changes**) with the paths line
+   quoted whole, as it stands in the report, as `Found:`. You never edit the other section. A paths finding is about shape, not behaviour:
+   it owes no test seen red, and the section's suites pass after the fix as they did before.
+
+   A `rejected` deviation entry for your section means build the design as written, or, when it
    cannot be built as written, a `spec-change` with the reviewer's reason answered. Then read
    `docs/followups.md` lines for `<pkg>/<section>` and take any you can; the file is the
    backlog, not yours to edit, so list what you took in your return. Findings addressed to the
@@ -446,8 +459,11 @@ when the gate runs. You build no section and write nothing under `docs/`.
 
 8. **Build.** Work in the order the design's **Workflow / pipeline** lists. Small chunks: after
    each coherent unit, run the relevant tests — a save point, not a commit; the run commits
-   once, at step 13. Follow `python-style-guide` — docstrings on everything, phases
-   commented, helpers extracted only when the jump buys something.
+   once, at step 13. Follow `python-style-guide` — docstrings on everything, each summary
+   written from the caller's side; phases commented; helpers extracted only when the jump buys
+   something; every call on a main path made by name. An entry point that runs the section's
+   phases in order is an orchestrator: its shape is `references/pipelines.md` (**Steps in
+   order**, **Jump by name**), read with the Read tool before you write it.
 
 9. **Test.** Write every test the design's **Tests** section lists under
    `tests/unit/<section>/` — integration and end-to-end cases too, whatever path the design
@@ -466,10 +482,16 @@ when the gate runs. You build no section and write nothing under `docs/`.
    or an intent test — still failing after two fix attempts: invoke
    `debugging-and-error-recovery` with the Skill tool before a third.
 
-10. **Size check.** Against `project-structure` §2. Past a hard limit, split before you finish
-    — invoke `python-implementation` for the procedure, since a promotion to a package changes
-    internal call sites and is not a local edit. Note anything past a soft limit in the
-    README's **Implementation notes**; the return has no line for it.
+10. **Size check.** Against `project-structure` §2. Past a hard limit, split before you
+    finish, and only at a seam `python-style-guide` "Function shape" names: a reused phase,
+    I/O apart from a transformation, a wrapper around the logic, a phase that needs its own
+    docstring. Never answer a limit with a dodge: no `**options` bag, no tuple packed to carry
+    two parameters as one, no helper of three statements with one caller. A parameter past the
+    positional cap becomes keyword-only (after `*`), which the cap does not count. The stop
+    gate fails a trivial single-use helper and an options bag your run added. A promotion to a
+    package changes internal call sites and is not a local edit: invoke
+    `python-implementation` for the procedure. Note anything past a soft limit in the README's
+    **Implementation notes**; the return has no line for it.
 
 11. **Record what you applied.** For each `D<n>` you implemented this run — including
     entries scoped `repo` or to your whole package — append to your inbox
@@ -623,8 +645,9 @@ provides; decisions scoped `<pkg>` or `repo`.
 2. `src/<pkg>/pipelines/` — one module per pipeline in the design, or a single `pipelines.py`
    if they fit one module: the stated signature, the steps as calls to section entry points in
    order, the stated failure behavior, config read through `configs.py`. Follow **Function
-   shape** in the style guide: a pipeline reads as its steps, each with a one-line comment; the
-   steps themselves live in the sections.
+   shape** in the style guide and `references/pipelines.md`, read with the Read tool before
+   the first pipeline: a pipeline reads as its steps, each a direct call to a section entry
+   point under a one-line comment; the steps themselves live in the sections.
 3. `src/<pkg>/cli.py` (or `cli/` when the design lists many commands) — one function per
    CLI command, using the CLI library the style guide prefers (`cyclopts`): the function's
    parameters are the command's arguments, typed with defaults, and its docstring's `Args:`
@@ -784,6 +807,12 @@ and you cannot stop until it is green:
   --section <section>` — each row of **Entry points and interfaces** names exactly one
   backticked identifier, and each `Public: yes` name is one the contract's **Public surface
   (intent)** names;
+- your section's shape, `status.py --shape <pkg> --section <section>`: a private helper your
+  run added that has one call site in the package and three statements or fewer is
+  `FAIL shape: <file>:<line> trivial-helper <name>`, and a signature your run added that takes
+  `**name: Unpack[...]` is `FAIL shape: <file>:<line> options-bag <name>`. Inline the helper;
+  name the parameters keyword-only. `MEASURED shape` lines (indirect calls, entry-point depth)
+  are printed, never failed on;
 - a **Guarded** grep of what you added since the last review: an added `# noqa`,
   `# type: ignore`, `# pragma: no cover`, an `@pytest.mark.skip`, or an `xfail(` call naming
   no `D<n>` anywhere in it, read to its closing bracket (a runtime `pytest.skip` the design

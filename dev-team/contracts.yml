@@ -392,6 +392,10 @@ headings:
     readers:
       - file: agents/reviewer.md
         cites: ['Steps in order', 'Jump by name', 'Named inputs and results', 'Wrapping in view']
+      - file: agents/designer.md
+        cites: ['Steps in order', 'Jump by name', 'Wrapping in view']
+      - file: agents/implementer.md
+        cites: ['Steps in order', 'Jump by name']
 
   - name: docs/constraints.md headings its readers run are ones the template defines
     # set-constraints writes the file from its template; four readers act on it by heading —
