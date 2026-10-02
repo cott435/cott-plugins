@@ -1,0 +1,53 @@
+# git diff 5a1c9e3..HEAD -- packages/data
+# HEAD is 3c9f1a7 (review data/surface: r2-s: approve (0 critical)); the commits in range that touch code are c41d7a9 — data/ingest: fix 1 (quarantine's docstring says what it changes) — and e7b2d40 — data/surface: fix 1 (run_load calls its steps by name)
+--- a/packages/data/src/data/ingest/reader.py
++++ b/packages/data/src/data/ingest/reader.py
+@@ -32,6 +32,6 @@
+ 
+ 
+ def quarantine(source: str) -> None:
+-    """Helper for the except branch of read_trades: joins the suffix and calls copy."""
++    """Copy the file at source to `<source>.bad` beside it, replacing an earlier copy."""
+     target = source + ".bad"
+     shutil.copy(source, target)
+--- a/packages/data/src/data/pipelines/load.py
++++ b/packages/data/src/data/pipelines/load.py
+@@ -2,30 +2,21 @@
+ 
+ from __future__ import annotations
+ 
+-from collections.abc import Callable
+-
+-from loguru import logger
+-
+ from data.ingest.reader import read_trades
+ from data.store.writer import write_trades
+ 
+-Trades = list[dict[str, str]]
+ 
+-
+-def guarded(step: Callable[[], Trades]) -> Trades:
+-    """Run step and return its result, logging `data.load.failed` when it raises."""
+-    try:
+-        return step()
+-    except Exception:
+-        logger.exception("data.load.failed")
+-        raise
+-
+-
+ def run_load(source: str, target: str) -> int:
+     """Load the trades in the CSV at source into the SQLite database at target.
+ 
++    Reads the file at source with `read_trades` and inserts its trades into the
++    `trades` table of the database at target with `write_trades`.
++
+     Returns:
+         The number of trades inserted.
+     """
+-    trades = guarded(lambda: read_trades(source))
+-    return write_trades(target, trades)
++    # Read the vendor's file into trades, oldest first.
++    trades = read_trades(source)
++    # Insert them into the trades table, in one transaction.
++    inserted = write_trades(target, trades=trades)
++    return inserted

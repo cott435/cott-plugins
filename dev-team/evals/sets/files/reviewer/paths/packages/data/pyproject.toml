@@ -1,0 +1,15 @@
+[project]
+name = "data"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["loguru>=0.7"]
+
+[project.scripts]
+data-load = "data.cli:load"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/data"]
