@@ -355,6 +355,39 @@ def test_user_creation():
     assert isinstance(user.created_at, datetime)
 ```
 
+## Summaries from the caller's side
+
+The summary line says what changes outside the function when it is called, including what it
+delegates. A caller reads it to learn what will happen.
+
+```python
+# No: describes the inside.
+def _load(dates: list[date], conn: Connection) -> None:
+    """Log each date."""
+
+# Yes: what is written, and where.
+def _load(dates: list[date], conn: Connection) -> None:
+    """Record one row per date in the `load_ledger` table."""
+```
+
+```python
+# No: hides the call out that the function delegates.
+def run_build(*, start: date, end: date, account: str) -> BuildSummary:
+    """Run the build steps."""
+
+# Yes
+def run_build(*, start: date, end: date, account: str) -> BuildSummary:
+    """Download, clean and store the bars for one account; record the run in `runs`."""
+```
+
+```python
+# A function with no effect outside itself says what it returns.
+def trading_days(start: date, end: date) -> list[date]:
+    """Return the exchange's trading days from start to end, both included."""
+```
+
+`log` in a summary means the logger. A ledger or audit row is recorded, not logged.
+
 ## Docstring Sections
 
 Common sections in Google-style docstrings:
