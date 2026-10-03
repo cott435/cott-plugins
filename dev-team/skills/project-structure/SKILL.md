@@ -109,7 +109,7 @@ Rules:
 | Class (lines) | 200 | 400 | review |
 | Public methods per class | 12 | 20 | pylint `R0904` |
 | Modules per package directory (excl. `__init__.py`, `configs.py`, `README.md`) | 8 | 12 | review |
-| Main-path depth (frames from a command function to its first external effect) | 6 | 8 | the paths review |
+| Main-path depth (frames from a command function to its first external effect) | 6 | 8 | the paths review, against each command's **Call paths** budget |
 
 **Soft means plan the split; hard means split before finishing the task.** The line and
 statement limits match the linter defaults, so tooling rather than opinion decides. The 8/12
@@ -133,8 +133,9 @@ Who uses these, and how:
   return.
 - **Reviewer** — anything past a soft limit without a note, or past a hard limit at all, is a
   finding.
-- **Paths reviewer** — a command past the hard **Main-path depth** is a CRITICAL; past the soft
-  one, a WARNING. The count is `status.py --paths`' `depth to first effect`.
+- **Paths reviewer** — a command past its **Call paths** budget (the hard **Main-path depth**
+  without one) is a CRITICAL; past the soft limit, a WARNING. The count is `status.py
+  --paths`' `depth to first effect`.
 
 ## 3. Configuration placement
 

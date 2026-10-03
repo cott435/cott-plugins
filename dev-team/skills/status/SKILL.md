@@ -1,7 +1,7 @@
 ---
 name: status
 description: Print where every package and section stands — one state per section (PROBE, DESIGN, TEST, IMPLEMENT, REVIEW, FIX n, PLAN, DONE, BLOCKED), the ready set, whether the package shipped, and the exact next command — derived from docs/ and the code every time, never from a status file. Use whenever you have lost track, before planning the next package, or to see why run-package stopped.
-argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>|<pkg>/paths] [--surface <pkg>] [--shape <pkg> --section <s>] [--paths <pkg>] [--repo] [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]"
+argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>|<pkg>/paths] [--surface <pkg>] [--shape <pkg> --section <s>] [--paths <pkg> [--against-contract]] [--repo] [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]"
 disable-model-invocation: true
 ---
 
@@ -71,7 +71,15 @@ statically through the package's own code: a frame per line, `[indirect]` on a f
 through a lambda, a closure or a mapping, `[effect: <callee>]` on a call that leaves the
 package for a third-party module or for I/O, `[unresolved]` on a call the script could not
 follow, then `depth to first effect`, `deepest effect` and `indirect frames`. The paths
-reviewer reads it. With no commands it prints `paths: no commands`.
+reviewer reads it. With no commands it prints `paths: no commands`. With `--against-contract`
+each block is followed by the contract's **Call paths** entry for the command: `contract:
+<command> (budget <n>)`, then per path its kind, each contract frame `match` (with the built
+frame) or `missing`, each built frame between two matched ones `extra`, the effect `reached`,
+`reached through <k> extra frame(s)` or `not reached`, and a `summary: <k> match, <e> extra,
+<m> missing; depth <d> of budget <n>` line (`past budget` when deeper). A contract with no
+entry for the command prints `contract: no entry for <command>`, one with no heading
+`contract: no Call paths heading`, and the block ends there. `--against-contract` without
+`--paths` exits 2.
 
 `--repo` prints the repo-wide gap list the documenter copies under **Known gaps**: `packages:`,
 `sections:` (every section not DONE), `decisions:` (every `D<n>` open or deferred),

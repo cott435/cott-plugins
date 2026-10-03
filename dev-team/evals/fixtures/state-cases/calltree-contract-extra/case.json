@@ -1,0 +1,29 @@
+{
+  "note": "2.6: a private _read between run_load and read_trades is a frame the contract does not list: extra",
+  "steps": [
+    {
+      "do": "base",
+      "call_paths": true
+    },
+    {
+      "do": "commands",
+      "files": {
+        "packages/data/src/data/pipelines/load.py": "\"\"\"The load pipeline.\"\"\"\n\nfrom data.ingest.reader import read_trades\n\n\ndef run_load(path: str) -> int:\n    \"\"\"Read the trades at path and return their count.\"\"\"\n    rows = _read(path)\n    return len(rows)\n\n\ndef _read(path: str) -> list[dict[str, str]]:\n    \"\"\"Read the trades at path.\"\"\"\n    return read_trades(path)\n"
+      }
+    }
+  ],
+  "args": [
+    "--paths",
+    "data",
+    "--against-contract"
+  ],
+  "expect": {
+    "exit": 0,
+    "matches": [
+      "^    -\\s+extra  _read \\(packages/data/src/data/pipelines/load\\.py:\\d+\\)$"
+    ],
+    "contains": [
+      "summary: 3 match, 1 extra, 0 missing"
+    ]
+  }
+}

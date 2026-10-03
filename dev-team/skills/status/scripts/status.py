@@ -3,7 +3,7 @@
 
 Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>|<pkg>/paths] [--surface <pkg> [--section <s>]] [--repo]
                           [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]
-                          [--shape <pkg> --section <s>] [--paths <pkg>]
+                          [--shape <pkg> --section <s>] [--paths <pkg> [--against-contract]]
 
 A section is in exactly one state, decided in this order, first match wins:
 
@@ -210,6 +210,33 @@ function the module lacks prints `target not found in the package`, with no foot
 separated by a blank line; with no `[project.scripts]` table, an empty one, or no package
 `pyproject.toml`, the one line `paths: no commands`. Exit 0; 2 with no package, or with no
 `docs/packages/<pkg>/contract.md`.
+
+**Call paths.** `--paths <pkg> --against-contract` prints, after each command's block and its
+footer, the contract's **Call paths** entry for the command beside the tree. The first line is
+`contract: <command> (budget <n>)`, or `contract: no entry for <command>` when the heading
+has no entry for it, or `contract: no Call paths heading`; the last two end the block. Then,
+per path of the entry, its kind on a line of its own (`  <kind>:`), then one line per
+contract frame — `    <k> <owner>.<name>  match  <name> (<file>:<line>)` or `    <k>
+<owner>.<name>  missing` — with every tree frame between two matched frames printed as `    -
+<padding>  extra  <name> (<file>:<line>)` in tree order; then the effect line, `    effect
+<callee>  reached`, `reached through <k> extra frame(s)` (those frames printed `extra` above
+it) or `not reached`; then, once per command after its last path, `  summary: <k> match, <e>
+extra, <m> missing; depth <d> of budget <n>` (`past budget` when `d > n`; `depth none of
+budget <n>` when the block has no effect), the three counts counting the lines printed above
+it, so a frame on two paths counts once per path. The frame column (`<k> <owner>.<name>`, or
+`-` on an `extra` line) is padded to the entry's longest frame, then two spaces, then the
+word. A frame matches when its file's section (`section_for_path`; `cli` for `cli.py` or
+`cli/` and `pipelines` for `pipelines/` under the surface's path) is the frame's owner and its
+printed name is the frame's name after the owner. Matching walks the printed tree depth-first
+from the root, which must match frame 1, and never expands a `[seen]` or `[recursive]` frame;
+a later frame is looked for below the last matched one, so a `missing` frame leaves the search
+where it was. The effect is `reached` when an `[effect: …]` leaf is a direct child of the last
+matched frame, whatever its callee: the contract's effect is named, not matched. A command
+whose target is outside the package or not found has every frame `missing`. With no command
+the line after `paths: no commands` is `contract: no Call paths heading`, `contract: none (no
+commands)` when the heading says so, or `contract: entries for <command>, …, no command built`.
+Exit codes as for `--paths`; `--against-contract` without `--paths` prints `--against-contract
+needs --paths <pkg>` and exits 2.
 
 **Paths review.** The package block's `paths:` line, printed after `scaffold:` and before
 `shipped:` once every section row is DONE or a paths report exists, says where the package's
@@ -1842,6 +1869,38 @@ def has_call_paths(pkg: str) -> bool:
     return f.exists() and bool(_item(f.read_text(), "Call paths"))
 
 
+CALL_PATH_COMMAND = re.compile(r"^\s*- `(?P<cmd>[^`]+)` \(budget (?P<n>\d+)(?:, D\d+)?\)")
+
+
+def call_paths(pkg: str) -> dict[str, dict[str, object]] | None:
+    """The contract's Call paths: command -> {"budget": int, "paths": [{"kind", "frames", "effect"}]};
+    None without the heading, {} for `- none (no commands)`.
+
+    `frames` is `[(k, "<owner>.<name>"), …]` in the line's order; `effect` is the last backticked
+    token on the path line when no `<k> ` precedes it, else None.
+    """
+    if not has_call_paths(pkg):
+        return None
+    out: dict[str, dict[str, object]] = {}
+    current: dict[str, object] | None = None
+    for line in _item(contract_path(pkg).read_text(), "Call paths").splitlines():
+        m = CALL_PATH_COMMAND.match(line)
+        if m:
+            current = {"budget": int(m.group("n")), "paths": []}
+            out[m.group("cmd")] = current
+            continue
+        bullet = re.match(r"^\s+- (.*)$", line)
+        if current is None or not bullet:
+            continue
+        body = bullet.group(1)
+        tokens = list(re.finditer(r"`([^`]+)`", body))
+        last = tokens[-1] if tokens else None
+        effect = last.group(1) if last and not re.search(r"\d+ $", body[: last.start()]) else None
+        current["paths"].append({"kind": body.partition(":")[0].strip(),  # type: ignore[union-attr]
+                                 "frames": re.findall(r"(\d+) `([^`]+)`", body), "effect": effect})
+    return out
+
+
 def surface_names(pkg: str, section: str) -> tuple[str, list[str]]:
     """(PASS | FAIL | n/a, reasons): one section README's **Entry points and interfaces** rows,
     each name cell exactly one backticked identifier, and each `Public: yes` name one the
@@ -2530,29 +2589,46 @@ class _CallGraph:
                     stack.append(child)
         return seen
 
-    def tree(self, key: str, depth: int, indirect: bool, path: list[str], seen: set[str], out: list[str],
-             under: list[str] | tuple[str, ...] = ()) -> None:
-        """Print key's frame and, the first time it is met, its children; then the callables
-        handed to it at this call site."""
+    def node(self, key: str, indirect: bool, path: list[str], seen: set[str],
+             under: list[str] | tuple[str, ...] = ()) -> dict[str, object]:
+        """key's frame as the tree prints it: `{"fn", "mark", "children"}`, the children (frames
+        and `{"leaf", "effect"}` leaves) present only the first time key is met, then the
+        callables handed to it at this call site."""
         fn = self.fns[key]
         mark = " [indirect]" if indirect else ""
         if key in path:
             mark += " [recursive]"
         elif key in seen:
             mark += " [seen]"
-        out.append(f"{'  ' * depth}{fn.name} ({fn.module.rel}:{fn.line}){mark}")
+        children: list[dict[str, object]] = []
         expand = key not in path and key not in seen
         path.append(key)
         if expand:
             seen.add(key)
             for entry in self.entries(fn):
                 if "leaf" in entry:
-                    out.append(f"{'  ' * (depth + 1)}{entry['leaf']}")
+                    children.append({"leaf": entry["leaf"], "effect": entry["effect"]})
                 else:
-                    self.tree(entry["frame"], depth + 1, entry["indirect"], path, seen, out, entry["under"])
-        for child in under:
-            self.tree(child, depth + 1, True, path, seen, out)
+                    children.append(self.node(entry["frame"], entry["indirect"], path, seen, entry["under"]))
+        children += [self.node(child, True, path, seen) for child in under]
         path.pop()
+        return {"fn": fn, "mark": mark, "children": children}
+
+    def tree(self, root: str) -> list[str]:
+        """The printed tree below root, one line per frame and leaf, two spaces per level."""
+        out: list[str] = []
+
+        def walk(n: dict[str, object], depth: int) -> None:
+            if "leaf" in n:
+                out.append(f"{'  ' * depth}{n['leaf']}")
+                return
+            fn = n["fn"]
+            out.append(f"{'  ' * depth}{fn.name} ({fn.module.rel}:{fn.line}){n['mark']}")
+            for child in n["children"]:
+                walk(child, depth + 1)
+
+        walk(self.node(root, False, [], set()), 0)
+        return out
 
     def command(self, target: str) -> str | None:
         """The key of the function a `module:attr` script target names, None when it names none."""
@@ -2576,11 +2652,109 @@ def package_scripts(pkg: str) -> dict[str, str]:
         return {}
 
 
-def paths_report(pkg: str) -> list[str]:
-    """`--paths <pkg>`: one call tree per `[project.scripts]` command, or `paths: no commands`."""
+def _frame_owner(rel: str, pkg: str) -> str:
+    """`cli`, `pipelines`, or the section whose path holds rel."""
+    surface = _row(pkg, "surface")
+    top = (surface["path"] if surface else _rel(package_root(pkg) / "src" / pkg)).rstrip("/")
+    if rel == f"{top}/cli.py" or rel.startswith(f"{top}/cli/"):
+        return "cli"
+    if rel.startswith(f"{top}/pipelines/"):
+        return "pipelines"
+    found = section_for_path(Path(rel))
+    return found[1] if found else "surface"
+
+
+def against_contract(pkg: str, graph: _CallGraph, root: str | None, command: str) -> list[str]:
+    """The comparison lines for one command, per the docstring's **Call paths.** paragraph."""
+    entries = call_paths(pkg)
+    if entries is None:
+        return ["contract: no Call paths heading"]
+    entry = entries.get(command)
+    if entry is None:
+        return [f"contract: no entry for {command}"]
+    budget, paths = int(entry["budget"]), entry["paths"]  # type: ignore[arg-type]
+    tree = graph.node(root, False, [], set()) if root else None
+    width = max([len(f"{k} {frame}") for p in paths for k, frame in p["frames"]] + [1])  # type: ignore[index]
+
+    def where(n: dict[str, object]) -> str:
+        fn = n["fn"]
+        return f"{fn.name} ({fn.module.rel}:{fn.line})"  # type: ignore[attr-defined]
+
+    def agrees(n: dict[str, object], frame: str) -> bool:
+        owner, _, name = frame.partition(".")
+        fn = n["fn"]
+        return fn.name == name and _frame_owner(fn.module.rel, pkg) == owner  # type: ignore[attr-defined]
+
+    def extra(n: dict[str, object]) -> str:
+        return f"    {'-'.ljust(width)}  extra  {where(n)}"
+
+    def below(n: dict[str, object], test) -> list[dict[str, object]] | None:
+        """The tree path from n (excluded) down to the first node, depth-first, test accepts."""
+        for child in n["children"]:  # type: ignore[union-attr]
+            if test(child):
+                return [child]
+            if "fn" in child:
+                found = below(child, test)
+                if found:
+                    return [child, *found]
+        return None
+
+    lines = [f"contract: {command} (budget {budget})"]
+    counts = {"match": 0, "extra": 0, "missing": 0}
+    # Above the root sits an anchor whose one child is the root, so frame 1 is tried at the
+    # root only and a later frame is looked for below the last matched one.
+    top = {"children": [tree] if tree else []}
+    for p in paths:
+        lines.append(f"  {p['kind']}:")
+        anchor = top
+        for k, frame in p["frames"]:  # type: ignore[union-attr]
+            label = f"{k} {frame}".ljust(width)
+            if anchor is top:
+                hit = [tree] if tree and agrees(tree, frame) else None
+                hit = hit if hit or k == "1" else below(top, lambda n, f=frame: "fn" in n and agrees(n, f))
+            else:
+                hit = below(anchor, lambda n, f=frame: "fn" in n and agrees(n, f))
+            if not hit:
+                lines.append(f"    {label}  missing")
+                counts["missing"] += 1
+                continue
+            for n in hit[:-1]:
+                lines.append(extra(n))
+            counts["extra"] += len(hit) - 1
+            lines.append(f"    {label}  match  {where(hit[-1])}")
+            counts["match"] += 1
+            anchor = hit[-1]
+        effect = p["effect"] or "—"
+        if any(c.get("effect") for c in anchor["children"]):  # type: ignore[union-attr]
+            lines.append(f"    effect {effect}  reached")
+            continue
+        down = below(anchor, lambda n: bool(n.get("effect")))
+        if down:
+            lines += [extra(n) for n in down[:-1]]
+            counts["extra"] += len(down) - 1
+            lines.append(f"    effect {effect}  reached through {len(down) - 1} extra frame(s)")
+        else:
+            lines.append(f"    effect {effect}  not reached")
+    first = graph.effect_depths(root)[0] if root else None
+    depth = "depth none of" if first is None else f"depth {first} {'past' if first > budget else 'of'}"
+    lines.append(f"  summary: {counts['match']} match, {counts['extra']} extra, {counts['missing']} missing; "
+                 f"{depth} budget {budget}")
+    return lines
+
+
+def paths_report(pkg: str, against: bool = False) -> list[str]:
+    """`--paths <pkg>`: one call tree per `[project.scripts]` command, or `paths: no commands`;
+    with against, each followed by its comparison with the contract's **Call paths**."""
     scripts = package_scripts(pkg)
     if not scripts:
-        return ["paths: no commands"]
+        if not against:
+            return ["paths: no commands"]
+        entries = call_paths(pkg)
+        if entries is None:
+            return ["paths: no commands", "contract: no Call paths heading"]
+        listed = ", ".join(entries) if entries else ""
+        return ["paths: no commands", f"contract: entries for {listed}, no command built" if listed
+                else "contract: none (no commands)"]
     graph = _CallGraph(pkg)
     blocks = []
     for name, target in scripts.items():
@@ -2591,8 +2765,10 @@ def paths_report(pkg: str) -> list[str]:
         elif root is None:
             lines.append("target not found in the package")
         else:
-            graph.tree(root, 0, False, [], set(), lines)
+            lines += graph.tree(root)
             lines += graph.footer(root)
+        if against:
+            lines += against_contract(pkg, graph, root, name)
         blocks.append("\n".join(lines))
     return "\n\n".join(blocks).split("\n")
 
@@ -2808,10 +2984,14 @@ def main() -> int:
     has_scaffold, scaffold_pkg = _flag_value(argv, "--scaffold")
     has_fields, fields_target = _flag_value(argv, "--fields")
     has_repo = "--repo" in argv
-    argv = [a for a in argv if a != "--repo"]
+    has_against = "--against-contract" in argv
+    argv = [a for a in argv if a not in ("--repo", "--against-contract")]
     unknown = [a for a in argv if a.startswith("--")]
     if unknown:
         print(f"unknown flag: {' '.join(unknown)}")
+        return 2
+    if has_against and not has_paths:
+        print("--against-contract needs --paths <pkg>")
         return 2
     only = argv[0] if argv else None
     code = 0
@@ -2853,7 +3033,7 @@ def main() -> int:
         if not contract_path(paths_pkg).exists():
             print(f"{paths_pkg}: missing {_rel(contract_path(paths_pkg))}")
             return 2
-        print("\n".join(paths_report(paths_pkg)))
+        print("\n".join(paths_report(paths_pkg, has_against)))
     if has_surface and has_section:
         if not surface_pkg or not section_name:
             print("--surface needs a package and --section a section: status.py --surface <pkg> --section <s>")

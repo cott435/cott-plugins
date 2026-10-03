@@ -51,9 +51,11 @@ Then these headings, in order; an empty one is written with `- none`:
    record. An `a` or `s` reviewer also appends the matching entry to `docs/packages/<pkg>/deviations/<section>.md`.
 7. **Deferred** — `defer` runs only: each standing CRITICAL and the `docs/followups.md` line it
    became.
-8. **Paths** — paths reports only, after **Deferred**: table `command | frames to first effect
-   | indirect frames | verdict | findings`, one row per `[project.scripts]` command, the two
-   counts copied from `status.py --paths <pkg>`.
+8. **Paths** — paths reports only, after **Deferred**: table `command | frames to first
+   effect | indirect frames | contract | verdict | findings`, one row per `[project.scripts]`
+   command, the two counts copied from `status.py --paths <pkg>` and `contract` copied from
+   its `--against-contract` summary: `match`, `extra <e>`, `missing <m>`, `extra <e>, missing
+   <m>`, or `—` when the contract has no entry for the command or no **Call paths** heading.
 
 A round's verdict is the worst over its reports. Never a mechanical failure (the gate owns
 those), never a fix, never a CRITICAL outside the closed list, and on round 2 or later never a

@@ -145,6 +145,16 @@ other section from IMPLEMENT on; without it the surface waits at every state, as
 `--fields` prints a seventh line, `dependency readmes:`, the READMEs of the row's `depends on`
 that exist on disk in the Sections table's order, `none` when none does.
 
+**Against the contract (2.6).** Six cases (`site/notes/2.6-spine-05-against-contract-review.md`,
+the six `calltree-contract-*` rows at the end). Each runs `base` with a `call_paths` heading
+(or none), then `commands`, and `--paths data --against-contract`. After the block's footer the
+contract's entry prints: `contract: data-load (budget 8)`, the kind, each contract frame `match`
+with the built frame or `missing`, a built frame between two matched ones `extra`, the effect
+`reached`, and `summary: <k> match, <e> extra, <m> missing; depth <d> of budget <n>`. The frame
+column is padded to the entry's longest frame, so the expectations on a shorter frame are
+regexes. Without an entry, or without the heading, one `contract:` line ends the block and no
+`summary:` prints.
+
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
 section's entry does not make an existing design stale, per the design's *Stale when* for a
@@ -304,3 +314,9 @@ optional flag).
 | `surface-no-call-paths-waits` | `base` | `—` | `surface · DESIGN`, ready `no` |
 | `fields-dependency-readmes-none` | `base` (`call_paths: true`) | `--fields data/surface` | `paths report: none` then `dependency readmes: none`; exit 0 |
 | `fields-dependency-readmes-some` | `base`, `done` ingest, `build` clean | `--fields data/surface` | `dependency readmes: packages/data/src/data/ingest/README.md, packages/data/src/data/clean/README.md` (storage has no README); exit 0 |
+| `calltree-contract-match` | `base` (`call_paths: true`), `commands` | `--paths data --against-contract` | `contract: data-load (budget 8)`; a line `/^    1 cli\.load\s+match  load \(packages/data/src/data/cli\.py:6\)$/`; `3 ingest.read_trades  match  read_trades (packages/data/src/data/ingest/reader.py:7)`; `effect shutil.copy  reached`; `summary: 3 match, 0 extra, 0 missing; depth 2 of budget 8`; exit 0 |
+| `calltree-contract-extra` | as `-match`, `load.py`'s `run_load` calling `_read(path)` and `_read` calling `read_trades` | the same | a line `/^    -\s+extra  _read \(packages/data/src/data/pipelines/load\.py:\d+\)$/`; `summary: 3 match, 1 extra, 0 missing`; exit 0 |
+| `calltree-contract-missing` | the matching entry with a fourth frame `4 `ingest.parse_rows`` before the effect | the same | a line `/^    4 ingest\.parse_rows\s+missing$/`; `effect shutil.copy  reached`; `summary: 3 match, 0 extra, 1 missing`; exit 0 |
+| `calltree-contract-no-entry` | an entry for `` `data-build` (budget 8) `` only | the same | `contract: no entry for data-load`; no `summary:`; exit 0 |
+| `calltree-contract-no-heading` | `base` without `call_paths`, `commands` | the same | `contract: no Call paths heading`; no `summary:`; exit 0 |
+| `calltree-contract-past-budget` | the matching entry with `(budget 1)` | the same | `summary: 3 match, 0 extra, 0 missing; depth 2 past budget 1`; exit 0 |

@@ -1,0 +1,27 @@
+{
+  "note": "2.6: a contract frame the code does not pass through is missing; matching continues from the last matched frame",
+  "steps": [
+    {
+      "do": "base",
+      "call_paths": "- `data-load` (budget 8):\n  - file write: 1 `cli.load` → 2 `pipelines.run_load` → 3 `ingest.read_trades` → 4 `ingest.parse_rows` → `shutil.copy`\n"
+    },
+    {
+      "do": "commands"
+    }
+  ],
+  "args": [
+    "--paths",
+    "data",
+    "--against-contract"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "effect shutil.copy  reached",
+      "summary: 3 match, 0 extra, 1 missing"
+    ],
+    "matches": [
+      "^    4 ingest\\.parse_rows\\s+missing$"
+    ]
+  }
+}

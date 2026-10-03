@@ -111,8 +111,8 @@ which in a parallel batch is a sibling's report commit (F12) — and its `next r
 your round only when your prompt has no `Round:` line; on a `paths` run, in place of that
 command, `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --rounds <pkg>/paths`
 once (its `commit:` line is your report's `Commit:`) and
-`python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --paths <pkg>` once (the call
-trees); and for `git add` and `git commit` of
+`python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --paths <pkg> --against-contract`
+once (the call trees, each with the contract's frames beside it); and for `git add` and `git commit` of
 the files you wrote (**Commit**). Nothing else: no `cat`, `ls`, `grep` or `sed` in Bash (the
 Read, Glob and Grep tools do that), no edits by shell, no `stash`, `checkout`, `reset`, no
 installs.
@@ -197,7 +197,8 @@ WARNING, never a CRITICAL, whatever its kind, and it is appended to the backlog
 block shrinks every round, so a new blocking finding has to be in the code the fix touched.
 
 A `paths` run has a closed list of its own, P1 to P4 (**Focus: paths**). Of the list above
-only item 1, a break, also applies to it.
+only item 1, a break, also applies to it, which is what an `extra` or `missing` frame against
+**Call paths** is.
 
 ## Focus: conformance
 
@@ -348,27 +349,38 @@ Your prompt has **Package** in place of **Section**. Read, in this order:
 
 1. `${CLAUDE_PLUGIN_ROOT}/skills/python-style-guide/references/pipelines.md`, with the Read
    tool.
-2. The package contract's **Pipelines** and **Public surface (intent)**;
+2. The package contract's **Pipelines** and **Public surface (intent)** and its **Call
+   paths**, the frames and budget each command was planned to have;
    `docs/packages/<pkg>/interface.md`, its **Pipelines** and **CLI commands**; the
    `[project.scripts]` table of the package's `pyproject.toml`.
-3. The output of `status.py --paths <pkg>`, run once (**Bash usage**): one block per command,
-   a frame per line, `[indirect]` on a frame reached through a lambda, a closure or a mapping,
-   `[effect: <callee>]` on a call that leaves the package, `[unresolved]` on a call the script
-   could not follow, then `depth to first effect`, `deepest effect` and `indirect frames`.
+3. The output of `status.py --paths <pkg> --against-contract`, run once (**Bash usage**): one
+   block per command — a frame per line, `[indirect]` on a frame reached through a lambda, a
+   closure or a mapping, `[effect: <callee>]` on a call that leaves the package, `[unresolved]`
+   on a call the script could not follow, then `depth to first effect`, `deepest effect` and
+   `indirect frames` — followed by the contract's entry for the command, each contract frame
+   `match` or `missing`, each built frame the contract does not list `extra`, the effect
+   `reached` or not, and a `summary:` line with the command's budget. `contract: no entry` or
+   `contract: no Call paths heading` means the contract fixes nothing for the command, and you
+   judge the path as 2.5 did, against the hard **Main-path depth**.
 4. Every `.dev-team/gate/<pkg>/*.txt` (Glob), for each section's `MEASURED shape` lines; quote
    them under **SUGGESTION**, one bullet per line, with the section's name.
 5. The code along each path: every module a block names, read whole.
 
-**Paths.** One row per command: `command | frames to first effect | indirect frames | verdict
-| findings`. The two counts are the block's `depth to first effect` and `indirect frames`,
-copied. You never count a frame yourself. `verdict` is `fail` when a CRITICAL below names a
+**Paths.** One row per command: `command | frames to first effect | indirect frames | contract
+| verdict | findings`. The two counts are the block's `depth to first effect` and `indirect
+frames`, copied. You never count a frame yourself. `contract` is the summary line's `match`,
+`extra <e>`, `missing <m>` or both, copied, or `—` when the block says `no entry` or `no Call
+paths heading`. `verdict` is `fail` when a CRITICAL below names a
 frame of that command, else `pass`; `findings` lists those CRITICALs by their position under
 **CRITICAL** (`1, 3`), or `—`.
 
 **What may be CRITICAL.** A closed list; nothing outside it is CRITICAL on a paths run:
 
-- **P1** — a command whose `depth to first effect` is past the hard **Main-path depth** of
-  `project-structure` §2.
+- **P1** — a command whose `depth to first effect` is past its budget: the `budget <n>` of its
+  `contract:` line, or the hard **Main-path depth** of `project-structure` §2 when the
+  contract has no entry for it. The summary line says `past budget`; you copy it. The line is
+  `surface: P1 — <file:line of the command function> — depth <d> past budget <n> of Call paths
+  for `<command>` — <what to change>` (`past the hard Main-path depth 8` without an entry).
 - **P2** — a frame on a main path marked `[indirect]` whose target cannot be named from the
   call site: a lambda or a closure handed to a wrapper, a callable pulled from a mapping by a
   runtime key, a callable passed in as a parameter.
@@ -378,13 +390,26 @@ frame of that command, else `pass`; `findings` lists those CRITICALs by their po
 - **P4** — a trivial single-use helper (private, one call site in the package, three
   statements or fewer) or an options bag (`**name: Unpack[...]`) on a main path. The gate
   fails these only on lines a run adds; this is the code it never saw.
+- A frame marked `extra` or `missing` in the contract comparison is a **break** (**Severity**,
+  item 1): the code contradicts the contract's **Call paths**. One CRITICAL line per frame,
+  under the section that owns it — the frame's owner, `surface` for `cli` and `pipelines`:
+  `<section>: break — <file:line> — frame `<name>` is not in Call paths of `<command>` — <what
+  to change>`, or `<section>: break — contract.md Call paths `<command>` — frame
+  `<owner>.<name>` is not on the built path — <what to change>`. A frame that is `extra` and
+  also a P2 or P4 is one line, the break, with the item named in it (`… — frame `lambda` is
+  not in Call paths of `data-load` (also P2) — …`). A break counts in the **Paths** row's
+  `findings` like any CRITICAL that names a frame of the command. A fix that would move a
+  step between sections is still written against the section that holds the frame; its
+  implementer raises the `spec-change:contract`.
 - A **break** (**Severity**, item 1), when following a path shows one.
 
 A main path is the chain from the command function to its first effect, and to each step the
 contract's **Pipelines** entry names. An error branch, a `key=` callback and a plug-in point
 off that chain are not on it. Everything else you see is a WARNING or a SUGGESTION: a depth
 past the soft limit, a `deepest effect` past the hard one, a docstring written from the
-inside, an `[unresolved]` leaf that hides where a path goes.
+inside. Every `[unresolved]` leaf of a block is one of them, one bullet each with its
+`file:line` and the call: the script could not follow it, so you say what it calls — a WARNING
+when it hides where a path goes, a SUGGESTION when it does not, never left out.
 
 Every CRITICAL line starts with the section that holds the frame, then the item:
 `<section>: P<k> — <file:line> — <finding> — <what to change>` (`<section>: break — …` for a
