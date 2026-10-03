@@ -129,6 +129,12 @@ newer than it; every other `fields-*` case now also expects `paths report: none`
 (`fields-bad-target` prints no fields). `shipped` and `shipped-sync` build no package
 `pyproject.toml`, so they stay `shipped: yes` and also expect `paths: approved (no commands)`.
 
+**The paths review end to end (2.5).** One case (`site/notes/2.5-readability-09-docs-and-release.md`,
+the last row), `paths-e2e`: all done, with the `commands` step's `load.py` replaced by
+`calltree-lambda`'s, so the one command reaches its effect through a lambda. Its check is
+`--paths data`; its job is the seed `run-package` eval 14 builds, where `status.py data` prints
+`paths: needed` and the driver spawns the paths review.
+
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
 section's entry does not make an existing design stale, per the design's *Stale when* for a
@@ -281,3 +287,4 @@ optional flag).
 | `inputs-paths-fix` | as `paths-request-changes` | `--inputs data/ingest` | a line `/^Review: docs/packages/data/reviews/paths/2026-09-27-r1-p\.md$/`; `Round: 2`; exit 0 |
 | `fields-paths-report` | as `paths-stale-after-fix` | `--fields data/ingest` | sixth line `paths report: docs/packages/data/reviews/paths/2026-09-27-r1-p.md`, after `upstream interfaces: none`; exit 0 |
 | `repo-paths-needed` | as `paths-needed` | `--repo` | `  - data: building (4/4 DONE, paths needed)`; exit 0 |
+| `paths-e2e` | all done, with `calltree-lambda`'s `load.py` in the `commands` step | `--paths data` | `lambda (…load.py:13) [indirect]`; `indirect frames: 1`; exit 0 (the seed of `run-package` eval 14) |
