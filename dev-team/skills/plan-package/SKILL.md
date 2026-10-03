@@ -74,12 +74,15 @@ contract invents its own shapes and conventions, and the next package invents th
      over it, so a source missing from it is never probed. **Public surface (intent)** names a
      consumer — a downstream package or a CLI command — for every entry, and nothing without
      one. The table's last row is `surface`: path the package top level, `depends on` every
-     other section, `builds with` and `source` `—`.
+     other section, `builds with` and `source` `—`. **Call paths** fixes every command's
+     frames and budget before any designer runs, per your **Call paths**; a path that cannot
+     fit its budget is a question for step 3, not a budget you raise.
    - **A contract exists — the change list.** The items are the change request in the
-     arguments, each open `spec-change:contract` entry naming the package, and whatever the
-     repo contract's diff since its last archive copy under `docs/history/` changes for `$pkg`'s
-     row, boundaries or conventions. With none of the three, return `Result: done` saying the
-     contract is current, and commit nothing. Otherwise classify and apply each item per your
+     arguments, each open `spec-change:contract` entry naming the package, whatever the repo
+     contract's diff since its last archive copy under `docs/history/` changes for `$pkg`'s
+     row, boundaries or conventions, and a missing **Call paths** heading (your **Call
+     paths**). With none of the four, return `Result: done` saying the contract is current,
+     and commit nothing. Otherwise classify and apply each item per your
      **Edits — the change list**: EDIT, EDIT+STALE, CHANGE, DECIDE; archive before the first
      edit. A `spec-change:contract` entry answered by an EDIT, EDIT+STALE or CHANGE outcome is
      closed per your **Edits**; one answered by DECIDE stays `open`.

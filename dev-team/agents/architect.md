@@ -245,12 +245,46 @@ always referred to as `<pkg>/<section>`.
 
 The last row of every Sections table is `surface`, per the template: path the package top
 level, `depends on` every other section, responsibility the package's pipelines and public
-surface. `<pkg>/surface` is a section like any other — designed last from the shipped READMEs,
-built, reviewed — and its README is `interface.md`.
+surface. `<pkg>/surface` is a section like any other, with its own order: its design and its
+intent tests are written right after PLAN, from this contract's **Section interfaces**,
+**Pipelines**, **Public surface (intent)** and **Call paths**, before any sibling is built,
+and its code is built last, from the shipped READMEs; its README is `interface.md`. The
+contract is therefore the only ground the surface's designer has, which is why **Call paths**
+is written here and not left to a design.
 
 Every section gets a path in the repo's own layout (`project-structure` §1, and §0 for repos
 that already have a package root). A section with no code location is not a section — fold it
 into one that has one, or drop it.
+
+## Call paths
+
+At package scope you fix every command's path before a designer runs: the template's item 5,
+**Call paths**, read from `references/package-contract.md` with the rest. One entry per
+command in **Public surface (intent)**; per entry, one path per kind of external effect the
+command reaches, its frames numbered from the command function. Each frame is a name the
+contract defines — `cli.<function>`, `pipelines.<function>` for a **Pipelines** entry's
+function, `<section>.<function>` for a **Section interfaces** entry — and nothing else: a
+frame with no owner is a frame nobody will build. When a path has to pass through a second
+function of a section after its entry point, add that function to **Section interfaces**
+marked `(path only)`; never leave a frame unnamed. Likewise a **Pipelines** entry that names
+no function gets its function's name and signature added to that entry, so the
+`pipelines.<function>` frame has an owner. Those two are the only edits a path brings
+outside **Call paths**: no other heading is reworded, and the contract carries no note that
+the heading was added — the archive copy and the commit say that.
+
+The budget is 8, the hard **Main-path depth** of `project-structure` §2, on `--paths`'
+`depth to first effect` (the command at 0, so a path of `n` frames has depth `n − 1`). A
+command whose path cannot fit — the brief, a `decided` `D<n>` or a provider's protocol
+demands a frame the budget has no room for — is a question under the interview rule: stub a
+`D<n>` with `Scope: <pkg>`, your recommendation (`budget <k>` for that command, or the
+responsibility to move so the path fits) and the assumption you would write, and stop. A
+budget above 8 is written only with a `decided` `D<n>` cited on the command's line.
+
+A contract that exists and has no **Call paths** heading is an item of the change list,
+`Call paths` (**Edits**): EDIT when no section of the package is built, written from
+**Pipelines** and **Section interfaces** as above; when any section is built, the frames are
+the code's, and the item is the close's (**sync-plan**, step 8), so you write nothing for it
+and the return row reads `| Call paths | left to the close (built) |`.
 
 ## Decisions
 
@@ -324,7 +358,7 @@ that state what the item changes: a new optional parameter is a **Section interf
 not a reworded **Sections** responsibility. The skill names where the items come from — the
 argument, the brief's diff against `docs/history/brief-contracted.md`, open
 `spec-change:contract` entries in the package's ledgers (`docs/packages/<pkg>/deviations/*.md`, and the older `docs/deviations/<pkg>/*.md` and `docs/deviations.md`), and a review report's **Spec-change** line naming `contract` that no entry records, the repo contract's diff since its
-last archive copy. List them first, one line each, before you touch any file.
+last archive copy, and a contract with no **Call paths** heading (**Call paths**). List them first, one line each, before you touch any file.
 
 Classify each item by the sections it touches, against the package state table in **The
 document map**, at section granularity: a section is *built* when its path has code, *shipped*
@@ -366,6 +400,7 @@ The return carries one row per item:
 | <item> | EDIT+STALE (analysis) |
 | <item> | CHANGE docs/packages/data/changes/side-aliases.md |
 | <item> | DECIDE D14 |
+| Call paths | left to the close (built) |
 ```
 
 ## Probing
