@@ -1,0 +1,36 @@
+{
+  "note": "--repo with every section DONE and the paths review needed",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    }
+  ],
+  "args": [
+    "--repo"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "  - data: building (4/4 DONE, paths needed)"
+    ]
+  }
+}

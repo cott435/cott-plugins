@@ -1,0 +1,50 @@
+{
+  "note": "--shape (2.5 phase 5): an options bag committed after the Mode: document design fails; the adopted helper still does not",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "files": {
+        "packages/data/src/data/ingest/helper.py": "\"\"\"Rows.\"\"\"\n\n\ndef load_rows(path):\n    \"\"\"Load rows.\"\"\"\n    return _strip(path)\n\n\ndef _strip(path):\n    \"\"\"Strip the path.\"\"\"\n    return str(path).strip()\n"
+      },
+      "message": "data/ingest: adopted helper"
+    },
+    {
+      "files": {
+        "docs/packages/data/design/ingest.md": "Mode: document\n\n# data/ingest — design\n\n## 5. Interfaces\n\n- the ingest entry point\n"
+      },
+      "message": "data/ingest: design (document)"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "files": {
+        "packages/data/src/data/ingest/bag.py": "\"\"\"Options.\"\"\"\n\nfrom typing import TypedDict, Unpack\n\n\nclass LoadOptions(TypedDict):\n    \"\"\"Options for a load.\"\"\"\n\n    strict: bool\n\n\ndef load_with(path, **options: Unpack[LoadOptions]):\n    \"\"\"Load path with options.\"\"\"\n    return path, options\n"
+      },
+      "message": "data/ingest: options"
+    }
+  ],
+  "args": [
+    "--shape",
+    "data",
+    "--section",
+    "ingest"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "FAIL shape: packages/data/src/data/ingest/bag.py:12 options-bag load_with"
+    ],
+    "absent": [
+      "trivial-helper",
+      "PASS shape"
+    ]
+  }
+}

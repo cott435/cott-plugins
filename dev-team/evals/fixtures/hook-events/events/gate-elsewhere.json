@@ -40,7 +40,8 @@
     ],
     "gate_only": [
       "PASS",
-      "ELSEWHERE"
+      "ELSEWHERE",
+      "MEASURED"
     ],
     "file_equals": {
       ".dev-team/gate/data/clean.txt": "previous record\n"

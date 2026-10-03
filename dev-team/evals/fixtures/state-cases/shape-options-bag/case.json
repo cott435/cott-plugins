@@ -1,0 +1,42 @@
+{
+  "note": "--shape (2.5 phase 5): a commit adds a function taking **options: Unpack[LoadOptions]",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "files": {
+        "packages/data/src/data/ingest/bag.py": "\"\"\"Options.\"\"\"\n\nfrom typing import TypedDict, Unpack\n\n\nclass LoadOptions(TypedDict):\n    \"\"\"Options for a load.\"\"\"\n\n    strict: bool\n\n\ndef load_with(path, **options: Unpack[LoadOptions]):\n    \"\"\"Load path with options.\"\"\"\n    return path, options\n"
+      },
+      "message": "data/ingest: options"
+    }
+  ],
+  "args": [
+    "--shape",
+    "data",
+    "--section",
+    "ingest"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "FAIL shape: packages/data/src/data/ingest/bag.py:12 options-bag load_with",
+      "MEASURED shape indirect: 0"
+    ],
+    "absent": [
+      "PASS shape"
+    ]
+  }
+}

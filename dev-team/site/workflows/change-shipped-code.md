@@ -41,11 +41,14 @@ impact** re-open the same way when their package is run.
 
 ## The close
 
-When every section of the package is DONE, the driver runs the architect as `sync-plan`
-(`/dev-team:sync-plan data` by hand does the same). It verifies each contract change against the
-code, applies it to the canonical contracts — after archiving each to `docs/history/` — sets the
-change file to `Status: synced`, and closes every approved deviation the same way. From then
-the change file is history.
+A paths report goes stale when any section's code changes after its `Commit:`, so once the
+changed sections are DONE the paths review runs again before the package is shipped.
+
+When every section of the package is DONE and the paths review approves, the driver runs the
+architect as `sync-plan` (`/dev-team:sync-plan data` by hand does the same). It verifies each
+contract change against the code, applies it to the canonical contracts — after archiving
+each to `docs/history/` — sets the change file to `Status: synced`, and closes every approved
+deviation the same way. From then the change file is history.
 
 ## When the contract itself is wrong
 

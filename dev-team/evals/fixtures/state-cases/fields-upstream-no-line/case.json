@@ -23,7 +23,8 @@
   "expect": {
     "exit": 0,
     "contains": [
-      "upstream interfaces: provisional: docs/packages/data/contract.md\n"
+      "upstream interfaces: provisional: docs/packages/data/contract.md\n",
+      "paths report: none"
     ]
   }
 }

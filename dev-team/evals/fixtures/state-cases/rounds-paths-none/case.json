@@ -1,0 +1,40 @@
+{
+  "note": "--rounds <pkg>/paths (2.5 phase 6) with no paths report: round 0, the package's newest code commit, no previous report",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    }
+  ],
+  "args": [
+    "--rounds",
+    "data/paths"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "rounds: 0",
+      "next round: 1",
+      "previous: none",
+      "diff base: none"
+    ],
+    "matches": [
+      "^commit: [0-9a-f]{7}$"
+    ],
+    "absent": [
+      "commit: none",
+      "## data"
+    ]
+  }
+}

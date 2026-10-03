@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Derive where every package and section stands from docs/ and the code. Nothing is stored.
 
-Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg> [--section <s>]] [--repo]
+Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>|<pkg>/paths] [--surface <pkg> [--section <s>]] [--repo]
                           [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]
+                          [--shape <pkg> --section <s>] [--paths <pkg>]
 
 A section is in exactly one state, decided in this order, first match wins:
 
@@ -36,7 +37,9 @@ A section is in exactly one state, decided in this order, first match wins:
    README) is newer than the newest round's `Commit:`; or the newest round's verdict is
    `spec-change` with no open spec-change left.
 8. **FIX n** — the newest round `n` says `request changes`, the cap is not hit, and the code is
-   not newer than its `Commit:`.
+   not newer than its `Commit:`; or the newest round approves, the code is not newer than its
+   `Commit:`, and the package's newest paths report is current, says `request changes`, is
+   below its cap (round 3), and names the section on a line under **CRITICAL**.
 9. **DONE** — the newest round approves and the code is not newer than its `Commit:`.
 
 The **ledger** is one file per section, `docs/deviations/<pkg>/<section>.md`, so agents that
@@ -47,7 +50,8 @@ the commit that first added it, so a move answers nothing and re-opens nothing.
 Since 2.2 the section's ledger is `docs/packages/<pkg>/deviations/<section>.md`; the 2.0
 location `docs/deviations/<pkg>/<section>.md` and the pre-2.0 `docs/deviations.md` are still
 read, and an entry is edited in the file that holds it. Review reports are
-`docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<a|b|s>.md`; the 2.0 names
+`docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<a|b|s>.md`, and a package's paths reports
+`docs/packages/<pkg>/reviews/paths/<date>-r<n>-p.md`, letter `p`; the 2.0 names
 `docs/reviews/<date>-<pkg>-<section>-r<n>-<letter>.md` are still read as round `n`. Change
 files are `docs/packages/<pkg>/changes/<slug>.md`, one per affected package; a
 `docs/changes/<slug>.md` is still read as naming every package its **Affected sections**
@@ -79,8 +83,9 @@ A Sections `path` cell written as `…/<name>/` (or `.../<name>/`) is the defaul
 
 Ready: a section whose state is neither DONE nor BLOCKED and whose every in-package `depends
 on` is DONE. The `surface` row depends on every other row whatever its cell says.
-Shipped: the `surface` section is DONE and `--surface <pkg>` passes; otherwise the block prints
-`shipped: no (surface <STATE>)` or `shipped: no (surface check FAIL)`. Rounds: the highest `n`
+Shipped: the `surface` section is DONE, `--surface <pkg>` passes, and the paths review
+approves; otherwise the block prints `shipped: no (surface <STATE>)`, `shipped: no (surface
+check FAIL)`, `shipped: no (paths needed)` or `shipped: no (paths round <n>)`. Rounds: the highest `n`
 over the section's review reports, at either location; a round's verdict is the worst of its
 reports (request changes > spec-change > approve); a report with no `-r<n>-` is round 1.
 
@@ -93,6 +98,10 @@ line each (exit 1), or `n/a (no README)`.
 `--rounds <pkg>/<section>` prints a third line, `commit: <short sha>`, the newest commit
 touching the section's path, `tests/unit/<section>`, `tests/intent/<section>` and its README,
 or `commit: none` — the reviewer copies it as its report's `Commit:` (F12).
+`--rounds <pkg>/paths` prints the same three lines for the package's paths reports, `commit:`
+the newest commit touching any section's code, then `previous:` and `diff base:` — the newest
+paths report's path and its `Commit:` as `git rev-parse --short` gives it, each `none`
+without one.
 
 **Evidence.** The strings the driver copies out of a row's evidence cell:
 
@@ -104,6 +113,8 @@ or `commit: none` — the reviewer copies it as its report's `Commit:` (F12).
 3. **gate blocked** — `gate blocked: <the marker's reason>`.
 4. **gate let through** — `gate let through after 3 attempts, <k> failures`.
 5. **gate not done** — `gate not done (attempt <n> of 3)`.
+6. **paths** — `paths r<m> request changes (<report path>)`: the package's paths report
+   re-opened the section.
 
 **Gate record.** `.dev-team/gate/<pkg>/<section>.txt`, written by `hooks/gate_on_stop.py` on
 every implementer stop. It speaks for the commit its `commit:` line names: the newest commit
@@ -114,6 +125,107 @@ treated as absent, and the row is derived without it. A record whose header slot
 (`/dev-team:pair`'s wrap-up) or `spec-change` never holds a row. Once a review round's
 `Commit:` covers the code the review speaks and the record is not read, which is what makes
 the user's *review anyway* stick.
+
+**Shape.** `--shape <pkg> --section <s>` prints the section's shape check, the lines the stop
+gate copies into its record. It judges the functions and methods defined in the section's
+non-test code (its path, nested sections excluded) whose `def` line the run added: a line
+`git diff -U0 <base>` adds under the section's code, or any line of an untracked file, where
+<base> is, in order:
+
+1. the newest review round's `Commit:`, when it is an ancestor of `HEAD`;
+2. else, when the section's design exists, its mode word (the `design mode:` of `--fields`) is
+   `document`, and `git log --diff-filter=A` names the commit that added it: that commit, so
+   code adopted before the design is measured and never failed;
+3. else the empty tree.
+
+Lines, in this order: the FAIL lines sorted by file then line, the one `indirect` line, the
+`depth` lines, then `PASS`.
+
+- `FAIL shape: <file>:<line> trivial-helper <name>` — a private function or method (`_name`,
+  not a dunder) with three statements or fewer, the docstring not counted, that is referenced
+  exactly once in the package's non-test code, by a call. Exempt: a function decorated
+  `property`, `cached_property` or `<name>.setter`/`.getter`/`.deleter`; a method whose name is
+  defined in more than one class of the package; a helper referenced anywhere other than as
+  the function of a call (passed by name, stored, used as a decorator).
+- `FAIL shape: <file>:<line> options-bag <name>` — a function or method, public or private,
+  whose `**` parameter is annotated with a subscript of `Unpack` (`Unpack[...]` or
+  `<module>.Unpack[...]`); `<name>` is `Class.method` for a method.
+- `MEASURED shape indirect: <n>` — over every file judged, added lines or not: the lambdas that
+  are an argument of a call (positional or keyword), the names passed as an argument that are
+  functions nested in an enclosing function, and the calls whose function is a subscript
+  (`_RUNNERS[stage](…)`). Printed whether or not anything failed; never a failure.
+- `MEASURED shape depth <entry point>: <n>` — one per name in the section README's **Entry
+  points and interfaces** table, in row order (the first identifier of each name cell); for
+  `surface`, one per `[project.scripts]` command, named by the command. The value is the
+  deepest effect below the entry point on the `--paths` call graph (**Paths.** below), the
+  entry point's own frame at 0; a class's value is the largest over its public methods.
+  `none` when no effect lies below it; `unresolved` when the name is not a function or class
+  defined in the section's code. No `depth` line without a README, or for `surface` without
+  commands. Never a failure.
+- `PASS shape <pkg>/<s>` — when no FAIL line was printed.
+
+Exit 1 on a FAIL line, else 0; 2 on a missing `--section` or a section the contract lacks.
+
+**Paths.** `--paths <pkg>` prints one call tree per command in the `[project.scripts]` table of
+`<package root>/pyproject.toml`, in the table's order, followed statically through the
+package's own code. The module index is every non-test `.py` under the package's source root
+(the `surface` row's path, else `<package root>/src/<pkg>`), each named by its dotted path from
+the root's parent. Inside one function every call is read in source order, the bodies of
+nested functions and lambdas left out (each is a frame of its own):
+
+- a frame — a call to a function of the same module, to one imported from a module of the
+  package, or to a function nested in the current one; `self.m(…)` or `cls.m(…)` when the class
+  or a base class of the package defines `m` (`Class.m`); `mod.f(…)` or `pkg.mod.f(…)` through
+  an imported package module; `C.m(…)`; and `C(…)`, a package class, as `C.__init__` when it
+  has one (else nothing).
+- `[indirect]` frames — `NAME[key](…)`, `NAME` a module-level dict literal of package
+  functions: one frame per distinct value, in the dict's order. A lambda, a nested function's
+  name or a package function's name passed as an argument: under the callee, after the callee's
+  own calls, when the call resolved to a package function; else under the current function. A
+  passed lambda or nested function whose own body makes no frame and no leaf is not printed.
+- an effect leaf, `[effect: <callee as written>] (<file>:<line>)` — a call into a module
+  outside the package whose root is not in `sys.stdlib_module_names` and is not `logging`,
+  `loguru` or `structlog`; a call into `subprocess`, `socket`, `urllib`, `http`, `sqlite3` or
+  `shutil`; or the builtin `open` or `print`. Any other outside call, builtin or method of a
+  literal prints nothing, and so does a call on a module-level name assigned from a logging
+  library's call (`log = logging.getLogger(__name__)`).
+- an `[unresolved]` leaf, `<source text> (<file>:<line>) [unresolved]` — anything else: a
+  parameter called, a local variable's method, `self.x.m(…)`, a subscript of something unknown.
+
+Each block is `command: <name> = <target>`, then one line per frame, two spaces of indent per
+level, `name (<file>:<line>)` at the line of the `def` or the lambda, marks after the
+parenthesis: `[indirect]`, then `[seen]` for a function already printed in full or
+`[recursive]` for one on the current path, neither expanded again (callables passed to it at
+that call site still print under it). Then three footer lines, counted on the call graph from
+the command function at depth 0, a callable passed to a callee two levels below the caller:
+`depth to first effect: <n>` (the smallest depth of a frame that makes an effect call),
+`deepest effect: <m>` (the largest, back edges ignored), each `none` without an effect, and
+`indirect frames: <k>` (the `[indirect]` frames of the command's tree, each counted once). A
+target whose module is not in the package prints `target outside the package`, and one whose
+function the module lacks prints `target not found in the package`, with no footer. Blocks are
+separated by a blank line; with no `[project.scripts]` table, an empty one, or no package
+`pyproject.toml`, the one line `paths: no commands`. Exit 0; 2 with no package, or with no
+`docs/packages/<pkg>/contract.md`.
+
+**Paths review.** The package block's `paths:` line, printed after `scaffold:` and before
+`shipped:` once every section row is DONE or a paths report exists, says where the package's
+paths review stands, decided in this order:
+
+- no `[project.scripts]` entry in `<package root>/pyproject.toml` (no file, no table, an empty
+  table): approved, with no review to run;
+- no paths report: needed;
+- the newest report is stale when its `Commit:` is unreadable, or when any section's code (as
+  rule 7 reads it) changed after that `Commit:`: needed;
+- the newest report is current and approves: approved;
+- otherwise a round: `n` is the report's round, its sections are the package's section names
+  that start a line under its **CRITICAL** heading (`- <section>: …`, the name optionally
+  backticked), in the Sections table's order, and the round is at its cap from round 3. Below
+  the cap each named section that would otherwise be DONE is FIX n (rule 8); at the cap none
+  is re-opened, and the driver asks first.
+
+The line is `paths: needed`, `paths: approved (<report path>)` or `paths: approved (no
+commands)`, or `paths: round <n> (request changes: <section>, …)`, with `no section named` in
+place of the list when no CRITICAL line names a section, and ` (cap)` appended at the cap.
 
 **Scaffold.** A package is ready to be built in when its workspace exists: a root
 `pyproject.toml`, and, when that root is a uv workspace (`[tool.uv.workspace]`), a
@@ -142,14 +254,15 @@ it names before touching the section. One `<Field>: <value>` line per field, in 
 8. **Intent tests** — `<package root>/tests/intent/<section>/` when it exists.
 9. **Review** — from either location, the newest round's reports when its verdict is `request changes` (FIX n, or a
    cap granted one more round) or `spec-change` (a rebuild after the step it re-opened: its
-   CRITICALs still stand).
+   CRITICALs still stand), and the package's paths report while it names the section and no
+   review round of the section is newer than it.
 10. **Round** — the newest round plus one.
 11. **Change file** — from either location, every open `docs/packages/<pkg>/changes/<slug>.md`
     or `docs/changes/<slug>.md` whose Affected sections names the section.
 12. **Run** — `run-package <pkg>`.
 
 `--fields <pkg>/<section>` prints the spawn fields run-package would otherwise resolve by
-reading files, five `key: value` lines in this order, and exits 0 (2 on a section the contract
+reading files, six `key: value` lines in this order, and exits 0 (2 on a section the contract
 lacks):
 
 1. `mode: new | document | delta` — `delta` when an open change file names the section, or the
@@ -167,16 +280,23 @@ lacks):
    `none` with no round or no `Commit:`. The next reviewer's `Diff:` field is `<sha>..HEAD`.
 5. `upstream interfaces: <path>, … | none` — as **Upstream interfaces** in `--inputs`. The
    tester's and the reviewer's field; the designer is sent every upstream package.
+6. `paths report: <path> | none` — the package's newest paths report while its verdict is not
+   `approve`, a line under its CRITICAL heading names the section, and the section's newest
+   review round's `Commit:` is not newer than the report's: the same report `--inputs` adds to
+   **Review**. The `full` reviewer's previous round after a paths FIX.
 """
 
 from __future__ import annotations
 
 import ast
+import builtins
+import heapq
 import json
 import os
 import re
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 ROOT = Path.cwd().resolve()
@@ -193,6 +313,8 @@ BASELINE_EXEMPT = ("docs/decisions.md", "docs/brief.md", "docs/constraints.md", 
 VERDICT_RANK = {"approve": 0, "spec-change": 1, "request changes": 2}
 
 UNCOMMITTED = "U"
+
+EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
 
 def set_root(path: Path) -> None:
@@ -316,6 +438,47 @@ def last_commit(*paths: Path | str) -> str | None:
 def uncommitted(*paths: Path | str) -> bool:
     """True when any of paths has staged, unstaged or untracked changes."""
     return bool(git("status", "--porcelain", "--untracked-files=all", "--", *map(_rel, paths)))
+
+
+def _untracked(paths: list[str] | None = None) -> list[str]:
+    """Untracked, unignored files; under paths (git pathspecs) when given."""
+    spec = ["--", *paths] if paths else []
+    raw = git("ls-files", "--others", "--exclude-standard", "-z", *spec) or ""
+    return [p for p in raw.split("\0") if p]
+
+
+def diff_lines(base: str, paths: list[str] | None = None) -> list[tuple[str, str, int, str]]:
+    """(path, '+' or '-', line number, text) for every added and removed line since base, under
+    paths when given.
+
+    Added lines carry their new line number, removed lines their old one. An untracked file
+    counts as added in full.
+    """
+    out: list[tuple[str, str, int, str]] = []
+    spec = ["--", *paths] if paths else []
+    raw = git("diff", "-U0", "--no-color", "--no-ext-diff", base, *spec) or ""
+    path, old, new = "", 0, 0
+    for line in raw.splitlines():
+        if line.startswith("+++ "):
+            path = line[6:] if line.startswith("+++ b/") else ""
+        elif line.startswith("--- "):
+            continue
+        elif line.startswith("@@"):
+            m = re.match(r"@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@", line)
+            old, new = (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+        elif path and line.startswith("+"):
+            out.append((path, "+", new, line[1:]))
+            new += 1
+        elif path and line.startswith("-"):
+            out.append((path, "-", old, line[1:]))
+            old += 1
+    for rel in _untracked(paths):
+        try:
+            text = (ROOT / rel).read_text()
+        except (OSError, UnicodeDecodeError):
+            continue
+        out += [(rel, "+", i, t) for i, t in enumerate(text.splitlines(), 1)]
+    return out
 
 
 def _is_regen(summary: str, pkg: str, section: str) -> bool:
@@ -864,6 +1027,14 @@ def newest_round(pkg: str, section: str) -> tuple[int, str, str | None, dict[str
     return n, _verdict(worst.get("Verdict")), sha, worst
 
 
+def review_base(pkg: str, section: str) -> str:
+    """The newest review round's `Commit:` when it is an ancestor of `HEAD`, else the empty tree."""
+    sha = newest_round(pkg, section)[2]
+    if sha and git("merge-base", "--is-ancestor", sha, "HEAD") is not None:
+        return sha
+    return EMPTY_TREE
+
+
 def _missing_letters(pkg: str, section: str) -> list[str]:
     """Round 1's missing half: `a` or `b` when its reports carry letters and one is absent."""
     letters = {m.group(1) for f in _reports(pkg, section).get(1, [])
@@ -1067,8 +1238,12 @@ def _gate_hold(pkg: str, section: str, readme: Path) -> dict[str, object] | None
     return gate_record(pkg, section)
 
 
-def section_state(pkg: str, section: str) -> tuple[str, str]:
-    """(STATE, evidence) for one section: the first rule in the module docstring that fires."""
+def section_state(pkg: str, section: str, paths: dict[str, object] | None = None) -> tuple[str, str]:
+    """(STATE, evidence) for one section: the first rule in the module docstring that fires.
+
+    paths is the package's `paths_state`, computed here when not given; `package_table` passes
+    it once for every row.
+    """
     p = _paths(pkg, section)
     row: dict[str, str] = p["row"]  # type: ignore[assignment]
     design: Path = p["design"]  # type: ignore[assignment]
@@ -1175,6 +1350,10 @@ def section_state(pkg: str, section: str) -> tuple[str, str]:
     # 8. FIX n
     if verdict == "request changes":
         return f"FIX {n}", f"review r{n} request changes"
+    if paths is None:
+        paths = paths_state(pkg)
+    if paths["kind"] == "round" and not paths["cap"] and section in paths["sections"]:  # type: ignore[operator]
+        return f"FIX {n}", f"paths r{paths['n']} request changes ({_rel(paths['report'])})"  # type: ignore[arg-type]
 
     # 9. DONE
     return "DONE", f"review r{n} approve @{rsha[:7]}"
@@ -1187,6 +1366,118 @@ def section_commit(pkg: str, section: str) -> str | None:
     return git("log", "-1", "--format=%h", "--", *map(_rel, (*p["code"], p["unit"], p["intent"], p["readme"]))) or None  # type: ignore[misc]
 
 
+def package_commit(pkg: str) -> str | None:
+    """Short sha of the newest commit touching any section's code, unit tree, intent tree or
+    README, over every row of the Sections table: a paths report's `Commit:`."""
+    paths: list[str] = []
+    for r in sections(pkg):
+        p = _paths(pkg, r["section"])
+        # A section's code pathspec excludes its nested sections; across every row those are
+        # covered by their own rows, and a global exclude would hide them, so it is dropped.
+        code = [c for c in p["code"] if not c.startswith(":(")]  # type: ignore[union-attr]
+        paths += map(_rel, (*code, p["unit"], p["intent"], p["readme"]))  # type: ignore[arg-type]
+    if not paths:
+        return None
+    return git("log", "-1", "--format=%h", "--", *paths) or None
+
+
+def paths_reports(pkg: str) -> dict[int, Path]:
+    """A package's paths reports by round, `docs/packages/<pkg>/reviews/paths/<date>-r<n>-p.md`;
+    the newest file name wins when two share a round."""
+    out: dict[int, Path] = {}
+    for f in sorted((DOCS / "packages" / pkg / "reviews" / "paths").glob("*.md")):
+        if m := re.fullmatch(r"\d{4}-\d{2}-\d{2}-r(\d+)-p\.md", f.name):
+            out[int(m.group(1))] = f
+    return out
+
+
+def paths_rounds(pkg: str) -> list[str]:
+    """The five `--rounds <pkg>/paths` lines: rounds, next round, commit, previous, diff base."""
+    reps = paths_reports(pkg)
+    n = max(reps, default=0)
+    prev = reps.get(n)
+    base = None
+    if prev is not None:
+        m = re.match(r"[0-9a-f]{7,40}", _report_fields(prev).get("Commit", "").strip("`"))
+        base = git("rev-parse", "--short", m.group(0)) if m else None
+    return [
+        f"rounds: {n}",
+        f"next round: {n + 1}",
+        f"commit: {package_commit(pkg) or 'none'}",
+        f"previous: {_rel(prev) if prev else 'none'}",
+        f"diff base: {base or 'none'}",
+    ]
+
+
+def _report_sha(fields: dict[str, str]) -> str | None:
+    """A report's `Commit:` value as a sha, None when it is unreadable."""
+    m = re.match(r"[0-9a-f]{7,40}", fields.get("Commit", "").strip("`"))
+    return m.group(0) if m else None
+
+
+def _critical_sections(pkg: str, report: Path) -> list[str]:
+    """The package's section names that start a line under the report's **CRITICAL** heading,
+    in the Sections table's order."""
+    body = _block(report.read_text(), "CRITICAL")
+    return [s for s in (r["section"] for r in sections(pkg))
+            if re.search(rf"^\s*(?:[-*]\s+)?`?{re.escape(s)}`?:\s", body, re.M)]
+
+
+def paths_state(pkg: str) -> dict[str, object]:
+    """Where the package's paths review stands; the module docstring's **Paths review.**.
+
+    Keys: kind (`approved`, `needed` or `round`), n (the newest report's round, 0 without
+    one), verdict, report (its path, or None), sections (the names its CRITICAL lines start
+    with, for `round`), cap (`round` at round 3 or later).
+    """
+    out: dict[str, object] = {"kind": "needed", "n": 0, "verdict": "", "report": None, "sections": [], "cap": False}
+    if not package_scripts(pkg):
+        return {**out, "kind": "approved"}
+    reps = paths_reports(pkg)
+    if not reps:
+        return out
+    n = max(reps)
+    report = reps[n]
+    fields = _report_fields(report)
+    sha = _report_sha(fields)
+    if sha is None or any(_code_after_review(pkg, r["section"], sha) is not None for r in sections(pkg)):
+        return out
+    verdict = _verdict(fields.get("Verdict"))
+    if verdict == "approve":
+        return {**out, "kind": "approved", "n": n, "verdict": verdict, "report": report}
+    return {**out, "kind": "round", "n": n, "verdict": verdict, "report": report,
+            "sections": _critical_sections(pkg, report), "cap": n >= 3}
+
+
+def paths_line(state: dict[str, object]) -> str:
+    """The package block's `paths:` line for a `paths_state`."""
+    report = state["report"]
+    if state["kind"] == "approved":
+        return f"paths: approved ({_rel(report) if report else 'no commands'})"  # type: ignore[arg-type]
+    if state["kind"] == "needed":
+        return "paths: needed"
+    named = ", ".join(state["sections"]) or "no section named"  # type: ignore[arg-type]
+    return f"paths: round {state['n']} (request changes: {named})" + (" (cap)" if state["cap"] else "")
+
+
+def section_paths_report(pkg: str, section: str) -> Path | None:
+    """The newest paths report while it speaks to the section: its verdict is not `approve`, a
+    CRITICAL line names the section, and no review round of the section is newer than its
+    `Commit:`. `--inputs`' Review and `--fields`' `paths report:` both read it."""
+    reps = paths_reports(pkg)
+    if not reps:
+        return None
+    report = reps[max(reps)]
+    fields = _report_fields(report)
+    psha = _report_sha(fields)
+    if psha is None or _verdict(fields.get("Verdict")) == "approve" or section not in _critical_sections(pkg, report):
+        return None
+    rsha = newest_round(pkg, section)[2]
+    if rsha and git("merge-base", "--is-ancestor", psha, rsha) is not None and git("rev-parse", psha) != git("rev-parse", rsha):
+        return None
+    return report
+
+
 def _section_rev(pkg: str, section: str) -> str | None:
     p = _paths(pkg, section)
     return _rev(p["design"], p["intent"], p["unit"], p["readme"], *p["code"])  # type: ignore[arg-type]
@@ -1195,7 +1486,8 @@ def _section_rev(pkg: str, section: str) -> str | None:
 def package_table(pkg: str) -> list[dict[str, object]]:
     """One dict per section: section, state, evidence, ready, round, spec, commit."""
     rows = sections(pkg)
-    states = {r["section"]: section_state(pkg, r["section"]) for r in rows}
+    paths = paths_state(pkg)
+    states = {r["section"]: section_state(pkg, r["section"], paths) for r in rows}
     names = set(states)
     out = []
     for r in rows:
@@ -1242,6 +1534,11 @@ def next_command(pkg: str, table: list[dict[str, object]] | None = None) -> str:
         return f"/dev-team:run-package {pkg}"
     if shipped_line(pkg, table) == "shipped: no (surface check FAIL)":
         return f"correct the README rows status.py --surface {pkg} names, then /dev-team:run-package {pkg}"
+    paths = paths_state(pkg)
+    if paths["kind"] == "round" and paths["cap"]:
+        return f"/dev-team:run-package {pkg} or /dev-team:run-package {pkg} --defer"
+    if paths["kind"] != "approved":
+        return f"/dev-team:run-package {pkg}"
     if _to_sync(pkg):
         return f"/dev-team:sync-plan {pkg}"
     others = [name for name, _ in packages() if name != pkg]
@@ -1270,14 +1567,21 @@ def scaffold_needed(pkg: str) -> list[str]:
 
 
 def shipped_line(pkg: str, table: list[dict[str, object]]) -> str:
-    """The block's `shipped:` line: yes only when `surface` is DONE and `--surface <pkg>` passes.
-    The check runs only once `surface` is DONE."""
+    """The block's `shipped:` line: yes only when `surface` is DONE, `--surface <pkg>` passes and
+    the paths review approves. The check runs only once `surface` is DONE."""
     surface = next((r for r in table if r["section"] == "surface"), None)
     if surface is None:
         return "shipped: no (no surface row)"
     if surface["state"] != "DONE":
         return f"shipped: no (surface {surface['state']})"
-    return "shipped: yes" if surface_check(pkg)[0] == "PASS" else "shipped: no (surface check FAIL)"
+    if surface_check(pkg)[0] != "PASS":
+        return "shipped: no (surface check FAIL)"
+    paths = paths_state(pkg)
+    if paths["kind"] == "approved":
+        return "shipped: yes"
+    if paths["kind"] == "needed":
+        return "shipped: no (paths needed)"
+    return f"shipped: no (paths round {paths['n']})"
 
 
 def package_report(pkg: str) -> list[str]:
@@ -1292,6 +1596,8 @@ def package_report(pkg: str) -> list[str]:
                                  str(r["spec"]), str(r["commit"])]))
     if needed := scaffold_needed(pkg):
         lines.append(f"scaffold: needed ({', '.join(needed)})")
+    if all(r["state"] == "DONE" for r in table) or paths_reports(pkg):
+        lines.append(paths_line(paths_state(pkg)))
     lines.append(shipped_line(pkg, table))
     lines.append(f"next: {next_command(pkg, table)}")
     return lines
@@ -1604,6 +1910,677 @@ def surface_check(pkg: str) -> tuple[str, list[str]]:
     return ("FAIL" if fails else "PASS"), fails
 
 
+PROPERTY_DECORATORS = ("property", "cached_property", "setter", "getter", "deleter")
+
+
+def _is_test_file(rel: str) -> bool:
+    """True for a test file: a `tests` directory in its path, or a `test_*` / `*_test.py` name."""
+    parts = rel.split("/")
+    return "tests" in parts[:-1] or parts[-1].startswith("test_") or parts[-1].endswith("_test.py")
+
+
+def _py_files(top: Path, skip: tuple[str, ...] = ()) -> list[str]:
+    """Repo-relative paths of the non-test `.py` files under top, none under a path in skip."""
+    if not top.is_dir():
+        return []
+    out = []
+    for f in sorted(top.rglob("*.py")):
+        rel = _rel(f)
+        if not _is_test_file(rel) and not any(rel.startswith(s.rstrip("/") + "/") for s in skip):
+            out.append(rel)
+    return out
+
+
+def _parse(rel: str) -> ast.Module | None:
+    try:
+        return ast.parse((ROOT / rel).read_text())
+    except (OSError, SyntaxError, UnicodeDecodeError, ValueError):
+        return None
+
+
+def _statements(fn: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
+    """The statements inside fn, nested ones included, its leading docstring not counted."""
+    n = sum(1 for node in ast.walk(fn) if isinstance(node, ast.stmt)) - 1
+    first = fn.body[0] if fn.body else None
+    if isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant) and isinstance(first.value.value, str):
+        n -= 1
+    return n
+
+
+def _is_property(fn: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    for d in fn.decorator_list:
+        if (isinstance(d, ast.Name) and d.id in PROPERTY_DECORATORS) or (
+                isinstance(d, ast.Attribute) and d.attr in PROPERTY_DECORATORS):
+            return True
+    return False
+
+
+def _definitions(tree: ast.Module) -> list[tuple[ast.FunctionDef | ast.AsyncFunctionDef, ast.AST]]:
+    """(function, its nearest enclosing module, class or function) for every def in tree."""
+    out = []
+    stack: list[tuple[ast.AST, ast.AST]] = [(tree, tree)]
+    while stack:
+        node, scope = stack.pop()
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                out.append((child, scope))
+                stack.append((child, child))
+            elif isinstance(child, ast.ClassDef):
+                stack.append((child, child))
+            else:
+                stack.append((child, scope))
+    return out
+
+
+def _loads(tree: ast.AST, name: str, attribute: bool) -> list[ast.AST]:
+    """Every load of name in tree: `ast.Attribute` nodes whose attr it is, or `ast.Name` nodes."""
+    if attribute:
+        return [n for n in ast.walk(tree) if isinstance(n, ast.Attribute) and n.attr == name
+                and isinstance(n.ctx, ast.Load)]
+    return [n for n in ast.walk(tree) if isinstance(n, ast.Name) and n.id == name and isinstance(n.ctx, ast.Load)]
+
+
+def _imported_as(tree: ast.Module, name: str) -> list[str]:
+    """The names a `from … import name` in tree binds it to."""
+    return [a.asname or a.name for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)
+            for a in n.names if a.name == name]
+
+
+def _references(fn: ast.FunctionDef | ast.AsyncFunctionDef, scope: ast.AST, rel: str,
+                trees: dict[str, ast.Module]) -> list[ast.AST]:
+    """Every reference to fn's name the shape check counts, by the note's rules: by name, never
+    resolved, so a second caller it cannot place still counts."""
+    name = fn.name
+    if isinstance(scope, ast.ClassDef):
+        return [n for tree in trees.values() for n in _loads(tree, name, attribute=True)]
+    if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        return _loads(scope, name, attribute=False)
+    refs = _loads(trees[rel], name, attribute=False)
+    for other, tree in trees.items():
+        if other != rel:
+            refs += [n for bound in _imported_as(tree, name) for n in _loads(tree, bound, attribute=False)]
+        refs += _loads(tree, name, attribute=True)
+    return refs
+
+
+def shape_base(pkg: str, section: str) -> str:
+    """The commit the shape check reads added lines from: `review_base` when a review round
+    covers the section; else, for a design whose mode word is `document`, the commit that added
+    the design; else the empty tree."""
+    base = review_base(pkg, section)
+    if base != EMPTY_TREE:
+        return base
+    design: Path = _paths(pkg, section)["design"]  # type: ignore[assignment]
+    if _design_mode(design) == "document":
+        added = git("log", "--diff-filter=A", "--format=%H", "-1", "--", _rel(design))
+        if added:
+            return added
+    return EMPTY_TREE
+
+
+def _is_options_bag(fn: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """True when fn's `**` parameter is annotated `Unpack[...]` or `<module>.Unpack[...]`."""
+    annotation = fn.args.kwarg.annotation if fn.args.kwarg else None
+    if not isinstance(annotation, ast.Subscript):
+        return False
+    value = annotation.value
+    return (isinstance(value, ast.Name) and value.id == "Unpack") or (
+        isinstance(value, ast.Attribute) and value.attr == "Unpack")
+
+
+def _own_defs(node: ast.AST) -> set[str]:
+    """The names of the functions defined directly in a function's body, not inside a nested
+    function, lambda or class."""
+    names: set[str] = set()
+    stack = list(ast.iter_child_nodes(node))
+    while stack:
+        child = stack.pop()
+        if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            names.add(child.name)
+        elif not isinstance(child, (ast.Lambda, ast.ClassDef)):
+            stack.extend(ast.iter_child_nodes(child))
+    return names
+
+
+def _indirect_count(tree: ast.Module) -> int:
+    """The module's lambdas passed as an argument, names of nested functions passed as an
+    argument, and calls through a subscript."""
+    n = 0
+    stack: list[tuple[ast.AST, frozenset[str]]] = [(tree, frozenset())]
+    while stack:
+        node, closures = stack.pop()
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            closures = closures | _own_defs(node)
+        if isinstance(node, ast.Call):
+            n += isinstance(node.func, ast.Subscript)
+            for arg in [*node.args, *(k.value for k in node.keywords)]:
+                n += isinstance(arg, ast.Lambda) or (isinstance(arg, ast.Name) and arg.id in closures)
+        stack.extend((child, closures) for child in ast.iter_child_nodes(node))
+    return n
+
+
+def _deepest(graph: _CallGraph, roots: list[str]) -> str:
+    """The largest deepest-effect depth over roots, or `none` when no effect lies below any."""
+    found = [d for root in roots if (d := graph.effect_depths(root)[1]) is not None]
+    return str(max(found)) if found else "none"
+
+
+def shape_depths(pkg: str, section: str, judged: list[str]) -> list[str]:
+    """One `MEASURED shape depth` line per README entry point, or per command for `surface`."""
+    if section == "surface":
+        scripts = package_scripts(pkg)
+        if not scripts:
+            return []
+        graph = _CallGraph(pkg)
+        values = []
+        for name, target in scripts.items():
+            root = graph.command(target)
+            values.append((name, "unresolved" if root is None else _deepest(graph, [root])))
+        return [f"MEASURED shape depth {name}: {value}" for name, value in values]
+    readme: Path = _paths(pkg, section)["readme"]  # type: ignore[assignment]
+    if not readme.exists():
+        return []
+    rows = table_rows(_item(readme.read_text(), "Entry points and interfaces"), ("name",))
+    names = [cells[0] for row in rows if (cells := _name_cells(row)[0])]
+    if not names:
+        return []
+    graph = _CallGraph(pkg)
+    modules = [m for m in graph.modules.values() if m.rel in judged]
+    out = []
+    for name in names:
+        value = "unresolved"
+        for module in modules:
+            if name in module.functions:
+                value = _deepest(graph, [graph.fn_for(module.functions[name], module, None, None).key])
+            elif name in module.classes:
+                methods = [graph.fn_for(item, module, name, None).key for item in module.classes[name].body
+                           if isinstance(item, DEFS) and not item.name.startswith("_")]
+                value = _deepest(graph, methods)
+            else:
+                continue
+            break
+        out.append(f"MEASURED shape depth {name}: {value}")
+    return out
+
+
+SHAPE_KINDS = ("trivial-helper", "options-bag")
+
+
+def shape_check(pkg: str, section: str) -> list[str]:
+    """The section's shape check, the lines the module docstring's **Shape.** lists: a `FAIL
+    shape: …` line per trivial single-use helper or options bag whose `def` line was added since
+    `shape_base`, then the two `MEASURED` kinds, then `PASS shape` when nothing failed."""
+    p = _paths(pkg, section)
+    code: list[str] = p["code"]  # type: ignore[assignment]
+    spath, nested = code[0], [c.removeprefix(":(exclude)") for c in code[1:]]
+    rows = sections(pkg)
+    surface_row = next((r for r in rows if r["section"] == "surface"), None)
+    top = ROOT / (surface_row["path"] if surface_row else _rel(package_root(pkg) / "src" / pkg))
+    judged = _py_files(ROOT / spath, tuple(nested))
+    trees = {rel: t for rel in dict.fromkeys([*_py_files(top), *judged]) if (t := _parse(rel)) is not None}
+    added = {(path, n) for path, sign, n, _ in diff_lines(shape_base(pkg, section), code) if sign == "+"}
+    classes: dict[str, int] = {}
+    for tree in trees.values():
+        for fn, scope in _definitions(tree):
+            if isinstance(scope, ast.ClassDef):
+                classes[fn.name] = classes.get(fn.name, 0) + 1
+    calls = {id(n.func) for tree in trees.values() for n in ast.walk(tree) if isinstance(n, ast.Call)}
+    fails: list[tuple[str, int, int, str]] = []
+    for rel in judged:
+        if rel not in trees:
+            continue
+        for fn, scope in _definitions(trees[rel]):
+            if (rel, fn.lineno) not in added:
+                continue
+            name = fn.name
+            if _is_options_bag(fn):
+                shown = f"{scope.name}.{name}" if isinstance(scope, ast.ClassDef) else name
+                fails.append((rel, fn.lineno, SHAPE_KINDS.index("options-bag"), shown))
+            if not name.startswith("_") or (name.startswith("__") and name.endswith("__")):
+                continue
+            if _statements(fn) > 3 or _is_property(fn):
+                continue
+            if isinstance(scope, ast.ClassDef) and classes.get(name, 0) > 1:
+                continue
+            refs = _references(fn, scope, rel, trees)
+            if len(refs) == 1 and id(refs[0]) in calls:
+                fails.append((rel, fn.lineno, SHAPE_KINDS.index("trivial-helper"), name))
+    out = [f"FAIL shape: {rel}:{n} {SHAPE_KINDS[kind]} {name}" for rel, n, kind, name in sorted(fails)]
+    out.append(f"MEASURED shape indirect: {sum(_indirect_count(trees[rel]) for rel in judged if rel in trees)}")
+    out += shape_depths(pkg, section, judged)
+    if not fails:
+        out.append(f"PASS shape {pkg}/{section}")
+    return out
+
+
+# ---------------------------------------------------------------------------------------------
+# Paths: the static call tree of each [project.scripts] command
+# ---------------------------------------------------------------------------------------------
+
+LOGGING_LIBRARIES = frozenset({"logging", "loguru", "structlog"})
+IO_MODULES = frozenset({"subprocess", "socket", "urllib", "http", "sqlite3", "shutil"})
+IO_BUILTINS = frozenset({"open", "print"})
+LITERALS = (ast.Constant, ast.JoinedStr, ast.List, ast.Dict, ast.Set, ast.Tuple,
+            ast.ListComp, ast.DictComp, ast.SetComp)
+DEFS = (ast.FunctionDef, ast.AsyncFunctionDef)
+UNRESOLVED_WIDTH = 80
+
+Resolved = tuple[str, object] | None
+
+
+class _Module:
+    """One module of the package as the resolver reads it: its functions, classes, imports,
+    name-valued dict literals and module-level names assigned from a call."""
+
+    def __init__(self, name: str, rel: str, source: str, tree: ast.Module, is_init: bool) -> None:
+        self.name, self.rel, self.source = name, rel, source
+        self.package = name if is_init else name.rpartition(".")[0]
+        self.functions = {n.name: n for n in tree.body if isinstance(n, DEFS)}
+        self.classes = {n.name: n for n in tree.body if isinstance(n, ast.ClassDef)}
+        self.dicts: dict[str, ast.Dict] = {}
+        self.assigned_calls: dict[str, ast.Call] = {}
+        for node in tree.body:
+            if isinstance(node, ast.Assign) and len(node.targets) == 1:
+                target = node.targets[0]
+            elif isinstance(node, ast.AnnAssign):
+                target = node.target
+            else:
+                continue
+            if not isinstance(target, ast.Name):
+                continue
+            if isinstance(node.value, ast.Dict) and node.value.values and all(
+                    isinstance(v, ast.Name) for v in node.value.values):
+                self.dicts[target.id] = node.value
+            elif isinstance(node.value, ast.Call):
+                self.assigned_calls[target.id] = node.value
+        # local name -> (module, attribute), attribute None for `import a.b`. A module-level
+        # import wins over the same name imported inside a function.
+        self.imports: dict[str, tuple[str, str | None]] = {}
+        top = [n for n in tree.body if isinstance(n, (ast.Import, ast.ImportFrom))]
+        top_ids = {id(n) for n in top}
+        nested = [n for n in ast.walk(tree) if isinstance(n, (ast.Import, ast.ImportFrom)) and id(n) not in top_ids]
+        for node in [*top, *nested]:
+            if isinstance(node, ast.Import):
+                for a in node.names:
+                    local = a.asname or a.name.split(".")[0]
+                    self.imports.setdefault(local, (a.name if a.asname else local, None))
+            else:
+                source_module = self.absolute(node)
+                for a in node.names:
+                    if a.name != "*":
+                        self.imports.setdefault(a.asname or a.name, (source_module, a.name))
+
+    def absolute(self, node: ast.ImportFrom) -> str:
+        """The dotted module a `from … import` names, a relative one resolved against this
+        module's package."""
+        if not node.level:
+            return node.module or ""
+        parts = self.package.split(".")
+        base = parts[: len(parts) - (node.level - 1)]
+        return ".".join([*base, *([node.module] if node.module else [])])
+
+
+class _Fn:
+    """A function, method, nested function or lambda: a frame of the call tree, with the names
+    its own body defines (nested functions, parameters, assigned variables)."""
+
+    def __init__(self, node: ast.AST, name: str, module: _Module, cls: str | None, parent: _Fn | None) -> None:
+        self.node, self.name, self.module, self.cls, self.parent = node, name, module, cls, parent
+        self.key = f"{module.rel}:{node.lineno}:{node.col_offset}"
+        self.line = node.lineno
+        # The function's own body: nested functions, lambdas and classes are listed but not
+        # entered, since each is a frame (or a scope) of its own.
+        stack = list(node.body) if isinstance(node, DEFS) else [node.body]
+        self.own: list[ast.AST] = []
+        while stack:
+            n = stack.pop()
+            self.own.append(n)
+            if not isinstance(n, (*DEFS, ast.Lambda, ast.ClassDef)):
+                stack.extend(ast.iter_child_nodes(n))
+        self.nested = {n.name: n for n in self.own if isinstance(n, DEFS)}
+        args = node.args
+        self.locals = {a.arg for a in [*args.posonlyargs, *args.args, *args.kwonlyargs, args.vararg, args.kwarg] if a}
+        self.locals |= {n.id for n in self.own if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)}
+
+
+class _CallGraph:
+    """The package's module index, and the call graph `--paths` prints, built per function on
+    first use.
+
+    A name resolves to a pair: ("function", key), ("class", (module, name)), ("module", dotted
+    name), ("dict", (module, name)), ("outside", root module), ("logger", None) or ("builtin",
+    name); None is a name the resolver does not follow.
+    """
+
+    def __init__(self, pkg: str) -> None:
+        surface = _row(pkg, "surface")
+        top = (ROOT / surface["path"]) if surface else package_root(pkg) / "src" / pkg
+        self.root_name = top.name
+        self.modules: dict[str, _Module] = {}
+        for rel in _py_files(top):
+            parts = list((ROOT / rel).relative_to(top.parent).with_suffix("").parts)
+            is_init = parts[-1] == "__init__"
+            name = ".".join(parts[:-1] if is_init else parts)
+            try:
+                source = (ROOT / rel).read_text()
+                self.modules[name] = _Module(name, rel, source, ast.parse(source), is_init)
+            except (OSError, SyntaxError, UnicodeDecodeError, ValueError):
+                continue
+        # every module and every package above one, `__init__.py` or not
+        self.known = {".".join(n.split(".")[:i]) for n in self.modules for i in range(1, n.count(".") + 2)}
+        self.fns: dict[str, _Fn] = {}
+        self._by_node: dict[int, _Fn] = {}
+        self._entries: dict[str, list[dict[str, object]]] = {}
+        self._building: set[str] = set()
+        self._resolving: set[tuple[str, str]] = set()
+
+    def fn_for(self, node: ast.AST, module: _Module, cls: str | None, parent: _Fn | None) -> _Fn:
+        """The one _Fn for node, made on first sight."""
+        if id(node) not in self._by_node:
+            if isinstance(node, ast.Lambda):
+                name = "lambda"
+            elif parent is None and cls:
+                name = f"{cls}.{node.name}"
+            else:
+                name = node.name
+            fn = _Fn(node, name, module, cls, parent)
+            self._by_node[id(node)] = fn
+            self.fns[fn.key] = fn
+        return self._by_node[id(node)]
+
+    def method(self, module: _Module, cls: str, attr: str, seen: frozenset[tuple[str, str]] = frozenset()) -> str | None:
+        """The key of the method attr of class cls, from cls or else its package base classes."""
+        node = module.classes[cls]
+        for item in node.body:
+            if isinstance(item, DEFS) and item.name == attr:
+                return self.fn_for(item, module, cls, None).key
+        seen = seen | {(module.name, cls)}
+        for base in node.bases:
+            found = self.resolve(module, None, base)
+            if found and found[0] == "class" and found[1] not in seen:
+                key = self.method(self.modules[found[1][0]], found[1][1], attr, seen)
+                if key:
+                    return key
+        return None
+
+    def resolve(self, module: _Module, fn: _Fn | None, node: ast.AST) -> Resolved:
+        """What the expression node names, read inside fn, or at module level when fn is None."""
+        if isinstance(node, ast.Name):
+            return self.lookup(fn, node.id) if fn else self.resolve_name(module, node.id, with_builtins=True)
+        if isinstance(node, ast.Attribute):
+            if isinstance(node.value, ast.Name) and node.value.id in ("self", "cls") and fn and fn.cls:
+                key = self.method(module, fn.cls, node.attr)
+                return ("function", key) if key else None
+            return self.attribute(self.resolve(module, fn, node.value), node.attr)
+        if isinstance(node, LITERALS):
+            return ("builtin", "literal")
+        return None
+
+    def lookup(self, fn: _Fn, name: str) -> Resolved:
+        """name read inside fn: a function nested in fn or in a function around it; None for any
+        other local name (a parameter, an assigned variable); else the module's own name."""
+        scope: _Fn | None = fn
+        while scope is not None:
+            if name in scope.nested:
+                return ("function", self.fn_for(scope.nested[name], scope.module, scope.cls, scope).key)
+            if name in scope.locals:
+                return None
+            scope = scope.parent
+        return self.resolve_name(fn.module, name, with_builtins=True)
+
+    def resolve_name(self, module: _Module, name: str, *, with_builtins: bool) -> Resolved:
+        """name at the top level of module, followed through its imports."""
+        if name in module.functions:
+            return ("function", self.fn_for(module.functions[name], module, None, None).key)
+        if name in module.classes:
+            return ("class", (module.name, name))
+        if name in module.dicts:
+            return ("dict", (module.name, name))
+        if name in module.assigned_calls:
+            maker = self.resolve(module, None, module.assigned_calls[name].func)
+            return ("logger", None) if maker and maker[0] == "outside" and maker[1] in LOGGING_LIBRARIES else None
+        if name in module.imports and (module.name, name) not in self._resolving:
+            self._resolving.add((module.name, name))
+            try:
+                return self.binding(*module.imports[name])
+            finally:
+                self._resolving.discard((module.name, name))
+        if with_builtins and hasattr(builtins, name):
+            return ("builtin", name)
+        return None
+
+    def binding(self, source: str, attr: str | None) -> Resolved:
+        """What an import of attr from module source binds, or of source itself when attr is None."""
+        if attr is None:
+            return ("module", source) if source in self.known else self.outside(source)
+        if f"{source}.{attr}" in self.known:
+            return ("module", f"{source}.{attr}")
+        if source in self.modules:
+            return self.resolve_name(self.modules[source], attr, with_builtins=False)
+        return self.outside(source)
+
+    def outside(self, source: str) -> Resolved:
+        """An import from source, not a module of the package: ("outside", its root module), or
+        None when that root is the package's own name (a module the index lacks)."""
+        root = source.split(".")[0]
+        return ("outside", root) if root and root != self.root_name else None
+
+    def attribute(self, target: Resolved, attr: str) -> Resolved:
+        """What `<target>.attr` names."""
+        if target is None:
+            return None
+        kind, value = target
+        if kind == "module":
+            if f"{value}.{attr}" in self.known:
+                return ("module", f"{value}.{attr}")
+            return self.resolve_name(self.modules[value], attr, with_builtins=False) if value in self.modules else None
+        if kind == "class":
+            key = self.method(self.modules[value[0]], value[1], attr)
+            return ("function", key) if key else None
+        if kind in ("outside", "logger", "builtin"):
+            return target
+        return None
+
+    def entries(self, fn: _Fn) -> list[dict[str, object]]:
+        """fn's children, in the source order of its calls: `{"frame": key, "indirect": bool,
+        "under": [keys]}` (under: the callables passed to that callee at this call site) or
+        `{"leaf": text, "effect": bool}`."""
+        if fn.key in self._entries:
+            return self._entries[fn.key]
+        self._building.add(fn.key)
+        calls = sorted((n for n in fn.own if isinstance(n, ast.Call)), key=lambda c: (c.lineno, c.col_offset))
+        out: list[dict[str, object]] = []
+        for call in calls:
+            callee, own = self.callee(fn, call)
+            passed = [self.passed(fn, arg) for arg in [*call.args, *(k.value for k in call.keywords)]]
+            passed = [key for key in passed if key and self.worth_printing(key)]
+            if callee:
+                out.append({"frame": callee, "indirect": False, "under": passed})
+            else:
+                out += own
+                out += [{"frame": key, "indirect": True, "under": []} for key in passed]
+        self._building.discard(fn.key)
+        self._entries[fn.key] = out
+        return out
+
+    def callee(self, fn: _Fn, call: ast.Call) -> tuple[str | None, list[dict[str, object]]]:
+        """(the package function call resolves to, or None; the entries it makes otherwise)."""
+        module, func = fn.module, call.func
+        if isinstance(func, ast.Subscript):
+            table = self.resolve(module, fn, func.value)
+            if table and table[0] == "dict":
+                owner = self.modules[table[1][0]]
+                keys: list[str] = []
+                for value in owner.dicts[table[1][1]].values:
+                    found = self.resolve(owner, None, value)
+                    if found and found[0] == "function" and found[1] not in keys:
+                        keys.append(found[1])
+                if keys:
+                    return None, [{"frame": key, "indirect": True, "under": []} for key in keys]
+            return None, [self.unresolved(fn, call)]
+        found = self.resolve(module, fn, func)
+        if found is None or found[0] in ("module", "dict"):
+            return None, [self.unresolved(fn, call)]
+        kind, value = found
+        if kind == "function":
+            return value, []
+        if kind == "class":
+            return self.method(self.modules[value[0]], value[1], "__init__"), []
+        effect = (kind == "outside" and (value in IO_MODULES or (
+            value not in sys.stdlib_module_names and value not in LOGGING_LIBRARIES))) or (
+            kind == "builtin" and isinstance(func, ast.Name) and value in IO_BUILTINS)
+        leaf = {"leaf": f"[effect: {ast.unparse(func)}] ({module.rel}:{call.lineno})", "effect": True}
+        return None, [leaf] if effect else []
+
+    def unresolved(self, fn: _Fn, call: ast.Call) -> dict[str, object]:
+        """The `[unresolved]` leaf for call: its source text on one line, then where it is."""
+        text = " ".join((ast.get_source_segment(fn.module.source, call) or ast.unparse(call)).split())
+        if len(text) > UNRESOLVED_WIDTH:
+            text = text[: UNRESOLVED_WIDTH - 1] + "…"
+        return {"leaf": f"{text} ({fn.module.rel}:{call.lineno}) [unresolved]", "effect": False}
+
+    def passed(self, fn: _Fn, arg: ast.AST) -> str | None:
+        """The key of the callable arg hands over: a lambda, or a name of a package function."""
+        if isinstance(arg, ast.Lambda):
+            return self.fn_for(arg, fn.module, fn.cls, fn).key
+        found = self.resolve(fn.module, fn, arg) if isinstance(arg, (ast.Name, ast.Attribute)) else None
+        return found[1] if found and found[0] == "function" else None
+
+    def worth_printing(self, key: str) -> bool:
+        """False for a passed lambda or nested function whose body makes no frame and no leaf."""
+        fn = self.fns[key]
+        if fn.parent is None or key in self._building:
+            return True
+        return bool(self.entries(fn))
+
+    def edges(self, key: str) -> list[tuple[str, int, bool]]:
+        """(child, depth added, indirect) per frame under key; a callable passed to a callee sits
+        under that callee, two levels down."""
+        out = []
+        for entry in self.entries(self.fns[key]):
+            if "frame" in entry:
+                out.append((entry["frame"], 1, entry["indirect"]))
+                out += [(under, 2, True) for under in entry["under"]]
+        return out
+
+    def footer(self, root: str) -> list[str]:
+        """The three footer lines, from the call graph rather than the printed tree."""
+        first, last = self.effect_depths(root)
+        indirect = sum(1 for key in self.reachable(root) for _, _, ind in self.edges(key) if ind)
+        return [f"depth to first effect: {'none' if first is None else first}",
+                f"deepest effect: {'none' if last is None else last}",
+                f"indirect frames: {indirect}"]
+
+    def effect_depths(self, root: str) -> tuple[int | None, int | None]:
+        """(shallowest, deepest) depth below root of a frame that makes an effect call, root at
+        0 and back edges ignored; None for each when no effect lies below root."""
+        makes_effect = {key: any(e.get("effect") for e in self.entries(self.fns[key])) for key in self.reachable(root)}
+        dist, heap, first = {root: 0}, [(0, root)], None
+        while heap:
+            d, key = heapq.heappop(heap)
+            if d > dist[key]:
+                continue
+            if makes_effect[key]:
+                first = d
+                break
+            for child, step, _ in self.edges(key):
+                if d + step < dist.get(child, d + step + 1):
+                    dist[child] = d + step
+                    heapq.heappush(heap, (d + step, child))
+        longest: dict[str, int | None] = {}
+        on_path: set[str] = set()
+
+        def deepest(key: str) -> int | None:
+            on_path.add(key)
+            best = 0 if makes_effect[key] else None
+            for child, step, _ in self.edges(key):
+                if child in on_path:
+                    continue
+                below = longest[child] if child in longest else deepest(child)
+                if below is not None and (best is None or step + below > best):
+                    best = step + below
+            on_path.discard(key)
+            longest[key] = best
+            return best
+
+        return first, deepest(root)
+
+    def reachable(self, root: str) -> list[str]:
+        seen, stack = [root], [root]
+        while stack:
+            for child, _, _ in self.edges(stack.pop()):
+                if child not in seen:
+                    seen.append(child)
+                    stack.append(child)
+        return seen
+
+    def tree(self, key: str, depth: int, indirect: bool, path: list[str], seen: set[str], out: list[str],
+             under: list[str] | tuple[str, ...] = ()) -> None:
+        """Print key's frame and, the first time it is met, its children; then the callables
+        handed to it at this call site."""
+        fn = self.fns[key]
+        mark = " [indirect]" if indirect else ""
+        if key in path:
+            mark += " [recursive]"
+        elif key in seen:
+            mark += " [seen]"
+        out.append(f"{'  ' * depth}{fn.name} ({fn.module.rel}:{fn.line}){mark}")
+        expand = key not in path and key not in seen
+        path.append(key)
+        if expand:
+            seen.add(key)
+            for entry in self.entries(fn):
+                if "leaf" in entry:
+                    out.append(f"{'  ' * (depth + 1)}{entry['leaf']}")
+                else:
+                    self.tree(entry["frame"], depth + 1, entry["indirect"], path, seen, out, entry["under"])
+        for child in under:
+            self.tree(child, depth + 1, True, path, seen, out)
+        path.pop()
+
+    def command(self, target: str) -> str | None:
+        """The key of the function a `module:attr` script target names, None when it names none."""
+        module_name, _, attr = target.strip().partition(":")
+        module = self.modules.get(module_name)
+        if module is None or not attr:
+            return None
+        first, *rest = attr.strip().split(".")
+        found = self.resolve_name(module, first, with_builtins=False)
+        for part in rest:
+            found = self.attribute(found, part)
+        return found[1] if found and found[0] == "function" else None
+
+
+def package_scripts(pkg: str) -> dict[str, str]:
+    """The package `pyproject.toml`'s `[project.scripts]` table; empty when it has none."""
+    pyproject = package_root(pkg) / "pyproject.toml"
+    try:
+        return tomllib.loads(pyproject.read_text()).get("project", {}).get("scripts", {})
+    except (OSError, tomllib.TOMLDecodeError):
+        return {}
+
+
+def paths_report(pkg: str) -> list[str]:
+    """`--paths <pkg>`: one call tree per `[project.scripts]` command, or `paths: no commands`."""
+    scripts = package_scripts(pkg)
+    if not scripts:
+        return ["paths: no commands"]
+    graph = _CallGraph(pkg)
+    blocks = []
+    for name, target in scripts.items():
+        lines = [f"command: {name} = {target}"]
+        root = graph.command(target)
+        if target.partition(":")[0].strip() not in graph.modules:
+            lines.append("target outside the package")
+        elif root is None:
+            lines.append("target not found in the package")
+        else:
+            graph.tree(root, 0, False, [], set(), lines)
+            lines += graph.footer(root)
+        blocks.append("\n".join(lines))
+    return "\n\n".join(blocks).split("\n")
+
+
 def repo_report() -> list[str]:
     """The repo-wide gap list, six groups, for the documenter's Known gaps."""
     pk, secs, specs, chg = [], [], [], []
@@ -1618,6 +2595,8 @@ def repo_report() -> list[str]:
             pk.append(f"{pkg}: shipped")
         elif shipped == "shipped: no (surface check FAIL)":
             pk.append(f"{pkg}: building ({done}/{len(table)} DONE, surface check FAIL)")
+        elif shipped.startswith("shipped: no (paths "):
+            pk.append(f"{pkg}: building ({done}/{len(table)} DONE, {shipped[len('shipped: no ('):-1]})")
         elif not any(_paths(pkg, str(r["section"]))["design"].exists() for r in table):  # type: ignore[union-attr]
             pk.append(f"{pkg}: planned")
         else:
@@ -1696,6 +2675,8 @@ def implementer_inputs(pkg: str, section: str) -> list[str]:
     intent: Path = p["intent"]  # type: ignore[assignment]
     n, verdict, _, _ = newest_round(pkg, section)
     review = sorted(_rel(f) for f in _reports(pkg, section).get(n, [])) if verdict in ("request changes", "spec-change") else []
+    if (report := section_paths_report(pkg, section)) is not None:
+        review.append(_rel(report))
     changes = [_rel(c["path"]) for c in open_changes(pkg, section)]  # type: ignore[arg-type]
 
     def cell(values: list[str]) -> str:
@@ -1731,6 +2712,15 @@ def _holds_code(pkg: str, section: str) -> bool:
                for f in base.rglob("*.py"))
 
 
+def _design_mode(design: Path) -> str:
+    """The word after `Mode:` in the design's first five lines; `none` with no design or no word."""
+    if not design.exists():
+        return "none"
+    head = design.read_text().strip().splitlines()[:5]
+    m = next((m for line in head if (m := re.match(r"\**Mode:\**\s*`?(\w+)", line.strip()))), None)
+    return m.group(1) if m else "none"
+
+
 def spawn_fields(pkg: str, section: str) -> list[str]:
     """The `--fields` lines for one section; the module docstring lists them."""
     p = _paths(pkg, section)
@@ -1743,11 +2733,7 @@ def spawn_fields(pkg: str, section: str) -> list[str]:
         mode = "document"
     else:
         mode = "new"
-    design_mode = "none"
-    if design.exists():
-        head = design.read_text().strip().splitlines()[:5]
-        if m := next((m for line in head if (m := re.match(r"\**Mode:\**\s*`?(\w+)", line.strip()))), None):
-            design_mode = m.group(1)
+    design_mode = _design_mode(design)
     base = "none"
     reps = _reports(pkg, section)
     if reps:
@@ -1764,6 +2750,7 @@ def spawn_fields(pkg: str, section: str) -> list[str]:
         f"design mode: {design_mode}",
         f"diff base: {base}",
         f"upstream interfaces: {', '.join(_upstream_interfaces(pkg, section)) or 'none'}",
+        f"paths report: {_rel(report) if (report := section_paths_report(pkg, section)) else 'none'}",
     ]
 
 
@@ -1782,6 +2769,8 @@ def main() -> int:
     argv = sys.argv[1:]
     has_rounds, rounds_target = _flag_value(argv, "--rounds")
     has_surface, surface_pkg = _flag_value(argv, "--surface")
+    has_shape, shape_pkg = _flag_value(argv, "--shape")
+    has_paths, paths_pkg = _flag_value(argv, "--paths")
     has_section, section_name = _flag_value(argv, "--section")
     has_gate, gate_pkg = _flag_value(argv, "--run-gate")
     has_inputs, inputs_target = _flag_value(argv, "--inputs")
@@ -1798,21 +2787,42 @@ def main() -> int:
     if has_rounds:
         pkg, _, sec = (rounds_target or "").partition("/")
         if not pkg or not sec:
-            print("--rounds needs a target: status.py --rounds <pkg>/<section>")
+            print("--rounds needs a target: status.py --rounds <pkg>/<section> or <pkg>/paths")
             return 2
-        n = rounds(pkg, sec)
-        print(f"rounds: {n}")
-        print(f"next round: {n + 1}")
-        print(f"commit: {section_commit(pkg, sec) or 'none'}")
+        if sec == "paths":
+            print("\n".join(paths_rounds(pkg)))
+        else:
+            n = rounds(pkg, sec)
+            print(f"rounds: {n}")
+            print(f"next round: {n + 1}")
+            print(f"commit: {section_commit(pkg, sec) or 'none'}")
     if has_gate:
         fails = run_gate(gate_pkg or only)
         print("run gate: PASS" if not fails else "run gate: FAIL")
         for f in fails:
             print(f"  - {f}")
         code |= 1 if fails else 0
-    if has_section and not has_surface:
-        print("--section needs --surface <pkg>")
+    if has_section and not has_surface and not has_shape:
+        print("--section needs --surface <pkg> or --shape <pkg>")
         return 2
+    if has_shape:
+        if not shape_pkg or not section_name:
+            print("--shape needs a package and --section a section: status.py --shape <pkg> --section <s>")
+            return 2
+        if _row(shape_pkg, section_name) is None:
+            print(f"no section {section_name} in {_rel(contract_path(shape_pkg))}")
+            return 2
+        lines = shape_check(shape_pkg, section_name)
+        print("\n".join(lines))
+        code |= 1 if any(ln.startswith("FAIL") for ln in lines) else 0
+    if has_paths:
+        if not paths_pkg:
+            print("--paths needs a package: status.py --paths <pkg>")
+            return 2
+        if not contract_path(paths_pkg).exists():
+            print(f"{paths_pkg}: missing {_rel(contract_path(paths_pkg))}")
+            return 2
+        print("\n".join(paths_report(paths_pkg)))
     if has_surface and has_section:
         if not surface_pkg or not section_name:
             print("--surface needs a package and --section a section: status.py --surface <pkg> --section <s>")
@@ -1867,7 +2877,7 @@ def main() -> int:
         needed = scaffold_needed(scaffold_pkg)
         print(f"scaffold: needed ({', '.join(needed)})" if needed else "scaffold: done")
         code |= 1 if needed else 0
-    if has_rounds or has_gate or has_surface or has_repo or has_inputs or has_scaffold or has_fields:
+    if has_rounds or has_gate or has_surface or has_shape or has_paths or has_repo or has_inputs or has_scaffold or has_fields:
         return code
     if not DOCS.exists():
         print("no docs/ directory here — run from the repo root")

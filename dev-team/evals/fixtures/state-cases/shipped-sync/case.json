@@ -34,7 +34,8 @@
     "state": "DONE",
     "contains": [
       "shipped: yes",
-      "next: /dev-team:sync-plan data"
+      "next: /dev-team:sync-plan data",
+      "paths: approved (no commands)"
     ]
   }
 }

@@ -1,0 +1,39 @@
+{
+  "note": "a current paths report that approves",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    },
+    {
+      "do": "paths_review",
+      "round": 1,
+      "verdict": "approve"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "contains": [
+      "paths: approved (docs/packages/data/reviews/paths/2026-09-27-r1-p.md)",
+      "shipped: yes"
+    ]
+  }
+}

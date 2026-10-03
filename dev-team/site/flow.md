@@ -46,7 +46,9 @@ flowchart LR
 `/dev-team:run-package <pkg>` first builds the package's workspace when it has none, so every
 test is written and run inside it under the repo's own lint rules; then it derives every
 section's state from disk, runs the ready set, and loops until every section is DONE; then,
-once the package's surface check passes, it closes the package. Every ready row's step goes
+once the package's surface check passes, it sends one reviewer (`Focus: paths`) down each
+command's call tree, re-opens as FIX n every section that review names, and closes the
+package once a paths report approves. Every ready row's step goes
 out in one message — designers, testers, implementers and reviewers together, the architect
 alone at PLAN — so the chart's stages run side by side for different sections;
 `--serial` runs one kind of step per batch and one implementer at a time.
@@ -59,7 +61,11 @@ flowchart TB
   SCAF -->|"yes"| STATE["status.py: derive each section's state from disk<br/>PROBE · DESIGN · TEST · IMPLEMENT · REVIEW · FIX n · PLAN · DONE · BLOCKED"]
   STATE --> READY{"ready set: in-package deps DONE?"}
   READY -->|"none ready, some BLOCKED"| ASK
-  READY -->|"all DONE, surface check PASS"| SYNC["architect: sync-plan pkg<br/>apply approved deviations and change files, verified against code"]
+  READY -->|"all DONE, surface check PASS, paths: needed"| PATHS["reviewer<br/>Focus: paths"]
+  PATHS -->|"status.py --paths pkg: each command's call tree<br/>docs/packages/pkg/reviews/paths/date-rN-p.md"| STATE
+  PATHS -->|"FIX n on the sections it names"| IMPL
+  PATHS -->|"cap: round 3"| ASK
+  READY -->|"all DONE, surface check PASS, paths: approved"| SYNC["architect: sync-plan pkg<br/>apply approved deviations and change files, verified against code"]
   READY -->|"all DONE, surface check FAIL"| ASK
   READY -->|"ready set R"| PROBE["researcher ×P (probe)<br/>api sources with no pkg/section entry yet"]
   PROBE -->|"docs/sources/source.md extended"| DESIGN["designer ×R<br/>contract row · dep READMEs · probe · decisions"]
@@ -103,7 +109,9 @@ after — a retry, a block, a third red attempt — reaches the driver through t
 which `status.py` reads: a section whose implementer blocked or was let through for its current
 commit is BLOCKED, and the driver asks *run the implementer again*, *review anyway* or *stop
 here*. When every section is DONE and the surface check fails, it quotes the check's `FAIL`
-lines and asks *fixed, retry* or *stop here*; the close waits. A free-text answer ends the run
+lines and asks *fixed, retry* or *stop here*; the close waits. When the paths review still
+requests changes at round 3, it asks *one more round* or *defer*; the close waits for
+`paths: approved`. A free-text answer ends the run
 with the Summary. A `spec-change` is never relayed: its entry is on disk in
 `docs/packages/<pkg>/deviations/<section>.md`, and the next `status.py` re-opens the step its
 level names. Every state
@@ -143,6 +151,8 @@ sequenceDiagram
   Rev-->>Drv: Result · Verdict: approve | request changes | spec-change
   Note over Drv,Rev: FIX n: implementer, then one Focus full reviewer on the diff
   Note over Drv: every section DONE, surface last
+  Drv->>Rev: PATHS: Package · Focus paths, letter p · Round · Previous round · Diff
+  Rev-->>Drv: Result · Verdict: approve | request changes (each CRITICAL names a section: FIX n)
   Drv->>Arch: Package · Run (the close: sync-plan)
   Drv-->>You: summary · next: /dev-team:plan-package analysis
   You->>Doc: /dev-team:finalize-project
@@ -187,6 +197,7 @@ upstream `interface.md`, a probe doc — wins over every plan-time document abou
 | `tests/intent/<section>/` | tester | implementer, reviewer, the stop gate, `status.py` | the design is newer than the tree |
 | section `README.md`; the `surface` section's is `docs/packages/<pkg>/interface.md` | implementer; `pair` at wrap-up | dependents' designer, tester and implementer, reviewer, documenter, architect, `status.py` | the code is newer than it |
 | `docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<a, b or s>.md` (2.0: `docs/reviews/…`, still read) | reviewer | `status.py`, the fix-round implementer, the next reviewer | the code is newer than its `Commit:` |
+| `docs/packages/<pkg>/reviews/paths/<date>-r<n>-p.md` | reviewer (`Focus: paths`) | `status.py`, the FIX implementer, the next paths review | a section's code changed after its `Commit:` |
 | `docs/packages/<pkg>/deviations/<section>.md` (one per section; the 2.0 `docs/deviations/…` still read) | implementer, designer, tester, reviewer, architect; `pair` at wrap-up | reviewer, tester, architect, `status.py`, the stop gate | never; an entry speaks while its `Status:` is `open` |
 | `docs/packages/<pkg>/changes/<slug>.md` (one per affected package; the 2.0 `docs/changes/…` still read) | architect (a CHANGE outcome) | `status.py`, designer (delta), implementer, reviewer, architect (sync-plan) | its sections are DONE and `sync-plan` has not run |
 | `docs/decisions.md` | `sync_decisions.py` from the inboxes; architect (stubs); you, the driver or `pair` (`Decision:`, `Status:`) | every agent; `status.py`; documenter | never; retired by `superseded` |

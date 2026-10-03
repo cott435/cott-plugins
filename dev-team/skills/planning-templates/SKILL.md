@@ -18,7 +18,7 @@ the headings, the budget, and what goes under each heading.
 | `docs/packages/<pkg>/changes/<slug>.md` — a change file, one per affected package | `references/change.md` |
 | an entry in `docs/packages/<pkg>/deviations/<section>.md` — a deviation or a spec-change | `references/deviations-entry.md` |
 | an entry in `docs/packages/<pkg>/decisions/<section>.md` — a decision stub or an `Applied:` line | `references/decisions-inbox.md` |
-| `docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<a, b or s>.md` — a review report | `references/review-report.md` |
+| `docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<a, b or s>.md` — a review report, and a package's paths report `docs/packages/<pkg>/reviews/paths/<date>-r<n>-p.md` | `references/review-report.md` |
 | `docs/sources/<source>.md` — a source probe, either kind | `references/source-probe.md` |
 
 The reviewer, implementer, documenter, and — for the source probe — every one of the four

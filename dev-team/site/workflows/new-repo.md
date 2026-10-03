@@ -109,9 +109,21 @@ implementer at a time.
 The `surface` section comes last, since it depends on every other: its design is built from
 the shipped READMEs, its implementer writes the lazy top-level `__init__.py`, the pipelines,
 `cli.py`, `docs/api/data/index.md` and `docs/packages/data/interface.md`, and its review approves
-the package's public surface. When every section is DONE, the driver runs the architect as
-`sync-plan`: approved deviations go into the contract, verified against the code. The summary
-ends with `next: /dev-team:plan-package analysis`.
+the package's public surface.
+
+When every section is DONE, the driver runs the paths review: one reviewer (`Focus: paths`)
+follows each `[project.scripts]` command from `cli.py` to its external effects, on the call
+tree `status.py --paths data` prints, and writes `docs/packages/data/reviews/paths/`. It may
+block on four things only: a command more than 8 frames from its first effect (P1), a lambda,
+closure or mapping dispatch on a main path whose target the call site does not name (P2), a
+pipeline or orchestrator that fails the reader's test in `references/pipelines.md` (P3), and a
+trivial single-use helper or options bag on a main path (P4). Each finding names a section,
+which comes back as a FIX round, then a review, then the paths review again; at round 3 the
+driver asks *one more round* or *defer*. The close waits for `paths: approved`; a package with
+no commands needs none.
+
+Then the driver runs the architect as `sync-plan`: approved deviations go into the contract,
+verified against the code. The summary ends with `next: /dev-team:plan-package analysis`.
 
 The driver asks you when a section is BLOCKED — an open decision with no assumption, a missing
 credential, a review at its cap (*one more round* or *defer*), a third `design-gap` — records

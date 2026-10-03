@@ -16,7 +16,8 @@
   "expect": {
     "exit": 0,
     "contains": [
-      "mode: new\nchange file: none\ndesign mode: new\ndiff base: none\n"
+      "mode: new\nchange file: none\ndesign mode: new\ndiff base: none\n",
+      "paths report: none"
     ]
   }
 }

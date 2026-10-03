@@ -23,7 +23,8 @@
   "expect": {
     "exit": 0,
     "contains": [
-      "upstream interfaces: none\n"
+      "upstream interfaces: none\n",
+      "paths report: none"
     ]
   }
 }

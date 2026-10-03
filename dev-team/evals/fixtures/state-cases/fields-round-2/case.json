@@ -45,7 +45,8 @@
   "expect": {
     "exit": 0,
     "contains": [
-      "mode: new\n"
+      "mode: new\n",
+      "paths report: none"
     ],
     "matches": [
       "^diff base: [0-9a-f]{7}$"

@@ -27,7 +27,8 @@
     "state": "DONE",
     "contains": [
       "shipped: yes",
-      "next: /dev-team:plan-package analysis"
+      "next: /dev-team:plan-package analysis",
+      "paths: approved (no commands)"
     ]
   }
 }

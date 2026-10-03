@@ -1,0 +1,48 @@
+{
+  "note": "--inputs at a paths FIX: Review is the paths report alone",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    },
+    {
+      "do": "paths_review",
+      "round": 1,
+      "verdict": "request changes",
+      "critical": [
+        "ingest: P2 — packages/data/src/data/ingest/reader.py:7 — a lambda on the main path — call the step by name"
+      ]
+    }
+  ],
+  "args": [
+    "--inputs",
+    "data/ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "matches": [
+      "^Review: docs/packages/data/reviews/paths/2026-09-27-r1-p\\.md$"
+    ],
+    "contains": [
+      "Round: 2"
+    ]
+  }
+}

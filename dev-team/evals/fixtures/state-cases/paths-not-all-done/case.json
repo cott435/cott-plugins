@@ -1,0 +1,21 @@
+{
+  "note": "a package still being built, no paths report: no paths: line",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "absent": [
+      "paths:"
+    ]
+  }
+}

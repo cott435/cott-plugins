@@ -1,0 +1,35 @@
+{
+  "note": "every section DONE, a package with one command and no paths report: the review is needed (2.5 phase 7)",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "contains": [
+      "paths: needed",
+      "shipped: no (paths needed)",
+      "next: /dev-team:run-package data"
+    ]
+  }
+}

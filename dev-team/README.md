@@ -200,6 +200,10 @@ questions come from the stop gate's record:
   DONE): the driver quotes the `FAIL` lines of `status.py --surface <pkg>` and offers *fixed,
   retry* or *stop here*. The close waits until the check passes; the faulty rows are usually
   in sibling READMEs, which you correct.
+- **A paths review that still requests changes at round 3** (`paths: round 3 (request changes:
+  …) (cap)`): the driver quotes the line and offers *one more round*, which runs an
+  implementer and a review for each section it names and then the paths review again, or
+  *defer*, which moves the findings to `docs/followups.md`.
 
 An answer that is none of the options — free text typed in place of a choice — ends the run
 where it stands with the Summary. The driver does not act on the text; you read the Summary
@@ -222,11 +226,13 @@ every call and never stored:
 | **TEST** | no intent tests; or the design is newer than them; or an open `spec-change:test` entry; or an `approved` deviation's clause is cited by a test not yet regenerated |
 | **IMPLEMENT** | no README (for `surface`, no `interface.md`); or the intent tests are newer than it (a regeneration commit, or one marked `intent tests current with design`, does not count); or the gate's record for the current commit says `not done`, a run that died between attempts |
 | **REVIEW** | no review round; or round 1 lacks its `a` or `b` report; or the code is newer than the newest round's `Commit:`; or a `spec-change` verdict has no open entry left |
-| **FIX n** | round `n` says `request changes`, under the cap, and nothing changed since |
+| **FIX n** | round `n` says `request changes`, under the cap, and nothing changed since; or the section is DONE and the package's paths review names it |
 | **DONE** | the newest round approves and the code is not newer than its `Commit:` |
 
-A package is **shipped** when its `surface` section is DONE and `status.py --surface <pkg>`
-passes; a package whose check fails prints `shipped: no (surface check FAIL)`. A round is the
+A package is **shipped** when its `surface` section is DONE, `status.py --surface <pkg>`
+passes, and its paths review approves (`paths: approved`). A package whose check fails prints
+`shipped: no (surface check FAIL)`; one whose commands have not been reviewed prints `shipped:
+no (paths needed)` until `/dev-team:run-package <pkg>` has run the review. A round is the
 set of reports sharing `-r<n>`; its verdict is the worst of them.
 
 ## Pairing on a section
@@ -453,6 +459,18 @@ round), and the report is the queue: the fix-round implementer reads its **CRITI
 prints it, never `HEAD`, which in a batch may be a sibling's. The verdict is `approve`,
 `request changes` or `spec-change`.
 
+Once every section is DONE, one more reviewer (`Focus: paths`) follows each command of the
+package from `cli.py` to its external effects, on the call tree `status.py --paths <pkg>`
+prints. It writes `docs/packages/<pkg>/reviews/paths/<date>-r<n>-p.md`, with one row per
+command under **Paths**, and may block on four things only: a command more than 8 frames from
+its first external effect (P1), a lambda, closure or mapping dispatch on a main path (P2), a
+pipeline or orchestrator that fails the reader's test in `python-style-guide`'s
+`references/pipelines.md` (P3), and a trivial single-use helper or options bag on a main path
+(P4). Each finding names a section, and `status.py` re-opens that section as FIX n with the
+paths report as its previous round. A package is not shipped until this review approves; at
+round 3 the driver asks *one more round* or *defer*. A package with no `[project.scripts]`
+commands needs no paths review.
+
 A designer's `proposed` entry against a contract row — its §10 items — is judged by one test,
 the one the designer applied: additive and compatible (a new optional parameter, a helper the
 row does not name) is `approved` and folded in at the close; anything a consumer must change
@@ -475,7 +493,7 @@ mechanism in Claude Code that scopes by agent.
 | Skill | arch | design | impl | test | review | doc | research |
 |---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 | `project-structure` — layout, size limits, config placement, naming | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
-| `python-style-guide` — inside a file: docstrings, function shape, `__init__.py`, naming | — | — | ✓ | ✓ | ✓ | — | — |
+| `python-style-guide` — inside a file: docstrings, function shape, pipelines, `__init__.py`, naming | — | — | ✓ | ✓ | ✓ | — | — |
 | `python-implementation` — splitting mechanics, config code | — | — | invoked | — | — | — | — |
 | `workspace-scaffold` — pyproject, import-linter, mkdocs, CI skeletons | invoked | — | invoked | — | — | — | — |
 | `planning-templates` — headings for every document the loop parses | invoked | read | read | read | read | — | invoked |
@@ -504,9 +522,11 @@ Three conventions in `python-style-guide` are marked *Project convention*:
   package, import from its top level only. import-linter enforces the second.
 - **Docstrings on everything.** Google style, `Args:` without types, `Examples:` in doctest
   form on public entry points. The docs build runs strict in CI — that is the docstring-rot
-  catch.
+  catch. A summary line says what the function changes outside itself.
 - **Function shape.** Phases inside a function are fine, each with a one-line purpose comment;
-  a helper is extracted only when the jump buys something.
+  a helper is extracted only when the jump buys something. A limit is met with a seam: no
+  `**options` bag, no packed tuple, no three-statement helper with one caller. Every call on a
+  main path names its target, and a pipeline reads as its steps (`references/pipelines.md`).
 
 **CLI commands live in `src/<pkg>/cli.py`**, one function per command, registered under
 `[project.scripts]`, with no `scripts/` directory — an entry point must be importable from the
@@ -516,7 +536,10 @@ installed package (`project-structure` §1).
 level only", and section layering inside a package are import-linter contracts in the root
 `pyproject.toml`, derived from the Sections table's `depends on`. CI runs the same
 `docs/constraints.md` rows the stop gate runs. Merge `pyproject-lint-config.toml` into the root
-`pyproject.toml`; it ships beside this README so there is one copy.
+`pyproject.toml`; it ships beside this README so there is one copy. The lint block caps
+positional parameters (`PLR0917`; keyword-only ones are free) and requires ruff 0.16.0 or
+later. The stop gate also runs `status.py --shape`: a run that adds a trivial single-use helper
+or an options bag does not pass.
 
 This plugin ships no rule: Claude Code loads path-scoped rules only from `.claude/rules/`. For
 your own interactive work, write a `.claude/rules/python-standards.md` in the repo you are
@@ -616,6 +639,23 @@ passing → shipped.
 - **A package shipped under 2.3 may now print `shipped: no (surface check FAIL)`.** Run
   `status.py --surface <pkg>` and correct the README rows it names: one exported name per row,
   in backticks, no grouped or dotted names.
+- **A package shipped under 2.4 may now print `shipped: no (paths needed)`.** `shipped:` needs
+  the paths review. Run `/dev-team:run-package <pkg>` once: the driver spawns the paths review,
+  and its findings re-open the sections they name as FIX rounds. A package with no
+  `[project.scripts]` commands reads `paths: approved (no commands)` and stays shipped.
+- **An existing repo keeps its old argument cap.** The lint block now caps positional
+  parameters only, but the scaffold merges it only into a new repo. In your root
+  `pyproject.toml`, replace `PLR0913` with `PLR0917` and `max-args` with `max-positional-args`,
+  add `required-version = ">=0.16.0"` under `[tool.ruff]`, and upgrade ruff to 0.16.0 or later.
+  An older ruff then refuses to run instead of skipping the rule.
+- **The stop gate fails a run that adds a trivial single-use helper or an options bag**
+  (`FAIL shape: …` in the gate record). Inline the helper or name its parameters; code already
+  reviewed, and adopted code, is measured and never failed.
+- **`paths` is a reserved section name.** Rename a section called `paths` in the package
+  contract before its next run: its reviews would share `reviews/paths/` with the paths review.
+- **`status.py --fields` prints six lines, and `reviews/paths/` holds reports with letter
+  `p`.** A script of your own that reads `--fields` or the review directories reads the sixth
+  line, `paths report:`, and skips `reviews/paths/` when it means a section's reports.
 - **A README with grouped or dotted name cells fails its section's next gate.** The same
   correction, in that section.
 - **A 2.2-or-later ledger entry still `open` re-opens its step** even when its document was

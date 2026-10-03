@@ -1,0 +1,27 @@
+{
+  "note": "--paths (2.5 phase 4): run_load calls a method on the object make_reader returns",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands",
+      "files": {
+        "packages/data/src/data/pipelines/load.py": "\"\"\"The load pipeline.\"\"\"\n\n\nclass TradeReader:\n    \"\"\"Read trades.\"\"\"\n\n    def read(self, path: str) -> list[str]:\n        \"\"\"Return no rows for path.\"\"\"\n        return []\n\n\ndef make_reader() -> TradeReader:\n    \"\"\"Make a trade reader.\"\"\"\n    return TradeReader()\n\n\ndef run_load(path: str) -> int:\n    \"\"\"Read the trades at path and return their count.\"\"\"\n    reader = make_reader()\n    rows = reader.read(path)\n    return len(rows)\n"
+      }
+    }
+  ],
+  "args": [
+    "--paths",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "matches": [
+      "^ +reader\\.read\\(path\\) \\(.*\\) \\[unresolved\\]$"
+    ],
+    "contains": [
+      "depth to first effect: none"
+    ]
+  }
+}

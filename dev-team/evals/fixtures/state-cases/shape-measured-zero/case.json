@@ -1,0 +1,34 @@
+{
+  "note": "--shape (2.5 phase 5): the built ingest has no indirect call, and load_trades calls nothing",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    }
+  ],
+  "args": [
+    "--shape",
+    "data",
+    "--section",
+    "ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "MEASURED shape indirect: 0",
+      "MEASURED shape depth load_trades: none",
+      "PASS shape data/ingest"
+    ]
+  }
+}

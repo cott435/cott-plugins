@@ -1,0 +1,47 @@
+{
+  "note": "--shape (2.5 phase 2): a round-1 pair reviews the build, then the helper is committed after it",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "do": "review",
+      "section": "ingest",
+      "round": 1,
+      "reports": {
+        "a": "approve",
+        "b": "approve"
+      }
+    },
+    {
+      "files": {
+        "packages/data/src/data/ingest/helper.py": "\"\"\"Rows.\"\"\"\n\n\ndef load_rows(path):\n    \"\"\"Load rows.\"\"\"\n    return _strip(path)\n\n\ndef _strip(path):\n    \"\"\"Strip the path.\"\"\"\n    return str(path).strip()\n"
+      },
+      "message": "data/ingest: helper"
+    }
+  ],
+  "args": [
+    "--shape",
+    "data",
+    "--section",
+    "ingest"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "FAIL shape: packages/data/src/data/ingest/helper.py:9 trivial-helper _strip"
+    ]
+  }
+}

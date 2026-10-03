@@ -1,7 +1,7 @@
 ---
 name: status
 description: Print where every package and section stands — one state per section (PROBE, DESIGN, TEST, IMPLEMENT, REVIEW, FIX n, PLAN, DONE, BLOCKED), the ready set, whether the package shipped, and the exact next command — derived from docs/ and the code every time, never from a status file. Use whenever you have lost track, before planning the next package, or to see why run-package stopped.
-argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>] [--surface <pkg>] [--repo] [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]"
+argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>|<pkg>/paths] [--surface <pkg>] [--shape <pkg> --section <s>] [--paths <pkg>] [--repo] [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]"
 disable-model-invocation: true
 ---
 
@@ -17,8 +17,11 @@ nothing else — no edits, no fixes, no command run on the user's behalf.
 
 With no flag, the script prints one block per package in `docs/architecture.md`'s Packages
 table (with a package name, only that one): a `section · state · evidence · ready · round ·
-open spec-change · last commit` row per row of the contract's Sections table, then `shipped:
-yes` or `shipped: no (surface <STATE>)`, then `next: <exact command>`. Each state is the first
+open spec-change · last commit` row per row of the contract's Sections table, then `scaffold:
+needed (<reasons>)` when it applies, then `paths: needed`, `paths: round <n> (request changes:
+<sections>)` (ending ` (cap)` from round 3) or `paths: approved (<report>)` once every section
+is DONE or a paths report exists, then `shipped: yes` or `shipped: no (<why>)`, then `next:
+<exact command>`. Each state is the first
 of the nine rules in the script's docstring that fires, and the evidence names the file or
 commit it fired on. "Newer than" is commit order, never file times; a path with uncommitted
 changes counts as newest of all and says so in the evidence. A section is ready when it is
@@ -40,7 +43,9 @@ check a run makes once, before its first agent.
 `-r<n>-` in the report filenames, 0 with none — `next round: <n+1>`, and `commit: <short sha>`
 — the newest commit touching the section's code, unit tests, intent tests and README, or
 `none`; the reviewer copies it as its report's `Commit:`. Nothing else runs; the reviewer names
-its report from it.
+its report from it. `--rounds <pkg>/paths` prints the same three lines for the package's paths
+reports, `commit:` the newest commit touching any section's code, then `previous:` and `diff
+base:` — the newest paths report's path and its `Commit:`, each `none` without one.
 
 `--surface <pkg>` prints `surface: PASS` or `surface: FAIL` with reasons: every name must be in
 all three of `__all__` in the package's `__init__.py`, the **Public names** table of
@@ -49,6 +54,23 @@ points and interfaces** tables — except a name whose providing module lies out
 section (a pipeline, the CLI), which is the `surface` section's own and has no section README
 row; a name cell is read as its first backticked span (`` `Trade` (`models.py`) `` is `Trade`); and `import <pkg>` must load no section module. Before
 `interface.md` exists it prints `surface: n/a (no interface.md)` and exits 0.
+
+`--shape <pkg> --section <s>` prints the section's shape check, the lines the stop gate copies
+into its record. `FAIL shape: <file>:<line> trivial-helper <name>` is a private helper with one
+call site in the package and three statements or fewer; `FAIL shape: <file>:<line> options-bag
+<name>` is a signature taking `**name: Unpack[...]`. Both are judged only on lines added since
+the section's last review (for an adopted section not yet reviewed, since its `Mode: document`
+design was committed). `MEASURED shape indirect: <n>` counts the section's lambdas and closures
+passed as arguments and its calls through a mapping, and `MEASURED shape depth <entry point>:
+<n>` gives the deepest path from each README entry point to a call that leaves the package;
+neither fails. `PASS shape <pkg>/<s>` follows when nothing failed. Exit 1 on a FAIL line.
+
+`--paths <pkg>` prints one call tree per `[project.scripts]` command of the package, followed
+statically through the package's own code: a frame per line, `[indirect]` on a frame reached
+through a lambda, a closure or a mapping, `[effect: <callee>]` on a call that leaves the
+package for a third-party module or for I/O, `[unresolved]` on a call the script could not
+follow, then `depth to first effect`, `deepest effect` and `indirect frames`. The paths
+reviewer reads it. With no commands it prints `paths: no commands`.
 
 `--repo` prints the repo-wide gap list the documenter copies under **Known gaps**: `packages:`,
 `sections:` (every section not DONE), `decisions:` (every `D<n>` open or deferred),
@@ -68,10 +90,12 @@ to the implementer, and `/dev-team:pair` reads the files it names. The script's 
 the fields and how each resolves. A section the contract lacks prints one line and exits 2.
 
 `--fields <pkg>/<section>` prints the other spawn fields run-package would otherwise read files
-for, four lines: `mode: new | document | delta` (the designer's **Mode**), `change file: <path>
+for, six lines: `mode: new | document | delta` (the designer's **Mode**), `change file: <path>
 | none`, `design mode: <word> | none` (the tester's **Design mode**, from the design's `Mode:`
-line) and `diff base: <sha> | none` (the `Commit:` a round-2-or-later reviewer's **Diff**
-starts from). The docstring gives each rule. A section the contract lacks exits 2.
+line), `diff base: <sha> | none` (the `Commit:` a round-2-or-later reviewer's **Diff**
+starts from), `upstream interfaces: <path>, … | none` and `paths report: <path> | none` (the
+package's paths report while it names the section and no review of the section is newer, the
+`full` reviewer's **Previous round** after a paths FIX). The docstring gives each rule. A section the contract lacks exits 2.
 
 The script runs no test and no constraint command. The stop hook runs `docs/constraints.md`'s
 **Floor** and **Enforced** rows through the same parser this script exposes, so the rows the

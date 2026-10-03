@@ -1,0 +1,43 @@
+{
+  "note": "a request changes whose CRITICAL names no section: nothing re-opens",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    },
+    {
+      "do": "paths_review",
+      "round": 1,
+      "verdict": "request changes",
+      "critical": [
+        "the build command is too deep"
+      ]
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "DONE",
+    "contains": [
+      "paths: round 1 (request changes: no section named)"
+    ]
+  }
+}

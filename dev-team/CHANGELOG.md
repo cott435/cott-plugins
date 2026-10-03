@@ -12,6 +12,60 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [2.5.0] - 2026-10-02
+
+A package reads from its command down to its first external effect. From the `data` package
+of `quant`, built under 2.3.0 with every review approved: 17 frames to the first download, 416
+single-use helpers, 49 options bags. Design: `site/notes/2.5-readability-design.md`.
+Evidence: the `2.5-*` logs in `evals/`.
+
+### Changed
+
+- The lint block caps positional parameters (`PLR0917`, `max-positional-args = 5`) instead of
+  all of them, and requires ruff 0.16.0 or later (cab4131)
+- The stop gate runs `status.py --shape`: a run that adds a trivial single-use helper or an
+  options bag fails, indirect calls and entry-point depth are recorded as `MEASURED`, and
+  adopted code is never failed (c61905d, 52cff96)
+- `python-style-guide`: no options bag, main paths called by name, docstrings written from the
+  caller's side, `log` for logging only, private class names unique among sections that call
+  each other; new `references/pipelines.md` (08ae90b)
+- `status.py --paths <pkg>` prints each command's call tree to its external effects
+  (7d549dd)
+- The reviewer gains `Focus: paths`, once per package when every section is DONE, with a
+  closed blocking list P1 to P4; its findings re-open the sections they name, and a package is
+  not shipped until it approves (652f0c1, 7646362)
+- The implementer meets a size limit with a seam and fixes a paths finding in its own section;
+  the designer writes pipelines to the reader's test (ac163c0)
+
+### Fixed
+
+- The implementer and reviewer invoke `dev-team:security-review` by its full name. The bare
+  `security-review` resolved to Claude Code's built-in command of that name, which reviewed
+  the branch diff and replaced the implementer's return (in 2.4.0 too) (ad33ccc)
+
+### Upgrading
+
+- **`shipped:` needs the paths review.** A package shipped before 2.5 that has commands reads
+  `shipped: no (paths needed)` after the upgrade. Run `/dev-team:run-package <pkg>` once: the
+  driver spawns the paths review, and its findings re-open the sections they name as FIX
+  rounds. A package with no `[project.scripts]` commands reads `paths: approved (no commands)`
+  and stays shipped.
+- **The lint block caps positional parameters, not all of them.** An existing repo keeps its
+  root `pyproject.toml`: replace `PLR0913` with `PLR0917` and `max-args` with
+  `max-positional-args` by hand, add `required-version = ">=0.16.0"` under `[tool.ruff]`, and
+  upgrade ruff to 0.16.0 or later. An older ruff now refuses to run instead of skipping the
+  rule.
+- **The stop gate fails a run that adds a trivial single-use helper or an options bag**
+  (`FAIL shape: …`). Inline the helper or name the parameters. Code already reviewed, and
+  adopted code, is measured and never failed.
+- **`paths` is a reserved section name.** Rename a section called `paths` in its package
+  contract before its next run: `reviews/paths/` holds the package's paths reports.
+- **`status.py --fields` prints six lines, and `reviews/paths/` holds reports with letter
+  `p`.** A script of your own that reads `--fields` expects the sixth line, `paths report:`,
+  and one that walks the review directories skips `reviews/paths/` when it means a section's
+  reports.
+
+
 ## [2.4.0] - 2026-10-01
 
 A run stops where the files say it should. From three audited runs (`site/notes/open_items.md`,

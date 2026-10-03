@@ -1,0 +1,31 @@
+{
+  "note": "--paths (2.5 phase 4): run_load hands guarded a lambda that calls read_trades",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands",
+      "files": {
+        "packages/data/src/data/pipelines/load.py": "\"\"\"The load pipeline.\"\"\"\n\nfrom data.ingest.reader import read_trades\n\n\ndef guarded(step):\n    \"\"\"Return what step returns.\"\"\"\n    return step()\n\n\ndef run_load(path: str) -> int:\n    \"\"\"Read the trades at path and return their count.\"\"\"\n    rows = guarded(lambda: read_trades(path))\n    return len(rows)\n"
+      }
+    }
+  ],
+  "args": [
+    "--paths",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "matches": [
+      "^    guarded \\(packages/data/src/data/pipelines/load\\.py:6\\)$",
+      "^      step\\(\\) \\(packages/data/src/data/pipelines/load\\.py:8\\) \\[unresolved\\]$",
+      "^      lambda \\(packages/data/src/data/pipelines/load\\.py:13\\) \\[indirect\\]$",
+      "^        read_trades \\(packages/data/src/data/ingest/reader\\.py:7\\)$"
+    ],
+    "contains": [
+      "depth to first effect: 4",
+      "indirect frames: 1"
+    ]
+  }
+}

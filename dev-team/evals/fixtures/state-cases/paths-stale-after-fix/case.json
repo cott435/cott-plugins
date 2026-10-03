@@ -1,0 +1,49 @@
+{
+  "note": "the fix moves ingest's code: the report is stale, ingest is REVIEW",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    },
+    {
+      "do": "paths_review",
+      "round": 1,
+      "verdict": "request changes",
+      "critical": [
+        "ingest: P2 — packages/data/src/data/ingest/reader.py:7 — a lambda on the main path — call the step by name"
+      ]
+    },
+    {
+      "do": "edit",
+      "path": "packages/data/src/data/ingest/reader.py",
+      "append": "\n# the step called by name\n",
+      "message": "data/ingest: call the step by name"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "REVIEW",
+    "contains": [
+      "paths: needed"
+    ]
+  }
+}

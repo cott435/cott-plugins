@@ -58,6 +58,14 @@ The implementer adds the section README and unit tests and makes the suite pass;
 review. The `surface` section writes `interface.md` for what the package already exports, and
 the package ships like any other.
 
+The stop gate's shape check (`status.py --shape`) fails a run that adds a trivial single-use
+helper or an options bag, but on an adopted section it judges only the lines added since the
+section's `Mode: document` design was committed, so adopted code is measured and never failed.
+The paths review is a different matter: once every section is DONE it follows each command
+through the code as it stands, and the first paths review of an adopted package usually finds
+P1 to P4 items — a deep call chain, a lambda or mapping on a main path — and takes several FIX
+rounds before the package is shipped.
+
 Expect **blocks** on an adopted repo: open questions with no assumption stop a section by
 design. Answer them when the driver asks, or in `docs/decisions.md`, and re-run.
 

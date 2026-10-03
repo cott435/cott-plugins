@@ -1,0 +1,16 @@
+dev-team gate — attempt 1 — 2026-09-24 15:41:27 — section data/store
+commit: 8e2b5d9
+PASS Floor lint `uv run ruff check packages/data` — 0 errors
+PASS Floor format `uv run ruff format --check packages/data` — 0 files would be reformatted
+PASS section unit tests `uv run pytest packages/data/tests/unit/store -q` — 3 passed
+PASS section intent tests `uv run pytest packages/data/tests/intent/store -q` — 2 passed, 0 tolerated
+PASS Enforced unit tests `uv run pytest packages/data/tests/unit -q` — 7 passed
+PASS Enforced intent tests `uv run pytest packages/data/tests/intent -q` — 5 passed, 0 tolerated
+PASS Enforced coverage `uv run pytest packages/data --cov=packages/data/src --cov-report=term` — 95% ≥ 85%
+PASS Guarded grep over the section's paths since 4d9b1e6 — 0 hits
+MEASURED shape indirect: 0
+MEASURED shape depth write_trades: 0
+PASS shape data/store
+MEASURED complexity `uv run radon cc packages/data/src -s -a` — store: max A (2) _rows, average A (1.5)
+MEASURED module size `wc -l packages/data/src/**/*.py` — store/__init__.py 1, store/writer.py 30
+result: pass

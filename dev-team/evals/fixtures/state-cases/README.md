@@ -22,8 +22,10 @@ round 1 `a` and `b` approving), `fix`, `edit`, `regenerate` (a
 `<pkg>/<section>: regenerate 1 intent tests` commit), `deviation` (one entry in the
 section's ledger, `docs/packages/<pkg>/deviations/<section>.md` with the heading's `— <k>`, or
 with `"legacy": true` in the pre-split `docs/deviations.md`), `change` (`slug`, `sections`,
-`status`, `pkg`: a change file at `docs/packages/<pkg>/changes/<slug>.md`) and `inbox`
-(`section`, `entries`: the section's decisions inbox, entries verbatim). `review`,
+`status`, `pkg`: a change file at `docs/packages/<pkg>/changes/<slug>.md`), `inbox`
+(`section`, `entries`: the section's decisions inbox, entries verbatim), `commands` (a
+package with one `[project.scripts]` command, **The call tree (2.5)** below) and
+`paths_review` (a package's paths report, **The paths report (2.5)** below). `review`,
 `deviation` and `change` take `"layout": "old"` for the 2.0 paths (`docs/reviews/…`,
 `docs/deviations/<pkg>/<section>.md` with no `— <k>`, `docs/changes/<slug>.md`); the
 default is the 2.2 layout, so every case that sets no layout runs under it. `review` takes
@@ -69,6 +71,69 @@ whose `surface` is DONE passes `--surface` and `shipped` and `shipped-sync` stil
 `shipped: yes`. `--surface <pkg> --section <s>` checks one README: each name cell exactly one
 backticked identifier, each `Public: yes` name in the contract's intent. `shipped: yes` now also
 needs the package-wide check.
+
+**The shape check (2.5).** Ten cases (`site/notes/2.5-readability-02-shape-slice.md`, the
+ten `shape-*` rows at the end). Each builds `ingest`, then commits
+`packages/data/src/data/ingest/helper.py` or a variant of it, and runs `--shape data --section
+ingest`: a private helper of one statement whose one reference is a call fails at its `def`
+line, while a second caller, a reference that is not a call (`key=_strip`), a fourth
+statement, a test file, a dunder, a `@property` and a method name two classes define each
+pass. A round-1 review whose `Commit:` covers the helper is the base, so the helper is not
+added (`shape-helper-before-review`); a helper committed after the review is
+(`shape-helper-after-review`).
+
+**The shape check, complete (2.5).** Eight more cases
+(`site/notes/2.5-readability-05-shape-complete.md`, the eight `shape-*` rows after the
+`calltree-*` ones). `bag.py` is a function `load_with(path, **options: Unpack[LoadOptions])`
+at line 12: added, it fails as `options-bag`; under a round-1 review, or as keyword-only
+parameters, it passes. Every `--shape` run now prints `MEASURED shape indirect: <n>` (a lambda
+passed as `key=` plus a `_RUNNERS[kind](…)` call make 2) and one `MEASURED shape depth <name>:
+<n>` per README entry point (`none` for the built `load_trades`, which calls nothing; 0 for the
+`commands` macro's `read_trades`, which makes its effect calls itself), so `shape-pass` and
+`shape-trivial-helper` also expect `MEASURED shape indirect: 0`. A design whose first line is
+`Mode: document`, committed after `helper.py`, makes the design's commit the base: the adopted
+helper passes, and a bag committed after the design still fails.
+
+**The call tree (2.5).** Nine cases (`site/notes/2.5-readability-04-paths-resolver.md`, the
+nine `calltree-*` rows at the end). Each runs `base`, then the `commands` macro: one commit,
+`data/surface: commands`, of a package `pyproject.toml` with one command (`data-load =
+"data.cli:load"`), `cli.py`, `pipelines/__init__.py`, `pipelines/load.py` and
+`ingest/reader.py`, whose tree reaches `shutil.copy` and `open` at depth 2; its `files` key
+replaces or adds any file in the same commit. Each runs `--paths data`. A lambda handed to a
+package function prints under that function, a dict dispatch prints every value, both
+`[indirect]`; a method on a local is `[unresolved]`; `loguru` and `re` are not effects and
+`requests` is; a method called through `self` is a frame; a self-call is `[recursive]`. The
+macro goes before any `done` step, so a section's review covers its files. The `paths-*` names
+are left for the package line phase 7 adds.
+
+**The paths report (2.5).** Three cases (`site/notes/2.5-readability-06-paths-reviewer.md`,
+the three `rounds-*` rows at the end). The `paths_review` macro (`round`, `verdict`,
+`critical`, `focus`, defaulting to `paths`) commits
+`docs/packages/data/reviews/paths/2026-09-27-r<n>-p.md` with the summary `review data/paths:
+r<n>-p: <verdict> (<k> critical)`, its `Commit:` the newest commit touching the package's
+code, tests or `interface.md` before it, and its headings written `## <name>`. `--rounds
+data/paths` prints five lines; a paths report is never a section's round.
+
+**The paths review (2.5).** Fourteen cases (`site/notes/2.5-readability-07-state-and-driver.md`,
+the fourteen rows after the `rounds-*` ones). "All done" is `base`, `commands`, then `done` for
+`ingest`, `clean`, `storage` and `surface`; the P2 line is `ingest: P2 —
+packages/data/src/data/ingest/reader.py:7 — a lambda on the main path — call the step by name`.
+Once every row is DONE, or a paths report exists, the block prints `paths:` after `scaffold:`:
+`needed` with no current report, `approved (<report>)` or `approved (no commands)`, or `round
+<n> (request changes: <sections>)`, ` (cap)` from round 3. Below the cap a named section that
+is otherwise DONE is `FIX n` with the evidence `paths r<m> request changes (<report>)`; a fix
+to its code makes the report stale, so the section reads REVIEW and the line `paths: needed`.
+`shipped: yes` needs `paths: approved`. `--inputs` adds the paths report to `Review:`, and
+`--fields` prints it as a sixth line, `paths report:`, until a review round of the section is
+newer than it; every other `fields-*` case now also expects `paths report: none`
+(`fields-bad-target` prints no fields). `shipped` and `shipped-sync` build no package
+`pyproject.toml`, so they stay `shipped: yes` and also expect `paths: approved (no commands)`.
+
+**The paths review end to end (2.5).** One case (`site/notes/2.5-readability-09-docs-and-release.md`,
+the last row), `paths-e2e`: all done, with the `commands` step's `load.py` replaced by
+`calltree-lambda`'s, so the one command reaches its effect through a lambda. Its check is
+`--paths data`; its job is the seed `run-package` eval 14 builds, where `status.py data` prints
+`paths: needed` and the driver spawns the paths review.
 
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
@@ -178,3 +243,48 @@ optional flag).
 | `fields-upstream-none` | the same, the line `Upstream packages: none` | the same | `upstream interfaces: none` |
 | `fields-upstream-no-line` | the same, the design without the line | the same | `upstream interfaces: provisional: docs/packages/data/contract.md` (every upstream package, as before 2.4) |
 | `inputs-upstream-none` | the same as `fields-upstream-none` | `--inputs analysis/vwap` | `Upstream interfaces: none` |
+| `shape-pass` | `base`, `design`, `tests`, `build` for ingest | `--shape data --section ingest` | `PASS shape data/ingest`; `MEASURED shape indirect: 0` (2.5 phase 5); exit 0 |
+| `shape-trivial-helper` | the same, then a commit adding `helper.py` (`load_rows` calls `_strip`, one statement) | the same | `FAIL shape: packages/data/src/data/ingest/helper.py:9 trivial-helper _strip`; `MEASURED shape indirect: 0` (2.5 phase 5); no `PASS shape`; exit 1 |
+| `shape-helper-two-callers` | `helper.py` with a second function `load_text` that also calls `_strip` | the same | `PASS shape data/ingest`; exit 0 |
+| `shape-helper-callback` | `helper.py` whose `load_rows` returns `sorted(path, key=_strip)` | the same | `PASS shape data/ingest` |
+| `shape-helper-four-statements` | `helper.py` whose `_strip` has four statements | the same | `PASS shape data/ingest` |
+| `shape-helper-before-review` | the `helper.py` commit, then round 1 `a` and `b` approving | the same | `PASS shape data/ingest` (the review's `Commit:` covers the helper) |
+| `shape-helper-after-review` | round 1 `a` and `b` approving, then the `helper.py` commit | the same | the `shape-trivial-helper` FAIL line; exit 1 |
+| `shape-exempt-kinds` | a commit adding `kinds.py`: `__repr__`, a `@property` `_size`, and `_fetch` (two statements) in two classes, called once through `self` | the same | `PASS shape data/ingest` |
+| `shape-test-file-exempt` | `helper.py`'s two functions committed as `packages/data/tests/unit/ingest/test_helper.py` | the same | `PASS shape data/ingest` |
+| `shape-bad-target` | `base`, `design`, `tests`, `build` for ingest | `--shape data --section nope` | `no section nope in docs/packages/data/contract.md`; exit 2 |
+| `calltree-direct` | `base`, `commands` | `--paths data` | the macro's whole block, line for line: `command: data-load = data.cli:load`, frames `load`, `run_load`, `read_trades`, leaves `[effect: shutil.copy]` and `[effect: open]`, `depth to first effect: 2`, `deepest effect: 2`, `indirect frames: 0`; exit 0 |
+| `calltree-lambda` | `commands` with `load.py` holding `guarded(step)` (`return step()`) and `rows = guarded(lambda: read_trades(path))` | the same | `guarded (…load.py:6)`; under it `step() (…load.py:8) [unresolved]` and `lambda (…load.py:13) [indirect]`; `read_trades` under the lambda; `depth to first effect: 4`; `indirect frames: 1` |
+| `calltree-mapping` | `load.py` with `_RUNNERS = {"trades": read_trades}` and `rows = _RUNNERS["trades"](path)` | the same | `read_trades (…reader.py:7) [indirect]`; `indirect frames: 1`; `depth to first effect: 2` |
+| `calltree-unresolved` | `load.py` with `reader = make_reader()` (a package function returning a `TradeReader`) and `rows = reader.read(path)` | the same | a line holding `reader.read(path)` ending `[unresolved]`; `depth to first effect: none` |
+| `calltree-logging-not-effect` | `cli.py` calling `logger.info("x")` (`loguru`) and `re.compile("x")` before `run_load` | the same | no `[effect: logger.info]`, no `[effect: re.compile]`; `depth to first effect: 2` |
+| `calltree-third-party` | `reader.py` calling `requests.get(path, timeout=10)` in place of the copy and the open | the same | `[effect: requests.get]`; `depth to first effect: 2` |
+| `calltree-self-method` | `reader.py` with a class `Reader` whose `read` calls `self._copy(path)`, `_copy` calling `shutil.copy`, and `read_trades` returning `Reader.read(Reader(), path)` | the same | frames `Reader.read (…reader.py:9)` and `Reader._copy (…reader.py:14)`; `depth to first effect: 4` |
+| `calltree-recursive` | `load.py` whose `run_load` calls itself under an `if` before `read_trades` | the same | `run_load (…load.py:6) [recursive]`; `depth to first effect: 2` |
+| `calltree-no-commands` | the package `pyproject.toml` without `[project.scripts]` | the same | the one line `paths: no commands`; exit 0 |
+| `shape-options-bag` | `base`, `design`, `tests`, `build` for ingest, then a commit adding `bag.py` | `--shape data --section ingest` | `FAIL shape: packages/data/src/data/ingest/bag.py:12 options-bag load_with`; `MEASURED shape indirect: 0`; no `PASS shape`; exit 1 |
+| `shape-options-bag-before-review` | the `bag.py` commit, then round 1 `a` and `b` approving | the same | `PASS shape data/ingest`; no `FAIL shape`; exit 0 |
+| `shape-keyword-only-pass` | a commit adding `keywords.py`: `load_with(path, *, strict, limit, retries, since, until)` | the same | `PASS shape data/ingest`; no `FAIL shape`; exit 0 |
+| `shape-measured-indirect` | a commit adding `runners.py`: `sorted(rows, key=lambda r: r[0])` and `_RUNNERS[kind](path)` | the same | `MEASURED shape indirect: 2`; `PASS shape data/ingest` |
+| `shape-measured-zero` | `base`, `design`, `tests`, `build` for ingest | the same | `MEASURED shape indirect: 0`; `MEASURED shape depth load_trades: none`; `PASS shape data/ingest` |
+| `shape-depth` | `base`, `commands`, then `design`, `tests`, `build` for ingest, then an `edit` giving the README a second row, `` `read_trades` `` | the same | `MEASURED shape depth load_trades: none`; `MEASURED shape depth read_trades: 0` |
+| `shape-adopted-document` | `base`; a commit adding `helper.py` under ingest; a design whose first line is `Mode: document`; `tests`, `build` | the same | `PASS shape data/ingest`; no `FAIL shape` (the helper predates the design) |
+| `shape-adopted-added-after` | the same, then a commit adding `bag.py` | the same | the `shape-options-bag` FAIL line; no `trivial-helper`, no `PASS shape`; exit 1 |
+| `rounds-paths-none` | `base`, `design`, `tests`, `build` for ingest | `--rounds data/paths` | `rounds: 0`; `next round: 1`; a line matching `/^commit: [0-9a-f]{7}$/`; `previous: none`; `diff base: none`; exit 0 |
+| `rounds-paths-one` | the same, then `paths_review` round 1, `request changes`, one `ingest: P2 — …` critical | the same | `rounds: 1`; `next round: 2`; `previous: docs/packages/data/reviews/paths/2026-09-27-r1-p.md`; a line matching `/^diff base: [0-9a-f]{7}$/` |
+| `rounds-section-unaffected` | the same as `rounds-paths-one` | `--rounds data/ingest` | `rounds: 0`; no `previous:`, no `diff base:` (a paths report is not a section's round) |
+| `paths-needed` | all done | `—` | `paths: needed`; `shipped: no (paths needed)`; `next: /dev-team:run-package data` |
+| `paths-no-commands` | all done, without `commands` | `—` | `paths: approved (no commands)`; `shipped: yes` |
+| `paths-approved` | all done; `paths_review` round 1 `approve` | `—` | `paths: approved (docs/packages/data/reviews/paths/2026-09-27-r1-p.md)`; `shipped: yes` |
+| `paths-request-changes` | all done; `paths_review` round 1 `request changes`, the P2 line | `—` | `ingest · FIX 1`, evidence `/^paths r1 request changes \(docs/packages/data/reviews/paths/2026-09-27-r1-p\.md\)$/`; `clean · DONE`; `paths: round 1 (request changes: ingest)`; `shipped: no (paths round 1)`; `next: /dev-team:run-package data` |
+| `paths-stale-after-fix` | the same; then an `edit` of `ingest/reader.py` | `—` | `ingest · REVIEW`; `paths: needed` |
+| `paths-reviewed-after-fix` | the same; then a round-2 `s` review of `ingest` that approves | `—` | `ingest · DONE`; `paths: needed`; `shipped: no (paths needed)` |
+| `paths-round-2-approved` | the same; then `paths_review` round 2 `approve` | `—` | `paths: approved (docs/packages/data/reviews/paths/2026-09-27-r2-p.md)`; `shipped: yes` |
+| `paths-cap` | all done; `paths_review` rounds 1, 2 and 3, each `request changes` with the P2 line | `—` | `ingest · DONE`; `paths: round 3 (request changes: ingest) (cap)`; `shipped: no (paths round 3)`; `next: /dev-team:run-package data or /dev-team:run-package data --defer` |
+| `paths-defer-approved` | the same; then `paths_review` round 4, `approve`, `"focus": "defer"` | `—` | `paths: approved (docs/packages/data/reviews/paths/2026-09-27-r4-p.md)`; `shipped: yes` |
+| `paths-no-section-named` | all done; `paths_review` round 1 `request changes`, critical `the build command is too deep` | `—` | `ingest · DONE`; `paths: round 1 (request changes: no section named)` |
+| `paths-not-all-done` | `base`, `commands`, `done` for `ingest` only | `—` | no `paths:` |
+| `inputs-paths-fix` | as `paths-request-changes` | `--inputs data/ingest` | a line `/^Review: docs/packages/data/reviews/paths/2026-09-27-r1-p\.md$/`; `Round: 2`; exit 0 |
+| `fields-paths-report` | as `paths-stale-after-fix` | `--fields data/ingest` | sixth line `paths report: docs/packages/data/reviews/paths/2026-09-27-r1-p.md`, after `upstream interfaces: none`; exit 0 |
+| `repo-paths-needed` | as `paths-needed` | `--repo` | `  - data: building (4/4 DONE, paths needed)`; exit 0 |
+| `paths-e2e` | all done, with `calltree-lambda`'s `load.py` in the `commands` step | `--paths data` | `lambda (…load.py:13) [indirect]`; `indirect frames: 1`; exit 0 (the seed of `run-package` eval 14) |

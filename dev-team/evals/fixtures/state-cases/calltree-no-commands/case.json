@@ -1,0 +1,24 @@
+{
+  "note": "--paths (2.5 phase 4): the package pyproject.toml has no [project.scripts] table",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands",
+      "files": {
+        "packages/data/pyproject.toml": "[project]\nname = \"data\"\nversion = \"0.0.0\"\n"
+      }
+    }
+  ],
+  "args": [
+    "--paths",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "matches": [
+      "\\Apaths: no commands\\n\\Z"
+    ]
+  }
+}

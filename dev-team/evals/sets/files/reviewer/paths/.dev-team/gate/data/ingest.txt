@@ -1,0 +1,16 @@
+dev-team gate — attempt 1 — 2026-09-24 11:20:03 — section data/ingest
+commit: 1f4a7c2
+PASS Floor lint `uv run ruff check packages/data` — 0 errors
+PASS Floor format `uv run ruff format --check packages/data` — 0 files would be reformatted
+PASS section unit tests `uv run pytest packages/data/tests/unit/ingest -q` — 4 passed
+PASS section intent tests `uv run pytest packages/data/tests/intent/ingest -q` — 3 passed, 0 tolerated
+PASS Enforced unit tests `uv run pytest packages/data/tests/unit -q` — 4 passed
+PASS Enforced intent tests `uv run pytest packages/data/tests/intent -q` — 3 passed, 0 tolerated
+PASS Enforced coverage `uv run pytest packages/data --cov=packages/data/src --cov-report=term` — 94% ≥ 85%
+PASS Guarded grep over the section's paths since 7a0d2c4 — 0 hits
+MEASURED shape indirect: 0
+MEASURED shape depth read_trades: 1
+PASS shape data/ingest
+MEASURED complexity `uv run radon cc packages/data/src -s -a` — ingest: max A (2) read_trades, average A (1.3)
+MEASURED module size `wc -l packages/data/src/**/*.py` — ingest/__init__.py 1, ingest/reader.py 37
+result: pass

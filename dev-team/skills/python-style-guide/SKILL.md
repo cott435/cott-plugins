@@ -21,6 +21,8 @@ Detailed patterns live in `references/` and load only when read:
 - `references/docstring_examples.md` — docstrings for every construct
 - `references/advanced_types.md` — `Protocol`, `TypedDict`, `Literal`, `ParamSpec`, generics
 - `references/antipatterns.md` — common mistakes and their fixes
+- `references/pipelines.md` — the shape of a pipeline and of a section's orchestrating entry
+  point, and the reader's test
 
 ## Core Philosophy
 
@@ -226,6 +228,11 @@ Naming *inside* a file. Module, package, and test-file naming is owned by
 - Dashes in any name
 - `__double_leading_and_trailing_underscore__` (reserved for Python)
 
+**Private classes.** A private class name (`_Loader`) is unique among the sections that call
+each other: when `ingest` calls `clean`, they do not both define a `_Loader`. A reader
+following a path across the two otherwise meets one name with two meanings. Name the class
+for what it does in its own section (`_BarLoader`, `_GapFiller`).
+
 ### Comments and Docstrings
 
 #### Docstring requirements
@@ -246,6 +253,14 @@ Naming *inside* a file. Module, package, and test-file naming is owned by
   `Args:` *without* types, since annotations carry them; `Returns:` or `Yields:`; `Raises:`;
   and, on public entry points, an `Examples:` block in doctest form so
   `pytest --doctest-modules` can execute it.
+- **Written from the caller's side.** The summary line says what changes outside the function
+  when it is called: the table or file written, the call out to a vendor or a service, the
+  console output. That includes everything the function delegates. `"""Record one ledger row
+  per date and download that date's bars."""`, not `"""Process the dates."""`: a caller reads
+  the summary to learn what will happen and the body to learn how. The summary line itself
+  names each effect by what it is (the vendor, the table by its name, `load_ledger`), not
+  only the paragraph after it. A function with no effect outside itself says what it
+  returns. Examples: `references/docstring_examples.md`, "Summaries from the caller's side".
 - **CLI commands** — a command is a function in `cli.py` whose parameters are its arguments
   and whose docstring is its help. The summary line says what the command does; `Args:` names
   every parameter as the user will type it (`--start`, not `start`) with its meaning, unit, and
@@ -361,6 +376,11 @@ logger.info("Request from {} resulted in {}", ip_address, status_code)
 
 **Avoid** standard `logging` with `%` formatting.
 
+**`log` means logging.** A function, parameter or variable named `log`, `log_*` or `*_log`
+writes to the logger and nothing else, and a docstring says "log" only of that. A row written
+to a ledger or an audit table is *recorded* (`record_run`, `ledger_row`): a reader who sees
+"log each date" expects console output, not a database write.
+
 ### Files and Resources
 
 For simple text operations, prefer `pathlib` methods:
@@ -433,7 +453,28 @@ if __name__ == "__main__":
 
 - **Do not extract a single-use helper whose name merely restates a few lines of code.** Every
   helper costs the reader a jump. A helper that adds no name worth having is a net loss even
-  if it makes the parent shorter.
+  if it makes the parent shorter. A private helper with one call site and three statements or
+  fewer is always this case.
+
+- **No options bag.** A signature never takes `**options: Unpack[SomeOptions]`, or any
+  `**kwargs` that carries settings, and never packs two parameters into a tuple to pass a
+  count. The positional cap in `project-structure` §2 does not count keyword-only parameters,
+  so a function that needs seven inputs names them after `*`. Values that always travel
+  together are a small frozen dataclass with a name of its own. A bag hides what a function
+  takes from the call site, the docstring and the reader.
+
+- **A main path is followed by name.** The main path is the chain of calls from a command, a
+  pipeline or a section's entry point down to its first effect outside the package. Every
+  call on it names its target: a function defined with `def` or imported, called directly.
+  Not a lambda, not a nested function passed as an argument, not `functools.partial`, not a
+  callable pulled from a mapping (`_RUNNERS[stage](…)`), not a callable handed in as a
+  parameter. Those are fine off the main path (a `key=` callback, a real plug-in point); on
+  it, each is a frame an editor cannot jump through. Dispatch on a value is a `match` or an
+  `if` chain whose branches call by name. Behaviour that wraps a step (a retry, a guard, a
+  run ledger) is a `with` block around the call or a decorator on the step's own definition,
+  never a function that is handed the step. Read `references/pipelines.md` before writing or
+  judging a pipeline, or an entry point that runs its section's phases in order: it has the
+  shapes and the reader's test.
 
 - **The soft statement limit in `project-structure` §2 is the signal to look for a seam**, not
   a line to cut at. Past the hard limit you must split; between the two, split where the
@@ -773,7 +814,8 @@ When writing Python code:
 8. Always use context managers for resources
 9. Run `ruff check` and `ruff format`
 10. Top-level `__init__.py` re-exports the public API with `__all__`; every nested one is empty
-11. **BE CONSISTENT** with existing code
+11. Name parameters past the positional cap keyword-only, never an options bag; call by name on a main path
+12. **BE CONSISTENT** with existing code
 
 ## Additional resources
 

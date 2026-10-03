@@ -1,0 +1,39 @@
+{
+  "note": "--shape (2.5 phase 5): a lambda passed as key= and a call through a dict subscript count as two indirect calls",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "files": {
+        "packages/data/src/data/ingest/runners.py": "\"\"\"Runners.\"\"\"\n\n\ndef read_csv(path):\n    \"\"\"Read path as CSV text.\"\"\"\n    return path\n\n\n_RUNNERS = {\"csv\": read_csv}\n\n\ndef run(kind, path, rows):\n    \"\"\"Read path with the runner for kind; return it with rows sorted by their first field.\"\"\"\n    ordered = sorted(rows, key=lambda r: r[0])\n    return _RUNNERS[kind](path), ordered\n"
+      },
+      "message": "data/ingest: runners"
+    }
+  ],
+  "args": [
+    "--shape",
+    "data",
+    "--section",
+    "ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "MEASURED shape indirect: 2",
+      "PASS shape data/ingest"
+    ]
+  }
+}

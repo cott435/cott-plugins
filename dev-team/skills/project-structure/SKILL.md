@@ -105,16 +105,23 @@ Rules:
 | Module (lines) | 400 | 1000 | pylint `C0302` |
 | Function/method (statements) | 30 | 50 | ruff `PLR0915` |
 | Cyclomatic complexity | 8 | 10 | ruff `C901` |
-| Positional parameters | 4 | 5 | ruff `PLR0913` |
+| Positional parameters (keyword-only ones are free) | 4 | 5 | ruff `PLR0917` |
 | Class (lines) | 200 | 400 | review |
 | Public methods per class | 12 | 20 | pylint `R0904` |
 | Modules per package directory (excl. `__init__.py`, `configs.py`, `README.md`) | 8 | 12 | review |
+| Main-path depth (frames from a command function to its first external effect) | 6 | 8 | the paths review |
 
 **Soft means plan the split; hard means split before finishing the task.** The line and
 statement limits match the linter defaults, so tooling rather than opinion decides. The 8/12
 modules-per-directory figure is this toolbox's own, sized so a directory listing fits on one
 screen. The soft statement limit is also the signal `python-style-guide` "Function shape"
 uses: it says look for a seam, not cut here.
+
+**A limit is met with a seam, never with a dodge.** A function past a limit is split where
+`python-style-guide` "Function shape" says a split buys something. A parameter past the
+positional cap becomes keyword-only (after `*`), which the cap does not count. A `**options`
+bag, a tuple packed to carry two parameters as one, and a helper that only moves three
+statements out of sight all pass the linter and cost the reader more than the limit saved.
 
 Who uses these, and how:
 
@@ -126,6 +133,8 @@ Who uses these, and how:
   return.
 - **Reviewer** — anything past a soft limit without a note, or past a hard limit at all, is a
   finding.
+- **Paths reviewer** — a command past the hard **Main-path depth** is a CRITICAL; past the soft
+  one, a WARNING. The count is `status.py --paths`' `depth to first effect`.
 
 ## 3. Configuration placement
 
@@ -154,6 +163,8 @@ The `surface` section composes the section settings into the package's. For the 
   researcher never `docs/sources/summary.md`. Name the thing reported, in one word
   that is also a valid Python package name: `digest`, `markdown`, `tearsheet`. A package may be named `analysis`; its files are `contract.md` and
   `interface.md`.
+- A section is never named `paths`: `docs/packages/<pkg>/reviews/paths/` holds the package's
+  paths reports.
 - No `utils`, `helpers`, `misc`, or `common` at any level, except a shared package in a
   multi-package repo. A file literally named `utils.py` is a review finding once it passes 100
   lines, because nobody can tell you what belongs in it.

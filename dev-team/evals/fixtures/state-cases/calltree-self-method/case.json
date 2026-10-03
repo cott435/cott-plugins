@@ -1,0 +1,28 @@
+{
+  "note": "--paths (2.5 phase 4): read_trades calls Reader.read, which calls self._copy",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands",
+      "files": {
+        "packages/data/src/data/ingest/reader.py": "\"\"\"Read trades.\"\"\"\n\nimport shutil\n\n\nclass Reader:\n    \"\"\"Read trades through a scratch copy.\"\"\"\n\n    def read(self, path: str) -> list[str]:\n        \"\"\"Copy path to a scratch file and return no rows.\"\"\"\n        self._copy(path)\n        return []\n\n    def _copy(self, path: str) -> None:\n        \"\"\"Copy path to a scratch file.\"\"\"\n        shutil.copy(path, path + \".bak\")\n\n\ndef read_trades(path: str) -> list[str]:\n    \"\"\"Read the trades at path.\"\"\"\n    return Reader.read(Reader(), path)\n"
+      }
+    }
+  ],
+  "args": [
+    "--paths",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "matches": [
+      "^      Reader\\.read \\(packages/data/src/data/ingest/reader\\.py:9\\)$",
+      "^        Reader\\._copy \\(packages/data/src/data/ingest/reader\\.py:14\\)$"
+    ],
+    "contains": [
+      "depth to first effect: 4"
+    ]
+  }
+}

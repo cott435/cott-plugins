@@ -1,0 +1,1 @@
+- [ ] data/ingest: a second bad file with the same name overwrites the earlier `<source>.bad` copy — implementer 2026-09-22

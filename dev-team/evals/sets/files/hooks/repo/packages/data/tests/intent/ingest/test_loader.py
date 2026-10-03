@@ -3,7 +3,6 @@
 from pathlib import Path
 
 import pytest
-
 from data.ingest import load_trades
 
 HEADER = "ts,symbol,price,size,side\n"

@@ -155,6 +155,34 @@ keeps the arrow line. The command builds the path from two strings, so only the 
 the command echoed in the FAIL line, can hold it. No earlier case removed or rewrote an assert,
 so none changed its expectation.
 
+**The 2.5 lint floor** (`site/notes/2.5-readability-01-lint-floor-and-cap.md`). The plugin's
+lint block requires ruff 0.16.0 or later, so both suites run with such a ruff first on PATH; the
+plan's shim is `evals/workspace/bin/ruff`. `fmt-positional-cap` (six positional parameters:
+`PLR0917`) and `fmt-keyword-only-free` (three positional, four keyword-only: clean) pin the
+cap; `fmt-no-config` now lacks both the old and the new code. Six cases whose planted files
+tripped a rule ruff's defaults gained were repaired without changing what they test:
+`fmt-repo-config`, `gate-diff-before-review`, `gate-guarded-decision-constant`,
+`gate-guarded-exception`, `gate-report-fail`, `gate-xfail-wrapped-pass`.
+
+**The 2.5 shape check** (`site/notes/2.5-readability-02-shape-slice.md`). Every section run,
+and `--report`, now runs `status.py --shape <pkg> --section <section>` and copies its lines, so
+every `data/ingest` record carries `PASS shape data/ingest` (`gate-shape-pass`,
+`gate-report-shape`). `gate-shape-trivial-helper-fail` writes
+`packages/data/src/data/ingest/helper.py`, whose `_strip` is a one-statement private helper
+with one call site, and the gate fails at its `def` line with the retry text that explains a
+`FAIL shape` line. `gate-shape-helper-before-review` commits the same file under `prior` and
+puts a round-1 review at `{RUN_SHA}`, so the helper is not on an added line and passes.
+`helper.py` passes ruff's defaults, so no case gained a lint line, and no earlier case changed.
+
+**The 2.5 shape check, complete** (`site/notes/2.5-readability-05-shape-complete.md`). The gate
+itself is unchanged; `--shape` now also fails an added options bag and prints two `MEASURED`
+lines. `gate-shape-options-bag-fail` writes `packages/data/src/data/ingest/bag.py`, whose
+`load_with` takes `**options: Unpack[LoadOptions]`, and the gate fails at its `def` line;
+`gate-shape-measured` (`gate-pass`'s setup) passes with `MEASURED shape indirect: 0`, a
+`MEASURED shape depth load_trades:` line and `PASS shape data/ingest` in the record. Every
+`data/ingest` record now carries `MEASURED` lines, so `gate-pass` and `gate-elsewhere`, the two
+cases whose `gate_only` list would otherwise reject them, gained `MEASURED` there.
+
 **The 2.2 layout here.** `build.py` still writes the section's ledger at the 2.0 path,
 `docs/deviations/data/ingest.md`, so the tolerated case also proves the gate reads the old
 location; the new one, `docs/packages/data/deviations/ingest.md`, is written by
@@ -165,4 +193,4 @@ the per-section `.dev-team/stop/<pkg>/<section>` (or `.dev-team/stop/scaffold`);
 writes the 2.1 single marker. Decision stubs and `Applied:` lines live in
 `docs/packages/data/decisions/<section>.md`, the `sync-*` cases' inbox.
 
-Needs `ruff` on PATH and `pytest` importable by `python3`.
+Needs ruff 0.16.0 or later on PATH and `pytest` importable by `python3`.
