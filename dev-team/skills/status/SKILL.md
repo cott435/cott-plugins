@@ -79,7 +79,11 @@ frame) or `missing`, each built frame between two matched ones `extra`, the effe
 <m> missing; depth <d> of budget <n>` line (`past budget` when deeper). A contract with no
 entry for the command prints `contract: no entry for <command>`, one with no heading
 `contract: no Call paths heading`, and the block ends there. `--against-contract` without
-`--paths` exits 2.
+`--paths` exits 2. An open change file naming the package that gives an entry for the command
+under **Contract changes** is compared in the contract's place (its `to` entry, after a
+`from`), and the first line reads `contract: <command> (budget <n>) from <change file path>`:
+code built to a change is judged against the change until `sync-plan` writes it into the
+contract.
 
 `--repo` prints the repo-wide gap list the documenter copies under **Known gaps**: `packages:`,
 `sections:` (every section not DONE), `decisions:` (every `D<n>` open or deferred),

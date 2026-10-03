@@ -205,7 +205,7 @@ code, and neither may be handed the other's report. Round 2 and later is one: `F
 | **Dependency READMEs** | the `dependency readmes:` line of `status.py --fields` |
 | **Upstream interfaces** | the `upstream interfaces:` line of `status.py --fields` |
 | **Source probes** | `docs/sources/<token>.md` per source |
-| **Intent tests** | `tests/intent/<section>/` |
+| **Intent tests** | `<package root>/tests/intent/<section>/` |
 | **Previous round** | from round 2: round `r-1`'s report paths, comma-separated, then the `paths report:` line of `status.py --fields` when it is not `none`; else `none` |
 | **Diff** | from round 2: `<sha>..HEAD`, `<sha>` the `diff base:` line of `status.py --fields` (round `r-1`'s `-s` report's `Commit:`, or its `-a` report's when `r-1` is 1); else `none` |
 | **Gate** | `.dev-team/gate/<pkg>/<section>.txt` |

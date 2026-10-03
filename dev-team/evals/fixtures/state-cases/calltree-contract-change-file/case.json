@@ -1,0 +1,39 @@
+{
+  "note": "2.6: an open change file's Call paths entry (its `to`, after a `from`) is compared in the contract's place, so the frame the change adds is a match, not extra; the change file's nested bullets after the entry are not paths",
+  "steps": [
+    {
+      "do": "base",
+      "call_paths": true
+    },
+    {
+      "do": "commands",
+      "files": {
+        "packages/data/src/data/pipelines/load.py": "\"\"\"The load pipeline.\"\"\"\n\nfrom data.ingest.reader import read_trades\n\n\ndef run_load(path: str) -> int:\n    \"\"\"Read the trades at path and return their count.\"\"\"\n    rows = _read(path)\n    return len(rows)\n\n\ndef _read(path: str) -> list[dict[str, str]]:\n    \"\"\"Read the trades at path.\"\"\"\n    return read_trades(path)\n"
+      }
+    },
+    {
+      "files": {
+        "docs/packages/data/changes/load-read.md": "# Change — load-read\n\nStatus: open\n\n## Change goal\n\nRead the trades through a pipeline step of its own.\n\n## Affected sections\n\n- `data/surface` — `pipelines/load.py`: `run_load` calls `_read`.\n\n## Contract changes\n\n### Package contract: data\n\nChanged:\n\n- **Call paths**, the `data-load` entry, from\n\n  ```\n  - `data-load` (budget 8):\n    - file write: 1 `cli.load` → 2 `pipelines.run_load` → 3 `ingest.read_trades` → `shutil.copy`\n  ```\n\n  to\n\n  ```\n  - `data-load` (budget 8):\n    - file write: 1 `cli.load` → 2 `pipelines.run_load` → 3 `pipelines._read` → 4 `ingest.read_trades` → `shutil.copy`\n  ```\n\n- **Section interfaces**: none.\n  - `read_trades` keeps its signature.\n\n### Interface: data\n\nNone.\n\n## Downstream impact\n\n| consumer | shipped or planned | names affected | what breaks |\n|---|---|---|---|\n| — | — | none | nothing |\n"
+      },
+      "message": "docs: change load-read (open)"
+    }
+  ],
+  "args": [
+    "--paths",
+    "data",
+    "--against-contract"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "contract: data-load (budget 8) from docs/packages/data/changes/load-read.md",
+      "summary: 4 match, 0 extra, 0 missing; depth 3 of budget 8"
+    ],
+    "matches": [
+      "^    3 pipelines\\._read\\s+match  _read \\(packages/data/src/data/pipelines/load\\.py:\\d+\\)$"
+    ],
+    "absent": [
+      "extra  _read"
+    ]
+  }
+}

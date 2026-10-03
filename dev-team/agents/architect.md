@@ -466,8 +466,9 @@ implementer's), a design, a review, or code.
    table, Section interfaces, Pipelines, Public surface (intent) and Consumes; the repo
    contract's Boundaries and Shared conventions for a **Repo contract** group. Write what the
    code does, copied from the code, where it and the entry differ.
-5. **Close.** A synced deviation gets `Status: synced` and `Resolved by: <sha>` — the `approve @<sha>`
-   that `status.py` prints for the section: the commit its latest approving review judged, not
+5. **Close.** A synced deviation gets `Status: synced` and `Resolved by: approve @<sha>`, the
+   form `deviations-entry.md` item 8 gives and `status.py` prints for the section. `<sha>` is
+   the commit its latest approving review judged, not
    the review report's own commit (a later test-only commit is what that sha can be), since
    this run's own commit does not exist yet. A synced change file gets `Status: synced`, its only edit. Those status lines, and step
    7's, are the only edits you make to a ledger or a change file.

@@ -49,6 +49,14 @@ confirms. Design: `site/notes/2.6-spine-design.md`. Evidence: the `2.6-spine-*` 
 - `status.py` reads a bold item (`5. **Call paths** —`) only on a numbered line, so a prose
   line that wraps to start with the bold name no longer hides the heading below it; before,
   `--against-contract` printed `contract: no entry` for such a contract
+- `--against-contract` compares a command with an open change file's **Call paths** entry when
+  one gives it, and says so on the `contract:` line (`from <change file path>`); before, code
+  built to a change that moves a step between sections failed the paths review against the
+  contract the change had not yet been synced into
+- `run-package` sends the reviewer **Intent tests** as `<package root>/tests/intent/<section>/`,
+  where the tester writes them, not the repo-root `tests/intent/<section>/`
+- The close writes a synced deviation's **Resolved by** as `approve @<sha>`, the form the
+  deviations template gives, not the bare sha
 
 ### Upgrading
 

@@ -211,6 +211,15 @@ forbid:
     unless: ['built last', 'built, last', 'IMPLEMENT']
     files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/flow.md', 'site/workflows/*.md']
 
+  - name: no driver prompt field sends intent tests at the repo root
+    # Intent tests live under the package root (`packages/<pkg>/tests/intent/<section>/` in a
+    # uv workspace), as the tester writes them and the implementer runs them. A prompt field
+    # whose value is the bare `tests/intent/<section>/` sends the reviewer to a directory that
+    # does not exist; 2.6-spine phase 7's eval 16 reviewer met it. Table cells only: prose
+    # that says "`tests/intent/<section>/` under the package root" is right.
+    pattern: '\| `tests/intent/<section>/?` \|'
+    files: ['skills/**/SKILL.md']
+
 # Every heading a reader parses is one the owner's template defines.
 headings:
   - name: interface.md headings its readers parse are ones the implementer writes

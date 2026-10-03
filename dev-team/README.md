@@ -478,7 +478,8 @@ prints it, never `HEAD`, which in a batch may be a sibling's. The verdict is `ap
 Once every section is DONE, one more reviewer (`Focus: paths`) follows each command of the
 package from `cli.py` to its external effects, on the call tree `status.py --paths <pkg>
 --against-contract` prints: each command's built frames beside its **Call paths** entry, each
-frame `match`, `extra` (in the code, not in the contract) or `missing`. It writes
+frame `match`, `extra` (in the code, not in the contract) or `missing`; an open change file's
+entry for a command stands in for the contract's until `sync-plan` applies it. It writes
 `docs/packages/<pkg>/reviews/paths/<date>-r<n>-p.md`, with one row per command under **Paths**
 and a `contract` column. An `extra` or `missing` frame is a break, CRITICAL under the section
 that holds it; beyond that it may block on four things only: a command deeper than its

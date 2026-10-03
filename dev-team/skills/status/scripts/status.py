@@ -212,9 +212,14 @@ separated by a blank line; with no `[project.scripts]` table, an empty one, or n
 `docs/packages/<pkg>/contract.md`.
 
 **Call paths.** `--paths <pkg> --against-contract` prints, after each command's block and its
-footer, the contract's **Call paths** entry for the command beside the tree. The first line is
-`contract: <command> (budget <n>)`, or `contract: no entry for <command>` when the heading
-has no entry for it, or `contract: no Call paths heading`; the last two end the block. Then,
+footer, the contract's **Call paths** entry for the command beside the tree. An open change
+file naming the package (`open_changes`) that gives an entry for the command under **Contract
+changes** — the last one it gives, the `to` after a `from` — is compared in the contract's
+place, the first such file in path order: the code is built to the change before `sync-plan`
+writes it into the contract. The first line is `contract: <command> (budget <n>)`, with `
+from <change file path>` appended when the entry is a change file's, or `contract: no entry
+for <command>` when the heading has no entry for it, or `contract: no Call paths heading`; the
+last two end the block. Then,
 per path of the entry, its kind on a line of its own (`  <kind>:`), then one line per
 contract frame — `    <k> <owner>.<name>  match  <name> (<file>:<line>)` or `    <k>
 <owner>.<name>  missing` — with every tree frame between two matched frames printed as `    -
@@ -1882,23 +1887,65 @@ def call_paths(pkg: str) -> dict[str, dict[str, object]] | None:
     """
     if not has_call_paths(pkg):
         return None
+    return _call_path_entries(_item(contract_path(pkg).read_text(), "Call paths"))
+
+
+def _call_path_entries(text: str) -> dict[str, dict[str, object]]:
+    """The Call paths entries in text, as `call_paths` returns them.
+
+    A path is a bullet indented deeper than its command's line; a shallower bullet ends the
+    entry, so the entries can be read out of a change file's nested **Contract changes**. A
+    command listed twice keeps its last entry: a change file gives the entry `from` and then
+    `to`.
+    """
     out: dict[str, dict[str, object]] = {}
     current: dict[str, object] | None = None
-    for line in _item(contract_path(pkg).read_text(), "Call paths").splitlines():
+    indent = 0
+    for line in text.splitlines():
         m = CALL_PATH_COMMAND.match(line)
         if m:
             current = {"budget": int(m.group("n")), "paths": []}
             out[m.group("cmd")] = current
+            indent = len(line) - len(line.lstrip())
             continue
-        bullet = re.match(r"^\s+- (.*)$", line)
+        bullet = re.match(r"^(\s*)- (.*)$", line)
         if current is None or not bullet:
             continue
-        body = bullet.group(1)
+        if len(bullet.group(1)) <= indent:
+            current = None
+            continue
+        body = bullet.group(2)
         tokens = list(re.finditer(r"`([^`]+)`", body))
         last = tokens[-1] if tokens else None
         effect = last.group(1) if last and not re.search(r"\d+ $", body[: last.start()]) else None
         current["paths"].append({"kind": body.partition(":")[0].strip(),  # type: ignore[union-attr]
                                  "frames": re.findall(r"(\d+) `([^`]+)`", body), "effect": effect})
+    return out
+
+
+def _contract_changes(text: str) -> str:
+    """A change file's **Contract changes**, through its `###` groups, up to **Downstream impact**."""
+    lines = text.splitlines()
+
+    def at(name: str, after: int = 0) -> int | None:
+        pattern = rf"\s*(#+\s*(\d+\.\s*)?{re.escape(name)}\b|\d+\.\s*\*\*{re.escape(name)}\*\*)"
+        return next((i for i in range(after, len(lines)) if re.match(pattern, lines[i])), None)
+
+    start = at("Contract changes")
+    if start is None:
+        return ""
+    end = at("Downstream impact", start + 1)
+    return "\n".join(lines[start:end])
+
+
+def change_call_paths(pkg: str) -> dict[str, tuple[dict[str, object], Path]]:
+    """command -> (entry, change file) for each Call paths entry an open change file naming pkg
+    gives under **Contract changes**; the first such file in path order wins."""
+    out: dict[str, tuple[dict[str, object], Path]] = {}
+    for c in open_changes(pkg):
+        path: Path = c["path"]  # type: ignore[assignment]
+        for command, entry in _call_path_entries(_contract_changes(path.read_text())).items():
+            out.setdefault(command, (entry, path))
     return out
 
 
@@ -2667,12 +2714,19 @@ def _frame_owner(rel: str, pkg: str) -> str:
 
 def against_contract(pkg: str, graph: _CallGraph, root: str | None, command: str) -> list[str]:
     """The comparison lines for one command, per the docstring's **Call paths.** paragraph."""
-    entries = call_paths(pkg)
-    if entries is None:
-        return ["contract: no Call paths heading"]
-    entry = entries.get(command)
-    if entry is None:
-        return [f"contract: no entry for {command}"]
+    changed = change_call_paths(pkg)
+    source = ""
+    if command in changed:
+        entry, path = changed[command]
+        source = f" from {_rel(path)}"
+    else:
+        entries = call_paths(pkg)
+        if entries is None:
+            return ["contract: no Call paths heading"]
+        found = entries.get(command)
+        if found is None:
+            return [f"contract: no entry for {command}"]
+        entry = found
     budget, paths = int(entry["budget"]), entry["paths"]  # type: ignore[arg-type]
     tree = graph.node(root, False, [], set()) if root else None
     width = max([len(f"{k} {frame}") for p in paths for k, frame in p["frames"]] + [1])  # type: ignore[index]
@@ -2700,7 +2754,7 @@ def against_contract(pkg: str, graph: _CallGraph, root: str | None, command: str
                     return [child, *found]
         return None
 
-    lines = [f"contract: {command} (budget {budget})"]
+    lines = [f"contract: {command} (budget {budget}){source}"]
     counts = {"match": 0, "extra": 0, "missing": 0}
     # Above the root sits an anchor whose one child is the root, so frame 1 is tried at the
     # root only and a later frame is looked for below the last matched one.

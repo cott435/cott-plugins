@@ -361,7 +361,10 @@ Your prompt has **Package** in place of **Section**. Read, in this order:
    `match` or `missing`, each built frame the contract does not list `extra`, the effect
    `reached` or not, and a `summary:` line with the command's budget. `contract: no entry` or
    `contract: no Call paths heading` means the contract fixes nothing for the command, and you
-   judge the path as 2.5 did, against the hard **Main-path depth**.
+   judge the path as 2.5 did, against the hard **Main-path depth**. A `contract:` line ending
+   `from <change file path>` compares the code with that open change file's entry, not the
+   contract's: the change outranks the contract for what it names (**Order of authority**),
+   and its frames, budget and breaks are the ones you judge. Read that change file too.
 4. Every `.dev-team/gate/<pkg>/*.txt` (Glob), for each section's `MEASURED shape` lines; quote
    them under **SUGGESTION**, one bullet per line, with the section's name.
 5. The code along each path: every module a block names, read whole.
@@ -377,7 +380,7 @@ frame of that command, else `pass`; `findings` lists those CRITICALs by their po
 **What may be CRITICAL.** A closed list; nothing outside it is CRITICAL on a paths run:
 
 - **P1** — a command whose `depth to first effect` is past its budget: the `budget <n>` of its
-  `contract:` line, or the hard **Main-path depth** of `project-structure` §2 when the
+  `contract:` line (a change file's, when the line names one), or the hard **Main-path depth** of `project-structure` §2 when the
   contract has no entry for it. The summary line says `past budget`; you copy it. The line is
   `surface: P1 — <file:line of the command function> — depth <d> past budget <n> of Call paths
   for `<command>` — <what to change>` (`past the hard Main-path depth 8` without an entry).
