@@ -12,7 +12,7 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
-## [Unreleased]
+## [2.6.0] - 2026-10-03
 
 A package's main paths are decided at PLAN, in the contract, before any section is designed, so
 every section is built to fit a path that already reads well and the paths review mostly
@@ -48,15 +48,15 @@ confirms. Design: `site/notes/2.6-spine-design.md`. Evidence: the `2.6-spine-*` 
 
 - `status.py` reads a bold item (`5. **Call paths** —`) only on a numbered line, so a prose
   line that wraps to start with the bold name no longer hides the heading below it; before,
-  `--against-contract` printed `contract: no entry` for such a contract
+  `--against-contract` printed `contract: no entry` for such a contract (07d69bc)
 - `--against-contract` compares a command with an open change file's **Call paths** entry when
   one gives it, and says so on the `contract:` line (`from <change file path>`); before, code
   built to a change that moves a step between sections failed the paths review against the
-  contract the change had not yet been synced into
+  contract the change had not yet been synced into (8af9221)
 - `run-package` sends the reviewer **Intent tests** as `<package root>/tests/intent/<section>/`,
-  where the tester writes them, not the repo-root `tests/intent/<section>/`
+  where the tester writes them, not the repo-root `tests/intent/<section>/` (8af9221)
 - The close writes a synced deviation's **Resolved by** as `approve @<sha>`, the form the
-  deviations template gives, not the bare sha
+  deviations template gives, not the bare sha (8af9221)
 
 ### Upgrading
 
