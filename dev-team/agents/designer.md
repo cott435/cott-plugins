@@ -172,7 +172,7 @@ cited the same way.
 **The `surface` section**, in every mode: its design is built from every sibling README's
 **Entry points and interfaces** and the rows each marks `Public: yes`, checked against the
 contract's **Public surface (intent)**. Every public name in the design cites the README that
-provides it. A name §5 of the contract promises and no README provides is a spec-change, never
+provides it. A name §6 of the contract promises and no README provides is a spec-change, never
 a name you design into existence.
 
 ## Procedure

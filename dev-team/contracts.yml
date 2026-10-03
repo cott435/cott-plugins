@@ -383,6 +383,26 @@ headings:
       - file: agents/implementer.md
         cites: ['CRITICAL', 'WARNING']
 
+  - name: package contract headings its readers parse are ones the template defines
+    # The architect writes the contract from the template's numbered items; the designer reads
+    # Section interfaces, Pipelines, Public surface (intent) and Call paths by name, the paths
+    # reviewer Call paths, Pipelines and Public surface (intent), and status.py Public surface
+    # (intent) and Call paths. A renamed item leaves a reader finding nothing, and a designer
+    # that finds no Call paths writes no skeletons (2.6). The owner span ends before the
+    # adoption paragraph, which restates the items in prose.
+    owner: skills/planning-templates/references/package-contract.md
+    owner_span: ['1. **Purpose**', '**Adopting an existing package**']
+    readers:
+      - file: agents/architect.md
+        cites: ['Purpose', 'Sections', 'Section interfaces', 'Pipelines', 'Call paths',
+                'Public surface (intent)', 'Consumes', 'Open decisions']
+      - file: agents/designer.md
+        cites: ['Sections', 'Section interfaces', 'Pipelines', 'Call paths', 'Public surface (intent)', 'Consumes']
+      - file: agents/reviewer.md
+        cites: ['Sections', 'Section interfaces', 'Pipelines', 'Call paths', 'Public surface (intent)', 'Consumes']
+      - file: skills/status/scripts/status.py
+        cites: ['Public surface (intent)', 'Call paths']
+
   - name: the reader's test items its readers cite are ones pipelines.md numbers
     # P3 of the paths review blocks on an item of the reader's test by name, and the designer
     # and the implementer write to the same items. A renamed item leaves a CRITICAL citing a
