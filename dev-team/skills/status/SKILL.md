@@ -1,7 +1,7 @@
 ---
 name: status
 description: Print where every package and section stands — one state per section (PROBE, DESIGN, TEST, IMPLEMENT, REVIEW, FIX n, PLAN, DONE, BLOCKED), the ready set, whether the package shipped, and the exact next command — derived from docs/ and the code every time, never from a status file. Use whenever you have lost track, before planning the next package, or to see why run-package stopped.
-argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>|<pkg>/paths] [--surface <pkg>] [--shape <pkg> --section <s>] [--paths <pkg>] [--repo] [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]"
+argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>|<pkg>/paths] [--surface <pkg>] [--shape <pkg> --section <s>] [--paths <pkg> [--against-contract]] [--repo] [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]"
 disable-model-invocation: true
 ---
 
@@ -26,7 +26,8 @@ of the nine rules in the script's docstring that fires, and the evidence names t
 commit it fired on. "Newer than" is commit order, never file times; a path with uncommitted
 changes counts as newest of all and says so in the evidence. A section is ready when it is
 neither DONE nor BLOCKED and every section it depends on in its package is DONE; the `surface`
-section depends on all of them. Nothing is counted from `docs/followups.md`.
+section depends on all of them; the `surface` row is ready at PLAN, DESIGN and TEST as soon as
+the contract has **Call paths**, and waits for every other section from IMPLEMENT on. Nothing is counted from `docs/followups.md`.
 
 `--run-gate [pkg]` prints `run gate: PASS` or `run gate: FAIL` with one reason per line and
 exits 1 on FAIL: not a git repository; on `main` or `master`; uncommitted changes outside the
@@ -70,7 +71,19 @@ statically through the package's own code: a frame per line, `[indirect]` on a f
 through a lambda, a closure or a mapping, `[effect: <callee>]` on a call that leaves the
 package for a third-party module or for I/O, `[unresolved]` on a call the script could not
 follow, then `depth to first effect`, `deepest effect` and `indirect frames`. The paths
-reviewer reads it. With no commands it prints `paths: no commands`.
+reviewer reads it. With no commands it prints `paths: no commands`. With `--against-contract`
+each block is followed by the contract's **Call paths** entry for the command: `contract:
+<command> (budget <n>)`, then per path its kind, each contract frame `match` (with the built
+frame) or `missing`, each built frame between two matched ones `extra`, the effect `reached`,
+`reached through <k> extra frame(s)` or `not reached`, and a `summary: <k> match, <e> extra,
+<m> missing; depth <d> of budget <n>` line (`past budget` when deeper). A contract with no
+entry for the command prints `contract: no entry for <command>`, one with no heading
+`contract: no Call paths heading`, and the block ends there. `--against-contract` without
+`--paths` exits 2. An open change file naming the package that gives an entry for the command
+under **Contract changes** is compared in the contract's place (its `to` entry, after a
+`from`), and the first line reads `contract: <command> (budget <n>) from <change file path>`:
+code built to a change is judged against the change until `sync-plan` writes it into the
+contract.
 
 `--repo` prints the repo-wide gap list the documenter copies under **Known gaps**: `packages:`,
 `sections:` (every section not DONE), `decisions:` (every `D<n>` open or deferred),
@@ -90,12 +103,14 @@ to the implementer, and `/dev-team:pair` reads the files it names. The script's 
 the fields and how each resolves. A section the contract lacks prints one line and exits 2.
 
 `--fields <pkg>/<section>` prints the other spawn fields run-package would otherwise read files
-for, six lines: `mode: new | document | delta` (the designer's **Mode**), `change file: <path>
+for, seven lines: `mode: new | document | delta` (the designer's **Mode**), `change file: <path>
 | none`, `design mode: <word> | none` (the tester's **Design mode**, from the design's `Mode:`
 line), `diff base: <sha> | none` (the `Commit:` a round-2-or-later reviewer's **Diff**
-starts from), `upstream interfaces: <path>, … | none` and `paths report: <path> | none` (the
+starts from), `upstream interfaces: <path>, … | none`, `paths report: <path> | none` (the
 package's paths report while it names the section and no review of the section is newer, the
-`full` reviewer's **Previous round** after a paths FIX). The docstring gives each rule. A section the contract lacks exits 2.
+`full` reviewer's **Previous round** after a paths FIX) and `dependency readmes: <path>/README.md, … |
+none` (the dependency READMEs that exist on disk — every role's **Dependency READMEs**; `none`
+for the `surface` section before its siblings ship). The docstring gives each rule. A section the contract lacks exits 2.
 
 The script runs no test and no constraint command. The stop hook runs `docs/constraints.md`'s
 **Floor** and **Enforced** rows through the same parser this script exposes, so the rows the

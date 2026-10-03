@@ -135,6 +135,28 @@ the last row), `paths-e2e`: all done, with the `commands` step's `load.py` repla
 `--paths data`; its job is the seed `run-package` eval 14 builds, where `status.py data` prints
 `paths: needed` and the driver spawns the paths review.
 
+**Readiness and dependency READMEs (2.6).** Six cases (`site/notes/2.6-spine-03-status-readiness.md`,
+the last six rows). `base` takes `call_paths: true`, which appends a `## Call paths` heading
+whose one entry is the `commands` macro's tree (`data-load`, budget 8, `cli.load` →
+`pipelines.run_load` → `ingest.read_trades` → `shutil.copy`), or a string, written as the
+heading's body verbatim; without it every contract stays the 2.5 one. With the heading the
+`surface` row is ready at DESIGN and TEST before any sibling is DONE, and waits for every
+other section from IMPLEMENT on; without it the surface waits at every state, as before.
+`--fields` prints a seventh line, `dependency readmes:`, the READMEs of the row's `depends on`
+that exist on disk in the Sections table's order, `none` when none does.
+
+**Against the contract (2.6).** Nine cases (`site/notes/2.6-spine-05-against-contract-review.md`,
+the `calltree-contract-*` rows at the end; `-prose-line` from phase 7; the two `-change-file`
+cases from the release's follow-up: an open change file's entry is compared in the contract's
+place, a synced one is not). Each runs `base` with a `call_paths` heading
+(or none), then `commands`, and `--paths data --against-contract`. After the block's footer the
+contract's entry prints: `contract: data-load (budget 8)`, the kind, each contract frame `match`
+with the built frame or `missing`, a built frame between two matched ones `extra`, the effect
+`reached`, and `summary: <k> match, <e> extra, <m> missing; depth <d> of budget <n>`. The frame
+column is padded to the entry's longest frame, so the expectations on a shorter frame are
+regexes. Without an entry, or without the heading, one `contract:` line ends the block and no
+`summary:` prints.
+
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
 section's entry does not make an existing design stale, per the design's *Stale when* for a
@@ -288,3 +310,18 @@ optional flag).
 | `fields-paths-report` | as `paths-stale-after-fix` | `--fields data/ingest` | sixth line `paths report: docs/packages/data/reviews/paths/2026-09-27-r1-p.md`, after `upstream interfaces: none`; exit 0 |
 | `repo-paths-needed` | as `paths-needed` | `--repo` | `  - data: building (4/4 DONE, paths needed)`; exit 0 |
 | `paths-e2e` | all done, with `calltree-lambda`'s `load.py` in the `commands` step | `--paths data` | `lambda (…load.py:13) [indirect]`; `indirect frames: 1`; exit 0 (the seed of `run-package` eval 14) |
+| `surface-early-design-ready` | `base` with `call_paths: true` | `—` | `surface · DESIGN`, ready `yes`; the `clean` row ready `no` (its dependency `ingest` is not DONE) |
+| `surface-early-test-ready` | `base` (`call_paths: true`), `design` surface | `—` | `surface · TEST`, ready `yes` |
+| `surface-early-implement-waits` | `base` (`call_paths: true`), `design` and `tests` surface | `—` | `surface · IMPLEMENT`, ready `no` |
+| `surface-no-call-paths-waits` | `base` | `—` | `surface · DESIGN`, ready `no` |
+| `fields-dependency-readmes-none` | `base` (`call_paths: true`) | `--fields data/surface` | `paths report: none` then `dependency readmes: none`; exit 0 |
+| `fields-dependency-readmes-some` | `base`, `done` ingest, `build` clean | `--fields data/surface` | `dependency readmes: packages/data/src/data/ingest/README.md, packages/data/src/data/clean/README.md` (storage has no README); exit 0 |
+| `calltree-contract-match` | `base` (`call_paths: true`), `commands` | `--paths data --against-contract` | `contract: data-load (budget 8)`; a line `/^    1 cli\.load\s+match  load \(packages/data/src/data/cli\.py:6\)$/`; `3 ingest.read_trades  match  read_trades (packages/data/src/data/ingest/reader.py:7)`; `effect shutil.copy  reached`; `summary: 3 match, 0 extra, 0 missing; depth 2 of budget 8`; exit 0 |
+| `calltree-contract-extra` | as `-match`, `load.py`'s `run_load` calling `_read(path)` and `_read` calling `read_trades` | the same | a line `/^    -\s+extra  _read \(packages/data/src/data/pipelines/load\.py:\d+\)$/`; `summary: 3 match, 1 extra, 0 missing`; exit 0 |
+| `calltree-contract-missing` | the matching entry with a fourth frame `4 `ingest.parse_rows`` before the effect | the same | a line `/^    4 ingest\.parse_rows\s+missing$/`; `effect shutil.copy  reached`; `summary: 3 match, 0 extra, 1 missing`; exit 0 |
+| `calltree-contract-no-entry` | an entry for `` `data-build` (budget 8) `` only | the same | `contract: no entry for data-load`; no `summary:`; exit 0 |
+| `calltree-contract-no-heading` | `base` without `call_paths`, `commands` | the same | `contract: no Call paths heading`; no `summary:`; exit 0 |
+| `calltree-contract-past-budget` | the matching entry with `(budget 1)` | the same | `summary: 3 match, 0 extra, 0 missing; depth 2 past budget 1`; exit 0 |
+| `calltree-contract-prose-line` | as `-match`, with a wrapped prose line starting `**Call paths**` above `## Public surface (intent)` (`edit`) | the same | `contract: data-load (budget 8)`; `summary: 3 match, 0 extra, 0 missing; depth 2 of budget 8`; no `contract: no entry`; exit 0 (phase 7: only a numbered bold line is an item) |
+| `calltree-contract-change-file` | as `-extra`, plus an open `docs/packages/data/changes/load-read.md` whose `## Contract changes` gives the `data-load` entry `from` (three frames) and `to` (with `3 pipelines._read`), a nested bullet after it | the same | `contract: data-load (budget 8) from docs/packages/data/changes/load-read.md`; a line `/^    3 pipelines\._read\s+match  _read \(…load\.py:\d+\)$/`; `summary: 4 match, 0 extra, 0 missing; depth 3 of budget 8`; no `extra  _read`; exit 0 |
+| `calltree-contract-change-file-synced` | as `-change-file`, `Status: synced` | the same | `contract: data-load (budget 8)`; `summary: 3 match, 1 extra, 0 missing`; no ` from docs/packages/data/changes/`; exit 0 |

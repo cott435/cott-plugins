@@ -66,6 +66,15 @@ through the code as it stands, and the first paths review of an adopted package 
 P1 to P4 items — a deep call chain, a lambda or mapping on a main path — and takes several FIX
 rounds before the package is shipped.
 
+A contract with no **Call paths** heading gets one at the close. When the package's close runs
+(`sync-plan`, or `/dev-team:sync-plan data` by hand), the architect runs `status.py --paths
+data` and writes **Call paths** as built: every frame the code has from each command to each
+effect, `(budget 8)`. For each command deeper than 8 it also writes
+`docs/packages/data/changes/paths-<command>.md`, `Status: open`, proposing where the path is
+cut; that command's line in the contract ends with the change file's path and carries no
+`D<n>`, so the paths review keeps failing it on P1 until you approve the change and it ships,
+or defer it. Nothing is rebuilt until then.
+
 Expect **blocks** on an adopted repo: open questions with no assumption stop a section by
 design. Answer them when the driver asks, or in `docs/decisions.md`, and re-run.
 

@@ -1,0 +1,29 @@
+{
+  "note": "2.6: --against-contract with the contract's entry matching the built tree frame for frame",
+  "steps": [
+    {
+      "do": "base",
+      "call_paths": true
+    },
+    {
+      "do": "commands"
+    }
+  ],
+  "args": [
+    "--paths",
+    "data",
+    "--against-contract"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "contract: data-load (budget 8)",
+      "3 ingest.read_trades  match  read_trades (packages/data/src/data/ingest/reader.py:7)",
+      "effect shutil.copy  reached",
+      "summary: 3 match, 0 extra, 0 missing; depth 2 of budget 8"
+    ],
+    "matches": [
+      "^    1 cli\\.load\\s+match  load \\(packages/data/src/data/cli\\.py:6\\)$"
+    ]
+  }
+}

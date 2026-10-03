@@ -1,0 +1,19 @@
+{
+  "note": "2.6: with Call paths and the surface designed, its TEST is ready before any sibling is DONE",
+  "steps": [
+    {
+      "do": "base",
+      "call_paths": true
+    },
+    {
+      "do": "design",
+      "section": "surface"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "surface",
+    "state": "TEST",
+    "ready": true
+  }
+}

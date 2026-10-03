@@ -39,7 +39,11 @@ Before any edit, the old contract is copied to `docs/history/<date>-architecture
 /dev-team:run-package reporting
 ```
 
-The new package is planned and built as in [New repo](new-repo.md). A dependency it needs from a
+The new package is planned and built as in [New repo](new-repo.md): its contract fixes every
+command's **Call paths** — the frames from `cli.<verb>` to each external effect, within a depth
+budget — before any section is designed, and the surface designer runs first, right after
+PLAN, from the contract; the other sections are designed to fit those paths, and the `surface`
+section is built last. A dependency it needs from a
 shipped package is consumed from that package's `interface.md`; if the name is not there yet,
 the change file carries it.
 

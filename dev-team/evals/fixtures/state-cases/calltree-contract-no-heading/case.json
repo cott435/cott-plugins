@@ -1,0 +1,25 @@
+{
+  "note": "2.6: a contract without the heading: one line, no summary (the review runs as 2.5's)",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands"
+    }
+  ],
+  "args": [
+    "--paths",
+    "data",
+    "--against-contract"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "contract: no Call paths heading"
+    ],
+    "absent": [
+      "summary:"
+    ]
+  }
+}

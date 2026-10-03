@@ -91,8 +91,8 @@ Rules:
   what the `surface` section's design says it runs — a pipeline, or a single section entry point; no logic. The
   one-off operational task is a command like any other: schema init, a backfill, a cache
   rebuild live in the section that owns the data, and the command is how you run them. Before
-  the `surface` section is built there is no `cli.py` yet —
-  call the section's function directly (`uv run --package <pkg> python -c "…"`, or a test
+  the `surface` section is built there is no `cli.py` yet — its design exists from PLAN, its
+  code arrives last — so call the section's function directly (`uv run --package <pkg> python -c "…"`, or a test
   fixture) and let the command arrive with the surface.
 - Tests mirror source paths: `src/data/ingest/parsers.py` → `tests/unit/ingest/test_parsers.py`.
 - Lint, import-linter, and docs configuration live at the workspace root, once. A package's
@@ -109,7 +109,7 @@ Rules:
 | Class (lines) | 200 | 400 | review |
 | Public methods per class | 12 | 20 | pylint `R0904` |
 | Modules per package directory (excl. `__init__.py`, `configs.py`, `README.md`) | 8 | 12 | review |
-| Main-path depth (frames from a command function to its first external effect) | 6 | 8 | the paths review |
+| Main-path depth (frames from a command function to its first external effect) | 6 | 8 | the paths review, against each command's **Call paths** budget |
 
 **Soft means plan the split; hard means split before finishing the task.** The line and
 statement limits match the linter defaults, so tooling rather than opinion decides. The 8/12
@@ -133,8 +133,9 @@ Who uses these, and how:
   return.
 - **Reviewer** — anything past a soft limit without a note, or past a hard limit at all, is a
   finding.
-- **Paths reviewer** — a command past the hard **Main-path depth** is a CRITICAL; past the soft
-  one, a WARNING. The count is `status.py --paths`' `depth to first effect`.
+- **Paths reviewer** — a command past its **Call paths** budget (the hard **Main-path depth**
+  without one) is a CRITICAL; past the soft limit, a WARNING. The count is `status.py
+  --paths`' `depth to first effect`.
 
 ## 3. Configuration placement
 

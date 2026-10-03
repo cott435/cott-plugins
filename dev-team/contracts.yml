@@ -198,6 +198,28 @@ forbid:
     pattern: 'Amends:|hand back an amendment|takes your \*\*last\*\* turn|takes your last turn|its \*\*last\*\* hand-back'
     files: ['agents/*.md', 'skills/**/*.md', 'hooks/*.py']
 
+  - name: nothing says the surface section is designed last or from the shipped READMEs
+    # Since 2.6 the surface is designed right after PLAN from the contract's Section
+    # interfaces, Pipelines, Public surface (intent) and Call paths, and only built last from
+    # the READMEs. A prompt that still says "designed last" or "designed from every sibling
+    # README" sends the surface designer to files that do not exist yet. `near` keeps the one
+    # true statement — the code is built last, from the shipped READMEs — out of scope. The
+    # user-facing docs (README.md, site/flow.md, site/workflows/) are swept too, so a reader
+    # learns the new order before meeting it in a run.
+    pattern: 'designed last|from (?:every|the) (?:sibling|shipped) READMEs?'
+    near: 60
+    unless: ['built last', 'built, last', 'IMPLEMENT']
+    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/flow.md', 'site/workflows/*.md']
+
+  - name: no driver prompt field sends intent tests at the repo root
+    # Intent tests live under the package root (`packages/<pkg>/tests/intent/<section>/` in a
+    # uv workspace), as the tester writes them and the implementer runs them. A prompt field
+    # whose value is the bare `tests/intent/<section>/` sends the reviewer to a directory that
+    # does not exist; 2.6-spine phase 7's eval 16 reviewer met it. Table cells only: prose
+    # that says "`tests/intent/<section>/` under the package root" is right.
+    pattern: '\| `tests/intent/<section>/?` \|'
+    files: ['skills/**/SKILL.md']
+
 # Every heading a reader parses is one the owner's template defines.
 headings:
   - name: interface.md headings its readers parse are ones the implementer writes
@@ -382,6 +404,26 @@ headings:
         cites: ['CRITICAL', 'WARNING', 'SUGGESTION', 'Coverage', 'Carried', 'Spec-change', 'Deferred', 'Paths']
       - file: agents/implementer.md
         cites: ['CRITICAL', 'WARNING']
+
+  - name: package contract headings its readers parse are ones the template defines
+    # The architect writes the contract from the template's numbered items; the designer reads
+    # Section interfaces, Pipelines, Public surface (intent) and Call paths by name, the paths
+    # reviewer Call paths, Pipelines and Public surface (intent), and status.py Public surface
+    # (intent) and Call paths. A renamed item leaves a reader finding nothing, and a designer
+    # that finds no Call paths writes no skeletons (2.6). The owner span ends before the
+    # adoption paragraph, which restates the items in prose.
+    owner: skills/planning-templates/references/package-contract.md
+    owner_span: ['1. **Purpose**', '**Adopting an existing package**']
+    readers:
+      - file: agents/architect.md
+        cites: ['Purpose', 'Sections', 'Section interfaces', 'Pipelines', 'Call paths',
+                'Public surface (intent)', 'Consumes', 'Open decisions']
+      - file: agents/designer.md
+        cites: ['Sections', 'Section interfaces', 'Pipelines', 'Call paths', 'Public surface (intent)', 'Consumes']
+      - file: agents/reviewer.md
+        cites: ['Sections', 'Section interfaces', 'Pipelines', 'Call paths', 'Public surface (intent)', 'Consumes']
+      - file: skills/status/scripts/status.py
+        cites: ['Public surface (intent)', 'Call paths']
 
   - name: the reader's test items its readers cite are ones pipelines.md numbers
     # P3 of the paths review blocks on an item of the reader's test by name, and the designer

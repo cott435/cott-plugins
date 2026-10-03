@@ -245,12 +245,46 @@ always referred to as `<pkg>/<section>`.
 
 The last row of every Sections table is `surface`, per the template: path the package top
 level, `depends on` every other section, responsibility the package's pipelines and public
-surface. `<pkg>/surface` is a section like any other — designed last from the shipped READMEs,
-built, reviewed — and its README is `interface.md`.
+surface. `<pkg>/surface` is a section like any other, with its own order: its design and its
+intent tests are written right after PLAN, from this contract's **Section interfaces**,
+**Pipelines**, **Public surface (intent)** and **Call paths**, before any sibling is built,
+and its code is built last, from the shipped READMEs; its README is `interface.md`. The
+contract is therefore the only ground the surface's designer has, which is why **Call paths**
+is written here and not left to a design.
 
 Every section gets a path in the repo's own layout (`project-structure` §1, and §0 for repos
 that already have a package root). A section with no code location is not a section — fold it
 into one that has one, or drop it.
+
+## Call paths
+
+At package scope you fix every command's path before a designer runs: the template's item 5,
+**Call paths**, read from `references/package-contract.md` with the rest. One entry per
+command in **Public surface (intent)**; per entry, one path per kind of external effect the
+command reaches, its frames numbered from the command function. Each frame is a name the
+contract defines — `cli.<function>`, `pipelines.<function>` for a **Pipelines** entry's
+function, `<section>.<function>` for a **Section interfaces** entry — and nothing else: a
+frame with no owner is a frame nobody will build. When a path has to pass through a second
+function of a section after its entry point, add that function to **Section interfaces**
+marked `(path only)`; never leave a frame unnamed. Likewise a **Pipelines** entry that names
+no function gets its function's name and signature added to that entry, so the
+`pipelines.<function>` frame has an owner. Those two are the only edits a path brings
+outside **Call paths**: no other heading is reworded, and the contract carries no note that
+the heading was added — the archive copy and the commit say that.
+
+The budget is 8, the hard **Main-path depth** of `project-structure` §2, on `--paths`'
+`depth to first effect` (the command at 0, so a path of `n` frames has depth `n − 1`). A
+command whose path cannot fit — the brief, a `decided` `D<n>` or a provider's protocol
+demands a frame the budget has no room for — is a question under the interview rule: stub a
+`D<n>` with `Scope: <pkg>`, your recommendation (`budget <k>` for that command, or the
+responsibility to move so the path fits) and the assumption you would write, and stop. A
+budget above 8 is written only with a `decided` `D<n>` cited on the command's line.
+
+A contract that exists and has no **Call paths** heading is an item of the change list,
+`Call paths` (**Edits**): EDIT when no section of the package is built, written from
+**Pipelines** and **Section interfaces** as above; when any section is built, the frames are
+the code's, and the item is the close's (**sync-plan**, step 8), so you write nothing for it
+and the return row reads `| Call paths | left to the close (built) |`.
 
 ## Decisions
 
@@ -324,7 +358,7 @@ that state what the item changes: a new optional parameter is a **Section interf
 not a reworded **Sections** responsibility. The skill names where the items come from — the
 argument, the brief's diff against `docs/history/brief-contracted.md`, open
 `spec-change:contract` entries in the package's ledgers (`docs/packages/<pkg>/deviations/*.md`, and the older `docs/deviations/<pkg>/*.md` and `docs/deviations.md`), and a review report's **Spec-change** line naming `contract` that no entry records, the repo contract's diff since its
-last archive copy. List them first, one line each, before you touch any file.
+last archive copy, and a contract with no **Call paths** heading (**Call paths**). List them first, one line each, before you touch any file.
 
 Classify each item by the sections it touches, against the package state table in **The
 document map**, at section granularity: a section is *built* when its path has code, *shipped*
@@ -366,6 +400,7 @@ The return carries one row per item:
 | <item> | EDIT+STALE (analysis) |
 | <item> | CHANGE docs/packages/data/changes/side-aliases.md |
 | <item> | DECIDE D14 |
+| Call paths | left to the close (built) |
 ```
 
 ## Probing
@@ -431,8 +466,9 @@ implementer's), a design, a review, or code.
    table, Section interfaces, Pipelines, Public surface (intent) and Consumes; the repo
    contract's Boundaries and Shared conventions for a **Repo contract** group. Write what the
    code does, copied from the code, where it and the entry differ.
-5. **Close.** A synced deviation gets `Status: synced` and `Resolved by: <sha>` — the `approve @<sha>`
-   that `status.py` prints for the section: the commit its latest approving review judged, not
+5. **Close.** A synced deviation gets `Status: synced` and `Resolved by: approve @<sha>`, the
+   form `deviations-entry.md` item 8 gives and `status.py` prints for the section. `<sha>` is
+   the commit its latest approving review judged, not
    the review report's own commit (a later test-only commit is what that sha can be), since
    this run's own commit does not exist yet. A synced change file gets `Status: synced`, its only edit. Those status lines, and step
    7's, are the only edits you make to a ledger or a change file.
@@ -455,9 +491,31 @@ implementer's), a design, a review, or code.
    return (W2). An entry whose section's row still lists that kind stays open. A
    `spec-change:contract` is closed by **Edits**, never here. Run by hand with a section not
    DONE, proceed for what verifies and list that section in the return.
+8. **Call paths.** When the contract has no **Call paths** heading, run `python3
+   ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --paths <pkg>` once and write the
+   heading in the template's **As built** form (`references/package-contract.md`, item 5):
+   one entry per `command:` block, `(budget 8)`, one path per effect leaf of the block —
+   every frame of the tree from the command to that leaf, numbered, each `<owner>.<name>`
+   with `<name>` the frame's printed name and `<owner>` the section whose path holds its file
+   (`cli` for `cli.py`, `pipelines` under `pipelines/`), `[indirect]` frames included — the
+   leaf's callee as the effect. On `paths: no commands`, the heading's one line is `- none
+   (no commands)`. Archive the contract first (**Edits**) unless this run already did. For
+   each command whose `depth to first effect` is past 8, invoke `planning-templates`, read
+   `change.md`, and write `docs/packages/<pkg>/changes/paths-<command>.md` with `Status:
+   open`: **Change goal** the path cut to depth 8 or less; **Affected sections** every section
+   whose frame the cut removes or moves; **Contract changes** the command's **Call paths**
+   entry as it should read after the cut, and any **Section interfaces** or **Pipelines**
+   change the cut needs; **Downstream impact** from the consumer grep of step 6. That
+   command's line in the contract ends `— past budget, see <the change file's path>`, and
+   carries no `D<n>`. **Section interfaces** gains nothing for an as-built frame: the owner
+   rule binds entries written at PLAN, and the frames here are the code's. A contract that
+   already has the heading gets nothing here: its paths are the paths review's to judge.
 
 The return has one row per entry — `| <entry> | synced |`, `| <entry> | resolved (sweep) |` or
-`| <entry> | left open: <why> |` — then the consumer classification, and the next command: `/dev-team:plan-package <pkg>` for
+`| <entry> | left open: <why> |` — then, when step 8 wrote the heading,
+`| Call paths | written as built (<k> commands, <m> past budget) |` with one
+`| paths-<command> | CHANGE <path> |` row per change file, then the consumer classification,
+and the next command: `/dev-team:plan-package <pkg>` for
 the first package in dependency order that is stale or unplanned, else `/dev-team:status`.
 
 ## map-repo

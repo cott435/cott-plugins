@@ -1,0 +1,26 @@
+{
+  "note": "2.6: a Call paths heading with no entry for the command: one line, no summary",
+  "steps": [
+    {
+      "do": "base",
+      "call_paths": "- `data-build` (budget 8):\n  - file write: 1 `cli.build` → 2 `pipelines.run_build` → 3 `ingest.read_trades` → `shutil.copy`\n"
+    },
+    {
+      "do": "commands"
+    }
+  ],
+  "args": [
+    "--paths",
+    "data",
+    "--against-contract"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "contract: no entry for data-load"
+    ],
+    "absent": [
+      "summary:"
+    ]
+  }
+}

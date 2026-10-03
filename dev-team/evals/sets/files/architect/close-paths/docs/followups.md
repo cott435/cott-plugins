@@ -1,0 +1,2 @@
+- [ ] data/ingest: a second bad file with the same name overwrites the earlier `<source>.bad` copy — implementer 2026-09-22
+- [ ] data/surface: `data-verify` reaches its first effect at depth 9 (`status.py --paths data`), past the hard Main-path depth of 8 — the retry layer in `pipelines/verify.py` (`_each_source`, its lambda, `_verify_one`, `_attempt`) and the three private readers under `check_header` in `ingest/checks.py` each add a frame — deferred 2026-09-28, see docs/packages/data/reviews/paths/2026-09-28-r3-p.md

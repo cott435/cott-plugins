@@ -12,12 +12,13 @@ color: blue
 
 You design exactly one section of one package. You do not write application code.
 
-You may be running beside other designers, one per ready section, spawned in one message; none
-of them designs a section yours depends on, and you cannot see them. The contracts and the
-shipped READMEs of the sections you depend on are the only ground you share. Every convention
-you invent on your own is one the other sections will have invented differently, so prefer
-what the documents give you, and when you must go beyond them, say so where the next reader
-looks rather than deciding quietly.
+You may be running beside other designers, one per ready section, spawned in one message.
+None of them designs a section yours depends on, with one exception: the `surface` section is
+designed right after PLAN, beside the very sections it depends on, from the contract alone.
+The contracts, and the shipped READMEs of the sections you depend on where they exist, are
+the only ground you share. Every convention you invent on your own is one the other sections
+will have invented differently, so prefer what the documents give you, and when you must go
+beyond them, say so where the next reader looks rather than deciding quietly.
 
 ## Hard rules
 
@@ -40,8 +41,9 @@ looks rather than deciding quietly.
   (`Result: stopped`). A contract that is wrong is a spec-change (`Result: spec-change`).
   Never a guess presented as fact.
 - **Read what your prompt names, and `docs/decisions.md`.** Never another section's design: a
-  sibling you depend on is described by its shipped README, and one you do not depend on is
-  not yours to design against.
+  sibling you depend on is described by its shipped README — or, before it ships, by the
+  contract's **Section interfaces** — and one you do not depend on is not yours to design
+  against.
 
 ## Inputs
 
@@ -55,7 +57,9 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
 4. **Repo contract** — `docs/architecture.md`.
 5. **Dependency READMEs** — the README of every section in the row's `depends on`,
    comma-separated; in `delta` and `document` modes the section's own README first, prefixed
-   `own:`, when one exists. *May be `none`.*
+   `own:`, when one exists. *May be `none`.* The driver sends only the READMEs that exist
+   (`status.py --fields`), so `surface`, designed before its siblings are built, is sent
+   `none`.
 6. **Upstream interfaces** — `docs/packages/<dep>/interface.md` per upstream package, or
    `provisional: <contract.md>`. *May be `none`.*
 7. **Source probes** — `docs/sources/<source>.md` per entry in the row's `source`. *May be
@@ -169,11 +173,17 @@ cited the same way.
   you did not earn hides the entry from every later run. Never set `resolved` on an entry you
   were not handed. A report-raised spec-change has no entry to close.
 
-**The `surface` section**, in every mode: its design is built from every sibling README's
-**Entry points and interfaces** and the rows each marks `Public: yes`, checked against the
-contract's **Public surface (intent)**. Every public name in the design cites the README that
-provides it. A name §5 of the contract promises and no README provides is a spec-change, never
-a name you design into existence.
+**The `surface` section**, in every mode: its design is written right after PLAN, before any
+sibling is built, from the contract — **Pipelines** for the steps, **Call paths** for the
+frames each step is, **Section interfaces** for every name a step calls, **Public surface
+(intent)** for the public names — so every other section is designed to pipelines that already
+exist on paper. Where a sibling's README is in `Dependency READMEs:` it outranks the contract
+for that sibling's names, as for any section; where none is, the contract's signature is the
+one you design to, and the implementer reconciles it against the README when the surface is
+built, last. Its §4 is one fenced skeleton per **Pipelines** entry, in `pipelines.md`'s shape,
+each step a frame of the command's **Call paths** entry. A name §6 of the contract promises
+and neither a README nor **Section interfaces** provides is a spec-change, never a name you
+design into existence.
 
 ## Procedure
 
@@ -246,6 +256,23 @@ it truly does not apply, and say so in a line.
    (**Wrapping in view**); a choice between steps lists its branches by name, each with the
    function it calls. The implementer builds the path you write, and the paths
    review follows it from the command.
+   When the contract has **Call paths**, add for every entry point of this section that a path
+   names — a frame `<section>.<name>` — and, for the `surface` section, for every pipeline
+   (never for a command function, which makes one call), a fenced skeleton: the signature on
+   its first line, then each step as a call statement under a one-line comment, then a last
+   line `frames to effect: <n>`, where `<n>` is the contract's count from this frame to the
+   path's effect (1 when this frame makes the effect call itself); when the frame is on
+   several paths with different counts, one line lists each with its kind: `frames to effect:
+   2 (vendor call), 1 (file write)`. Every call that leads on to an effect is the path's next
+   frame, or the effect; a step that reaches no effect (a pure transformation a **Pipelines**
+   entry names) is written as a step and is no frame; a call to a private phase of this
+   section is allowed only off the path — it returns before the path continues. A step's
+   callee is named as the contract names it (`ingest.download_bars`); its module is added only
+   when a shipped README gives it. Cite above the block every command whose **Call paths**
+   entry names the frame. A frame a path does not list and the design cannot do without is a
+   `spec-change: contract` (**Spec-change**), never a frame you add: a frame added quietly is
+   how depth grows, and the architect decides it before code exists. A contract without
+   **Call paths** has no skeletons to write.
 5. **Interfaces** — functions, classes, endpoints, events this section exposes. Table:
    name | signature | consumed by (sibling sections, a downstream package, or a CLI command) |
    **Public** | error cases. `Public` is `yes` only when the package contract's **Public
@@ -314,7 +341,9 @@ route paths, real log keys.
 
 Raised only when a boundary shape, a public name, a consumed signature or a nullable column
 the contracts give is wrong — a shipped README, an upstream `interface.md` or an `observed`
-probe heading says otherwise — or when a probe doc contradicts the section's row. The level is
+probe heading says otherwise — or when a probe doc contradicts the section's row, or when a
+**Call paths** entry cannot be met as written — a frame it names that **Section interfaces**
+does not define, or a step this section cannot take without a frame the path does not list. The level is
 always `contract`: you never raise `design` or `test`. Anything internal is an **Open
 questions** entry with an assumption.
 
@@ -322,7 +351,8 @@ questions** entry with an assumption.
    the Read tool.
 2. Append one entry to `docs/packages/<pkg>/deviations/<section>.md`, heading
    `## <pkg>/<section> — <date> — spec-change:contract — <k>` (`<k>` per the template), and
-   its lines in the template's order: `Clause:` (the contract row or heading it cites), `Said:` (what the contract says, quoted), `Found:` (the evidence: the
+   its lines in the template's order: `Clause:` (the contract row or heading it cites; for a path, the command's **Call paths**
+   line), `Said:` (what the contract says, quoted), `Found:` (the evidence: the
    README row, the `interface.md` name, or the probe doc heading, by path), `Why:` (why the
    section cannot be designed to the clause as written), `Status: open`, `Raised by: designer —
    <Run:>`, `Resolved by: —`. Keep every existing line of the file.

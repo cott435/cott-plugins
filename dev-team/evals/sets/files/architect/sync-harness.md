@@ -10,8 +10,9 @@ for any other question, accept the architect's own `Assumption if unanswered:`.
 - Is `data/ingest` DONE after the side-aliases change? —  Yes: the newest round,
   `docs/reviews/2026-09-26-data-ingest-r2-s.md`, approves commit `e1f8d42`, whose scope is
   the change file. Every `data` section's newest round approves.
-- What goes in `Resolved by:` when no commit sha exists in this harness? —
-  `run-package data (sync-plan), <today's date>`.
+- What goes in `Resolved by:`, with no `status.py` output in this harness? — The sha
+  `status.py` would print as `approve @<sha>` for the section: the `Commit:` line of the
+  section's newest approving review under `docs/reviews/`. Every section has one.
 - Is `dedupe` a public name, so that its changed return type needs consumers reclassified?
   — No. It is not in `docs/packages/data/interface.md`'s Public names; only `clean_trades`
   calls it. No public name changes in this close.

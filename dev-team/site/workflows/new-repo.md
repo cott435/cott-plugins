@@ -69,8 +69,11 @@ package covers, and each upstream package's `interface.md` (or its `contract.md`
 provisional, when the upstream has not shipped). It writes `docs/packages/data/contract.md`: the
 Sections table — `section`, `responsibility`, `path`, `builds with`, `depends on`, `source` —
 ending with the `surface` row, which depends on every other section; Section interfaces;
-Pipelines; Public surface (intent); Consumes. It designs nothing: the designer does that, one
-section at a time, when the section is ready.
+Pipelines; **Call paths**; Public surface (intent); Consumes. **Call paths** fixes, for each
+command, the numbered frames from `cli.<verb>` through the pipeline and the section entry points
+down to each kind of external effect, within a depth budget (8 unless a decided `D<n>` allows
+more); a path that cannot fit its budget is a question to you before anything is designed. It
+designs nothing: the designer does that, one section at a time, when the section is ready.
 
 ## 5. Each package: the loop
 
@@ -89,7 +92,9 @@ and spawns each one's step — whatever step each is at — in one message:
   `docs/sources/<source>.md` with a `## data/<section>` entry.
 - **DESIGN** — a designer per section: `docs/packages/data/design/<section>.md`, from the
   contract row, the READMEs of the sections it depends on (they shipped: DONE means built and
-  reviewed), the probe docs and the decisions ledger.
+  reviewed), the probe docs and the decisions ledger. Its §4 carries a skeleton of every entry
+  point a call path passes through, with `frames to effect`; a frame the path does not list is
+  a `spec-change: contract`, decided by the architect before the code exists.
 - **TEST** — a tester per section: `tests/intent/<section>/`, written from the documents and
   never the code, all red. A design it cannot test returns `design-gap`, and the designer runs
   again with its reasons.
@@ -106,15 +111,21 @@ Every ready row's step goes out in one message; only a PLAN row runs alone, sinc
 architect edits what designers read. `--serial` is the one-kind-per-batch loop, one
 implementer at a time.
 
-The `surface` section comes last, since it depends on every other: its design is built from
-the shipped READMEs, its implementer writes the lazy top-level `__init__.py`, the pipelines,
-`cli.py`, `docs/api/data/index.md` and `docs/packages/data/interface.md`, and its review approves
-the package's public surface.
+The surface designer runs first: once the contract has **Call paths**, the `surface` row is
+ready at DESIGN and TEST right after PLAN, so its design — one pipeline skeleton per command,
+each step a frame from **Call paths** — and its intent tests, with fakes built to the contract's
+**Section interfaces**, are written from the contract before any sibling is designed. Only its
+IMPLEMENT waits for every other section: the `surface` section is built last, from the shipped
+READMEs, and its implementer writes the lazy top-level `__init__.py`, the pipelines, `cli.py`,
+`docs/api/data/index.md` and `docs/packages/data/interface.md`; its review approves the
+package's public surface.
 
 When every section is DONE, the driver runs the paths review: one reviewer (`Focus: paths`)
-follows each `[project.scripts]` command from `cli.py` to its external effects, on the call
-tree `status.py --paths data` prints, and writes `docs/packages/data/reviews/paths/`. It may
-block on four things only: a command more than 8 frames from its first effect (P1), a lambda,
+follows each `[project.scripts]` command from `cli.py` to its external effects, comparing the
+call tree `status.py --paths data --against-contract` prints to the contract's **Call paths**,
+and writes `docs/packages/data/reviews/paths/`. A frame the contract does not list, or one it
+lists that the code does not pass through, is a break (CRITICAL). Otherwise it may
+block on four things only: a command deeper than its **Call paths** budget (P1), a lambda,
 closure or mapping dispatch on a main path whose target the call site does not name (P2), a
 pipeline or orchestrator that fails the reader's test in `references/pipelines.md` (P3), and a
 trivial single-use helper or options bag on a main path (P4). Each finding names a section,

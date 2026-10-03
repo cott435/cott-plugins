@@ -11,7 +11,12 @@ written about it before it existed.
 
 - **A README over a design.** Inside a package a dependency is a section; a DONE section has a
   README written by the implementer from the code, and the designer, tester and implementer of
-  every section that depends on it read that README, never the dependency's design.
+  every section that depends on it read that README, never the dependency's design. The
+  `surface` section is designed and tested before its dependencies are DONE, right after PLAN:
+  its designer and tester read the contract's **Section interfaces** and **Call paths** in
+  place of the READMEs that do not exist yet, and its implementer, which runs last, reads the
+  READMEs; where one differs from the contract, the README wins and the difference is a
+  deviation.
 - **`interface.md` over a contract.** Across packages a dependency is a package; once its
   `surface` section is DONE it has an `interface.md`, and a consumer imports only the names it
   lists, only from the package's top level. Before then, the upstream `contract.md` is read and
@@ -27,7 +32,7 @@ flowchart LR
     ingR["ingest/README.md<br/>(shipped)"]
     clnD["design/clean.md"]
     cln["designer · tester · implementer<br/>data/clean"]
-    surf["surface section<br/>design from every sibling README"]
+    surf["surface section<br/>designed from the contract after PLAN<br/>built last from every README"]
     iface["interface.md<br/>(shipped)"]
     clnD --> cln
     ingR -- "reads what shipped" --> cln
@@ -47,7 +52,7 @@ flowchart LR
 test is written and run inside it under the repo's own lint rules; then it derives every
 section's state from disk, runs the ready set, and loops until every section is DONE; then,
 once the package's surface check passes, it sends one reviewer (`Focus: paths`) down each
-command's call tree, re-opens as FIX n every section that review names, and closes the
+command, comparing the built frames to the contract's **Call paths**, re-opens as FIX n every section that review names, and closes the
 package once a paths report approves. Every ready row's step goes
 out in one message — designers, testers, implementers and reviewers together, the architect
 alone at PLAN — so the chart's stages run side by side for different sections;
@@ -59,13 +64,13 @@ flowchart TB
   SCAF -->|"no"| SCAFFOLD["implementer (scaffold)<br/>root pyproject with the lint rules · package skeleton · uv sync · one commit"]
   SCAFFOLD --> STATE
   SCAF -->|"yes"| STATE["status.py: derive each section's state from disk<br/>PROBE · DESIGN · TEST · IMPLEMENT · REVIEW · FIX n · PLAN · DONE · BLOCKED"]
-  STATE --> READY{"ready set: in-package deps DONE?"}
+  STATE --> READY{"ready set: in-package deps DONE?<br/>surface DESIGN and TEST: once the contract has Call paths"}
   READY -->|"none ready, some BLOCKED"| ASK
   READY -->|"all DONE, surface check PASS, paths: needed"| PATHS["reviewer<br/>Focus: paths"]
-  PATHS -->|"status.py --paths pkg: each command's call tree<br/>docs/packages/pkg/reviews/paths/date-rN-p.md"| STATE
+  PATHS -->|"status.py --paths pkg --against-contract: each command's call tree beside its Call paths<br/>docs/packages/pkg/reviews/paths/date-rN-p.md"| STATE
   PATHS -->|"FIX n on the sections it names"| IMPL
   PATHS -->|"cap: round 3"| ASK
-  READY -->|"all DONE, surface check PASS, paths: approved"| SYNC["architect: sync-plan pkg<br/>apply approved deviations and change files, verified against code"]
+  READY -->|"all DONE, surface check PASS, paths: approved"| SYNC["architect: sync-plan pkg<br/>apply approved deviations and change files, verified against code<br/>no Call paths: written as built, a change file per path past 8"]
   READY -->|"all DONE, surface check FAIL"| ASK
   READY -->|"ready set R"| PROBE["researcher ×P (probe)<br/>api sources with no pkg/section entry yet"]
   PROBE -->|"docs/sources/source.md extended"| DESIGN["designer ×R<br/>contract row · dep READMEs · probe · decisions"]
@@ -89,7 +94,7 @@ flowchart TB
   REVIEW -->|"spec-change"| LEVEL{"level?"}
   LEVEL -->|"test: regenerate cited tests"| TEST
   LEVEL -->|"design"| DESIGN
-  LEVEL -->|"contract"| ARCH["architect: plan-package pkg (edit)<br/>EDIT · EDIT+STALE · CHANGE · DECIDE"]
+  LEVEL -->|"contract"| ARCH["architect: plan-package pkg (edit)<br/>EDIT · EDIT+STALE · CHANGE · DECIDE<br/>+ Call paths"]
   ARCH -->|"contract edited or docs/packages/pkg/changes/slug.md"| STATE
   ARCH -->|"stopped: D-n"| ASK{"driver asks the user<br/>main thread"}
   PROBE -->|"blocked: credential"| ASK
@@ -136,7 +141,7 @@ sequenceDiagram
   Arch->>Res: Kind: dataset · Source · Purpose (per brief dataset)
   Arch-->>You: Result · architecture.md · stubs (or: Stopped for decisions)
   You->>Arch: /dev-team:plan-package data
-  Arch-->>You: Result · contract.md, Sections table ending with surface
+  Arch-->>You: Result · contract.md + Call paths, Sections table ending with surface
   You->>Drv: /dev-team:run-package data
   Drv->>Res: PROBE: Kind · Source · Section · Write to · Run
   Drv->>Des: DESIGN: Section · Mode · Contract · Dependency READMEs · …
@@ -150,7 +155,7 @@ sequenceDiagram
   Drv->>Rev: REVIEW round 1: Focus conformance, letter a · Focus correctness, letter b
   Rev-->>Drv: Result · Verdict: approve | request changes | spec-change
   Note over Drv,Rev: FIX n: implementer, then one Focus full reviewer on the diff
-  Note over Drv: every section DONE, surface last
+  Note over Drv: every section DONE, surface built last
   Drv->>Rev: PATHS: Package · Focus paths, letter p · Round · Previous round · Diff
   Rev-->>Drv: Result · Verdict: approve | request changes (each CRITICAL names a section: FIX n)
   Drv->>Arch: Package · Run (the close: sync-plan)
@@ -191,7 +196,7 @@ upstream `interface.md`, a probe doc — wins over every plan-time document abou
 | File | Written by | Read by | Stale when |
 |---|---|---|---|
 | `docs/architecture.md` | architect (plan-repo, map-repo phase 3, sync-plan) | every agent; `status.py` (Packages table) | the brief differs from `docs/history/brief-contracted.md`; a repo-level change file is open |
-| `docs/packages/<pkg>/contract.md` | architect (plan-package, map-repo phase 2, sync-plan) | `status.py` (Sections table), designer, tester, implementer, reviewer, documenter | `docs/architecture.md` changed after it; an open `spec-change:contract` or change file names it |
+| `docs/packages/<pkg>/contract.md` | architect (plan-package, map-repo phase 2, sync-plan) | `status.py` (Sections table, Call paths), designer, tester, implementer, reviewer, documenter | `docs/architecture.md` changed after it; an open `spec-change:contract` or change file names it |
 | `docs/packages/<pkg>/design/<section>.md` | designer | tester, implementer, reviewer A, `status.py` | its contract row changed; a cited probe doc is newer; an open change file or `spec-change:design` names it |
 | `docs/sources/<source>.md` (+ sample or stats, probe or profile script) | researcher; the shared body only grows, and a line is rewritten only when the observation changed | designer, implementer, reviewer, architect, `status.py` | a new consuming section has no entry yet (it needs PROBE); for a consumer's design, when a line the design was written against is gone or reworded (added lines re-open nothing) |
 | `tests/intent/<section>/` | tester | implementer, reviewer, the stop gate, `status.py` | the design is newer than the tree |

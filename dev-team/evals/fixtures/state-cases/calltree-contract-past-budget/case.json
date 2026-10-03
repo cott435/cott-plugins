@@ -1,0 +1,23 @@
+{
+  "note": "2.6: the command's own budget, not the hard depth, is what the summary measures against",
+  "steps": [
+    {
+      "do": "base",
+      "call_paths": "- `data-load` (budget 1):\n  - file write: 1 `cli.load` → 2 `pipelines.run_load` → 3 `ingest.read_trades` → `shutil.copy`\n"
+    },
+    {
+      "do": "commands"
+    }
+  ],
+  "args": [
+    "--paths",
+    "data",
+    "--against-contract"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "summary: 3 match, 0 extra, 0 missing; depth 2 past budget 1"
+    ]
+  }
+}

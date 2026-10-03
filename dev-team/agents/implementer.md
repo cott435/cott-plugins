@@ -648,7 +648,10 @@ provides; decisions scoped `<pkg>` or `repo`.
    order, the stated failure behavior, config read through `configs.py`. Follow **Function
    shape** in the style guide and `references/pipelines.md`, read with the Read tool before
    the first pipeline: a pipeline reads as its steps, each a direct call to a section entry
-   point under a one-line comment; the steps themselves live in the sections.
+   point under a one-line comment; the steps themselves live in the sections. The design's §4
+   skeletons are the steps: build each as written, and where a shipped README's entry point
+   differs from the skeleton's call, it is the README that wins and the difference is a
+   deviation, as step 1 says.
 3. `src/<pkg>/cli.py` (or `cli/` when the design lists many commands) — one function per
    CLI command, using the CLI library the style guide prefers (`cyclopts`): the function's
    parameters are the command's arguments, typed with defaults, and its docstring's `Args:`

@@ -1,0 +1,18 @@
+{
+  "note": "2.6: a contract with Call paths makes the surface's DESIGN ready before any sibling is DONE; clean still waits for ingest",
+  "steps": [
+    {
+      "do": "base",
+      "call_paths": true
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "surface",
+    "state": "DESIGN",
+    "ready": true,
+    "matches": [
+      "^clean · DESIGN · [^·]* · no · "
+    ]
+  }
+}

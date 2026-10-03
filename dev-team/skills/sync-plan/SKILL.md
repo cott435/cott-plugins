@@ -40,7 +40,9 @@ upstream. This is the step that stops the drift.
    classify the consumers of every changed public name; then the W2 sweep, your **sync-plan**
    step 7. Invoke `planning-templates` and read
    `references/deviations-entry.md` and `references/change.md` before the first status line.
-   Nothing to collect → return `Result: done` saying so, and commit nothing.
+   Then your **sync-plan** step 8: a contract with no **Call paths** heading gets it, as built.
+   Nothing to collect and the heading already present → return `Result: done` saying so, and
+   commit nothing.
 
 3. **Decisions.** For each `D<n>` scoped to `$pkg` or one of its sections, compare `Status:`
    and `Applied:` with the code: `decided` with no `Applied:` line and no matching code means it
@@ -59,8 +61,9 @@ upstream. This is the step that stops the drift.
   `Resolved by:` lines of ledger entries (`docs/packages/$pkg/deviations/*.md`, or
   the older `docs/deviations/$pkg/*.md` and `docs/deviations.md`), the `Status:` line of a change file
   (`docs/packages/$pkg/changes/*.md`, or a pre-2.2 `docs/changes/*.md`), a new change file for
-  a shipped consumer under that consumer's `docs/packages/<pkg>/changes/`, and the archive
-  copies under `docs/history/`.
+  a shipped consumer under that consumer's `docs/packages/<pkg>/changes/`, a new change file
+  `docs/packages/$pkg/changes/paths-<command>.md` for a command whose built path is past the
+  hard **Main-path depth**, and the archive copies under `docs/history/`.
 - Never edit `interface.md` — its **Consumers (computed)** is the implementer's, rewritten when
   the `surface` section is next built — nor a design, a review, or code.
 - Never write a claim you did not verify against the code. An unverifiable item stays open and

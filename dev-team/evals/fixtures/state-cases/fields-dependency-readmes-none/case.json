@@ -1,0 +1,19 @@
+{
+  "note": "2.6: --fields line 7 for the early surface: no sibling README exists, so none",
+  "steps": [
+    {
+      "do": "base",
+      "call_paths": true
+    }
+  ],
+  "args": [
+    "--fields",
+    "data/surface"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "paths report: none\ndependency readmes: none\n"
+    ]
+  }
+}

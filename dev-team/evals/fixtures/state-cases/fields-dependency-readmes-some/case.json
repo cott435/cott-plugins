@@ -1,0 +1,26 @@
+{
+  "note": "2.6: --fields line 7 lists only the dependency READMEs on disk, in Sections order (storage has none)",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "clean"
+    }
+  ],
+  "args": [
+    "--fields",
+    "data/surface"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "dependency readmes: packages/data/src/data/ingest/README.md, packages/data/src/data/clean/README.md\n"
+    ]
+  }
+}
