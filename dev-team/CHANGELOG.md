@@ -37,6 +37,12 @@ Evidence: the `2.5-*` logs in `evals/`.
 - The implementer meets a size limit with a seam and fixes a paths finding in its own section;
   the designer writes pipelines to the reader's test (ac163c0)
 
+### Fixed
+
+- The implementer and reviewer invoke `dev-team:security-review` by its full name. The bare
+  `security-review` resolved to Claude Code's built-in command of that name, which reviewed
+  the branch diff and replaced the implementer's return (in 2.4.0 too)
+
 ### Upgrading
 
 - **`shipped:` needs the paths review.** A package shipped before 2.5 that has commands reads

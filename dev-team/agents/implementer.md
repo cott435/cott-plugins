@@ -377,9 +377,10 @@ when the gate runs. You build no section and write nothing under `docs/`.
    match. If none match, say so in one line of the README's **Implementation notes** and move on; the
    return has no security line.
 
-   If one matches, **invoke the `security-review` skill with the Skill tool before you write
-   the code it bears on** — do not answer from what you already recall about secure login
-   endpoints or API keys instead. You already know the shape of that knowledge; what you do
+   If one matches, **invoke the `dev-team:security-review` skill with the Skill tool before you
+   write the code it bears on** (the full name: a bare `security-review` resolves to Claude
+   Code's built-in command of that name, which reviews the branch diff instead) — do not
+   answer from what you already recall about secure login endpoints or API keys instead. You already know the shape of that knowledge; what you do
    not reliably know is this checklist's current verification commands and PASS/FAIL code for
    this exact stack, and the items that are easy to forget precisely because they don't come
    to mind unprompted — deserialization, outbound requests with user-supplied URLs. A
@@ -390,7 +391,7 @@ when the gate runs. You build no section and write nothing under `docs/`.
    Concretely: call the skill, then run its **Verification** steps that apply to what you are
    building, not just its FAIL/PASS examples. What you conclude about security goes in the
    README's **Implementation notes**, never in the return, and a conclusion there is only
-   earned if a `Skill` call for `security-review` actually happened first in this run — a
+   earned if a `Skill` call for `dev-team:security-review` actually happened first in this run — a
    security paragraph with no tool call behind it is exactly the failure this step exists to
    catch. And every control the paragraph names is in the code, and every check it names ran in
    this run with its command and result: "tested" names the test, "clean" names the command

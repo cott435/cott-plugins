@@ -264,7 +264,8 @@ report's **Coverage** is `- none`.
 - **Correctness** — edge cases, off-by-one, null and empty handling, error paths that swallow
   failures, races in async or concurrent code, a result that is wrong on the main path while
   every test passes.
-- **Security** — invoke the `security-review` skill with the Skill tool and check the section
+- **Security** — invoke the `dev-team:security-review` skill with the Skill tool (the full
+  name: a bare `security-review` is Claude Code's built-in command) and check the section
   against its **When to Activate** list; for each condition that matches, check the code
   against that part of the checklist rather than from memory. Say in `Scope:` which
   conditions matched, or that none did.
@@ -305,7 +306,7 @@ Round 2 and later, letter `s`. One reviewer, scoped to the diff.
    CRITICALs no previous report raised in any form.
 5. **Coverage** over the clauses and design items the diff touches only; untouched ones do not
    appear.
-6. **Security** — invoke `security-review` when the diff touches code a **When to Activate**
+6. **Security** — invoke `dev-team:security-review` when the diff touches code a **When to Activate**
    condition matches.
 7. **Deviations** as below, for any entry still `proposed`.
 8. **The backlog.** Append to `docs/followups.md` each `ELSEWHERE` line and each WARNING that
