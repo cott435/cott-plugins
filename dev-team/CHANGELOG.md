@@ -12,7 +12,7 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
-## [Unreleased]
+## [2.5.0] - 2026-10-02
 
 A package reads from its command down to its first external effect. From the `data` package
 of `quant`, built under 2.3.0 with every review approved: 17 frames to the first download, 416
@@ -41,7 +41,7 @@ Evidence: the `2.5-*` logs in `evals/`.
 
 - The implementer and reviewer invoke `dev-team:security-review` by its full name. The bare
   `security-review` resolved to Claude Code's built-in command of that name, which reviewed
-  the branch diff and replaced the implementer's return (in 2.4.0 too)
+  the branch diff and replaced the implementer's return (in 2.4.0 too) (ad33ccc)
 
 ### Upgrading
 
