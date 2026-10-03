@@ -26,7 +26,8 @@ of the nine rules in the script's docstring that fires, and the evidence names t
 commit it fired on. "Newer than" is commit order, never file times; a path with uncommitted
 changes counts as newest of all and says so in the evidence. A section is ready when it is
 neither DONE nor BLOCKED and every section it depends on in its package is DONE; the `surface`
-section depends on all of them. Nothing is counted from `docs/followups.md`.
+section depends on all of them; the `surface` row is ready at PLAN, DESIGN and TEST as soon as
+the contract has **Call paths**, and waits for every other section from IMPLEMENT on. Nothing is counted from `docs/followups.md`.
 
 `--run-gate [pkg]` prints `run gate: PASS` or `run gate: FAIL` with one reason per line and
 exits 1 on FAIL: not a git repository; on `main` or `master`; uncommitted changes outside the
@@ -90,12 +91,14 @@ to the implementer, and `/dev-team:pair` reads the files it names. The script's 
 the fields and how each resolves. A section the contract lacks prints one line and exits 2.
 
 `--fields <pkg>/<section>` prints the other spawn fields run-package would otherwise read files
-for, six lines: `mode: new | document | delta` (the designer's **Mode**), `change file: <path>
+for, seven lines: `mode: new | document | delta` (the designer's **Mode**), `change file: <path>
 | none`, `design mode: <word> | none` (the tester's **Design mode**, from the design's `Mode:`
 line), `diff base: <sha> | none` (the `Commit:` a round-2-or-later reviewer's **Diff**
-starts from), `upstream interfaces: <path>, … | none` and `paths report: <path> | none` (the
+starts from), `upstream interfaces: <path>, … | none`, `paths report: <path> | none` (the
 package's paths report while it names the section and no review of the section is newer, the
-`full` reviewer's **Previous round** after a paths FIX). The docstring gives each rule. A section the contract lacks exits 2.
+`full` reviewer's **Previous round** after a paths FIX) and `dependency readmes: <path>/README.md, … |
+none` (the dependency READMEs that exist on disk — every role's **Dependency READMEs**; `none`
+for the `surface` section before its siblings ship). The docstring gives each rule. A section the contract lacks exits 2.
 
 The script runs no test and no constraint command. The stop hook runs `docs/constraints.md`'s
 **Floor** and **Enforced** rows through the same parser this script exposes, so the rows the

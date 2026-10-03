@@ -135,6 +135,16 @@ the last row), `paths-e2e`: all done, with the `commands` step's `load.py` repla
 `--paths data`; its job is the seed `run-package` eval 14 builds, where `status.py data` prints
 `paths: needed` and the driver spawns the paths review.
 
+**Readiness and dependency READMEs (2.6).** Six cases (`site/notes/2.6-spine-03-status-readiness.md`,
+the last six rows). `base` takes `call_paths: true`, which appends a `## Call paths` heading
+whose one entry is the `commands` macro's tree (`data-load`, budget 8, `cli.load` →
+`pipelines.run_load` → `ingest.read_trades` → `shutil.copy`), or a string, written as the
+heading's body verbatim; without it every contract stays the 2.5 one. With the heading the
+`surface` row is ready at DESIGN and TEST before any sibling is DONE, and waits for every
+other section from IMPLEMENT on; without it the surface waits at every state, as before.
+`--fields` prints a seventh line, `dependency readmes:`, the READMEs of the row's `depends on`
+that exist on disk in the Sections table's order, `none` when none does.
+
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
 section's entry does not make an existing design stale, per the design's *Stale when* for a
@@ -288,3 +298,9 @@ optional flag).
 | `fields-paths-report` | as `paths-stale-after-fix` | `--fields data/ingest` | sixth line `paths report: docs/packages/data/reviews/paths/2026-09-27-r1-p.md`, after `upstream interfaces: none`; exit 0 |
 | `repo-paths-needed` | as `paths-needed` | `--repo` | `  - data: building (4/4 DONE, paths needed)`; exit 0 |
 | `paths-e2e` | all done, with `calltree-lambda`'s `load.py` in the `commands` step | `--paths data` | `lambda (…load.py:13) [indirect]`; `indirect frames: 1`; exit 0 (the seed of `run-package` eval 14) |
+| `surface-early-design-ready` | `base` with `call_paths: true` | `—` | `surface · DESIGN`, ready `yes`; the `clean` row ready `no` (its dependency `ingest` is not DONE) |
+| `surface-early-test-ready` | `base` (`call_paths: true`), `design` surface | `—` | `surface · TEST`, ready `yes` |
+| `surface-early-implement-waits` | `base` (`call_paths: true`), `design` and `tests` surface | `—` | `surface · IMPLEMENT`, ready `no` |
+| `surface-no-call-paths-waits` | `base` | `—` | `surface · DESIGN`, ready `no` |
+| `fields-dependency-readmes-none` | `base` (`call_paths: true`) | `--fields data/surface` | `paths report: none` then `dependency readmes: none`; exit 0 |
+| `fields-dependency-readmes-some` | `base`, `done` ingest, `build` clean | `--fields data/surface` | `dependency readmes: packages/data/src/data/ingest/README.md, packages/data/src/data/clean/README.md` (storage has no README); exit 0 |

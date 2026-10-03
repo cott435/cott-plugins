@@ -1,0 +1,23 @@
+{
+  "note": "2.6: with Call paths, the surface's IMPLEMENT still waits for every other section",
+  "steps": [
+    {
+      "do": "base",
+      "call_paths": true
+    },
+    {
+      "do": "design",
+      "section": "surface"
+    },
+    {
+      "do": "tests",
+      "section": "surface"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "surface",
+    "state": "IMPLEMENT",
+    "ready": false
+  }
+}

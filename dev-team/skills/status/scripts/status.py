@@ -82,7 +82,11 @@ A Sections `path` cell written as `…/<name>/` (or `.../<name>/`) is the defaul
 `<package root>/src/<pkg>/<name>/`, the shorthand a contract's preamble explains.
 
 Ready: a section whose state is neither DONE nor BLOCKED and whose every in-package `depends
-on` is DONE. The `surface` row depends on every other row whatever its cell says.
+on` is DONE. The `surface` row depends on every other row whatever its cell says — from
+IMPLEMENT on. While the contract has a `## Call paths` heading (2.6), its PLAN, DESIGN and
+TEST rows are ready whatever the other rows show, so the surface is designed and tested right
+after PLAN from the contract; without the heading it waits for every other row at every
+state, as before.
 Shipped: the `surface` section is DONE, `--surface <pkg>` passes, and the paths review
 approves; otherwise the block prints `shipped: no (surface <STATE>)`, `shipped: no (surface
 check FAIL)`, `shipped: no (paths needed)` or `shipped: no (paths round <n>)`. Rounds: the highest `n`
@@ -262,7 +266,7 @@ it names before touching the section. One `<Field>: <value>` line per field, in 
 12. **Run** — `run-package <pkg>`.
 
 `--fields <pkg>/<section>` prints the spawn fields run-package would otherwise resolve by
-reading files, six `key: value` lines in this order, and exits 0 (2 on a section the contract
+reading files, seven `key: value` lines in this order, and exits 0 (2 on a section the contract
 lacks):
 
 1. `mode: new | document | delta` — `delta` when an open change file names the section, or the
@@ -284,6 +288,11 @@ lacks):
    `approve`, a line under its CRITICAL heading names the section, and the section's newest
    review round's `Commit:` is not newer than the report's: the same report `--inputs` adds to
    **Review**. The `full` reviewer's previous round after a paths FIX.
+7. `dependency readmes: <path>/README.md, … | none` — the README of every section in the
+   row's `depends on` (for `surface`, every other section) that exists on disk, in the
+   Sections table's order; `none` when none does. Every role's **Dependency READMEs** field,
+   so the early `surface` designer and tester are never sent a path to a file that is not
+   there.
 """
 
 from __future__ import annotations
@@ -1494,7 +1503,8 @@ def package_table(pkg: str) -> list[dict[str, object]]:
         sec = r["section"]
         state, ev = states[sec]
         deps = [d for d in _names(r["depends on"]) if d in names and d != sec]
-        ready = state not in ("DONE", "BLOCKED") and all(states[d][0] == "DONE" for d in deps)
+        early = sec == "surface" and state in ("PLAN", "DESIGN", "TEST") and has_call_paths(pkg)
+        ready = state not in ("DONE", "BLOCKED") and (early or all(states[d][0] == "DONE" for d in deps))
         n = rounds(pkg, sec)
         spec = ", ".join(sorted({e["kind"] for e in live_spec_changes(pkg, sec)})) or "—"
         out.append({"section": sec, "state": state, "evidence": ev, "ready": ready,
@@ -1824,6 +1834,12 @@ def _public_intent(pkg: str) -> str | None:
     if lines and lines[0].lstrip().startswith("#"):  # the heading line itself names nothing
         lines = lines[1:]
     return "\n".join(lines)
+
+
+def has_call_paths(pkg: str) -> bool:
+    """True when the package contract has a `## Call paths` heading (2.6), whatever its body."""
+    f = contract_path(pkg)
+    return f.exists() and bool(_item(f.read_text(), "Call paths"))
 
 
 def surface_names(pkg: str, section: str) -> tuple[str, list[str]]:
@@ -2661,6 +2677,20 @@ def _upstream_interfaces(pkg: str, section: str) -> list[str]:
     return ups
 
 
+def dependency_readmes(pkg: str, section: str) -> list[str]:
+    """`<path>/README.md` per section in the row's `depends on` that exists, Sections order."""
+    row = _row(pkg, section)
+    if row is None:
+        return []
+    deps = set(_names(row["depends on"])) - {section}
+    out = []
+    for d in sections(pkg):  # Sections order, whatever order the `depends on` cell lists
+        readme = ROOT / d["path"] / "README.md"
+        if d["section"] in deps and readme.exists():
+            out.append(_rel(readme))
+    return out
+
+
 def implementer_inputs(pkg: str, section: str) -> list[str]:
     """The implementer's spawn block for one section, one `<Field>: <value>` line per field.
 
@@ -2751,6 +2781,7 @@ def spawn_fields(pkg: str, section: str) -> list[str]:
         f"diff base: {base}",
         f"upstream interfaces: {', '.join(_upstream_interfaces(pkg, section)) or 'none'}",
         f"paths report: {_rel(report) if (report := section_paths_report(pkg, section)) else 'none'}",
+        f"dependency readmes: {', '.join(dependency_readmes(pkg, section)) or 'none'}",
     ]
 
 

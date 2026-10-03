@@ -22,6 +22,8 @@ file content, `{HEAD}` is replaced with the sha of the commit the step is made o
 the 2.2 paths under `docs/packages/<pkg>/` and the ledger heading's `— <k>`; `old` the 2.0
 paths and heading. `edit` takes `path`, `message`, and `append` (text added at the end),
 `"replace": ["<old>", "<new>"]` (the first occurrence, applied before `append`), or both.
+`base` takes `call_paths: true` (a **Call paths** heading matching the `commands` macro's tree)
+or a string (the heading's body verbatim).
 """
 
 from __future__ import annotations
@@ -68,11 +70,17 @@ Loads, cleans and stores the trade export.
 | ingest | read the export | packages/data/src/data/ingest/ | docs/packages/data/design/ingest.md | csv | — | {source} |
 | clean | dedupe and sort | packages/data/src/data/clean/ | docs/packages/data/design/clean.md | — | ingest | — |
 | storage | persist to SQLite | packages/data/src/data/storage/ | docs/packages/data/design/storage.md | sqlite3 | clean | — |
-| surface | the package's pipelines (§4) and public surface (§5) | packages/data/src/data/ | docs/packages/data/design/surface.md | — | ingest, clean, storage | — |
+| surface | the package's pipelines (§4) and public surface (§6) | packages/data/src/data/ | docs/packages/data/design/surface.md | — | ingest, clean, storage | — |
 
 ## Public surface (intent)
 
 - `load_trades`, realized by ingest, consumed by analysis
+"""
+
+# The `call_paths: true` body of `base` (2.6, phase 3): the `commands` macro's tree as a
+# **Call paths** entry, so a contract can match the code `--paths` reads.
+CALL_PATHS = """- `data-load` (budget 8):
+  - file write: 1 `cli.load` → 2 `pipelines.run_load` → 3 `ingest.read_trades` → `shutil.copy`
 """
 
 TRADES = """# trades — dataset
@@ -262,6 +270,10 @@ def m_base(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
         text = CONTRACT.format(source="api:polygon" if contract == "api" else "dataset:trades")
         if step.get("shorthand"):  # path cells as `…/<name>/`, the shorthand a preamble explains
             text = text.replace("| packages/data/src/data/ingest/ |", "| …/ingest/ |")
+        cp = step.get("call_paths", False)
+        if cp:
+            body = CALL_PATHS if cp is True else cp
+            text += "\n## Call paths\n\n" + body.rstrip("\n") + "\n"
         files["docs/packages/data/contract.md"] = text
     if step.get("sources", True):
         if contract == "api":

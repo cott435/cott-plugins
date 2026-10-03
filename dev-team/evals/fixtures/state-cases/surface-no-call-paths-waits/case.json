@@ -1,0 +1,14 @@
+{
+  "note": "2.6: a contract without Call paths keeps the 2.5 timing: the surface's DESIGN waits for every other section",
+  "steps": [
+    {
+      "do": "base"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "surface",
+    "state": "DESIGN",
+    "ready": false
+  }
+}
