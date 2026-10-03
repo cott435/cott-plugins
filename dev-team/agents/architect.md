@@ -490,9 +490,31 @@ implementer's), a design, a review, or code.
    return (W2). An entry whose section's row still lists that kind stays open. A
    `spec-change:contract` is closed by **Edits**, never here. Run by hand with a section not
    DONE, proceed for what verifies and list that section in the return.
+8. **Call paths.** When the contract has no **Call paths** heading, run `python3
+   ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --paths <pkg>` once and write the
+   heading in the template's **As built** form (`references/package-contract.md`, item 5):
+   one entry per `command:` block, `(budget 8)`, one path per effect leaf of the block —
+   every frame of the tree from the command to that leaf, numbered, each `<owner>.<name>`
+   with `<name>` the frame's printed name and `<owner>` the section whose path holds its file
+   (`cli` for `cli.py`, `pipelines` under `pipelines/`), `[indirect]` frames included — the
+   leaf's callee as the effect. On `paths: no commands`, the heading's one line is `- none
+   (no commands)`. Archive the contract first (**Edits**) unless this run already did. For
+   each command whose `depth to first effect` is past 8, invoke `planning-templates`, read
+   `change.md`, and write `docs/packages/<pkg>/changes/paths-<command>.md` with `Status:
+   open`: **Change goal** the path cut to depth 8 or less; **Affected sections** every section
+   whose frame the cut removes or moves; **Contract changes** the command's **Call paths**
+   entry as it should read after the cut, and any **Section interfaces** or **Pipelines**
+   change the cut needs; **Downstream impact** from the consumer grep of step 6. That
+   command's line in the contract ends `— past budget, see <the change file's path>`, and
+   carries no `D<n>`. **Section interfaces** gains nothing for an as-built frame: the owner
+   rule binds entries written at PLAN, and the frames here are the code's. A contract that
+   already has the heading gets nothing here: its paths are the paths review's to judge.
 
 The return has one row per entry — `| <entry> | synced |`, `| <entry> | resolved (sweep) |` or
-`| <entry> | left open: <why> |` — then the consumer classification, and the next command: `/dev-team:plan-package <pkg>` for
+`| <entry> | left open: <why> |` — then, when step 8 wrote the heading,
+`| Call paths | written as built (<k> commands, <m> past budget) |` with one
+`| paths-<command> | CHANGE <path> |` row per change file, then the consumer classification,
+and the next command: `/dev-team:plan-package <pkg>` for
 the first package in dependency order that is stale or unplanned, else `/dev-team:status`.
 
 ## map-repo
