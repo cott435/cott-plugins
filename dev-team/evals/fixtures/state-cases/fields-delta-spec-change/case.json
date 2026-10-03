@@ -27,7 +27,8 @@
     "exit": 0,
     "contains": [
       "mode: delta\n",
-      "change file: none\n"
+      "change file: none\n",
+      "paths report: none"
     ]
   }
 }

@@ -1,0 +1,47 @@
+{
+  "note": "a current paths report whose CRITICAL names ingest: ingest re-opens as FIX 1",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    },
+    {
+      "do": "paths_review",
+      "round": 1,
+      "verdict": "request changes",
+      "critical": [
+        "ingest: P2 — packages/data/src/data/ingest/reader.py:7 — a lambda on the main path — call the step by name"
+      ]
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "FIX 1",
+    "evidence": "^paths r1 request changes \\(docs/packages/data/reviews/paths/2026-09-27-r1-p\\.md\\)$",
+    "contains": [
+      "clean · DONE",
+      "paths: round 1 (request changes: ingest)",
+      "shipped: no (paths round 1)",
+      "next: /dev-team:run-package data"
+    ]
+  }
+}

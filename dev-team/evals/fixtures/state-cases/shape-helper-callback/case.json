@@ -1,0 +1,40 @@
+{
+  "note": "--shape (2.5 phase 2): the helper's one reference passes it by name as key=, not a call",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    },
+    {
+      "files": {
+        "packages/data/src/data/ingest/helper.py": "\"\"\"Rows.\"\"\"\n\n\ndef load_rows(path):\n    \"\"\"Load rows.\"\"\"\n    return sorted(path, key=_strip)\n\n\ndef _strip(path):\n    \"\"\"Strip the path.\"\"\"\n    return str(path).strip()\n"
+      },
+      "message": "data/ingest: helper"
+    }
+  ],
+  "args": [
+    "--shape",
+    "data",
+    "--section",
+    "ingest"
+  ],
+  "expect": {
+    "contains": [
+      "PASS shape data/ingest"
+    ],
+    "absent": [
+      "FAIL shape"
+    ]
+  }
+}

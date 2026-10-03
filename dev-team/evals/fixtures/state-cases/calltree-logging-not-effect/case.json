@@ -1,0 +1,28 @@
+{
+  "note": "--paths (2.5 phase 4): load calls loguru's logger and re before run_load",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands",
+      "files": {
+        "packages/data/src/data/cli.py": "\"\"\"Commands.\"\"\"\n\nimport re\n\nfrom loguru import logger\n\nfrom data.pipelines.load import run_load\n\n\ndef load(path: str) -> None:\n    \"\"\"Load the trades at path.\"\"\"\n    logger.info(\"x\")\n    re.compile(\"x\")\n    run_load(path)\n"
+      }
+    }
+  ],
+  "args": [
+    "--paths",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "absent": [
+      "[effect: logger.info]",
+      "[effect: re.compile]"
+    ],
+    "contains": [
+      "depth to first effect: 2"
+    ]
+  }
+}

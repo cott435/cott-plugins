@@ -236,7 +236,16 @@ it truly does not apply, and say so in a line.
    by hand; a `[project.scripts]` command is the `surface` section's. Each line names the interfaces from §5 it
    defines — the tester imports every §5 name from the module this plan gives it.
 4. **Workflow / pipeline** — steps in order. For each: trigger, action, output, failure
-   behavior. Name which package pipeline (from the package contract) each step serves.
+   behavior. Name which package pipeline (from the package contract) each step serves. When
+   the section's entry point runs its phases in order, and for the `surface` section's
+   pipelines, read `${CLAUDE_PLUGIN_ROOT}/skills/python-style-guide/references/pipelines.md`
+   with the Read tool first and write the steps to its reader's test: each step names the
+   function it calls and the module that defines it, in call order (**Steps in order**,
+   **Jump by name**); a guard, a retry or a run ledger is a `with` block around the call, or
+   a decorator on a step this section defines, never a wrapper that is handed the step
+   (**Wrapping in view**); a choice between steps lists its branches by name, each with the
+   function it calls. The implementer builds the path you write, and the paths
+   review follows it from the command.
 5. **Interfaces** — functions, classes, endpoints, events this section exposes. Table:
    name | signature | consumed by (sibling sections, a downstream package, or a CLI command) |
    **Public** | error cases. `Public` is `yes` only when the package contract's **Public

@@ -3,7 +3,7 @@
   "repo": "arch",
   "setup": {
     "files": {
-      "packages/data/tests/intent/ingest/test_wide.py": "\"\"\"Intent tests written before the repo has a lint config.\"\"\"\n\n\ndef test_wide(a, b, c, d, e, f):\n    \"\"\"Design §1 wide: takes six.\"\"\"\n    assert \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\n",
+      "packages/data/tests/intent/ingest/test_wide.py": "\"\"\"Intent tests written before the repo has a lint config.\"\"\"\n\n\ndef test_wide(a, b, c, d, e, f):\n    \"\"\"Design §1 wide: takes six.\"\"\"\n    assert a == \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\n",
       "pyproject.toml": "[tool.ruff]\nline-length = 200\n"
     }
   },

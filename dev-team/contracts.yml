@@ -132,9 +132,9 @@ forbid:
 
   - name: every Focus value the driver or the reviewer writes is one the reviewer runs
     # The field claims check field names, not values: a `Focus: correctnes` line passes them
-    # and reaches a reviewer with no such section to follow. The four values are the
+    # and reaches a reviewer with no such section to follow. The five values are the
     # reviewer's own `## Focus:` headings.
-    pattern: 'Focus: (?!(conformance|correctness|full|defer)\b)'
+    pattern: 'Focus: (?!(conformance|correctness|full|defer|paths)\b)'
     files: ['agents/*.md', 'skills/**/*.md']
 
   - name: every hook matcher and agent_type names an agent this plugin ships
@@ -185,6 +185,12 @@ forbid:
     near: 120
     unless: ['--serial']
     files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/flow.md', 'site/workflows/*.md']
+  - name: no prompt names the argument-count rule the lint block dropped
+    # 2.5 caps positional parameters (PLR0917, max-positional-args). PLR0913 counted
+    # keyword-only ones too, which is what pushed implementers into options bags. A prompt
+    # that still names the old rule sends an agent to a check that no longer runs.
+    pattern: 'PLR0913|\bmax-args\b'
+    files: ['agents/*.md', 'skills/**/*.md', 'pyproject-lint-config.toml']
   - name: nothing counts on a hand-back after the first
     # With SubagentHandback a caller receives an agent's first report and nothing after it
     # (plugin-anatomy, agents.md, What reaches its caller). An agent told to amend its report,
@@ -373,9 +379,23 @@ headings:
     owner_span: ['1. **CRITICAL**', null]
     readers:
       - file: agents/reviewer.md
-        cites: ['CRITICAL', 'WARNING', 'SUGGESTION', 'Coverage', 'Carried', 'Spec-change', 'Deferred']
+        cites: ['CRITICAL', 'WARNING', 'SUGGESTION', 'Coverage', 'Carried', 'Spec-change', 'Deferred', 'Paths']
       - file: agents/implementer.md
         cites: ['CRITICAL', 'WARNING']
+
+  - name: the reader's test items its readers cite are ones pipelines.md numbers
+    # P3 of the paths review blocks on an item of the reader's test by name, and the designer
+    # and the implementer write to the same items. A renamed item leaves a CRITICAL citing a
+    # rule the reference no longer has.
+    owner: skills/python-style-guide/references/pipelines.md
+    owner_span: ["## The reader's test", '## Depth']
+    readers:
+      - file: agents/reviewer.md
+        cites: ['Steps in order', 'Jump by name', 'Named inputs and results', 'Wrapping in view']
+      - file: agents/designer.md
+        cites: ['Steps in order', 'Jump by name', 'Wrapping in view']
+      - file: agents/implementer.md
+        cites: ['Steps in order', 'Jump by name']
 
   - name: docs/constraints.md headings its readers run are ones the template defines
     # set-constraints writes the file from its template; four readers act on it by heading —

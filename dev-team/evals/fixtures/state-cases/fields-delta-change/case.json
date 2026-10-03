@@ -25,7 +25,8 @@
     "contains": [
       "mode: delta\n",
       "change file: docs/packages/data/changes/vwap-window.md\n",
-      "design mode: new\n"
+      "design mode: new\n",
+      "paths report: none"
     ],
     "matches": [
       "^diff base: [0-9a-f]{7}$"

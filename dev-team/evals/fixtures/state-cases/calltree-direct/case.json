@@ -1,0 +1,21 @@
+{
+  "note": "--paths (2.5 phase 4): the commands package unchanged: the whole block, line for line",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands"
+    }
+  ],
+  "args": [
+    "--paths",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "matches": [
+      "\\Acommand:\\ data\\-load\\ =\\ data\\.cli:load\\\nload\\ \\(packages/data/src/data/cli\\.py:6\\)\\\n\\ \\ run_load\\ \\(packages/data/src/data/pipelines/load\\.py:6\\)\\\n\\ \\ \\ \\ read_trades\\ \\(packages/data/src/data/ingest/reader\\.py:7\\)\\\n\\ \\ \\ \\ \\ \\ \\[effect:\\ shutil\\.copy\\]\\ \\(packages/data/src/data/ingest/reader\\.py:9\\)\\\n\\ \\ \\ \\ \\ \\ \\[effect:\\ open\\]\\ \\(packages/data/src/data/ingest/reader\\.py:10\\)\\\ndepth\\ to\\ first\\ effect:\\ 2\\\ndeepest\\ effect:\\ 2\\\nindirect\\ frames:\\ 0\\n\\Z"
+    ]
+  }
+}

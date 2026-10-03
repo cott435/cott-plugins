@@ -27,7 +27,8 @@
   "expect": {
     "exit": 0,
     "gate_only": [
-      "PASS"
+      "PASS",
+      "MEASURED"
     ],
     "gate_contains": [
       "— section data/ingest\n",

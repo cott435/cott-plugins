@@ -30,11 +30,12 @@ Input: the hook JSON on stdin (`cwd`, `agent_id`, `agent_type`, `stop_hook_activ
    `docs/api/<pkg>/index.md`) since the section's newest review round's `Commit:`
    (`status.newest_round`, when it is an ancestor of `HEAD`), else since the empty tree — so
    Guarded sees only what was added since the last review, and no commit ordering is assumed.
-   Untracked files under those paths count as added in full.
+   Untracked files under those paths count as added in full (`status.diff_lines`).
 5. Checks, every one run: the section's intent suite and its unit suite (`tests/unit/<section>`)
    first, then the Guarded grep of the diff, then `status.py --surface` for `surface` and the
    per-section name check, `status.py --surface <pkg> --section <section>`, for every section
-   but `surface`; then
+   but `surface`; then the shape check, `status.py --shape <pkg> --section <section>`, for
+   every section, its lines copied as printed; then
    the Floor and Enforced rows of `docs/constraints.md` for the section's package — a `repo`
    row once, except a `repo` row whose command runs `pytest`, which is CI's and is written
    `SKIPPED <row>: … repo-scope pytest is CI's` (never run: it never finished inside any
@@ -134,7 +135,6 @@ import status  # noqa: E402
 AGENT = "dev-team:implementer"
 MARKER_REASONS = ("blocked", "spec-change")
 MAX_ATTEMPTS = 3
-EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 TIMEOUT = int(os.environ.get("DEV_TEAM_GATE_TIMEOUT") or 240)
 BUDGET = int(os.environ.get("DEV_TEAM_GATE_BUDGET") or 540)  # below hooks.json's 600 s
 
@@ -191,59 +191,18 @@ def _base() -> str | None:
     if status.git("rev-parse", "--is-inside-work-tree") is None:
         return None
     if status.git("rev-parse", "--verify", "-q", "HEAD") is None:
-        return EMPTY_TREE
+        return status.EMPTY_TREE
     body = status.git("log", "-1", "--format=%B", "HEAD") or ""
     if not re.search(r"^Dev-Team-Run:", body, re.M):
         return "HEAD"
-    return "HEAD~1" if status.git("rev-parse", "--verify", "-q", "HEAD~1") else EMPTY_TREE
-
-
-def _untracked(paths: list[str] | None = None) -> list[str]:
-    """Untracked, unignored files; under paths (git pathspecs) when given."""
-    spec = ["--", *paths] if paths else []
-    raw = status.git("ls-files", "--others", "--exclude-standard", "-z", *spec) or ""
-    return [p for p in raw.split("\0") if p]
+    return "HEAD~1" if status.git("rev-parse", "--verify", "-q", "HEAD~1") else status.EMPTY_TREE
 
 
 def diff_paths(base: str, paths: list[str] | None = None) -> list[str]:
     """Every path changed since base, staged or not, and untracked; under paths when given."""
     spec = ["--", *paths] if paths else []
     changed = (status.git("diff", "--name-only", "-z", base, *spec) or "").split("\0")
-    return sorted({p for p in changed + _untracked(paths) if p})
-
-
-def diff_lines(base: str, paths: list[str] | None = None) -> list[tuple[str, str, int, str]]:
-    """(path, '+' or '-', line number, text) for every added and removed line since base, under
-    paths when given.
-
-    Added lines carry their new line number, removed lines their old one. An untracked file
-    counts as added in full.
-    """
-    out: list[tuple[str, str, int, str]] = []
-    spec = ["--", *paths] if paths else []
-    raw = status.git("diff", "-U0", "--no-color", "--no-ext-diff", base, *spec) or ""
-    path, old, new = "", 0, 0
-    for line in raw.splitlines():
-        if line.startswith("+++ "):
-            path = line[6:] if line.startswith("+++ b/") else ""
-        elif line.startswith("--- "):
-            continue
-        elif line.startswith("@@"):
-            m = re.match(r"@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@", line)
-            old, new = (int(m.group(1)), int(m.group(2))) if m else (0, 0)
-        elif path and line.startswith("+"):
-            out.append((path, "+", new, line[1:]))
-            new += 1
-        elif path and line.startswith("-"):
-            out.append((path, "-", old, line[1:]))
-            old += 1
-    for rel in _untracked(paths):
-        try:
-            text = (status.ROOT / rel).read_text()
-        except (OSError, UnicodeDecodeError):
-            continue
-        out += [(rel, "+", i, t) for i, t in enumerate(text.splitlines(), 1)]
-    return out
+    return sorted({p for p in changed + status._untracked(paths) if p})
 
 
 def section_paths(pkg: str, section: str) -> list[str]:
@@ -281,14 +240,6 @@ def touched_paths(pkg: str, section: str, diff: list[str]) -> set[str]:
             files = status.git("show", "--name-only", "-z", "--format=", "HEAD") or ""
             out |= {p for p in files.split("\0") if p.strip()}
     return {p.strip() for p in out}
-
-
-def review_base(pkg: str, section: str) -> str:
-    """The newest review round's `Commit:` when it is an ancestor of `HEAD`, else the empty tree."""
-    sha = status.newest_round(pkg, section)[2]
-    if sha and status.git("merge-base", "--is-ancestor", sha, "HEAD") is not None:
-        return sha
-    return EMPTY_TREE
 
 
 def gated_sections(paths: list[str]) -> list[tuple[str, str]]:
@@ -557,7 +508,7 @@ def check_guarded(base: str, paths: list[str], pathspec: list[str] | None = None
     tester's line: ELSEWHERE, not FAIL."""
     exceptions = status.exceptions_rows()
     today = dt.date.today()
-    lines = diff_lines(base, pathspec)
+    lines = status.diff_lines(base, pathspec)
     hits: list[tuple[str, str, int, str]] = []
     added: dict[tuple[str, int], str] = {(path, n): text for path, sign, n, text in lines if sign == "+"}
     # Removed asserts are a net count per test file and per kind: a signature change rewrites
@@ -586,7 +537,7 @@ def check_guarded(base: str, paths: list[str], pathspec: list[str] | None = None
             hits.append((kind, path, first, f" ({removed} removed, {gained} added)"))
     if "docs/constraints.md" in paths:
         rev = before or base
-        prior = status.git("show", f"{rev}:docs/constraints.md") if rev != EMPTY_TREE else None
+        prior = status.git("show", f"{rev}:docs/constraints.md") if rev != status.EMPTY_TREE else None
         after_file = status.DOCS / "constraints.md"
         if prior and after_file.exists():
             old, new = _thresholds(prior), _thresholds(after_file.read_text())
@@ -612,6 +563,16 @@ def check_surface_names(pkg: str, section: str) -> list[str]:
     code, out = _run([sys.executable, str(STATUS_PY), "--surface", pkg, "--section", section], status.ROOT, 60)
     return ([f"PASS surface names {pkg}/{section}"] if code == 0
             else [f"FAIL surface names: {' | '.join(ln.strip() for ln in out.strip().splitlines())}"])
+
+
+def check_shape(pkg: str, section: str) -> list[str]:
+    """The shape check, `status.py --shape <pkg> --section <section>`: its PASS, FAIL and
+    MEASURED lines as printed."""
+    code, out = _run([sys.executable, str(STATUS_PY), "--shape", pkg, "--section", section], status.ROOT, 60)
+    lines = [ln.strip() for ln in out.splitlines() if ln.split(" ", 1)[0] in ("PASS", "FAIL", "MEASURED")]
+    if code not in (0, 1) or not lines:
+        return [f"FAIL shape: status.py --shape {pkg} --section {section} exited {code}: {_tail(out)}"]
+    return lines
 
 
 def check_surface(pkg: str) -> list[str]:
@@ -649,10 +610,11 @@ def run_checks(base: str, section: tuple[str, str]) -> tuple[list[tuple[str, str
     touched = touched_paths(pkg, sec, diff)
     # The section's own checks first: they are what the implementer can fix, and they must run.
     own = check_intent(pkg, sec) + check_unit(pkg, sec)
-    before = base if base != EMPTY_TREE else ("HEAD~1" if _own_head(pkg, sec) and status.git(
+    before = base if base != status.EMPTY_TREE else ("HEAD~1" if _own_head(pkg, sec) and status.git(
         "rev-parse", "--verify", "-q", "HEAD~1") else "HEAD")
     own += check_guarded(base, sorted(touched), spec, before, intent_elsewhere=True)
     own += check_surface(pkg) if sec == "surface" else check_surface_names(pkg, sec)
+    own += check_shape(pkg, sec)
     lines = check_rows([pkg], touched, start + BUDGET, section)
     return [section], lines + own
 
@@ -678,6 +640,8 @@ def run_checks_legacy(base: str | None) -> tuple[list[tuple[str, str]], list[str
             own += check_surface_names(pkg, section)
     for pkg in sorted({pkg for pkg, section in targets if section == "surface"}):
         own += check_surface(pkg)
+    for pkg, section in targets:
+        own += check_shape(pkg, section)
     lines = check_rows(pkgs, set(paths), start + BUDGET)
     return targets, lines + own
 
@@ -772,6 +736,11 @@ def _retry_message(n: int, targets: list[tuple[str, str]], fails: list[str]) -> 
            f"(attempt {n} of {MAX_ATTEMPTS}):", *fails]
     if n == 2:
         msg.append("Two attempts: invoke `debugging-and-error-recovery` with the Skill tool before the third.")
+    if any(f.startswith("FAIL shape:") for f in fails):
+        msg.append("A `FAIL shape` line names a definition this run added that `python-style-guide` \"Function "
+                   "shape\" forbids. Fix the code as that section says: inline the helper into its one caller, or "
+                   "give the phase a seam the section's list names. Never clear it with a rename, a second call "
+                   "site or a suppression.")
     msg.append("A FAIL you cannot clear is a block, not another attempt: one in a file you may not "
                "edit, or one in your own file that reports something your change did not do. Write your "
                "marker (first line `blocked`, second line the FAIL line), commit what you built, and end "
@@ -825,7 +794,7 @@ def gate(event: dict) -> int:
     counter.write_text(f"{n}\n")
 
     if section is not None:
-        targets, lines = run_checks(review_base(*section), section)
+        targets, lines = run_checks(status.review_base(*section), section)
         names = f"section {'/'.join(section)}"
     else:
         targets, lines = run_checks_legacy(base)

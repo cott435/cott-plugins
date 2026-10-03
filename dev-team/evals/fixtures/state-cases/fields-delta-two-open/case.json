@@ -33,7 +33,8 @@
   "expect": {
     "exit": 0,
     "contains": [
-      "mode: delta\n"
+      "mode: delta\n",
+      "paths report: none"
     ]
   }
 }

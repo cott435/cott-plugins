@@ -1,0 +1,73 @@
+{
+  "target": "python-style-guide",
+  "target_path": "skills/python-style-guide/SKILL.md",
+  "evals": [
+    {
+      "id": 1,
+      "name": "pipeline-reads-as-steps",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "prompt": "Write `src/data/pipelines/build.py` for the `data` package: the `build` pipeline, `run_build`. It runs the three section entry points in the contract's order, and every step has to be recorded in the run ledger. The contract's Pipelines entry, the three entry points' signatures and the ledger's API are in `evals/sets/files/python-style-guide/build-pipeline.md`, in the dev-team plugin directory. The sections and the ledger are shipped, so write the pipeline module and nothing else.",
+      "expected_output": "a build pipeline whose body is the three section entry points called by name, in order, each under a comment and each recorded in the ledger by a `with` block, written after reading references/pipelines.md",
+      "files": [
+        "evals/sets/files/python-style-guide/build-pipeline.md"
+      ],
+      "expectations": [
+        "outputs/ holds the pipeline module (`build.py`, at any depth under outputs/), and it defines `run_build` with the keyword-only parameters `account`, `start` and `end`, returning a `BuildSummary`",
+        "In `run_build`'s own body the three steps are three direct call statements, `download_bars(...)`, `clean_bars(...)` and `store_bars(...)`, in that order (a module-qualified call such as `download.download_bars(...)` counts); none of the three calls sits inside another function, a lambda, or a loop over a collection of steps",
+        "Each of the three step calls has a one-line comment directly above it, or directly above the `with` block that wraps it, saying what the step is for",
+        "The ledger wraps each step as a `with` block around the step's call (or as a decorator on a step's own `def`), built on `open_step` and `close_step`; no function anywhere under outputs/ is handed a step to call: no lambda, no nested function, no `functools.partial` and no entry point passed as an argument",
+        "No step is reached through a mapping or a sequence of callables: outputs/ has no dict, list or tuple holding the step functions that is subscripted or iterated to call them",
+        "Each step's result is bound to a named variable that a later statement reads, each step's arguments after the first are passed by keyword, and no signature under outputs/ takes `**kwargs` or `**options`",
+        "The code under outputs/ records what the brief asks: a run is opened with `open_run` and closed `ok` after the third step; a step that raises has its row closed `failed` with the exception's text, the run is closed `failed`, and the exception is re-raised",
+        "transcript.md shows `references/pipelines.md` of the python-style-guide skill was read before the pipeline module was written"
+      ],
+      "added_in": "2.5-readability phase 0, run from phase 3"
+    },
+    {
+      "id": 2,
+      "name": "limit-met-with-a-seam",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "prompt": "`load_account` in `evals/sets/files/python-style-guide/load_account.py`, in the dev-team plugin directory (in the repo it is `src/data/ingest/load.py`), fails the gate: about sixty statements and seven positional parameters. Bring it under the hard limits in `project-structure` §2, so that the ruff rules that table names pass on it, without changing what it does. Its callers will be updated to whatever signature you settle on. Give me the whole rewritten module.",
+      "expected_output": "the module rewritten so every function is inside the section 2 hard limits, with `load_account` still naming all seven inputs (those past the positional cap keyword-only) and split at real seams, with no options bag, no packed tuple and no trivial single-use helper",
+      "files": [
+        "evals/sets/files/python-style-guide/load_account.py"
+      ],
+      "expectations": [
+        "outputs/ holds the rewritten module as one Python file, and it still defines `load_account`",
+        "No function under outputs/ has more than 50 statements or a cyclomatic complexity above 10, the hard limits ruff's `PLR0915` and `C901` enforce (`ruff check --isolated --select PLR0915,C901` on the file reports nothing, or a count by hand agrees)",
+        "`load_account` still names each of its seven inputs (`conn`, `client`, `account`, `day`, `calendar`, `batch_size`, `overwrite`, renamed or not) as a parameter of its own in its signature: at most five are positional and the others are keyword-only, after a bare `*`",
+        "There is no options bag anywhere under outputs/: no signature takes `**options`, `**kwargs` or `Unpack[...]`; none takes a dict, a `TypedDict`, a dataclass, a `NamedTuple` or a tuple that carries two or more of the original seven inputs; and no call to a function defined under outputs/ packs two of them into a tuple to pass them as one argument (a SQL parameter tuple handed to `execute` or `executemany` is not a bag)",
+        "There is no trivial single-use helper under outputs/: no private function (`_name`) has both exactly one call site and a body of three statements or fewer, the docstring not counted and nested statements counted",
+        "`load_account`'s body still reads as its phases in order: each phase that was extracted is called directly by name from `load_account` (not handed to another function, not looked up in a mapping), and each phase, extracted or inline, sits under a one-line comment saying what it is for",
+        "What the module does is unchanged: it still raises `ValueError` for a `batch_size` below one and for a day with no session, still skips a day already in `load_ledger` or clears it when `overwrite` is set, still calls `client.download` page by page and retries a `VendorTimeout`, still inserts into `bars` with `executemany` in batches of `batch_size`, still inserts the `load_ledger` row, and still returns a `LoadSummary`"
+      ],
+      "added_in": "2.5-readability phase 0, run from phase 3"
+    },
+    {
+      "id": 3,
+      "name": "docstring-from-the-callers-side",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "prompt": "`evals/sets/files/python-style-guide/two-sections/ingest/load.py`, in the dev-team plugin directory, is my first pass at the `ingest` section's loader. It works, but it has no docstrings and I named things in a hurry. Write its docstrings and fix whatever names the style guide would not accept. `ingest/fetch.py` beside it is finished, and `clean/calendar.py` is from `clean`, the shipped section that `ingest` calls: read both, change neither. Give me the rewritten `load.py`.",
+      "expected_output": "`load.py` with a docstring on everything, summaries that say the vendor download and the `load_ledger` row a call causes, nothing that writes the ledger named or described as `log`, and the private class renamed away from the `_Loader` that `clean` also defines",
+      "files": [
+        "evals/sets/files/python-style-guide/two-sections/ingest/load.py",
+        "evals/sets/files/python-style-guide/two-sections/ingest/fetch.py",
+        "evals/sets/files/python-style-guide/two-sections/clean/calendar.py"
+      ],
+      "expectations": [
+        "outputs/ holds the rewritten `load.py`, and the module, its class and every function and method in it has a docstring",
+        "The summary line of `load_account` and the summary line of the method that loops over the days (`run` in the fixture, renamed or not) each say both things a call changes outside itself: the bars are downloaded from the vendor, and a row per day is written to the load ledger (named as `load_ledger` or as the ledger)",
+        "Nothing that writes or holds a `load_ledger` row is named `log`, `log_*` or `*_log`: the fixture's `_log_day` and `log_row` are renamed (for example to `_record_day` and `ledger_row`) or inlined, and no new name of that form is given to the ledger write",
+        "No docstring or comment in the rewritten `load.py` uses 'log', 'logs', 'logged' or 'logging' to describe the `load_ledger` write; where one of those words appears it is about the `logger.info` call",
+        "The private class in the rewritten `load.py` is no longer named `_Loader`: its new name says what it does in `ingest` (for example `_BarLoader` or `_DayLoader`), and every use of it in the file follows the rename",
+        "`clean/calendar.py` and `ingest/fetch.py` are left as they were: outputs/ holds no changed copy of either",
+        "The docstring of `_pending_days` (renamed or not) says what it returns, the days not yet in the ledger, and claims no write",
+        "What the module does is unchanged: it still calls `session_days`, calls `fetch_day` once per pending day, inserts one `load_ledger` row per day with the same four columns, calls `logger.info` once in `load_account`, and returns the bars"
+      ],
+      "added_in": "2.5-readability phase 0, run from phase 3"
+    }
+  ]
+}

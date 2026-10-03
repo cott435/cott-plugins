@@ -1,0 +1,27 @@
+{
+  "note": "--paths (2.5 phase 4): run_load calls itself under an if before read_trades",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands",
+      "files": {
+        "packages/data/src/data/pipelines/load.py": "\"\"\"The load pipeline.\"\"\"\n\nfrom data.ingest.reader import read_trades\n\n\ndef run_load(path: str) -> int:\n    \"\"\"Read the trades at path, the default file when path is empty, and return their count.\"\"\"\n    if not path:\n        return run_load(\"trades.csv\")\n    rows = read_trades(path)\n    return len(rows)\n"
+      }
+    }
+  ],
+  "args": [
+    "--paths",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "matches": [
+      "^    run_load \\(packages/data/src/data/pipelines/load\\.py:6\\) \\[recursive\\]$"
+    ],
+    "contains": [
+      "depth to first effect: 2"
+    ]
+  }
+}

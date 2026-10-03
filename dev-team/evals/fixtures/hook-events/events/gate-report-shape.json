@@ -1,0 +1,15 @@
+{
+  "script": "gate",
+  "repo": "built",
+  "args": [
+    "--report",
+    "--base",
+    "HEAD~1"
+  ],
+  "expect": {
+    "exit": 0,
+    "gate_contains": [
+      "PASS shape data/ingest"
+    ]
+  }
+}

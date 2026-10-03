@@ -1,0 +1,25 @@
+{
+  "note": "--paths (2.5 phase 4): read_trades calls requests.get in place of the copy and the open",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands",
+      "files": {
+        "packages/data/src/data/ingest/reader.py": "\"\"\"Read trades.\"\"\"\n\nimport requests\n\n\ndef read_trades(path: str) -> list[dict[str, str]]:\n    \"\"\"Fetch the trades at path.\"\"\"\n    response = requests.get(path, timeout=10)\n    return response.json()\n"
+      }
+    }
+  ],
+  "args": [
+    "--paths",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "[effect: requests.get]",
+      "depth to first effect: 2"
+    ]
+  }
+}

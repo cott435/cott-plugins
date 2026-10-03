@@ -1,0 +1,31 @@
+{
+  "note": "every section DONE, no [project.scripts]: approved with nothing to review",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "contains": [
+      "paths: approved (no commands)",
+      "shipped: yes"
+    ]
+  }
+}

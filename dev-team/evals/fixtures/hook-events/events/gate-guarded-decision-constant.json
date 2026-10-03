@@ -4,7 +4,7 @@
   "setup": {
     "transcript": "Section: data/ingest\nDesign: docs/packages/data/design/ingest.md\nRun: run-package data",
     "files": {
-      "packages/data/tests/unit/ingest/test_open_unit.py": "\"\"\"Unit tests for the open decision.\"\"\"\n\nfrom pathlib import Path\n\nimport pytest\n\nfrom data.ingest.loader import load_trades\n\nD5_OPEN = \"D5 open: whether a zero-size row is kept\"\nROW = \"2026-09-01T13:30:20Z,AAA,49.74,0,sell\\n\"\n\n\n@pytest.mark.xfail(reason=D5_OPEN)\ndef test_zero_size_row_dropped(tmp_path: Path) -> None:\n    \"\"\"A zero-size row is dropped, once D5 says so.\"\"\"\n    csv_file = tmp_path / \"trades.csv\"\n    csv_file.write_text(\"ts,symbol,price,size,side\\n\" + ROW)\n    assert load_trades(csv_file) == []\n"
+      "packages/data/tests/unit/ingest/test_open_unit.py": "\"\"\"Unit tests for the open decision.\"\"\"\n\nfrom pathlib import Path\n\nimport pytest\nfrom data.ingest.loader import load_trades\n\nD5_OPEN = \"D5 open: whether a zero-size row is kept\"\nROW = \"2026-09-01T13:30:20Z,AAA,49.74,0,sell\\n\"\n\n\n@pytest.mark.xfail(reason=D5_OPEN)\ndef test_zero_size_row_dropped(tmp_path: Path) -> None:\n    \"\"\"A zero-size row is dropped, once D5 says so.\"\"\"\n    csv_file = tmp_path / \"trades.csv\"\n    csv_file.write_text(\"ts,symbol,price,size,side\\n\" + ROW)\n    assert load_trades(csv_file) == []\n"
     }
   },
   "event": {

@@ -1,0 +1,61 @@
+{
+  "note": "paths rounds 1 to 3 each request changes: at the cap nothing re-opens",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "commands"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    },
+    {
+      "do": "paths_review",
+      "round": 1,
+      "verdict": "request changes",
+      "critical": [
+        "ingest: P2 — packages/data/src/data/ingest/reader.py:7 — a lambda on the main path — call the step by name"
+      ]
+    },
+    {
+      "do": "paths_review",
+      "round": 2,
+      "verdict": "request changes",
+      "critical": [
+        "ingest: P2 — packages/data/src/data/ingest/reader.py:7 — a lambda on the main path — call the step by name"
+      ]
+    },
+    {
+      "do": "paths_review",
+      "round": 3,
+      "verdict": "request changes",
+      "critical": [
+        "ingest: P2 — packages/data/src/data/ingest/reader.py:7 — a lambda on the main path — call the step by name"
+      ]
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "DONE",
+    "contains": [
+      "paths: round 3 (request changes: ingest) (cap)",
+      "shipped: no (paths round 3)",
+      "next: /dev-team:run-package data or /dev-team:run-package data --defer"
+    ]
+  }
+}

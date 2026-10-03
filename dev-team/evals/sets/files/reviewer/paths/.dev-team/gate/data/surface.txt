@@ -1,0 +1,17 @@
+dev-team gate — attempt 1 — 2026-09-25 09:58:40 — section data/surface
+commit: 5a1c9e3
+PASS Floor lint `uv run ruff check packages/data` — 0 errors
+PASS Floor format `uv run ruff format --check packages/data` — 0 files would be reformatted
+PASS section unit tests `uv run pytest packages/data/tests/unit/surface -q` — 2 passed
+PASS section intent tests `uv run pytest packages/data/tests/intent/surface -q` — 4 passed, 0 tolerated
+PASS Enforced unit tests `uv run pytest packages/data/tests/unit -q` — 9 passed
+PASS Enforced intent tests `uv run pytest packages/data/tests/intent -q` — 9 passed, 0 tolerated
+PASS Enforced coverage `uv run pytest packages/data --cov=packages/data/src --cov-report=term` — 95% ≥ 85%
+PASS Guarded grep over the section's paths since b6f03a8 — 0 hits
+PASS surface: surface: PASS
+MEASURED shape indirect: 1
+MEASURED shape depth data-load: 5
+PASS shape data/surface
+MEASURED complexity `uv run radon cc packages/data/src -s -a` — surface: max A (2) guarded, average A (1.3)
+MEASURED module size `wc -l packages/data/src/**/*.py` — __init__.py 1, cli.py 21, pipelines/__init__.py 1, pipelines/load.py 31
+result: pass

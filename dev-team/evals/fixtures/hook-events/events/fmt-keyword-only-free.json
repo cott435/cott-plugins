@@ -1,0 +1,35 @@
+{
+  "script": "format",
+  "repo": "arch",
+  "setup": {
+    "files": {
+      "packages/data/src/data/ingest/free.py": "\"\"\"Module for the keyword-only case.\"\"\"\n\n\ndef free(a, b, c, *, d, e, f, g):\n    \"\"\"Take three positional parameters and four keyword-only ones.\n\n    Args:\n        a: One.\n        b: Two.\n        c: Three.\n        d: Four.\n        e: Five.\n        f: Six.\n        g: Seven.\n    \"\"\"\n    return a, b, c, d, e, f, g\n"
+    }
+  },
+  "event": {
+    "session_id": "9b1f0c52-3d4e-4a7b-8c21-5e6f7a8b9c0d",
+    "transcript_path": "{cwd}/../transcript.jsonl",
+    "cwd": "{cwd}",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "{cwd}/packages/data/src/data/ingest/free.py",
+      "content": "…"
+    },
+    "tool_response": {
+      "type": "create",
+      "filePath": "{cwd}/packages/data/src/data/ingest/free.py"
+    },
+    "tool_use_id": "toolu_01AbCdEf",
+    "agent_id": "a3f09c2e71b8d4e65",
+    "agent_type": "dev-team:implementer"
+  },
+  "expect": {
+    "exit": 0,
+    "stderr_lacks": [
+      "PLR0917",
+      "PLR0913"
+    ]
+  }
+}

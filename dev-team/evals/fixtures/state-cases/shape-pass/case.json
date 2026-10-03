@@ -1,0 +1,33 @@
+{
+  "note": "--shape (2.5 phase 2): ingest built with no private helper",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "design",
+      "section": "ingest"
+    },
+    {
+      "do": "tests",
+      "section": "ingest"
+    },
+    {
+      "do": "build",
+      "section": "ingest"
+    }
+  ],
+  "args": [
+    "--shape",
+    "data",
+    "--section",
+    "ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "PASS shape data/ingest",
+      "MEASURED shape indirect: 0"
+    ]
+  }
+}
