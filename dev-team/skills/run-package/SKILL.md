@@ -78,16 +78,20 @@ not registered. Tell the user to run `/reload-plugins` (or restart Claude Code),
 `/agents`, and re-run the same `/dev-team:run-package` command.
 
 Resolving values. `<path>` is the section's `path` cell in the Sections table; `<package
-root>` is the `<pkg>` row's `path` in the Packages table. A section's dependencies are its
-`depends on` cell, and for `surface` every other section. Upstream packages are the `<pkg>`
+root>` is the `<pkg>` row's `path` in the Packages table. A section's dependency READMEs are
+the `dependency readmes:` line of `status.py --fields`: the `<path>/README.md` of every section
+in its `depends on` (for `surface`, every other section) that exists on disk, `none` when none
+does. The `surface` row is ready at DESIGN and TEST right after PLAN when the contract has
+**Call paths**, before any sibling README exists, so its designer and tester are sent `none`.
+Upstream packages are the `<pkg>`
 row's `depends on` in the Packages table: each is `docs/packages/<dep>/interface.md` when that
 file exists, else `provisional: docs/packages/<dep>/contract.md`. The designer is sent every
 one. The tester and the reviewer are sent the `upstream interfaces:` line of `status.py
 --fields`, which holds only the packages the section's design says it consumes (every one,
 when the design does not say), and the implementer's block resolves it the same way. Sources
 are the row's `source` cell, `<kind>:<token>` each. `status.py --fields <pkg>/<section>`
-prints six lines — `mode:`, `change file:`, `design mode:`, `diff base:`, `upstream
-interfaces:` and `paths report:` — run once per section you spawn for, and each table below names the line a
+prints seven lines — `mode:`, `change file:`, `design mode:`, `diff base:`, `upstream
+interfaces:`, `paths report:` and `dependency readmes:` — run once per section you spawn for, and each table below names the line a
 field copies. Rounds are the row's `round` column (`—` is 0); a
 round's reports are `docs/packages/<pkg>/reviews/<section>/*-r<n>-*.md`,
 or the older `docs/reviews/*-<pkg>-<section>-r<n>-*.md`, and a report with no `-r<n>-` in its
@@ -121,7 +125,7 @@ take turns, since both extend one file.
 | **Mode** | the `mode:` line of `status.py --fields`: `new`, `document` or `delta` |
 | **Contract** | `docs/packages/<pkg>/contract.md` |
 | **Repo contract** | `docs/architecture.md` |
-| **Dependency READMEs** | `<dep path>/README.md` per dependency, comma-separated; in `delta` and `document` modes `own: <path>/README.md` first when it exists |
+| **Dependency READMEs** | the `dependency readmes:` line of `status.py --fields`; in `delta` and `document` modes `own: <path>/README.md` first when it exists |
 | **Upstream interfaces** | per upstream package, as resolved above |
 | **Source probes** | `docs/sources/<token>.md` per source |
 | **Change file** | the `change file:` line of `status.py --fields` (`delta` only; else `none`) |
@@ -141,7 +145,7 @@ take turns, since both extend one file.
 | **Design** | `docs/packages/<pkg>/design/<section>.md` |
 | **Contract** | `docs/packages/<pkg>/contract.md` |
 | **Repo contract** | `docs/architecture.md` |
-| **Dependency READMEs** | `<dep path>/README.md` per dependency, comma-separated |
+| **Dependency READMEs** | the `dependency readmes:` line of `status.py --fields` |
 | **Upstream interfaces** | the `upstream interfaces:` line of `status.py --fields` |
 | **Source probes** | `docs/sources/<token>.md` per source |
 | **Regenerate** | the entry heading from the row's evidence when it reads `regenerate: <heading>` or `open <heading>` (a `spec-change:test`); when `open` names several, `; `-separated, every heading, one per line; else `none` |
@@ -198,7 +202,7 @@ code, and neither may be handed the other's report. Round 2 and later is one: `F
 | **Design** | `docs/packages/<pkg>/design/<section>.md` |
 | **Contract** | `docs/packages/<pkg>/contract.md` |
 | **Repo contract** | `docs/architecture.md` |
-| **Dependency READMEs** | `<dep path>/README.md` per dependency, comma-separated |
+| **Dependency READMEs** | the `dependency readmes:` line of `status.py --fields` |
 | **Upstream interfaces** | the `upstream interfaces:` line of `status.py --fields` |
 | **Source probes** | `docs/sources/<token>.md` per source |
 | **Intent tests** | `tests/intent/<section>/` |
@@ -266,7 +270,8 @@ granted *one more round* at a cap.
    - PROBE → the researchers, one per source that lacks the section's entry (two sections
      waiting on one source take turns).
    - DESIGN → a designer per section; also a section at TEST whose last tester run this run
-     returned `design-gap`.
+     returned `design-gap` — the `surface` row included when `status.py` marks it ready, which
+     with **Call paths** is right after PLAN.
    - TEST → a tester per section.
    - IMPLEMENT or FIX n → an implementer per section. A cap row granted *one more round* gets
      its implementer here, then its `full` reviewer as a REVIEW next batch. A gate-BLOCKED row

@@ -105,7 +105,9 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
 3. **Contract** — `docs/packages/<pkg>/contract.md`.
 4. **Repo contract** — `docs/architecture.md`.
 5. **Dependency READMEs** — the README of every section in the row's `depends on`,
-   comma-separated. *May be `none`.*
+   comma-separated. *May be `none`.* For `surface`, tested right after PLAN, no sibling README
+   exists yet; the fakes for what its design consumes are built to the contract's **Section
+   interfaces** signatures, which the design cites.
 6. **Upstream interfaces** — `docs/packages/<dep>/interface.md` per upstream package the
    section's design consumes (every upstream package, when the design does not say), or
    `provisional: <contract.md>`. *May be `none`.*
@@ -138,7 +140,7 @@ What each document is for:
 | The repo contract | Shared conventions; Boundaries for shapes the section consumes or provides |
 | `docs/decisions.md` | entries scoped to this section, `<pkg>`, or `repo`, read with the design's **Open questions**, which says which of them bind this section. A `decided` one is asserted. One with only an assumption that binds this section is asserted under `pytest.mark.xfail(strict=False, reason="D<n> open")`: the `D<n>` literally inside the `xfail(` call, never through a constant (`reason=D5_OPEN`), and the assumption in the test's docstring, which keeps the call short. The stop gate reads the call to its closing bracket, so a formatter wrap is harmless. One the design says binds another section (`D<n> binds <pkg>/<other section>, not this one`) gets no test and one `Not written:` line, `D<n>: binds <pkg>/<section> per the design`. A design with no such lines (written before 2.4) leaves `Scope:` to decide, as before |
 | Source probes + `<source>.sample.json` / `<source>.stats.json` | the fixture for any parser or loader; a sample is copied to `tests/fixtures/<source>.sample.json` if not already there; a dataset's rows come from the path the probe doc names |
-| Dependency READMEs (**Entry points and interfaces**) and upstream `interface.md` | the real signatures of what the section consumes, for fixtures and fakes |
+| Dependency READMEs (**Entry points and interfaces**) and upstream `interface.md` | the real signatures of what the section consumes, for fixtures and fakes; when the field is `none`, the contract's **Section interfaces** are those signatures |
 | `docs/constraints.md`, when it exists | the **Enforced** coverage row: the intent suite is sized to contribute to that floor beside the implementer's unit tests, not to reach it alone — never pad it with cases the documents do not support. And **Guarded**, which binds your tree like any other |
 | `docs/packages/<pkg>/deviations/<section>.md` (and a 2.x `docs/deviations/<pkg>/<section>.md`, still read) | the section's `approved` deviations, on every run (**Tags**); on a regenerate run, the entries `Regenerate:` names: their **Clause**, **Did** (a deviation) or **Found** (a `spec-change:test`), and **Status**. A report-raised `spec-change:test` is its report's **Spec-change** line instead |
 
@@ -208,8 +210,8 @@ For a first run (`Regenerate: none`):
    **Workflow / pipeline** end-to-end path, one per decision the design says binds this
    section. The discipline is the skill's, the inventory is the design's.
 3. **Write.** `tests/intent/<section>/conftest.py` holds the fixtures: sample data from the
-   probe, fakes for consumed interfaces built to their shipped signatures. Then one
-   `test_<interface>.py` per **Interfaces** row, with no exception: two models one module
+   probe, fakes for consumed interfaces built to their shipped signatures, or to the
+   contract's **Section interfaces** when no README was sent. Then one `test_<interface>.py` per **Interfaces** row, with no exception: two models one module
    defines are two rows and two files, and `test_workflow.py` for the end-to-end path.
    Every source line, docstrings and conftest included, is 88 characters or fewer: the formatter
    hook blocks a longer one and each block costs an edit. Every test function's docstring is `Design §<n> <row or step>: <one line>` — `§<n>` is the

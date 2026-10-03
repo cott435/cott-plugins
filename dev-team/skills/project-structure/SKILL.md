@@ -91,8 +91,8 @@ Rules:
   what the `surface` section's design says it runs — a pipeline, or a single section entry point; no logic. The
   one-off operational task is a command like any other: schema init, a backfill, a cache
   rebuild live in the section that owns the data, and the command is how you run them. Before
-  the `surface` section is built there is no `cli.py` yet —
-  call the section's function directly (`uv run --package <pkg> python -c "…"`, or a test
+  the `surface` section is built there is no `cli.py` yet — its design exists from PLAN, its
+  code arrives last — so call the section's function directly (`uv run --package <pkg> python -c "…"`, or a test
   fixture) and let the command arrive with the surface.
 - Tests mirror source paths: `src/data/ingest/parsers.py` → `tests/unit/ingest/test_parsers.py`.
 - Lint, import-linter, and docs configuration live at the workspace root, once. A package's
