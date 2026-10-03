@@ -1,0 +1,34 @@
+{
+  "K1": [
+    {"seq": 312, "trade_id": "T-000311", "symbol": "AAPL", "ts": "2026-09-14T09:41:07-04:00", "price": 231.42, "size": -300, "side": "", "venue": "XNAS"},
+    {"seq": 15840, "trade_id": "T-015806", "symbol": "TSLA", "ts": "2026-09-14T11:02:55-04:00", "price": 402.1, "size": -1200, "side": "", "venue": "ARCX"},
+    {"seq": 40117, "trade_id": "T-040031", "symbol": "MSFT", "ts": "2026-09-14T15:12:30-04:00", "price": 512.08, "size": -100, "side": "", "venue": "XOFF"}
+  ],
+  "K2": [
+    {"seq": 1042, "trade_id": "T-001040", "symbol": "MSFT", "ts": "2026-09-14T09:52:18-04:00", "price": 511.3, "size": 200, "side": "B", "venue": "XNAS"},
+    {"seq": 7781, "trade_id": "T-007765", "symbol": "NVDA", "ts": "2026-09-14T10:20:44-04:00", "price": 188.75, "size": 500, "side": "S", "venue": "BATS"}
+  ],
+  "K3": [
+    {"seq": 2203, "trade_id": "T-002199", "symbol": "NVDA", "ts": "2026-09-14T09:58:01-04:00", "price": 0.0, "size": 100, "side": "B", "venue": "XNAS"},
+    {"seq": 31990, "trade_id": "T-031921", "symbol": "AAPL", "ts": "2026-09-14T13:40:12-04:00", "price": 0.0, "size": 400, "side": "S", "venue": "XNYS"}
+  ],
+  "K4": [
+    {"seq": 4, "trade_id": "T-000004", "symbol": "AAPL", "ts": "2026-09-14T08:12:09-04:00", "price": 230.9, "size": 100, "side": "B", "venue": "ARCX"},
+    {"seq": 48102, "trade_id": "T-048006", "symbol": "TSLA", "ts": "2026-09-14T16:45:31-04:00", "price": 404.66, "size": 300, "side": "S", "venue": "XNAS"}
+  ],
+  "K5": [
+    {"seq": 9120, "trade_id": "T-009101", "symbol": "ZVZZT", "ts": "2026-09-14T10:31:00-04:00", "price": 10.01, "size": 100, "side": "B", "venue": "XNAS"},
+    {"seq": 22514, "trade_id": "T-022467", "symbol": "TEST", "ts": "2026-09-14T12:05:47-04:00", "price": 1.0, "size": 100, "side": "S", "venue": "BATS"}
+  ],
+  "K6": [
+    {"seq": 5530, "trade_id": "T-005517", "symbol": "AAPL", "ts": "2026-09-14T10:07:26-04:00", "price": 231.77, "size": 37, "side": "B", "venue": "XNYS"},
+    {"seq": 27344, "trade_id": "T-027288", "symbol": "MSFT", "ts": "2026-09-14T12:58:03-04:00", "price": 512.4, "size": 250, "side": "S", "venue": "ARCX"}
+  ],
+  "accepted": [
+    {"seq": 1041, "trade_id": "T-001040", "symbol": "MSFT", "ts": "2026-09-14T09:52:18-04:00", "price": 511.3, "size": 200, "side": "B", "venue": "XNAS"},
+    {"seq": 7780, "trade_id": "T-007765", "symbol": "NVDA", "ts": "2026-09-14T10:20:44-04:00", "price": 188.75, "size": 500, "side": "S", "venue": "BATS"},
+    {"seq": 12006, "trade_id": "T-011978", "symbol": "AAPL", "ts": "2026-09-14T10:49:33-04:00", "price": 232.05, "size": 100, "side": "S", "venue": "XNAS"},
+    {"seq": 25871, "trade_id": "T-025818", "symbol": "TSLA", "ts": "2026-09-14T12:41:15-04:00", "price": 403.2, "size": 1000, "side": "B", "venue": "XOFF"},
+    {"seq": 44390, "trade_id": "T-044299", "symbol": "NVDA", "ts": "2026-09-14T15:36:52-04:00", "price": 189.1, "size": 300, "side": "B", "venue": "XNYS"}
+  ]
+}

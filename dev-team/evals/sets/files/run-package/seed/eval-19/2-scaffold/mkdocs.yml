@@ -1,0 +1,24 @@
+site_name: trade-tape
+docs_dir: docs
+exclude_docs: |
+  plans/**
+  sources/*.json
+  sources/*.py
+theme:
+  name: material
+markdown_extensions:
+  - attr_list
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [packages/*/src]
+          options:
+            docstring_style: google
+            merge_init_into_class: true
+            show_source: false
+nav:
+  - Architecture: architecture.md
+  - Decisions: decisions.md
+  - API: []
