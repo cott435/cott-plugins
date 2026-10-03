@@ -12,6 +12,63 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [Unreleased]
+
+A package's main paths are decided at PLAN, in the contract, before any section is designed, so
+every section is built to fit a path that already reads well and the paths review mostly
+confirms. Design: `site/notes/2.6-spine-design.md`. Evidence: the `2.6-spine-*` logs in
+`evals/`.
+
+### Changed
+
+- The package contract (`planning-templates/references/package-contract.md`) gains item 5,
+  **Call paths**: per command, a depth budget and the numbered frames from `cli.<verb>` to each
+  external effect; **Public surface (intent)**, **Consumes**, **Package conventions** and
+  **Open decisions** are renumbered 6 to 9; the architect writes it at PLAN and asks before a
+  budget above 8 (c0ca2a3, 6dbc311)
+- `status.py`: with **Call paths** in the contract, the `surface` row is ready at PLAN, DESIGN
+  and TEST right after PLAN, and only its IMPLEMENT waits for every section; a package
+  mid-build whose contract gains the heading sees its surface designer in the next batch, and
+  nothing already designed is re-opened (04edb19)
+- The designer's §4 carries a skeleton of every entry point a call path passes through, with
+  `frames to effect: <n>`; a frame the path does not list is a `spec-change: contract`; the
+  surface is designed from the contract, and the tester builds its fakes to **Section
+  interfaces** when `Dependency READMEs:` is `none` (566eb5c)
+- `status.py --paths <pkg> --against-contract` prints each command's built frames beside its
+  **Call paths** entry, `match`, `extra` or `missing`; the paths review's **Paths** table gains
+  a `contract` column, an `extra` or `missing` frame is a break, and P1 uses the command's own
+  budget (e4e9a98)
+- The close (`sync-plan`) writes **Call paths** as built on a contract that lacks them, and
+  `docs/packages/<pkg>/changes/paths-<command>.md` for each command deeper than 8 (3e5dd79)
+- `status.py --fields` prints a seventh line, `dependency readmes:` — the `depends on` READMEs
+  that exist, `none` when none does — which `run-package` sends as **Dependency READMEs**
+  (04edb19, 566eb5c)
+
+### Fixed
+
+- `status.py` reads a bold item (`5. **Call paths** —`) only on a numbered line, so a prose
+  line that wraps to start with the bold name no longer hides the heading below it; before,
+  `--against-contract` printed `contract: no entry` for such a contract
+
+### Upgrading
+
+- **`surface` is ready earlier.** With a `## Call paths` heading in the contract, the `surface`
+  row is ready at PLAN, DESIGN and TEST before any sibling is DONE; IMPLEMENT still waits for
+  every section. A contract without the heading keeps the 2.5 timing.
+- **The package contract has a fifth item.** A contract written before 2.6 still parses: every
+  reader finds its headings by name.
+- **The paths review compares the code to the contract.** Once a contract has **Call paths**,
+  a frame the contract does not list, or one it lists that the code does not pass through, is
+  a CRITICAL break under the section that holds it. Without the heading the review runs as in
+  2.5.
+- **A legacy close writes the heading.** `/dev-team:sync-plan <pkg>` (or `run-package`'s
+  close) on a contract with no **Call paths** writes it as built and a `paths-<command>.md`
+  change file per command deeper than 8; those re-open the sections they name at DESIGN when
+  approved, and nothing is rebuilt until then.
+- **`status.py --fields` prints seven lines.** A hand-run that copied the six lines still
+  works.
+
+
 ## [2.5.0] - 2026-10-02
 
 A package reads from its command down to its first external effect. From the `data` package

@@ -145,8 +145,8 @@ other section from IMPLEMENT on; without it the surface waits at every state, as
 `--fields` prints a seventh line, `dependency readmes:`, the READMEs of the row's `depends on`
 that exist on disk in the Sections table's order, `none` when none does.
 
-**Against the contract (2.6).** Six cases (`site/notes/2.6-spine-05-against-contract-review.md`,
-the six `calltree-contract-*` rows at the end). Each runs `base` with a `call_paths` heading
+**Against the contract (2.6).** Seven cases (`site/notes/2.6-spine-05-against-contract-review.md`,
+the `calltree-contract-*` rows at the end; `-prose-line` from phase 7). Each runs `base` with a `call_paths` heading
 (or none), then `commands`, and `--paths data --against-contract`. After the block's footer the
 contract's entry prints: `contract: data-load (budget 8)`, the kind, each contract frame `match`
 with the built frame or `missing`, a built frame between two matched ones `extra`, the effect
@@ -320,3 +320,4 @@ optional flag).
 | `calltree-contract-no-entry` | an entry for `` `data-build` (budget 8) `` only | the same | `contract: no entry for data-load`; no `summary:`; exit 0 |
 | `calltree-contract-no-heading` | `base` without `call_paths`, `commands` | the same | `contract: no Call paths heading`; no `summary:`; exit 0 |
 | `calltree-contract-past-budget` | the matching entry with `(budget 1)` | the same | `summary: 3 match, 0 extra, 0 missing; depth 2 past budget 1`; exit 0 |
+| `calltree-contract-prose-line` | as `-match`, with a wrapped prose line starting `**Call paths**` above `## Public surface (intent)` (`edit`) | the same | `contract: data-load (budget 8)`; `summary: 3 match, 0 extra, 0 missing; depth 2 of budget 8`; no `contract: no entry`; exit 0 (phase 7: only a numbered bold line is an item) |

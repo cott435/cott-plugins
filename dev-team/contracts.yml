@@ -204,11 +204,12 @@ forbid:
     # the READMEs. A prompt that still says "designed last" or "designed from every sibling
     # README" sends the surface designer to files that do not exist yet. `near` keeps the one
     # true statement — the code is built last, from the shipped READMEs — out of scope. The
-    # docs (README.md, site/flow.md, site/workflows/) join `files:` in phase 7.
+    # user-facing docs (README.md, site/flow.md, site/workflows/) are swept too, so a reader
+    # learns the new order before meeting it in a run.
     pattern: 'designed last|from (?:every|the) (?:sibling|shipped) READMEs?'
     near: 60
     unless: ['built last', 'built, last', 'IMPLEMENT']
-    files: ['agents/*.md', 'skills/**/*.md']
+    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/flow.md', 'site/workflows/*.md']
 
 # Every heading a reader parses is one the owner's template defines.
 headings:

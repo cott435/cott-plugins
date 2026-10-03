@@ -42,7 +42,12 @@ impact** re-open the same way when their package is run.
 ## The close
 
 A paths report goes stale when any section's code changes after its `Commit:`, so once the
-changed sections are DONE the paths review runs again before the package is shipped.
+changed sections are DONE the paths review runs again before the package is shipped. It
+compares the code's call tree (`status.py --paths data --against-contract`) to the contract's
+**Call paths**: a frame the change added that the contract does not list, or one the contract
+lists that the code no longer passes through, is a break (CRITICAL) under the section that
+holds it, and P1 uses the command's own budget. A contract written before 2.6 has no **Call
+paths**; its review runs as in 2.5 until the close writes the heading.
 
 When every section of the package is DONE and the paths review approves, the driver runs the
 architect as `sync-plan` (`/dev-team:sync-plan data` by hand does the same). It verifies each

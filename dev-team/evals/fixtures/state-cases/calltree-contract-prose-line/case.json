@@ -1,0 +1,36 @@
+{
+  "note": "2.6: a prose line that wraps to start with `**Call paths**` above the heading is not the item; --against-contract still reads the entry under `## Call paths` (phase 7, run-package eval 16's seed contract)",
+  "steps": [
+    {
+      "do": "base",
+      "call_paths": true
+    },
+    {
+      "do": "edit",
+      "path": "docs/packages/data/contract.md",
+      "message": "docs: a prose line starting with the bold heading name",
+      "replace": [
+        "## Public surface (intent)",
+        "Every frame\n**Call paths** names inside a section is an entry in that section's interface.\n\n## Public surface (intent)"
+      ]
+    },
+    {
+      "do": "commands"
+    }
+  ],
+  "args": [
+    "--paths",
+    "data",
+    "--against-contract"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "contract: data-load (budget 8)",
+      "summary: 3 match, 0 extra, 0 missing; depth 2 of budget 8"
+    ],
+    "absent": [
+      "contract: no entry"
+    ]
+  }
+}

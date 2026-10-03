@@ -11,7 +11,7 @@ reaches a reviewer.
 
 You drive it. Every workflow skill is `disable-model-invocation: true`, so Claude never starts
 one on its own — you type them. It plans a **repo of packages** — `data` → `analysis` → `ml`,
-say — where each package's last section, `surface`, publishes an `interface.md` that the next
+say — where each package's `surface` section, built last, publishes an `interface.md` that the next
 package is planned and built against. A single-package repo is the same thing with one row in
 the Packages table.
 
@@ -44,7 +44,7 @@ dev-team/
     │   └── references/                     the constraints template + vendored constraint-driven-development (MIT)
     ├── extract-legacy/     → curator       old repo → inventory (stop) → project skills, one per kept row
     ├── plan-repo/          → architect     the repo contract: write, extend, or --fix
-    ├── plan-package/       → architect     one package contract, ending with the surface row; edits classified
+    ├── plan-package/       → architect     one package contract, ending with the surface row, with Call paths; edits classified
     ├── run-package/        (inline)        the driver: <pkg> [<section>] [--step] [--defer] [--serial]
     ├── pair/               (inline)        one built section, edited with you turn by turn; wrap-up hands it back
     ├── probe-source/       → researcher    re-probe one source for one section after the world changed
@@ -140,9 +140,20 @@ adopting an existing repo.
 
 ## Running a package
 
-`/dev-team:run-package <pkg>` walks every section of one package to DONE, the `surface` section
-last, then closes the package. It runs in your conversation and spawns every agent itself as
-`dev-team:<agent>`, one layer deep; no state is kept anywhere but on disk.
+`/dev-team:run-package <pkg>` walks every section of one package to DONE — the `surface`
+section designed and tested right after PLAN, from the contract, and built last, from the
+shipped READMEs — then closes the package. It runs in your conversation and spawns every agent
+itself as `dev-team:<agent>`, one layer deep; no state is kept anywhere but on disk.
+
+**Call paths** (item 5 of the contract) fixes, per command, the frames from `cli.py` to each
+external effect and a depth budget (8 unless a decided `D<n>` says more), before any section
+is designed. The surface's design and intent tests are written right after PLAN from the
+contract; every section's design carries a skeleton for each entry point a path names, with
+`frames to effect`; the paths review runs `status.py --paths <pkg> --against-contract` and
+fails a frame the contract does not list, or lists and the code lacks, as a break. A contract
+written before 2.6 has no heading: the `surface` row keeps waiting for every section, the
+review runs as in 2.5, and the next close writes the heading as built, with a change file for
+each command deeper than 8.
 
 1. **Run gate.** `status.py --run-gate <pkg>`: the branch, the clean tree, the contract exists.
    Then **scaffold**: when `status.py --scaffold <pkg>` says the workspace is missing (no root
@@ -154,7 +165,11 @@ last, then closes the package. It runs in your conversation and spawns every age
    git (**The states**, below). A re-run a week later, after hand edits or a crash, picks up
    exactly where the files say.
 3. **The ready set.** A section is ready when it is neither DONE nor BLOCKED and every
-   section it depends on in the package is DONE. The driver spawns every ready row's step in
+   section it depends on in the package is DONE — except `surface` at PLAN, DESIGN and TEST
+   once the contract has **Call paths**: only its IMPLEMENT waits for every section. Each
+   role's **Dependency READMEs** line is copied from `status.py --fields`, which lists only the
+   READMEs that exist, so the early surface designer and tester are sent only those (often
+   `none`) and build to the contract's **Section interfaces** for the rest. The driver spawns every ready row's step in
    one message — probes, designs, tests, implementers, reviewer pairs together, whatever step
    each row is at — with one exception: a PLAN row runs the architect alone, since it edits
    what designers read. Implementers run in parallel: the write guard confines each to its
@@ -230,7 +245,8 @@ every call and never stored:
 | **DONE** | the newest round approves and the code is not newer than its `Commit:` |
 
 A package is **shipped** when its `surface` section is DONE, `status.py --surface <pkg>`
-passes, and its paths review approves (`paths: approved`). A package whose check fails prints
+passes, and its paths review, against the contract's **Call paths**, approves (`paths:
+approved`). A package whose check fails prints
 `shipped: no (surface check FAIL)`; one whose commands have not been reviewed prints `shipped:
 no (paths needed)` until `/dev-team:run-package <pkg>` has run the review. A round is the
 set of reports sharing `-r<n>`; its verdict is the worst of them.
@@ -460,10 +476,14 @@ prints it, never `HEAD`, which in a batch may be a sibling's. The verdict is `ap
 `request changes` or `spec-change`.
 
 Once every section is DONE, one more reviewer (`Focus: paths`) follows each command of the
-package from `cli.py` to its external effects, on the call tree `status.py --paths <pkg>`
-prints. It writes `docs/packages/<pkg>/reviews/paths/<date>-r<n>-p.md`, with one row per
-command under **Paths**, and may block on four things only: a command more than 8 frames from
-its first external effect (P1), a lambda, closure or mapping dispatch on a main path (P2), a
+package from `cli.py` to its external effects, on the call tree `status.py --paths <pkg>
+--against-contract` prints: each command's built frames beside its **Call paths** entry, each
+frame `match`, `extra` (in the code, not in the contract) or `missing`. It writes
+`docs/packages/<pkg>/reviews/paths/<date>-r<n>-p.md`, with one row per command under **Paths**
+and a `contract` column. An `extra` or `missing` frame is a break, CRITICAL under the section
+that holds it; beyond that it may block on four things only: a command deeper than its
+**Call paths** budget, or than 8 frames from its first external effect when the contract has
+no entry for it (P1), a lambda, closure or mapping dispatch on a main path (P2), a
 pipeline or orchestrator that fails the reader's test in `python-style-guide`'s
 `references/pipelines.md` (P3), and a trivial single-use helper or options bag on a main path
 (P4). Each finding names a section, and `status.py` re-opens that section as FIX n with the
@@ -563,7 +583,7 @@ docs/
 ├── index.md                         the docs-site home page                        (documenter)
 ├── packages/
 │   └── data/
-│       ├── contract.md              THE PACKAGE CONTRACT; Sections table ends with `surface` (plan-package)
+│       ├── contract.md              THE PACKAGE CONTRACT; Sections table ends with `surface`, with **Call paths** (plan-package)
 │       ├── design/<section>.md      one per section; first line `Mode:`            (designer)
 │       ├── interface.md             THE PUBLIC SURFACE AS SHIPPED — the surface section's README (implementer)
 │       ├── decisions/<section>.md   the section's decisions inbox: D? stubs, Applied: lines (designer, implementer)
@@ -653,9 +673,31 @@ passing → shipped.
   reviewed, and adopted code, is measured and never failed.
 - **`paths` is a reserved section name.** Rename a section called `paths` in the package
   contract before its next run: its reviews would share `reviews/paths/` with the paths review.
-- **`status.py --fields` prints six lines, and `reviews/paths/` holds reports with letter
+- **`status.py --fields` prints seven lines, and `reviews/paths/` holds reports with letter
   `p`.** A script of your own that reads `--fields` or the review directories reads the sixth
-  line, `paths report:`, and skips `reviews/paths/` when it means a section's reports.
+  line, `paths report:`, and the seventh, `dependency readmes:` — the `depends on` READMEs that
+  exist, `none` when none does, which the driver now sends as **Dependency READMEs** — and
+  skips `reviews/paths/` when it means a section's reports. A hand-run that copied the six
+  lines still works.
+- **Upgrading from 2.5: `surface` is ready earlier.** With a `## Call paths` heading in the
+  contract, the `surface` row is ready at PLAN, DESIGN and TEST before any sibling is DONE;
+  IMPLEMENT still waits for every section. A package mid-build whose contract gains the
+  heading at its next PLAN sees its surface designer spawn in the next batch; nothing already
+  designed is re-opened. A contract without the heading keeps the 2.5 timing.
+- **Upgrading from 2.5: the package contract has a fifth item.** **Call paths** sits after
+  **Pipelines**; **Public surface (intent)**, **Consumes**, **Package conventions** and
+  **Open decisions** are items 6 to 9. A contract written before 2.6 still parses: every
+  reader finds its headings by name.
+- **Upgrading from 2.5: the paths review compares the code to the contract.** Once a contract
+  has **Call paths**, a frame on a command's path that the contract does not list, or one it
+  lists that the code does not pass through, is a break (CRITICAL) under the section that
+  holds it, and P1 uses the command's own budget. Without the heading the review runs as in
+  2.5.
+- **Upgrading from 2.5: a legacy close writes the heading.** `/dev-team:sync-plan <pkg>` (or
+  `run-package`'s close) on a contract with no **Call paths** writes it as built from
+  `status.py --paths`, and writes `docs/packages/<pkg>/changes/paths-<command>.md` for each
+  command deeper than 8. Those change files re-open the sections they name at DESIGN when
+  approved; nothing is rebuilt until then.
 - **A README with grouped or dotted name cells fails its section's next gate.** The same
   correction, in that section.
 - **A 2.2-or-later ledger entry still `open` re-opens its step** even when its document was

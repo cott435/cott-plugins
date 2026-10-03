@@ -411,12 +411,13 @@ def _item(text: str, name: str) -> str:
     """The body of a heading or a numbered bold item named name, up to the next of either.
 
     Lines inside fenced code blocks never end the body, so a `# comment` in a shell block does
-    not read as a heading.
+    not read as a heading. A bold item is numbered (`5. **Call paths** —`): a prose line that
+    wraps to start with the bold name (`**Call paths** names …`) is not the item.
     """
     lines = text.splitlines()
     start = None
     for i, line in enumerate(lines):
-        if re.match(rf"\s*(#+\s*(\d+\.\s*)?{re.escape(name)}\b|(\d+\.\s*)?\*\*{re.escape(name)}\*\*)", line):
+        if re.match(rf"\s*(#+\s*(\d+\.\s*)?{re.escape(name)}\b|\d+\.\s*\*\*{re.escape(name)}\*\*)", line):
             start = i
             break
     if start is None:
