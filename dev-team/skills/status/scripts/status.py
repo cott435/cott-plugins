@@ -68,8 +68,8 @@ without it is a 2.x ledger and `k` is absent. The **inbox** is
 holding `Applied:` lines, merged into `docs/decisions.md` by `hooks/sync_decisions.py`. This
 script never writes it; `--run-gate` fails on an inbox holding anything the central ledger
 does not, and on a central `Applied: <pkg>/<section>, …` line the section's inbox entry for
-that `D<n>` no longer holds (the hook mirrors a section's own lines), and on a `stage:` row
-whose `depends on` is empty.
+that `D<n>` no longer holds (the hook mirrors a section's own lines), on a `stage:` row
+whose `depends on` is empty, and on a data profile's `<token>.sample.json` over 200 KB.
 
 An **open spec-change** is a ledger entry `spec-change:<level>` with `Status: open`, or a
 review report of the newest round whose verdict is `spec-change`. A ledger entry whose heading
@@ -1143,6 +1143,10 @@ def _prior_unfixed(fields: dict[str, str]) -> int:
 # ---------------------------------------------------------------------------------------------
 
 
+# A data profile's title line (planning-templates' data-profile.md); hooks/guard_writes.py keeps a copy.
+STAGE_TITLE = re.compile(r"# Source probe — .+ — stage — ")
+
+
 def _sources(cell: str) -> list[tuple[str, str]]:
     """(kind, token) per entry of a `source` cell; a bare token is `api`."""
     out = []
@@ -1948,6 +1952,11 @@ def run_gate(pkg: str | None) -> list[str]:
             stages = [t for k, t in _sources(r.get("source", "")) if k == "stage"]
             if stages and not _names(r.get("depends on", "")):
                 fails.append(f"{pkg}/{r['section']}: stage:{stages[0]} has no depends on; nothing produces its data")
+    for f in sorted((DOCS / "sources").glob("*.sample.json")):
+        doc = f.with_name(f.name.removesuffix(".sample.json") + ".md")
+        text = doc.read_text() if doc.exists() else ""
+        if text and STAGE_TITLE.match(text.splitlines()[0]) and f.stat().st_size > 200 * 1024:
+            fails.append(f"{_rel(f)}: {f.stat().st_size // 1024} KB, over 200 KB; keep five rows per kind")
     return fails
 
 

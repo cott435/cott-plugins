@@ -183,6 +183,17 @@ lines. `gate-shape-options-bag-fail` writes `packages/data/src/data/ingest/bag.p
 `data/ingest` record now carries `MEASURED` lines, so `gate-pass` and `gate-elsewhere`, the two
 cases whose `gate_only` list would otherwise reject them, gained `MEASURED` there.
 
+**The 2.7 size guard** (`site/notes/2.7-data-loop-07-size-guard.md`). A `tool_input` value or a
+`setup.files` content may be `{"repeat": ["<string>", <n>]}`, the string repeated `n` times,
+so a case can write 210 KB without holding it. The write guard refuses a Write or Edit that
+would leave a data profile's `docs/sources/<token>.sample.json` over 200 KB, whatever the
+guarded role: `guard-sample-profiler-over-refused` (the profiler, 210 KB),
+`guard-sample-stage-sibling-refused` (a researcher, the sibling `rawtrades.md` titled `— stage
+—`) and `guard-sample-edit-over-refused` (an Edit, sized as 195 KB on disk less `old_string`
+plus `new_string`) exit 2 with `200 KB` on stderr. `guard-sample-profiler-under-allowed` (`{}`),
+`guard-sample-researcher-api-over-allowed` (an api sample with no `— stage —` sibling) and
+`guard-sample-main-thread-allowed` (no `agent_type`) exit 0.
+
 **The 2.2 layout here.** `build.py` still writes the section's ledger at the 2.0 path,
 `docs/deviations/data/ingest.md`, so the tolerated case also proves the gate reads the old
 location; the new one, `docs/packages/data/deviations/ingest.md`, is written by

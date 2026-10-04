@@ -29,7 +29,9 @@ line for the stage at the contract's end; `stage: "no-deps"` writes the same wit
 row's `depends on` cell `—`. `profile` writes `docs/sources/rawtrades.md`, a
 data profile serving `data/<section>` (default `clean`), one round line per entry of `lines`:
 a verdict string (round 0, commit `none`) or `{"round": r, "commit": "{HEAD}" | "none",
-"verdict": "…"}`; with `append: true` it adds only the lines.
+"verdict": "…"}`; with `append: true` it adds only the lines. A `files` content may be
+`{"repeat": ["<string>", <n>]}`, the string repeated `n` times (2.7, phase 7: a file too large
+to hold in a case).
 """
 
 from __future__ import annotations
@@ -274,12 +276,20 @@ def run(dest: Path, *args: str) -> str:
     return out.stdout.strip()
 
 
+def expand(content: str | dict) -> str:
+    """content, or `{"repeat": ["<string>", <n>]}` as the string repeated n times."""
+    if isinstance(content, dict) and "repeat" in content:
+        text, n = content["repeat"]
+        return text * n
+    return content
+
+
 def write(dest: Path, files: dict[str, str]) -> None:
     head = run(dest, "rev-parse", "HEAD")
     for rel, content in files.items():
         p = dest / rel
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(content.replace("{HEAD}", head))
+        p.write_text(expand(content).replace("{HEAD}", head))
 
 
 def commit(dest: Path, files: dict[str, str], message: str) -> None:

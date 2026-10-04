@@ -181,6 +181,10 @@ cap, and `--profile … --defer` prints the defer block. Three of them (`-round1
 `-entry-resolved`, `stage-deferred`) and `fields-delta-profile-cap` passed before the change:
 they pin that the cap fires only at round 2 or later on an open entry, and that `--fields`
 stays `delta` once the cap's evidence leads with `profile`.
+Phase 7 adds two (`site/notes/2.7-data-loop-07-size-guard.md`): `--run-gate` fails a data
+profile's `rawtrades.sample.json` over 200 KB, and passes a researcher's api sample of the same
+size. A `files` content may be `{"repeat": ["<string>", <n>]}`, the string repeated `n` times.
+`run-gate-sample-api-over-pass` passed before the change, by construction.
 
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
@@ -379,3 +383,5 @@ optional flag).
 | `stage-deferred` | as `stage-cap`, the entry `resolved`; `profile` `append` round 2 `deferred` on `{HEAD}` | `—` | `clean · DONE` |
 | `profile-block-defer` | as `stage-cap` | `--profile data/clean --defer` | `Mode: defer`, `Round: 2`; a line `^Commit: [0-9a-f]{7,40}$`; exit 0 |
 | `fields-delta-profile-cap` | as `stage-cap` | `--fields data/clean` | `mode: delta` |
+| `run-gate-sample-over` | `base` (`stage: true`); `profile` `[]`; `docs/sources/rawtrades.sample.json` as `{"repeat": ["x", 210000]}` (phase 7) | `--run-gate data` | `run gate: FAIL`; `docs/sources/rawtrades.sample.json: 205 KB, over 200 KB`; exit 1 |
+| `run-gate-sample-api-over-pass` | `base`; `docs/sources/polygon.sample.json` the same size, no `— stage —` sibling (phase 7) | `--run-gate data` | `run gate: PASS`; exit 0 |

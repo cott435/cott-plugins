@@ -1,0 +1,35 @@
+{
+  "script": "guard",
+  "repo": "arch",
+  "setup": {
+    "files": {
+      "docs/sources/rawtrades.md": "# Source probe — rawtrades — stage — 2026-09-27\n"
+    }
+  },
+  "event": {
+    "session_id": "9b1f0c52-3d4e-4a7b-8c21-5e6f7a8b9c0d",
+    "transcript_path": "{cwd}/../transcript.jsonl",
+    "cwd": "{cwd}",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "{cwd}/docs/sources/rawtrades.sample.json",
+      "content": {
+        "repeat": [
+          "x",
+          210000
+        ]
+      }
+    },
+    "tool_use_id": "toolu_01AbCdEf",
+    "agent_id": "a3f09c2e71b8d4e65",
+    "agent_type": "dev-team:researcher"
+  },
+  "expect": {
+    "exit": 2,
+    "stderr_contains": [
+      "200 KB"
+    ]
+  }
+}
