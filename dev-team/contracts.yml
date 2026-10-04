@@ -140,7 +140,7 @@ forbid:
   - name: every hook matcher and agent_type names an agent this plugin ships
     # A SubagentStop matcher or an agent_type test on a name with no agents/<name>.md never
     # fires, and the gate it implements silently does not exist.
-    pattern: 'dev-team:(?!architect|designer|researcher|tester|implementer|reviewer|documenter|curator)[a-z-]+'
+    pattern: 'dev-team:(?!architect|designer|researcher|tester|implementer|reviewer|documenter|curator|profiler)[a-z-]+'
     files: ['hooks/hooks.json', 'hooks/*.py']
 
   # The six claims below hold the 2.2 paths and defaults against drift. Each is scoped with
@@ -261,6 +261,20 @@ headings:
       - file: agents/implementer.md
         cites: ['Observed schema', 'Leakage']
 
+  - name: data profile headings its readers parse are ones planning-templates defines
+    # A profile is a probe doc of kind `stage`. The profiler writes it by these headings;
+    # the designer finds the kinds under Quirks and the schema under Observed schema with no
+    # edit to its own file, so the template must keep the source probe's spelling.
+    owner: skills/planning-templates/references/data-profile.md
+    owner_span: ['1. **Access**', null]
+    readers:
+      - file: agents/profiler.md
+        cites: ['Access', 'Provenance', 'Shape', 'Observed schema', 'Duplicates and keys',
+                'Checks', 'Quirks', 'Unexplained', 'Expected and not found', 'Rounds',
+                'Cost and time of a full pass', 'Sections served']
+      - file: agents/designer.md
+        cites: ['Observed schema', 'Quirks', 'Duplicates and keys']
+
   - name: section README headings its readers parse are ones the implementer writes
     owner: agents/implementer.md
     owner_span: ['## Section README template', '## The surface section']
@@ -325,6 +339,8 @@ headings:
       - file: agents/tester.md
         span: ['§Project convention', 'rules; stage']
       - file: agents/designer.md
+        span: ['§Project convention', 'rules; stage']
+      - file: agents/profiler.md
         span: ['§Project convention', 'rules; stage']
 
   - name: the reviewer ranks documents by the implementer's order of authority
@@ -393,6 +409,8 @@ headings:
         cites: ['Applied']
       - file: hooks/sync_decisions.py
         cites: ['Applied', 'Status']
+      - file: agents/profiler.md
+        cites: ['Scope', 'Raised by', 'Recommendation', 'Assumption if unanswered', 'Status']
 
   - name: review report headings its readers parse are ones planning-templates defines
     # status.py reads the header lines, the fix-round implementer reads CRITICAL and WARNING,

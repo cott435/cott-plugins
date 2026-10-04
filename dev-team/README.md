@@ -25,6 +25,7 @@ dev-team/
 │   ├── architect.md      writes and edits contracts: repo, package, change files, the package close
 │   ├── designer.md       designs one section from its contract row — new, document or delta mode
 │   ├── researcher.md     probe: one api or dataset → docs/sources/<source>.md · extract: one legacy row → a project skill
+│   ├── profiler.md       profiles one data stage for a data-heavy section: checks over all the data, kinds, a second look at each check
 │   ├── tester.md         intent tests for one section, from its design — never from its code
 │   ├── implementer.md    builds one section; the `surface` section is the package's public surface
 │   ├── reviewer.md       judges one section: conformance, correctness, a diff-scoped full round, or defer

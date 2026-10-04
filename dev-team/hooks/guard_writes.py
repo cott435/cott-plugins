@@ -18,7 +18,9 @@ New entries go to `docs/packages/<pkg>/deviations/<section>.md`, reports to
 `docs/packages/<pkg>/reviews/<section>/`; the old ledgers (`docs/deviations/<pkg>/<section>.md`,
 the pre-split `docs/deviations.md`) and `docs/reviews/` stay writable wherever the new ones are,
 so an entry is edited in the file that holds it. A designer or implementer writes its section's
-decisions inbox, `docs/packages/<pkg>/decisions/<section>.md`, never `docs/decisions.md`.
+decisions inbox, `docs/packages/<pkg>/decisions/<section>.md`, never `docs/decisions.md`. A
+profiler writes the profile under `docs/sources/`, its local folder `.dev-team/data/**`, the
+ledgers, the inboxes and `docs/followups.md`.
 
 Suppression comments: a Write or Edit under `**/tests/intent/**` that adds `# noqa`, `# type:
 ignore` or `# pragma: no cover` (SUPPRESS, the gate's own patterns) is refused, exit 2. "Adds" is
@@ -63,6 +65,7 @@ ALLOWED: dict[str, tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]] = {
     "dev-team:architect": (("docs/**",), ("docs/packages/*/design/**", *REVIEWS), LEDGERS),
     "dev-team:designer": (("docs/packages/*/design/**", *LEDGERS, *INBOXES), (), ()),
     "dev-team:researcher": (("docs/sources/**", ".claude/skills/*/**"), (), ()),
+    "dev-team:profiler": (("docs/sources/**", ".dev-team/data/**", *LEDGERS, *INBOXES, "docs/followups.md"), (), ()),
     "dev-team:tester": ((INTENT, "**/tests/fixtures/**", *LEDGERS), (), ()),
     "dev-team:reviewer": ((*REVIEWS, *LEDGERS, "docs/followups.md"), (), ()),
     "dev-team:documenter": (("README.md", "packages/*/README.md", "docs/index.md", "docs/readme-previous.md",
