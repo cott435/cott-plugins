@@ -274,6 +274,8 @@ headings:
                 'Cost and time of a full pass', 'Sections served']
       - file: agents/designer.md
         cites: ['Observed schema', 'Quirks', 'Duplicates and keys']
+      - file: skills/status/scripts/status.py
+        cites: ['Sections served']
 
   - name: section README headings its readers parse are ones the implementer writes
     owner: agents/implementer.md
@@ -512,7 +514,7 @@ headings:
     owner_span: ['**Evidence.**', '**Gate record.**']
     readers:
       - file: skills/run-package/SKILL.md
-        cites: ['open', 'regenerate', 'gate blocked', 'gate let through']
+        cites: ['open', 'regenerate', 'gate blocked', 'gate let through', 'stage']
 
   - name: every field the driver sends the researcher is one the researcher's Inputs defines
     # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.
@@ -549,6 +551,16 @@ headings:
     readers:
       - file: skills/status/scripts/status.py
         span: ['`--inputs <pkg>/<section>` prints', 'from __future__']
+
+  - name: every field status.py --profile prints is one the profiler's Inputs defines
+    # The profiler's block is not a driver table: `status.py --profile` resolves and prints
+    # it and run-package sends it verbatim. A field the agent does not define is a line it
+    # never reads, and a renamed one arrives empty.
+    owner: agents/profiler.md
+    owner_span: ['## Inputs', '## Modes']
+    readers:
+      - file: skills/status/scripts/status.py
+        span: ['`--profile <pkg>/<section>` prints', '`--inputs <pkg>/<section>` prints']
 
   - name: every field the driver sends the reviewer is one the reviewer's Inputs defines
     # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.

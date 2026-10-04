@@ -1,7 +1,7 @@
 ---
 name: status
 description: Print where every package and section stands — one state per section (PROBE, DESIGN, TEST, IMPLEMENT, REVIEW, FIX n, PLAN, DONE, BLOCKED), the ready set, whether the package shipped, and the exact next command — derived from docs/ and the code every time, never from a status file. Use whenever you have lost track, before planning the next package, or to see why run-package stopped.
-argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>|<pkg>/paths] [--surface <pkg>] [--shape <pkg> --section <s>] [--paths <pkg> [--against-contract]] [--repo] [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]"
+argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>|<pkg>/paths] [--surface <pkg>] [--shape <pkg> --section <s>] [--paths <pkg> [--against-contract]] [--repo] [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>] [--profile <pkg>/<section>]"
 disable-model-invocation: true
 ---
 
@@ -111,6 +111,15 @@ package's paths report while it names the section and no review of the section i
 `full` reviewer's **Previous round** after a paths FIX) and `dependency readmes: <path>/README.md, … |
 none` (the dependency READMEs that exist on disk — every role's **Dependency READMEs**; `none`
 for the `surface` section before its siblings ship). The docstring gives each rule. A section the contract lacks exits 2.
+
+`--profile <pkg>/<section>` prints the profiler's spawn block for a row whose `source` names a
+`stage:<token>` — fifteen `<Field>: <value>` lines per stage, from `Mode:` (`profile` or
+`verify`) to `Run:`, blocks separated by a blank line. Such a row is PROBE until the newest
+round line under `## <pkg>/<section>` in its profile `docs/sources/<token>.md` is neither
+`pending verify` nor `revise: …`; with nothing due it prints a round-0 `profile` block, the hand
+re-profile `--step PROBE` sends. `/dev-team:run-package` sends it verbatim to the profiler. A
+row with no stage prints `profile: no stage source in <pkg>/<section>`; a section the contract
+lacks exits 2.
 
 The script runs no test and no constraint command. The stop hook runs `docs/constraints.md`'s
 **Floor** and **Enforced** rows through the same parser this script exposes, so the rows the

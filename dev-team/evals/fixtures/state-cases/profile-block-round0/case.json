@@ -1,0 +1,27 @@
+{
+  "note": "--profile prints the profiler's whole block for a round-0 run (2.7, phase 2)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    }
+  ],
+  "args": [
+    "--profile",
+    "data/clean"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "Mode: profile\nSection: data/clean\nStage: rawtrades\nRound: 0\nRevise: none\nCommit: none\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: packages/data/src/data/ingest/README.md\n",
+      "\nSkills to invoke: none\nData: `stage:rawtrades` — the trade rows ingest reads; lands at data/trades.csv; pull cap 400 rows, D1\nProfile: docs/sources/rawtrades.md\nStore: .dev-team/data/rawtrades/\nRun: run-package data"
+    ],
+    "matches": [
+      "^Source probes: docs/sources/\\w+\\.md$"
+    ]
+  }
+}

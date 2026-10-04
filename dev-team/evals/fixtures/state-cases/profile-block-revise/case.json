@@ -1,0 +1,31 @@
+{
+  "note": "--profile after a revise verdict names the rejected kinds (2.7, phase 2)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "profile",
+      "lines": [
+        "pending verify",
+        "revise: K1"
+      ]
+    }
+  ],
+  "args": [
+    "--profile",
+    "data/clean"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "Mode: profile",
+      "Revise: K1"
+    ]
+  }
+}

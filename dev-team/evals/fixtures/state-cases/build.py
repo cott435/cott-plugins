@@ -23,7 +23,12 @@ the 2.2 paths under `docs/packages/<pkg>/` and the ledger heading's `— <k>`; `
 paths and heading. `edit` takes `path`, `message`, and `append` (text added at the end),
 `"replace": ["<old>", "<new>"]` (the first occurrence, applied before `append`), or both.
 `base` takes `call_paths: true` (a **Call paths** heading matching the `commands` macro's tree)
-or a string (the heading's body verbatim).
+or a string (the heading's body verbatim), and `stage: true` (2.7): the `clean` row's `source`
+`stage:rawtrades` and `builds with` `dev-team:data-quality`, and a **Package conventions**
+line for the stage at the contract's end. `profile` writes `docs/sources/rawtrades.md`, a
+data profile serving `data/<section>` (default `clean`), one round line per entry of `lines`:
+a verdict string (round 0, commit `none`) or `{"round": r, "commit": "{HEAD}" | "none",
+"verdict": "…"}`; with `append: true` it adds only the lines.
 """
 
 from __future__ import annotations
@@ -81,6 +86,32 @@ Loads, cleans and stores the trade export.
 # **Call paths** entry, so a contract can match the code `--paths` reads.
 CALL_PATHS = """- `data-load` (budget 8):
   - file write: 1 `cli.load` → 2 `pipelines.run_load` → 3 `ingest.read_trades` → `shutil.copy`
+"""
+
+# The `stage: true` option of `base` (2.7, phase 2): the `clean` row marked as a data stage.
+STAGE_ROW = ("| clean | dedupe and sort | packages/data/src/data/clean/ | docs/packages/data/design/clean.md | — | ingest | — |",
+             "| clean | dedupe and sort | packages/data/src/data/clean/ | docs/packages/data/design/clean.md | dev-team:data-quality | ingest | stage:rawtrades |")
+STAGE_CONVENTIONS = """
+## Package conventions
+
+- `stage:rawtrades` — the trade rows ingest reads; lands at data/trades.csv; pull cap 400 rows, D1
+"""
+
+# The `profile` macro's document (2.7, phase 2): a round-0 data profile, before its round lines.
+PROFILE = """# Source probe — rawtrades — stage — 2026-09-27
+
+Purpose: dedupe and sort
+Profile: rawtrades.profile.py · Examples: rawtrades.sample.json
+
+## Quirks
+
+- K1 exact duplicates — checks C1; 2 of 400; the same row twice; proposed: drop; D?; unverified
+
+## Sections served
+
+## data/{section}
+
+dedupe and sort
 """
 
 TRADES = """# trades — dataset
@@ -274,6 +305,8 @@ def m_base(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
         if cp:
             body = CALL_PATHS if cp is True else cp
             text += "\n## Call paths\n\n" + body.rstrip("\n") + "\n"
+        if step.get("stage"):
+            text = text.replace(*STAGE_ROW) + STAGE_CONVENTIONS
         files["docs/packages/data/contract.md"] = text
     if step.get("sources", True):
         if contract == "api":
@@ -281,6 +314,20 @@ def m_base(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
         else:
             files["docs/sources/trades.md"] = TRADES
     return [(files, "docs: architecture, data contract, probe doc")]
+
+
+def m_profile(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
+    """`docs/sources/rawtrades.md` with one round line per entry of `lines`; `append` adds only the lines."""
+    rel = "docs/sources/rawtrades.md"
+    out = []
+    for entry in step.get("lines", []):
+        e = {"round": 0, "commit": "none", "verdict": entry} if isinstance(entry, str) else entry
+        out.append(f"Round {e['round']} — {DATE} — commit {e['commit']} — {e['verdict']}\n")
+    if step.get("append"):
+        text = (dest / rel).read_text() + "".join(out)
+    else:
+        text = PROFILE.format(section=step.get("section", "clean")) + ("\n" + "".join(out) if out else "")
+    return [({rel: text}, "docs/sources: rawtrades profiled")]
 
 
 def m_design(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:

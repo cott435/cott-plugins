@@ -115,6 +115,11 @@ take turns, since both extend one file.
 | **Write to** | `docs/sources/<token>.md` |
 | **Run** | `run-package <pkg>` |
 
+A `stage:` token is not the researcher's. A row at PROBE whose evidence starts `stage:` gets
+one `subagent_type: "dev-team:profiler"` per block `status.py --profile <pkg>/<section>`
+prints, the block sent verbatim as the prompt, as `--inputs` is for the implementer; its
+docstring is the one list of the fields. Do not add, drop or rewrite a line of it.
+
 ### Designer — DESIGN
 
 `subagent_type: "dev-team:designer"`, one per section.
@@ -267,8 +272,8 @@ granted *one more round* at a cap.
    else: it edits the contracts the designers read, so every other row waits one batch.
    Otherwise spawn **every ready row's step in one message**, whatever mix of steps the rows
    are at:
-   - PROBE → the researchers, one per source that lacks the section's entry (two sections
-     waiting on one source take turns).
+   - PROBE → the researchers, one per `api:` or `dataset:` source that lacks the section's
+     entry (two sections waiting on one source take turns); the profiler for a `stage:` source.
    - DESIGN → a designer per section; also a section at TEST whose last tester run this run
      returned `design-gap` — the `surface` row included when `status.py` marks it ready, which
      with **Call paths** is right after PLAN.
@@ -346,13 +351,13 @@ verdict itself.
 ### One step
 
 After the run gate and the scaffold (**Loop** step 1), `--step <STEP>` runs that step for the
-named section once, against whatever is on disk and
-whatever its derived state, and then **Summary**. A BLOCKED row does not stop it: no question
-is asked, which is how *one more round* is typed by hand. PROBE spawns a researcher for every
-source in the row; REVIEW is round `r` = the row's round plus one — two reviewers at round 1,
-one `full` reviewer otherwise, including at FIX n and at a cap. A missing document is the
-agent's to report: its own preconditions return `blocked`, which ends the step with the
-return's first two lines as `stopped because`.
+named section once, against whatever is on disk and whatever its derived state, and then
+**Summary**. A BLOCKED row does not stop it: no question is asked, which is how *one more
+round* is typed by hand. PROBE spawns a researcher for every `api:` or `dataset:` source in
+the row and the profiler for a `stage:` one; REVIEW is round `r` = the row's round plus one —
+two reviewers at round 1, one `full` reviewer otherwise, including at FIX n and at a cap. A
+missing document is the agent's to report: its own preconditions return `blocked`, which ends
+the step with the return's first two lines as `stopped because`.
 
 ## Asking
 
@@ -426,7 +431,7 @@ in the block and on disk; a sentence around it is a second summary nobody checks
 ```
 run-package <arguments as typed>: <done | stopped at <section> <STEP>>
 sections: <DONE>/<total> DONE; <section> · <state>, …
-agent runs: designer <n> · tester <n> · implementer <n> · reviewer <n> · researcher <n> · architect <n>
+agent runs: designer <n> · tester <n> · implementer <n> · reviewer <n> · researcher <n> · profiler <n> · architect <n>
 commits: <start sha>..<end sha> (<count>)
 stopped because: <the agent's first two lines, the row as it prints, the shipped: line, the paths: line, or the run gate's FAIL lines>
 no Result: line: <role> <section>: no Result: line; state advanced, …

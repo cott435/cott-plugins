@@ -157,6 +157,20 @@ column is padded to the entry's longest frame, so the expectations on a shorter 
 regexes. Without an entry, or without the heading, one `contract:` line ends the block and no
 `summary:` prints.
 
+**Data stages (2.7).** Fourteen cases (`site/notes/2.7-data-loop-02-status-and-driver.md`,
+the last fourteen rows). Each runs `base` with `"stage": true`: the `clean` row's `source` is
+`stage:rawtrades`, its `builds with` `dev-team:data-quality`, and the contract ends with a
+**Package conventions** line for the stage (pull cap 400 rows, `D1`). The `profile` macro
+commits `docs/sources/rawtrades.md`, a round-0 profile with one kind under **Quirks** and a
+`## data/clean` heading under **Sections served**, then one round line per entry of `lines`
+(`Round <r> — 2026-09-27 — commit <c> — <verdict>`), or with `append` only the lines. A
+`stage:` source is PROBE with no round line, or while the newest one is `pending verify` or
+`revise: …`; any other verdict closes round 0 and the row moves on. `--profile` prints the
+profiler's fifteen-line block. Four of the fourteen (`stage-round0-closed`,
+`stage-round0-blocked`, `stage-design-kept-on-append`, `inputs-stage-source-probes`) already
+passed on 2.6.0's `status.py`, which ignores a `stage:` source: they pin that round 0 closed
+leaves the row where the older rules put it.
+
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
 section's entry does not make an existing design stale, per the design's *Stale when* for a
@@ -325,3 +339,17 @@ optional flag).
 | `calltree-contract-prose-line` | as `-match`, with a wrapped prose line starting `**Call paths**` above `## Public surface (intent)` (`edit`) | the same | `contract: data-load (budget 8)`; `summary: 3 match, 0 extra, 0 missing; depth 2 of budget 8`; no `contract: no entry`; exit 0 (phase 7: only a numbered bold line is an item) |
 | `calltree-contract-change-file` | as `-extra`, plus an open `docs/packages/data/changes/load-read.md` whose `## Contract changes` gives the `data-load` entry `from` (three frames) and `to` (with `3 pipelines._read`), a nested bullet after it | the same | `contract: data-load (budget 8) from docs/packages/data/changes/load-read.md`; a line `/^    3 pipelines\._read\s+match  _read \(…load\.py:\d+\)$/`; `summary: 4 match, 0 extra, 0 missing; depth 3 of budget 8`; no `extra  _read`; exit 0 |
 | `calltree-contract-change-file-synced` | as `-change-file`, `Status: synced` | the same | `contract: data-load (budget 8)`; `summary: 3 match, 1 extra, 0 missing`; no ` from docs/packages/data/changes/`; exit 0 |
+| `stage-probe-dependency-not-done` | `base` (`stage: true`) | `—` | `clean · PROBE`, ready `no`, evidence `stage:rawtrades lacks ## data/clean` |
+| `stage-probe-no-profile` | the same, ingest done | `—` | `clean · PROBE`, ready `yes`, the same evidence |
+| `stage-probe-pending-verify` | ingest done; `profile` `["pending verify"]` | `—` | `clean · PROBE`, evidence `stage:rawtrades r0 pending verify` |
+| `stage-probe-revise` | ingest done; `profile` `["pending verify", "revise: K1"]` | `—` | `clean · PROBE`, evidence `stage:rawtrades r0 revise: K1` |
+| `stage-round0-closed` | ingest done; `profile` `["pending verify", "kinds: 1 (0 to decide)"]` | `—` | `clean · DESIGN`, evidence `no design` |
+| `stage-round0-blocked` | as closed, `kinds: 1 (1 to decide)`; `docs/decisions.md` with `D2` open, `Scope: data/clean`, no assumption | `—` | `clean · BLOCKED`, evidence `D2 open, no assumption` |
+| `stage-design-kept-on-append` | as closed; `design` clean; `profile` `append` one more round-0 line | `—` | `clean · TEST`; no `newer than design` |
+| `profile-block-round0` | ingest done | `--profile data/clean` | every field line in order, `Mode: profile` to `Run: run-package data`, `Skills to invoke: none`, the `Data:` line as the contract writes it; `Source probes: docs/sources/trades.md`; exit 0 |
+| `profile-block-verify` | as `stage-probe-pending-verify` | `--profile data/clean` | `Mode: verify`, `Round: 0`, `Revise: none` |
+| `profile-block-revise` | as `stage-probe-revise` | `--profile data/clean` | `Mode: profile`, `Revise: K1` |
+| `profile-block-none-due` | as `stage-round0-closed` | `--profile data/clean` | `Mode: profile`, `Round: 0`, `Revise: none`, `Commit: none` |
+| `profile-no-stage-source` | `base` (`stage: true`) | `--profile data/ingest` | `profile: no stage source in data/ingest`; exit 0 |
+| `profile-bad-target` | the same | `--profile data/nope` | `no section nope in docs/packages/data/contract.md`; exit 2 |
+| `inputs-stage-source-probes` | as `stage-round0-closed`; `design` clean | `--inputs data/clean` | `Source probes: docs/sources/rawtrades.md` |

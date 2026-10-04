@@ -1,0 +1,34 @@
+{
+  "note": "--inputs names the profile as a source probe, as for any source (2.7, phase 2)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "profile",
+      "lines": [
+        "pending verify",
+        "kinds: 1 (0 to decide)"
+      ]
+    },
+    {
+      "do": "design",
+      "section": "clean"
+    }
+  ],
+  "args": [
+    "--inputs",
+    "data/clean"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "Source probes: docs/sources/rawtrades.md"
+    ]
+  }
+}

@@ -3,6 +3,7 @@
 
 Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>|<pkg>/paths] [--surface <pkg> [--section <s>]] [--repo]
                           [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]
+                          [--profile <pkg>/<section>]
                           [--shape <pkg> --section <s>] [--paths <pkg> [--against-contract]]
 
 A section is in exactly one state, decided in this order, first match wins:
@@ -16,8 +17,10 @@ A section is in exactly one state, decided in this order, first match wins:
    attempts …`.
 2. **PLAN** — an open `spec-change:contract` names the section.
 3. **PROBE** — a source in the row's `source` column needs probing: an `api:` source whose
-   `docs/sources/<token>.md` lacks a `## <pkg>/<section>` heading, or a `dataset:` source with
-   no `docs/sources/<token>.md` at all.
+   `docs/sources/<token>.md` lacks a `## <pkg>/<section>` heading, or a `dataset:` source
+   with no `docs/sources/<token>.md` at all; or a `stage:` source whose profile
+   `docs/sources/<token>.md` has no round line under its `## <pkg>/<section>` heading
+   (**Sections served**), or whose newest round line ends `pending verify` or `revise: …`.
 4. **DESIGN** — no design at `docs/packages/<pkg>/design/<section>.md`; or an open
    `spec-change:design` entry; or an open change file whose **Affected sections**
    names the section and is newer than the design; or a probe doc the row names lost or
@@ -119,6 +122,9 @@ without one.
 5. **gate not done** — `gate not done (attempt <n> of 3)`.
 6. **paths** — `paths r<m> request changes (<report path>)`: the package's paths report
    re-opened the section.
+7. **stage** — `stage:<token> lacks ## <pkg>/<section>`; `stage:<token> r<n> pending
+   verify`; `stage:<token> r<n> revise: K<a>, K<b>`: the profiler's next run, which
+   `--profile` prints.
 
 **Gate record.** `.dev-team/gate/<pkg>/<section>.txt`, written by `hooks/gate_on_stop.py` on
 every implementer stop. It speaks for the commit its `commit:` line names: the newest commit
@@ -271,6 +277,31 @@ root>/pyproject.toml`. A root `pyproject.toml` that is not a uv workspace is an 
 own layout and needs nothing. The package block prints the same `scaffold: needed` line, before
 `shipped:`, when it applies. run-package runs the SCAFFOLD step on it before any other spawn,
 so every tester runs inside the workspace, under the repo's own lint rules.
+
+`--profile <pkg>/<section>` prints the profiler's spawn block, the one place its values are
+resolved: run-package sends it verbatim. One block per `stage:` source of the row that
+needs a run (every `stage:` source when none does), a blank line between blocks; one
+`<Field>: <value>` line per field, in this order, `none` for a field with nothing to hold:
+
+1. **Mode** — `profile`, or `verify` when the newest round line ends `pending verify`.
+2. **Section** — `<pkg>/<section>`.
+3. **Stage** — the token.
+4. **Round** — the newest round line's round; `0` with none.
+5. **Revise** — the kinds after `revise:` on the newest round line.
+6. **Commit** — `none`.
+7. **Contract** — `docs/packages/<pkg>/contract.md`.
+8. **Repo contract** — `docs/architecture.md`.
+9. **Dependency READMEs** — as line 7 of `--fields`.
+10. **Source probes** — `docs/sources/<t>.md` per `api:` or `dataset:` source of each
+    section in the row's `depends on`.
+11. **Skills to invoke** — the row's `builds with`, less `dev-team:data-quality`.
+12. **Data** — the contract's `## Package conventions` line for the stage.
+13. **Profile** — `docs/sources/<token>.md`.
+14. **Store** — `.dev-team/data/<token>/`.
+15. **Run** — `run-package <pkg>`.
+
+It prints `profile: no stage source in <pkg>/<section>` for a row with none, and exits 0;
+2 on a target without `/` or a section the contract lacks, with the `--inputs` messages.
 
 `--inputs <pkg>/<section>` prints the implementer's spawn block, the one place its values are
 resolved: run-package sends it verbatim as the implementer's prompt, and pair reads the files
@@ -1159,6 +1190,41 @@ def _probe_newer(doc: Path, design_rev: str | None, pkg: str, section: str) -> s
     return doc_rev
 
 
+ROUND_LINE = re.compile(r"^Round (\d+) — \S+ — commit (\S+) — (.+)$", re.M)
+
+# The one skill of a `stage:` row's `builds with` that is the designer's and implementer's, not the profiler's.
+DATA_QUALITY = "dev-team:data-quality"
+
+
+def _round_lines(text: str, pkg: str, section: str) -> list[tuple[int, str, str]]:
+    """(round, commit, verdict) per round line inside the profile's `## <pkg>/<section>` block,
+    from that heading to the next `## ` heading or the end, in file order."""
+    m = re.search(rf"^##\s+`?{re.escape(pkg)}/{re.escape(section)}`?\s*$(.*?)(?=^##\s|\Z)", text, re.M | re.S)
+    if not m:
+        return []
+    return [(int(r.group(1)), r.group(2), r.group(3).strip()) for r in ROUND_LINE.finditer(m.group(1))]
+
+
+def profile_due(pkg: str, section: str, token: str) -> dict[str, object] | None:
+    """The profiler's next run on a `stage:` source, by the newest round line, or None when none is due.
+
+    Keys: mode, round, revise, evidence. No profile, no `## <pkg>/<section>` heading or no
+    round line under it: a `profile` run at round 0. `pending verify`: a `verify` run at that
+    round. `revise: <kinds>`: a `profile` run at that round revising those kinds.
+    """
+    doc = DOCS / "sources" / f"{token}.md"
+    lines = _round_lines(doc.read_text(), pkg, section) if doc.exists() else []
+    if not lines:
+        return {"mode": "profile", "round": 0, "revise": "none", "evidence": f"stage:{token} lacks ## {pkg}/{section}"}
+    n, _, verdict = lines[-1]
+    if verdict == "pending verify":
+        return {"mode": "verify", "round": n, "revise": "none", "evidence": f"stage:{token} r{n} pending verify"}
+    if verdict.startswith("revise:"):
+        kinds = verdict.removeprefix("revise:").strip() or "none"
+        return {"mode": "profile", "round": n, "revise": kinds, "evidence": f"stage:{token} r{n} revise: {kinds}"}
+    return None
+
+
 # ---------------------------------------------------------------------------------------------
 # The state
 # ---------------------------------------------------------------------------------------------
@@ -1326,6 +1392,8 @@ def section_state(pkg: str, section: str, paths: dict[str, object] | None = None
             return "PROBE", f"dataset:{token} has no {_rel(doc)}"
         if kind == "api" and (not doc.exists() or not _has_section_heading(doc.read_text(), pkg, section)):
             return "PROBE", f"api:{token} lacks ## {pkg}/{section}"
+        if kind == "stage" and (due := profile_due(pkg, section, token)):
+            return "PROBE", str(due["evidence"])
 
     # 4. DESIGN
     if not design.exists():
@@ -2959,6 +3027,64 @@ def implementer_inputs(pkg: str, section: str) -> list[str]:
     ]
 
 
+def _stage_line(pkg: str, token: str) -> str:
+    """The contract's **Package conventions** line for a stage, its leading `- ` removed; `none` without one."""
+    f = contract_path(pkg)
+    body = _block(f.read_text(), "Package conventions") if f.exists() else ""
+    for line in body.splitlines():
+        line = line.strip().removeprefix("- ").strip()
+        if line.startswith(f"`stage:{token}` —"):
+            return line
+    return "none"
+
+
+def profiler_inputs(pkg: str, section: str) -> list[str]:
+    """The profiler's spawn blocks for one section, blank-line separated; the module docstring's
+    `--profile` list is the one list of the fields. Empty for a row with no `stage:` source."""
+    row = _row(pkg, section) or {}
+    stages = [token for kind, token in _sources(row.get("source", "")) if kind == "stage"]
+    dues = {token: profile_due(pkg, section, token) for token in stages}
+    runs = [t for t in stages if dues[t] is not None] or stages
+    rows = sections(pkg)
+    deps = set(_names(row.get("depends on", ""))) - {section}
+    probes: list[str] = []
+    for r in rows:  # Sections order, deduplicated
+        if r["section"] not in deps:
+            continue
+        for kind, token in _sources(r["source"]):
+            if kind in ("api", "dataset") and (doc := f"docs/sources/{token}.md") not in probes:
+                probes.append(doc)
+    skills = [s for s in _names(row.get("builds with", "")) if s != DATA_QUALITY]
+    readmes = dependency_readmes(pkg, section)
+
+    def cell(values: list[str]) -> str:
+        return ", ".join(values) or "none"
+
+    out: list[str] = []
+    for token in runs:
+        due = dues[token] or {"mode": "profile", "round": 0, "revise": "none"}
+        if out:
+            out.append("")
+        out += [
+            f"Mode: {due['mode']}",
+            f"Section: {pkg}/{section}",
+            f"Stage: {token}",
+            f"Round: {due['round']}",
+            f"Revise: {due['revise']}",
+            "Commit: none",
+            f"Contract: {_rel(contract_path(pkg))}",
+            "Repo contract: docs/architecture.md",
+            f"Dependency READMEs: {cell(readmes)}",
+            f"Source probes: {cell(probes)}",
+            f"Skills to invoke: {cell(skills)}",
+            f"Data: {_stage_line(pkg, token)}",
+            f"Profile: docs/sources/{token}.md",
+            f"Store: .dev-team/data/{token}/",
+            f"Run: run-package {pkg}",
+        ]
+    return out
+
+
 def _holds_code(pkg: str, section: str) -> bool:
     """True when the section's path holds a `.py` file, nested sections excluded; for `surface`
     the package's own `__init__.py` (the scaffold's) does not count."""
@@ -3038,6 +3164,7 @@ def main() -> int:
     has_inputs, inputs_target = _flag_value(argv, "--inputs")
     has_scaffold, scaffold_pkg = _flag_value(argv, "--scaffold")
     has_fields, fields_target = _flag_value(argv, "--fields")
+    has_profile, profile_target = _flag_value(argv, "--profile")
     has_repo = "--repo" in argv
     has_against = "--against-contract" in argv
     argv = [a for a in argv if a not in ("--repo", "--against-contract")]
@@ -3136,6 +3263,15 @@ def main() -> int:
             print(f"no section {sec} in {_rel(contract_path(pkg))}")
             return 2
         print("\n".join(spawn_fields(pkg, sec)))
+    if has_profile:
+        pkg, _, sec = (profile_target or "").partition("/")
+        if not pkg or not sec:
+            print("--profile needs a target: status.py --profile <pkg>/<section>")
+            return 2
+        if _row(pkg, sec) is None:
+            print(f"no section {sec} in {_rel(contract_path(pkg))}")
+            return 2
+        print("\n".join(profiler_inputs(pkg, sec)) or f"profile: no stage source in {pkg}/{sec}")
     if has_scaffold:
         if not scaffold_pkg:
             print("--scaffold needs a package: status.py --scaffold <pkg>")
@@ -3143,7 +3279,8 @@ def main() -> int:
         needed = scaffold_needed(scaffold_pkg)
         print(f"scaffold: needed ({', '.join(needed)})" if needed else "scaffold: done")
         code |= 1 if needed else 0
-    if has_rounds or has_gate or has_surface or has_shape or has_paths or has_repo or has_inputs or has_scaffold or has_fields:
+    if (has_rounds or has_gate or has_surface or has_shape or has_paths or has_repo or has_inputs or has_scaffold
+            or has_fields or has_profile):
         return code
     if not DOCS.exists():
         print("no docs/ directory here — run from the repo root")
