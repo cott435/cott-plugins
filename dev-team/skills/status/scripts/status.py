@@ -3,7 +3,7 @@
 
 Usage:  python3 status.py [pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>|<pkg>/paths] [--surface <pkg> [--section <s>]] [--repo]
                           [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>]
-                          [--profile <pkg>/<section>]
+                          [--profile <pkg>/<section> [--defer]]
                           [--shape <pkg> --section <s>] [--paths <pkg> [--against-contract]]
 
 A section is in exactly one state, decided in this order, first match wins:
@@ -14,7 +14,8 @@ A section is in exactly one state, decided in this order, first match wins:
    hit: round 3 or later, or round 2 whose `Convergence:` line has one or more prior unfixed;
    or the section has a README, no review round covers its code, and the stop gate's record
    for its current commit ends `result: blocked` or `result: letting the run stop after 3
-   attempts …`.
+   attempts …`; or a `stage:` source's newest round line, at round 2 or later, ends `new
+   kinds: …` and a `spec-change:design` entry raised by the profiler is open.
 2. **PLAN** — an open `spec-change:contract` names the section.
 3. **PROBE** — a source in the row's `source` column needs probing: an `api:` source whose
    `docs/sources/<token>.md` lacks a `## <pkg>/<section>` heading, or a `dataset:` source
@@ -130,6 +131,8 @@ without one.
    verify`; `stage:<token> r<n> revise: K<a>, K<b>`; `stage:<token> r<n> not profiled on
    built code` (the newest round line's commit is `none`); `stage:<token> r<n> <sha> older
    than code <sha>`: the profiler's next run, which `--profile` prints.
+8. **profile cap** — `profile r<n> new kinds (cap), open <heading>; <heading>`: every open
+   `spec-change:design` ledger heading of the section.
 
 **Gate record.** `.dev-team/gate/<pkg>/<section>.txt`, written by `hooks/gate_on_stop.py` on
 every implementer stop. It speaks for the commit its `commit:` line names: the newest commit
@@ -288,7 +291,8 @@ resolved: run-package sends it verbatim. One block per `stage:` source of the ro
 needs a run (every `stage:` source when none does), a blank line between blocks; one
 `<Field>: <value>` line per field, in this order, `none` for a field with nothing to hold:
 
-1. **Mode** — `profile`, or `verify` when the newest round line ends `pending verify`.
+1. **Mode** — `profile`, or `verify` when the newest round line ends `pending verify`, or
+   `defer` with `--defer`.
 2. **Section** — `<pkg>/<section>`.
 3. **Stage** — the token.
 4. **Round** — the newest round line's round for `verify` and for a revision; that round plus
@@ -310,6 +314,10 @@ needs a run (every `stage:` source when none does), a blank line between blocks;
 
 It prints `profile: no stage source in <pkg>/<section>` for a row with none, and exits 0;
 2 on a target without `/` or a section the contract lacks, with the `--inputs` messages.
+`--defer` prints, per `stage:` source whose newest round line ends `new kinds: …`, the block
+with `Mode: defer`, that line's round and its commit (`profile: no new kinds to defer in
+<pkg>/<section>` when none does); `--defer` without `--profile` prints `--defer needs
+--profile <pkg>/<section>` and exits 2.
 
 `--inputs <pkg>/<section>` prints the implementer's spawn block, the one place its values are
 resolved: run-package sends it verbatim as the implementer's prompt, and pair reads the files
@@ -1253,6 +1261,20 @@ def built_round_due(pkg: str, section: str, token: str) -> dict[str, object] | N
     return {**due, "evidence": f"stage:{token} r{n} {_short(commit)} older than code {_short(code)}"}
 
 
+def _profile_cap(pkg: str, section: str, row: dict[str, str], spec: list[dict[str, str]]) -> str | None:
+    """Rule 1's profile cap: the evidence when a `stage:` source's newest round line, at round 2
+    or later, ends `new kinds: …` and an open `spec-change:design` the profiler raised is live."""
+    design = [e for e in spec if e["kind"] == "spec-change:design" and e.get("source") != "report"]
+    if not any(e.get("Raised by", "").strip("`*_ ").startswith("profiler") for e in design):
+        return None
+    for kind, token in _sources(row.get("source", "")):
+        doc = DOCS / "sources" / f"{token}.md"
+        lines = _round_lines(doc.read_text(), pkg, section) if kind == "stage" and doc.exists() else []
+        if lines and lines[-1][0] >= 2 and lines[-1][2].startswith("new kinds:"):
+            return f"profile r{lines[-1][0]} new kinds (cap), open " + "; ".join(e["heading"] for e in design)
+    return None
+
+
 # ---------------------------------------------------------------------------------------------
 # The state
 # ---------------------------------------------------------------------------------------------
@@ -1418,6 +1440,8 @@ def _state_before_built_round(pkg: str, section: str, paths: dict[str, object] |
             return "BLOCKED", f"gate let through after 3 attempts, {m.group(1) if m else '?'} failures"
 
     spec = live_spec_changes(pkg, section)
+    if cap := _profile_cap(pkg, section, row, spec):
+        return "BLOCKED", cap
     kinds = {e["kind"] for e in spec}
 
     # 2. PLAN
@@ -3091,14 +3115,30 @@ def _next_round(pkg: str, section: str, token: str, built: bool) -> dict[str, ob
     return {"mode": "profile", "round": lines[-1][0] + 1 if built and lines else 0, "revise": "none"}
 
 
-def profiler_inputs(pkg: str, section: str) -> list[str]:
+def _defer_due(pkg: str, section: str, token: str) -> dict[str, object] | None:
+    """The `defer` run on a `stage:` source whose newest round line ends `new kinds: …`: that
+    line's round and its commit; None otherwise. Same keys as `profile_due`, plus commit."""
+    doc = DOCS / "sources" / f"{token}.md"
+    lines = _round_lines(doc.read_text(), pkg, section) if doc.exists() else []
+    if not lines or not lines[-1][2].startswith("new kinds:"):
+        return None
+    n, commit, _ = lines[-1]
+    return {"mode": "defer", "round": n, "revise": "none", "commit": commit, "evidence": ""}
+
+
+def profiler_inputs(pkg: str, section: str, defer: bool = False) -> list[str]:
     """The profiler's spawn blocks for one section, blank-line separated; the module docstring's
-    `--profile` list is the one list of the fields. Empty for a row with no `stage:` source."""
+    `--profile` list is the one list of the fields. Empty for a row with no `stage:` source, and
+    with defer for a row with no `stage:` source at `new kinds: …`."""
     row = _row(pkg, section) or {}
     stages = [token for kind, token in _sources(row.get("source", "")) if kind == "stage"]
     built = _paths(pkg, section)["readme"].exists()  # type: ignore[union-attr]
-    dues = {token: profile_due(pkg, section, token) or (built_round_due(pkg, section, token) if built else None)
-            for token in stages}
+    if defer:
+        dues = {token: _defer_due(pkg, section, token) for token in stages}
+        stages = [token for token in stages if dues[token] is not None]
+    else:
+        dues = {token: profile_due(pkg, section, token) or (built_round_due(pkg, section, token) if built else None)
+                for token in stages}
     runs = [t for t in stages if dues[t] is not None] or stages
     rows = sections(pkg)
     deps = set(_names(row.get("depends on", ""))) - {section}
@@ -3118,7 +3158,8 @@ def profiler_inputs(pkg: str, section: str) -> list[str]:
     out: list[str] = []
     for token in runs:
         due = dues[token] or _next_round(pkg, section, token, built)
-        commit = (section_commit(pkg, section) or "none") if int(due["round"]) > 0 else "none"  # type: ignore[call-overload]
+        commit = (str(due.get("commit") or section_commit(pkg, section) or "none")
+                  if int(due["round"]) > 0 else "none")  # type: ignore[call-overload]
         if out:
             out.append("")
         out += [
@@ -3170,7 +3211,7 @@ def spawn_fields(pkg: str, section: str) -> list[str]:
     design: Path = p["design"]  # type: ignore[assignment]
     changes = [_rel(c["path"]) for c in open_changes(pkg, section)]  # type: ignore[arg-type]
     state, evidence = section_state(pkg, section)
-    if changes or (evidence.startswith("open ") and "spec-change:design" in evidence):
+    if changes or ("open " in evidence and "spec-change:design" in evidence):
         mode = "delta"
     elif _holds_code(pkg, section) and not design.exists():
         mode = "document"
@@ -3221,15 +3262,19 @@ def main() -> int:
     has_scaffold, scaffold_pkg = _flag_value(argv, "--scaffold")
     has_fields, fields_target = _flag_value(argv, "--fields")
     has_profile, profile_target = _flag_value(argv, "--profile")
+    has_defer = "--defer" in argv
     has_repo = "--repo" in argv
     has_against = "--against-contract" in argv
-    argv = [a for a in argv if a not in ("--repo", "--against-contract")]
+    argv = [a for a in argv if a not in ("--repo", "--against-contract", "--defer")]
     unknown = [a for a in argv if a.startswith("--")]
     if unknown:
         print(f"unknown flag: {' '.join(unknown)}")
         return 2
     if has_against and not has_paths:
         print("--against-contract needs --paths <pkg>")
+        return 2
+    if has_defer and not has_profile:
+        print("--defer needs --profile <pkg>/<section>")
         return 2
     only = argv[0] if argv else None
     code = 0
@@ -3327,7 +3372,10 @@ def main() -> int:
         if _row(pkg, sec) is None:
             print(f"no section {sec} in {_rel(contract_path(pkg))}")
             return 2
-        print("\n".join(profiler_inputs(pkg, sec)) or f"profile: no stage source in {pkg}/{sec}")
+        blocks = profiler_inputs(pkg, sec, has_defer)
+        if not blocks and has_defer and profiler_inputs(pkg, sec):
+            blocks = [f"profile: no new kinds to defer in {pkg}/{sec}"]
+        print("\n".join(blocks) or f"profile: no stage source in {pkg}/{sec}")
     if has_scaffold:
         if not scaffold_pkg:
             print("--scaffold needs a package: status.py --scaffold <pkg>")

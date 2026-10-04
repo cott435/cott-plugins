@@ -433,7 +433,7 @@ def m_deviation(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
     evidence = "Did: built it the other way" if kind == "deviation" else "Found: src/x.py:1"
     entry = (f"\n## {PKG}/{s} — {DATE} — {kind}{k}\n\nClause: {step.get('clause', 'design §5 load_trades')}\n"
              f"Said: \"one thing\"\n{evidence}\nWhy: the data says otherwise\nStatus: {step['status']}\n"
-             f"Raised by: implementer — run-package {PKG}\nResolved by: —\n")
+             f"Raised by: {step.get('raised_by', f'implementer — run-package {PKG}')}\nResolved by: —\n")
     return [({rel: old + entry}, f"{PKG}/{s}: {kind} {step['status']}")]
 
 

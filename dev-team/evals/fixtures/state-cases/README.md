@@ -21,7 +21,7 @@ row, the `trades` probe doc; `contract: false | "api"`, `sources: false`), `desi
 round 1 `a` and `b` approving), `fix`, `edit`, `regenerate` (a
 `<pkg>/<section>: regenerate 1 intent tests` commit), `deviation` (one entry in the
 section's ledger, `docs/packages/<pkg>/deviations/<section>.md` with the heading's `— <k>`, or
-with `"legacy": true` in the pre-split `docs/deviations.md`), `change` (`slug`, `sections`,
+with `"legacy": true` in the pre-split `docs/deviations.md`; `raised_by` sets its `Raised by:`), `change` (`slug`, `sections`,
 `status`, `pkg`: a change file at `docs/packages/<pkg>/changes/<slug>.md`), `inbox`
 (`section`, `entries`: the section's decisions inbox, entries verbatim), `commands` (a
 package with one `[project.scripts]` command, **The call tree (2.5)** below) and
@@ -173,7 +173,14 @@ leaves the row where the older rules put it. Phase 5 adds seven
 (`site/notes/2.7-data-loop-05-after-build-rounds.md`), each after a closed round 0: a row that
 would be DONE is PROBE again while its newest round line's commit is `none` or older than the
 section's code. Four of them (`-clean`, `-new-kinds`, `-verify`, `-not-done`) passed before the
-change: they pin that the after-build round never preempts another state.
+change: they pin that the after-build round never preempts another state. Phase 6 adds six
+(`site/notes/2.7-data-loop-06-cap-and-defer.md`), each after a closed round 0 on built code,
+with the `deviation` macro's `raised_by` option for the profiler's `spec-change:design` entry:
+a round 2 or later closing `new kinds: …` while that entry is open is BLOCKED at the profile
+cap, and `--profile … --defer` prints the defer block. Three of them (`-round1-not-cap`,
+`-entry-resolved`, `stage-deferred`) and `fields-delta-profile-cap` passed before the change:
+they pin that the cap fires only at round 2 or later on an open entry, and that `--fields`
+stays `delta` once the cap's evidence leads with `profile`.
 
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
@@ -366,3 +373,9 @@ optional flag).
 | `stage-after-build-verify` | as `-due`; round 1 `pending verify` | `—` | `clean · PROBE`, evidence `stage:rawtrades r1 pending verify` |
 | `stage-after-build-not-done` | ingest done; round 0 closed; `design` and `tests` clean, no build | `—` | `clean · IMPLEMENT` |
 | `profile-block-round1` | as `stage-after-build-due` | `--profile data/clean` | `Mode: profile`, `Round: 1`; a line `^Commit: [0-9a-f]{7,40}$`; exit 0 |
+| `stage-cap` | as `-due`; `profile` `append` round 1 `new kinds: K2` and round 2 `new kinds: K3` on `{HEAD}`; an open `spec-change:design` entry, `raised_by` `profiler — run-package data` (phase 6) | `—` | `clean · BLOCKED`, evidence matches `^profile r2 new kinds \(cap\), open data/clean — ` |
+| `stage-cap-round1-not-cap` | as `-due`; round 1 `new kinds: K2`; the entry, open | `—` | `clean · DESIGN`, evidence starts `open data/clean — ` |
+| `stage-cap-entry-resolved` | as `stage-cap`, the entry `resolved` | `—` | no `clean · BLOCKED`, no `(cap)` |
+| `stage-deferred` | as `stage-cap`, the entry `resolved`; `profile` `append` round 2 `deferred` on `{HEAD}` | `—` | `clean · DONE` |
+| `profile-block-defer` | as `stage-cap` | `--profile data/clean --defer` | `Mode: defer`, `Round: 2`; a line `^Commit: [0-9a-f]{7,40}$`; exit 0 |
+| `fields-delta-profile-cap` | as `stage-cap` | `--fields data/clean` | `mode: delta` |

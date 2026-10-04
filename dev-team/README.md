@@ -236,7 +236,7 @@ every call and never stored:
 
 | State | When |
 |---|---|
-| **BLOCKED** | an open decision with no assumption binds the section; or the review cap is hit (round 3, or round 2 with a prior unfixed); or the stop gate's record for the section's current commit says the implementer blocked, or was let through after three attempts, and no review round covers that code |
+| **BLOCKED** | an open decision with no assumption binds the section; or the review cap is hit (round 3, or round 2 with a prior unfixed); or the stop gate's record for the section's current commit says the implementer blocked, or was let through after three attempts, and no review round covers that code; or a profile round 2 or later found new kinds and its spec-change is still open |
 | **PLAN** | an open `spec-change:contract` entry names the section — the architect edits the contract and sets the entry `resolved` |
 | **PROBE** | an `api:` source has no `## <pkg>/<section>` entry in its probe doc, or a `dataset:` source has no probe doc; or a `stage:` source's profile has no closed round 0 for the section (no round line yet, or one waiting on its verify run or a revision); or a marked section's reviewers approved it and its built output has not been profiled since the code last changed |
 | **DESIGN** | no design; or an open `spec-change:design` entry (one written since 2.2 stays open until its `Status:` is `resolved`); or an open change file naming the section is newer than the design; or a probe doc it names lost or reworded a line the design was written against |

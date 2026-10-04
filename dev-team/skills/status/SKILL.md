@@ -1,7 +1,7 @@
 ---
 name: status
 description: Print where every package and section stands — one state per section (PROBE, DESIGN, TEST, IMPLEMENT, REVIEW, FIX n, PLAN, DONE, BLOCKED), the ready set, whether the package shipped, and the exact next command — derived from docs/ and the code every time, never from a status file. Use whenever you have lost track, before planning the next package, or to see why run-package stopped.
-argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>|<pkg>/paths] [--surface <pkg>] [--shape <pkg> --section <s>] [--paths <pkg> [--against-contract]] [--repo] [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>] [--profile <pkg>/<section>]"
+argument-hint: "[pkg] [--run-gate [pkg]] [--rounds <pkg>/<section>|<pkg>/paths] [--surface <pkg>] [--shape <pkg> --section <s>] [--paths <pkg> [--against-contract]] [--repo] [--inputs <pkg>/<section>] [--fields <pkg>/<section>] [--scaffold <pkg>] [--profile <pkg>/<section> [--defer]]"
 disable-model-invocation: true
 ---
 
@@ -114,16 +114,19 @@ none` (the dependency READMEs that exist on disk — every role's **Dependency R
 for the `surface` section before its siblings ship). The docstring gives each rule. A section the contract lacks exits 2.
 
 `--profile <pkg>/<section>` prints the profiler's spawn block for a row whose `source` names a
-`stage:<token>` — fifteen `<Field>: <value>` lines per stage, from `Mode:` (`profile` or
-`verify`) to `Run:`, blocks separated by a blank line. Such a row is PROBE until the newest
+`stage:<token>` — fifteen `<Field>: <value>` lines per stage, from `Mode:` (`profile`,
+`verify` or `defer`) to `Run:`, blocks separated by a blank line. Such a row is PROBE until the newest
 round line under `## <pkg>/<section>` in its profile `docs/sources/<token>.md` is neither
 `pending verify` nor `revise: …`, and PROBE again once its reviewers approve it while that
 line's commit is `none` or older than the section's code: a round over the built section, at
 the newest round plus one with `Commit:` the section's commit. With nothing due it prints the
 next `profile` block, the hand re-profile `--step PROBE` sends: round 0 before the section has
 a README, else the newest round plus one. `/dev-team:run-package` sends it verbatim to the
-profiler. A row with no stage prints `profile: no stage source in <pkg>/<section>`; a section
-the contract lacks exits 2.
+profiler. When a round 2 or later closes `new kinds: …` while the profiler's
+`spec-change:design` entry is open, the row is BLOCKED at the profile cap; `--profile
+<pkg>/<section> --defer` then prints the `Mode: defer` block for that round and its commit, and
+nothing defers without the flag. A row with no stage prints `profile: no stage source in
+<pkg>/<section>`; a section the contract lacks exits 2.
 
 The script runs no test and no constraint command. The stop hook runs `docs/constraints.md`'s
 **Floor** and **Enforced** rows through the same parser this script exposes, so the rows the

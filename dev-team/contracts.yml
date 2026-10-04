@@ -525,7 +525,7 @@ headings:
     owner_span: ['**Evidence.**', '**Gate record.**']
     readers:
       - file: skills/run-package/SKILL.md
-        cites: ['open', 'regenerate', 'gate blocked', 'gate let through', 'stage']
+        cites: ['open', 'regenerate', 'gate blocked', 'gate let through', 'stage', 'profile cap']
 
   - name: every field the driver sends the researcher is one the researcher's Inputs defines
     # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.
