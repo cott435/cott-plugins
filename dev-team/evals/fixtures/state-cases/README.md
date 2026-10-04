@@ -353,3 +353,5 @@ optional flag).
 | `profile-no-stage-source` | `base` (`stage: true`) | `--profile data/ingest` | `profile: no stage source in data/ingest`; exit 0 |
 | `profile-bad-target` | the same | `--profile data/nope` | `no section nope in docs/packages/data/contract.md`; exit 2 |
 | `inputs-stage-source-probes` | as `stage-round0-closed`; `design` clean | `--inputs data/clean` | `Source probes: docs/sources/rawtrades.md` |
+| `run-gate-stage-no-deps` | `base` (`stage: "no-deps"`): the `clean` row's `depends on` is `—` (phase 4) | `--run-gate data` | `run gate: FAIL`; `data/clean: stage:rawtrades has no depends on; nothing produces its data`; exit 1 |
+| `run-gate-stage-ok` | `base` (`stage: true`) (phase 4) | `--run-gate data` | `run gate: PASS`; exit 0 |

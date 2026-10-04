@@ -37,7 +37,8 @@ user-edited files (`docs/decisions.md`, `docs/brief.md`, `docs/constraints.md`,
 not run; `python3 <plugin>/hooks/sync_decisions.py --all` repairs it), or a central
 `Applied: <pkg>/<section>, …` line that section's inbox entry no longer holds (`stale Applied:
 line`, the same repair); and, with a package, no
-`docs/packages/<pkg>/contract.md`. It is the
+`docs/packages/<pkg>/contract.md`, or a `stage:` row whose `depends on` is empty (nothing
+produces its data). It is the
 check a run makes once, before its first agent.
 
 `--rounds <pkg>/<section>` prints `rounds: <n>` — the newest review round, from the

@@ -64,7 +64,8 @@ without it is a 2.x ledger and `k` is absent. The **inbox** is
 holding `Applied:` lines, merged into `docs/decisions.md` by `hooks/sync_decisions.py`. This
 script never writes it; `--run-gate` fails on an inbox holding anything the central ledger
 does not, and on a central `Applied: <pkg>/<section>, …` line the section's inbox entry for
-that `D<n>` no longer holds (the hook mirrors a section's own lines).
+that `D<n>` no longer holds (the hook mirrors a section's own lines), and on a `stage:` row
+whose `depends on` is empty.
 
 An **open spec-change** is a ledger entry `spec-change:<level>` with `Status: open`, or a
 review report of the newest round whose verdict is `spec-change`. A ledger entry whose heading
@@ -1879,6 +1880,11 @@ def run_gate(pkg: str | None) -> list[str]:
         fails.append(f"unsynced inbox — {r}; run python3 {plugin}/hooks/sync_decisions.py --all and commit it")
     if pkg and not contract_path(pkg).exists():
         fails.append(f"{pkg}: missing docs/packages/{pkg}/contract.md — run /dev-team:plan-package {pkg}")
+    if pkg and contract_path(pkg).exists():
+        for r in sections(pkg):
+            stages = [t for k, t in _sources(r.get("source", "")) if k == "stage"]
+            if stages and not _names(r.get("depends on", "")):
+                fails.append(f"{pkg}/{r['section']}: stage:{stages[0]} has no depends on; nothing produces its data")
     return fails
 
 

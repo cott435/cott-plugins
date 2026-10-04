@@ -25,7 +25,8 @@ paths and heading. `edit` takes `path`, `message`, and `append` (text added at t
 `base` takes `call_paths: true` (a **Call paths** heading matching the `commands` macro's tree)
 or a string (the heading's body verbatim), and `stage: true` (2.7): the `clean` row's `source`
 `stage:rawtrades` and `builds with` `dev-team:data-quality`, and a **Package conventions**
-line for the stage at the contract's end. `profile` writes `docs/sources/rawtrades.md`, a
+line for the stage at the contract's end; `stage: "no-deps"` writes the same with the `clean`
+row's `depends on` cell `—`. `profile` writes `docs/sources/rawtrades.md`, a
 data profile serving `data/<section>` (default `clean`), one round line per entry of `lines`:
 a verdict string (round 0, commit `none`) or `{"round": r, "commit": "{HEAD}" | "none",
 "verdict": "…"}`; with `append: true` it adds only the lines.
@@ -307,6 +308,8 @@ def m_base(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
             text += "\n## Call paths\n\n" + body.rstrip("\n") + "\n"
         if step.get("stage"):
             text = text.replace(*STAGE_ROW) + STAGE_CONVENTIONS
+            if step["stage"] == "no-deps":  # 2.7, phase 4: a stage row nothing produces
+                text = text.replace("| dev-team:data-quality | ingest | stage:", "| dev-team:data-quality | — | stage:")
         files["docs/packages/data/contract.md"] = text
     if step.get("sources", True):
         if contract == "api":
