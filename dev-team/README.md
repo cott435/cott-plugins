@@ -1,10 +1,11 @@
 # dev-team
 
 A Claude Code **plugin** that plans, builds, reviews and documents a Python monorepo, one
-section of one package at a time. Six specialist agents each answer one question: the
+section of one package at a time. Seven specialist agents each answer one question: the
 architect writes the contracts, the designer designs a section, the researcher probes an
-external source, the tester turns a design into failing intent tests, the implementer builds
-the section, the reviewer judges it. One driver, `/dev-team:run-package`, runs in your
+external source, the profiler profiles the real data a data-heavy section receives, the tester
+turns a design into failing intent tests, the implementer builds the section, the reviewer
+judges it. One driver, `/dev-team:run-package`, runs in your
 conversation and spawns every one of them over a ready set it derives from disk each
 iteration. Hooks run every mechanical check, so no lint error, failing test or lowered bar
 reaches a reviewer.
@@ -92,7 +93,7 @@ and implementer invoke them, so the same conventions apply at design time and at
    `/plugin marketplace add cott435/cott-plugins` then
    `/plugin install dev-team@cott-plugins`. In Cowork: Customize -> Plugins ->
    Add marketplace, then Install.
-2. **Verify with `/agents`** before the first run: the eight agents must be listed. If they are
+2. **Verify with `/agents`** before the first run: the nine agents must be listed. If they are
    not, run `/reload-plugins` (or restart Claude Code). The driver stops on its first spawn if
    they are missing. User-level definitions in `~/.claude/agents/` override same-named plugin
    agents, so those must not exist for the plugin's versions to take effect.
@@ -229,6 +230,36 @@ and type what you want next.
 `<section>` walks one section; `--step` runs one step of it once, whatever its state, which is
 how *one more round* is typed by hand.
 
+### Data-heavy sections
+
+The architect marks, at PLAN, each section whose job is to clean, validate, reconcile or audit
+data its dependencies produce, in the Sections table where you can see and edit it:
+`stage:<token>` in the `source` cell, `dev-team:data-quality` in `builds with`, and one
+**Package conventions** line saying what the data is, where it lands and its pull cap, a
+`D<n>` with a recommendation and an assumption.
+
+Before such a section is designed, once every section it depends on is DONE, the **profiler**
+reads the data already on disk (else pulls it through the shipped entry points, up to the
+cap), runs checks over all of it as queries, counts the rows that pass, sorts the failing rows
+into kinds and proposes a treatment for each: `repair`, `drop`, `quarantine` or `flag`. A
+second profiler run, `Mode: verify`, in its own context, samples each kind's check and rejects
+one that catches good rows or misses bad ones; a kind rejected twice is `unverified`. You are
+asked about every verified `repair` or `drop`, since it changes or removes data; `quarantine`
+and `flag` go ahead. The designer and implementer then build with `data-quality`: one handler
+and one test per kind, and a failing row in no kind quarantined as `unclassified`.
+
+After the reviewers approve, the profiler runs a round over the section's own output on the
+same checks. Nothing new: `clean`, and the section is DONE. New kinds reopen the design through
+a `spec-change:design` entry. When round 2 or later still finds new kinds, the section is
+BLOCKED and the driver asks *one more round* or *defer*, which moves them to
+`docs/followups.md`; `--defer` answers *defer*.
+
+The profile is `docs/sources/<token>.md`, with its program `.profile.py` and up to five example
+rows per kind in `.sample.json` (the write guard refuses one over 200 KB); the full failing
+rows stay in `.dev-team/data/<token>/`, not in git. Re-profile by hand with
+`/dev-team:run-package <pkg> <section> --step PROBE`. A package with no `stage:` row runs
+exactly as before.
+
 ## The states
 
 Every section is in exactly one state, the first rule that matches, derived by `status.py` on
@@ -338,7 +369,8 @@ guarded before the repo contract exists:
 - **`guard_writes.py`** (`PreToolUse` on `Write|Edit`) — each role writes only where its job
   is: the architect under `docs/` but not designs or reviews; the designer to designs, the
   ledgers and its section's decisions inbox; the researcher to `docs/sources/` and
-  `.claude/skills/`; the tester to `tests/intent/` and fixtures; the reviewer to review reports
+  `.claude/skills/`; the profiler to `docs/sources/`, `.dev-team/data/`, the ledgers, the
+  inboxes and `docs/followups.md`; the tester to `tests/intent/` and fixtures; the reviewer to review reports
   and the ledgers it edits; the documenter to the READMEs and `docs/index.md`; the implementer
   everywhere but `docs/`, except the ledgers, the inboxes, its `interface.md` and its API page.
   An implementer with a `Section:` line is confined to its section's files — its code,
@@ -583,6 +615,7 @@ docs/
 ├── sources/<source>.md              SOURCE PROBE, one `## <pkg>/<section>` entry per consumer (researcher)
 ├── sources/<source>.sample.json · .probe.py    recorded responses + re-runnable probe   (api)
 ├── sources/<source>.stats.json  · .profile.py  column statistics + re-runnable profile  (dataset)
+├── sources/<token>.md · .profile.py · .sample.json   a DATA PROFILE of a stage: source, up to five rows per kind (profiler)
 ├── api/<pkg>/index.md               the docs-site API page                         (the surface section's implementer)
 ├── index.md                         the docs-site home page                        (documenter)
 ├── packages/

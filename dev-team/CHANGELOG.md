@@ -12,6 +12,45 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [Unreleased] — 2.7.0
+
+Data-heavy sections are designed from a profile of the real data they will receive, and
+profiled again on their own output before they are DONE. Design:
+`site/notes/2.7-data-loop-design.md`. Evidence: the `2.7-data-loop-*` logs in `evals/`.
+
+### Added
+
+- The `profiler` agent profiles one data stage for one section: in `Mode: profile` it writes a
+  re-runnable program whose checks run over all the data, sorts the failing rows into kinds
+  with a proposed treatment each, and writes `docs/sources/<token>.md` with up to five example
+  rows per kind; a `Mode: verify` run in its own context rejects a check that catches good rows
+  or misses bad ones and raises a decision for every `repair` or `drop` kind; the profile's
+  headings are `planning-templates/references/data-profile.md` (eb339b6)
+- The `data-quality` skill, invoked by the designer and the implementer of a marked section:
+  one handler and one test per kind, a `repair` or `drop` only where its `D<n>` is decided,
+  every rejected or altered row kept with its kind as the reason, and a failing row in no kind
+  quarantined as `unclassified` (d82f666)
+- The source kind `stage` in the package contract: the architect marks a section that cleans,
+  validates, reconciles or audits data with `stage:<token>`, `dev-team:data-quality` in
+  `builds with` and a **Package conventions** line with a pull cap as a `D<n>`; the run gate
+  fails a `stage:` row whose `depends on` is empty (6525d46)
+- `status.py --profile <pkg>/<section> [--defer]` prints the profiler's spawn block, which
+  `run-package` sends verbatim; once a marked section's reviewers approve, a round over its own
+  output is due, new kinds reopen its design through a `spec-change:design` entry, and from
+  round 2 the row is BLOCKED at the profile cap until you choose *one more round* or *defer*,
+  which moves the open kinds to `docs/followups.md` (f58675a, b4fd022, 7ffe661)
+- The write guard and the run gate refuse a data profile's example rows over 200 KB: a
+  `docs/sources/<token>.sample.json` the profiler writes, or whose sibling profile has a
+  `— stage —` title, for every guarded role (9091743)
+
+### Changed
+
+- `run-package` at PROBE spawns the profiler for a `stage:` source, asks at the profile round
+  cap, and counts `profiler <n>` in its summary.
+- **PROBE** and **BLOCKED** in `status.py` gain the `stage:` conditions. A contract with no
+  `stage:` row derives exactly the 2.6.0 states.
+
+
 ## [2.6.0] - 2026-10-03
 
 A package's main paths are decided at PLAN, in the contract, before any section is designed, so

@@ -141,6 +141,14 @@ credential, a review at its cap (*one more round* or *defer*), a third `design-g
 the answer in `docs/decisions.md`, and continues. Re-running the same command at any point
 picks up where the files say.
 
+A section the architect marked `stage:<token>` — one that cleans, validates, reconciles or
+audits data — is profiled on the real data before it is designed: the **profiler** runs checks
+over all of it, sorts the failing rows into kinds and proposes a treatment for each, and the
+section is designed and built with one handler and one test per kind. Once its reviewers
+approve, it is profiled again on its own output, and new kinds reopen its design. You are asked
+about each treatment that repairs or drops rows; quarantining or flagging goes ahead. The pull
+cap, how much data the profiler may fetch when none is on disk, is a decision with a default.
+
 ## 6. The next package, and the docs
 
 ```
