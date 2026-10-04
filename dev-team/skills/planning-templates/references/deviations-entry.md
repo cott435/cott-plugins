@@ -10,7 +10,8 @@ Append-only; status lines are the only edits, each made with the Edit tool on th
 never by rewriting the file. Written by the implementer (`deviation`, `spec-change`), the
 designer (`deviation`, one per contract deviation its design's §10 lists, and
 `spec-change:contract`), the tester (`spec-change:test`, and `spec-change:design` when two
-design items contradict each other) and `pair`, and read by the reviewer (which
+design items contradict each other), `pair` and the profiler (`spec-change:design`, from a
+round over the built section), and read by the reviewer (which
 sets `approved` or `rejected`), the tester (regenerates the tests an `approved` entry's clause
 is cited by), `status.py` (an open spec-change re-opens its step), the stop hook (tolerates a
 failing intent test whose docstring cites a `proposed` or `approved` clause) and `sync-plan`
@@ -41,7 +42,8 @@ same-day entries of one kind are told apart, and a test's docstring tag names th
    that answers it. An agent handed several entries sets `resolved` only on those its commit
    answers and names the rest in its return. `sync-plan` sets it at the package close on an
    older entry, one without `— <k>`, that `status.py` already counts as answered.
-7. **Raised by** — the role and the run: `implementer — run-package data`.
+7. **Raised by** — the role and the run: `implementer — run-package data`,
+   `profiler — run-package data`.
 8. **Resolved by** — one of three forms: `<role> — <Run:>` (`designer — run-package data`);
    the report or change-file path that closed it; or, for a synced deviation, the section's
    `approve @<sha>` as `status.py` prints it. `—` while open. Never the closing commit's own

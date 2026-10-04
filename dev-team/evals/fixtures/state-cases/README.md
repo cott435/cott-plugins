@@ -169,7 +169,11 @@ commits `docs/sources/rawtrades.md`, a round-0 profile with one kind under **Qui
 profiler's fifteen-line block. Four of the fourteen (`stage-round0-closed`,
 `stage-round0-blocked`, `stage-design-kept-on-append`, `inputs-stage-source-probes`) already
 passed on 2.6.0's `status.py`, which ignores a `stage:` source: they pin that round 0 closed
-leaves the row where the older rules put it.
+leaves the row where the older rules put it. Phase 5 adds seven
+(`site/notes/2.7-data-loop-05-after-build-rounds.md`), each after a closed round 0: a row that
+would be DONE is PROBE again while its newest round line's commit is `none` or older than the
+section's code. Four of them (`-clean`, `-new-kinds`, `-verify`, `-not-done`) passed before the
+change: they pin that the after-build round never preempts another state.
 
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
@@ -355,3 +359,10 @@ optional flag).
 | `inputs-stage-source-probes` | as `stage-round0-closed`; `design` clean | `--inputs data/clean` | `Source probes: docs/sources/rawtrades.md` |
 | `run-gate-stage-no-deps` | `base` (`stage: "no-deps"`): the `clean` row's `depends on` is `—` (phase 4) | `--run-gate data` | `run gate: FAIL`; `data/clean: stage:rawtrades has no depends on; nothing produces its data`; exit 1 |
 | `run-gate-stage-ok` | `base` (`stage: true`) (phase 4) | `--run-gate data` | `run gate: PASS`; exit 0 |
+| `stage-after-build-due` | ingest done; round 0 closed; `done` clean (phase 5) | `—` | `clean · PROBE`, evidence `stage:rawtrades r0 not profiled on built code` |
+| `stage-after-build-clean` | as `-due`; `profile` `append` round 1 on `{HEAD}`, `clean` | `—` | `clean · DONE` |
+| `stage-after-build-code-newer` | as `-clean`; `fix` clean; `review` round 2 `s` approving the new code | `—` | `clean · PROBE`, evidence matches `stage:rawtrades r1 \w{7} older than code \w{7}` |
+| `stage-after-build-new-kinds` | as `-due`; round 1 `new kinds: K2`; an open `spec-change:design` ledger entry, `Raised by: profiler — run-package data` (explicit step) | `—` | `clean · DESIGN`, evidence starts `open data/clean — ` |
+| `stage-after-build-verify` | as `-due`; round 1 `pending verify` | `—` | `clean · PROBE`, evidence `stage:rawtrades r1 pending verify` |
+| `stage-after-build-not-done` | ingest done; round 0 closed; `design` and `tests` clean, no build | `—` | `clean · IMPLEMENT` |
+| `profile-block-round1` | as `stage-after-build-due` | `--profile data/clean` | `Mode: profile`, `Round: 1`; a line `^Commit: [0-9a-f]{7,40}$`; exit 0 |

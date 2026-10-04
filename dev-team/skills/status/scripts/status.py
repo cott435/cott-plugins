@@ -20,7 +20,10 @@ A section is in exactly one state, decided in this order, first match wins:
    `docs/sources/<token>.md` lacks a `## <pkg>/<section>` heading, or a `dataset:` source
    with no `docs/sources/<token>.md` at all; or a `stage:` source whose profile
    `docs/sources/<token>.md` has no round line under its `## <pkg>/<section>` heading
-   (**Sections served**), or whose newest round line ends `pending verify` or `revise: …`.
+   (**Sections served**), or whose newest round line ends `pending verify` or `revise: …`;
+   or, for a section that would otherwise be DONE, a `stage:` source whose newest round
+   line's commit is `none` or older than the section's code (rule 7's paths): the built
+   section has not been profiled.
 4. **DESIGN** — no design at `docs/packages/<pkg>/design/<section>.md`; or an open
    `spec-change:design` entry; or an open change file whose **Affected sections**
    names the section and is newer than the design; or a probe doc the row names lost or
@@ -124,8 +127,9 @@ without one.
 6. **paths** — `paths r<m> request changes (<report path>)`: the package's paths report
    re-opened the section.
 7. **stage** — `stage:<token> lacks ## <pkg>/<section>`; `stage:<token> r<n> pending
-   verify`; `stage:<token> r<n> revise: K<a>, K<b>`: the profiler's next run, which
-   `--profile` prints.
+   verify`; `stage:<token> r<n> revise: K<a>, K<b>`; `stage:<token> r<n> not profiled on
+   built code` (the newest round line's commit is `none`); `stage:<token> r<n> <sha> older
+   than code <sha>`: the profiler's next run, which `--profile` prints.
 
 **Gate record.** `.dev-team/gate/<pkg>/<section>.txt`, written by `hooks/gate_on_stop.py` on
 every implementer stop. It speaks for the commit its `commit:` line names: the newest commit
@@ -287,9 +291,12 @@ needs a run (every `stage:` source when none does), a blank line between blocks;
 1. **Mode** — `profile`, or `verify` when the newest round line ends `pending verify`.
 2. **Section** — `<pkg>/<section>`.
 3. **Stage** — the token.
-4. **Round** — the newest round line's round; `0` with none.
+4. **Round** — the newest round line's round for `verify` and for a revision; that round plus
+   one when a round over the built section is due, or when nothing is due and the section has
+   a README; `0` with no round line.
 5. **Revise** — the kinds after `revise:` on the newest round line.
-6. **Commit** — `none`.
+6. **Commit** — the section's code commit, as `--rounds` prints it, at round 1 and later;
+   else `none`.
 7. **Contract** — `docs/packages/<pkg>/contract.md`.
 8. **Repo contract** — `docs/architecture.md`.
 9. **Dependency READMEs** — as line 7 of `--fields`.
@@ -1226,6 +1233,26 @@ def profile_due(pkg: str, section: str, token: str) -> dict[str, object] | None:
     return None
 
 
+def built_round_due(pkg: str, section: str, token: str) -> dict[str, object] | None:
+    """A round over the built section, or None: the newest round line closed its round and its
+    commit is `none` or older than the section's code (rule 7's paths). Same keys as `profile_due`.
+
+    It does not look at the state; `section_state` asks only of a row that would be DONE.
+    """
+    doc = DOCS / "sources" / f"{token}.md"
+    lines = _round_lines(doc.read_text(), pkg, section) if doc.exists() else []
+    if not lines or profile_due(pkg, section, token) is not None:
+        return None
+    n, commit, _ = lines[-1]
+    due = {"mode": "profile", "round": n + 1, "revise": "none"}
+    if commit == "none":
+        return {**due, "evidence": f"stage:{token} r{n} not profiled on built code"}
+    if (after := _code_after_review(pkg, section, commit)) is None:
+        return None
+    code = after if after == UNCOMMITTED else section_commit(pkg, section)
+    return {**due, "evidence": f"stage:{token} r{n} {_short(commit)} older than code {_short(code)}"}
+
+
 # ---------------------------------------------------------------------------------------------
 # The state
 # ---------------------------------------------------------------------------------------------
@@ -1351,8 +1378,20 @@ def section_state(pkg: str, section: str, paths: dict[str, object] | None = None
     """(STATE, evidence) for one section: the first rule in the module docstring that fires.
 
     paths is the package's `paths_state`, computed here when not given; `package_table` passes
-    it once for every row.
+    it once for every row. Rule 3's after-build round applies only where the rest would say DONE.
     """
+    state, evidence = _state_before_built_round(pkg, section, paths)
+    if state != "DONE":
+        return state, evidence
+    row = _row(pkg, section) or {}
+    for kind, token in _sources(row.get("source", "")):
+        if kind == "stage" and (due := built_round_due(pkg, section, token)):
+            return "PROBE", str(due["evidence"])
+    return state, evidence
+
+
+def _state_before_built_round(pkg: str, section: str, paths: dict[str, object] | None) -> tuple[str, str]:
+    """`section_state` without rule 3's after-build round."""
     p = _paths(pkg, section)
     row: dict[str, str] = p["row"]  # type: ignore[assignment]
     design: Path = p["design"]  # type: ignore[assignment]
@@ -3044,12 +3083,22 @@ def _stage_line(pkg: str, token: str) -> str:
     return "none"
 
 
+def _next_round(pkg: str, section: str, token: str, built: bool) -> dict[str, object]:
+    """The `profile` run `--profile` prints when none is due: the newest round plus one once the
+    section has a README, else round 0 — the hand re-profile `--step PROBE` sends."""
+    doc = DOCS / "sources" / f"{token}.md"
+    lines = _round_lines(doc.read_text(), pkg, section) if doc.exists() else []
+    return {"mode": "profile", "round": lines[-1][0] + 1 if built and lines else 0, "revise": "none"}
+
+
 def profiler_inputs(pkg: str, section: str) -> list[str]:
     """The profiler's spawn blocks for one section, blank-line separated; the module docstring's
     `--profile` list is the one list of the fields. Empty for a row with no `stage:` source."""
     row = _row(pkg, section) or {}
     stages = [token for kind, token in _sources(row.get("source", "")) if kind == "stage"]
-    dues = {token: profile_due(pkg, section, token) for token in stages}
+    built = _paths(pkg, section)["readme"].exists()  # type: ignore[union-attr]
+    dues = {token: profile_due(pkg, section, token) or (built_round_due(pkg, section, token) if built else None)
+            for token in stages}
     runs = [t for t in stages if dues[t] is not None] or stages
     rows = sections(pkg)
     deps = set(_names(row.get("depends on", ""))) - {section}
@@ -3068,7 +3117,8 @@ def profiler_inputs(pkg: str, section: str) -> list[str]:
 
     out: list[str] = []
     for token in runs:
-        due = dues[token] or {"mode": "profile", "round": 0, "revise": "none"}
+        due = dues[token] or _next_round(pkg, section, token, built)
+        commit = (section_commit(pkg, section) or "none") if int(due["round"]) > 0 else "none"  # type: ignore[call-overload]
         if out:
             out.append("")
         out += [
@@ -3077,7 +3127,7 @@ def profiler_inputs(pkg: str, section: str) -> list[str]:
             f"Stage: {token}",
             f"Round: {due['round']}",
             f"Revise: {due['revise']}",
-            "Commit: none",
+            f"Commit: {commit}",
             f"Contract: {_rel(contract_path(pkg))}",
             "Repo contract: docs/architecture.md",
             f"Dependency READMEs: {cell(readmes)}",

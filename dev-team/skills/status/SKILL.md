@@ -117,10 +117,13 @@ for the `surface` section before its siblings ship). The docstring gives each ru
 `stage:<token>` — fifteen `<Field>: <value>` lines per stage, from `Mode:` (`profile` or
 `verify`) to `Run:`, blocks separated by a blank line. Such a row is PROBE until the newest
 round line under `## <pkg>/<section>` in its profile `docs/sources/<token>.md` is neither
-`pending verify` nor `revise: …`; with nothing due it prints a round-0 `profile` block, the hand
-re-profile `--step PROBE` sends. `/dev-team:run-package` sends it verbatim to the profiler. A
-row with no stage prints `profile: no stage source in <pkg>/<section>`; a section the contract
-lacks exits 2.
+`pending verify` nor `revise: …`, and PROBE again once its reviewers approve it while that
+line's commit is `none` or older than the section's code: a round over the built section, at
+the newest round plus one with `Commit:` the section's commit. With nothing due it prints the
+next `profile` block, the hand re-profile `--step PROBE` sends: round 0 before the section has
+a README, else the newest round plus one. `/dev-team:run-package` sends it verbatim to the
+profiler. A row with no stage prints `profile: no stage source in <pkg>/<section>`; a section
+the contract lacks exits 2.
 
 The script runs no test and no constraint command. The stop hook runs `docs/constraints.md`'s
 **Floor** and **Enforced** rows through the same parser this script exposes, so the rows the

@@ -392,6 +392,9 @@ headings:
       # pair writes the entries for what was built by hand, field by field, at wrap-up.
       - file: skills/pair/SKILL.md
         cites: ['Clause', 'Said', 'Did', 'Found', 'Why', 'Status', 'Raised by', 'Resolved by']
+      # The profiler's verify run, at round 1 or later, appends a spec-change:design entry.
+      - file: agents/profiler.md
+        cites: ['Clause', 'Said', 'Found', 'Why', 'Status', 'Raised by', 'Resolved by']
 
   - name: change file headings its readers parse are ones planning-templates defines
     # The architect writes a change file on a CHANGE outcome and sync-plan verifies and applies
