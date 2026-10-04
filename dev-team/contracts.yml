@@ -276,6 +276,8 @@ headings:
         cites: ['Observed schema', 'Quirks', 'Duplicates and keys']
       - file: skills/status/scripts/status.py
         cites: ['Sections served']
+      - file: skills/data-quality/SKILL.md
+        cites: ['Observed schema', 'Checks', 'Quirks', 'Unexplained']
 
   - name: section README headings its readers parse are ones the implementer writes
     owner: agents/implementer.md
@@ -298,6 +300,9 @@ headings:
       # new ledger entry under Implementation notes.
       - file: skills/pair/SKILL.md
         cites: ['Purpose', 'Entry points and interfaces', 'Implementation notes']
+      # data-quality has the README list the handlers by kind id and name the profile.
+      - file: skills/data-quality/SKILL.md
+        cites: ['Pipeline / workflow', 'Implementation notes']
 
   - name: design headings the tester writes tests from are ones the designer's template defines
     # The tester inventories its cases by design heading and cites them in every test's
@@ -317,6 +322,9 @@ headings:
       - file: agents/reviewer.md
         cites: ['Interfaces', 'Workflow / pipeline', 'Error handling and logging', 'Tests',
                 'Open questions']
+      # data-quality puts the kinds table under Workflow / pipeline and names its cases.
+      - file: skills/data-quality/SKILL.md
+        cites: ['Workflow / pipeline', 'Tests', 'Skills used', 'Open questions']
 
   - name: every agent that commits cites the one commit rule, by its rule names
     # git-workflow-and-versioning §Project convention is the one copy of the run gate, staging,

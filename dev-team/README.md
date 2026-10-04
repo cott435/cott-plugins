@@ -57,6 +57,7 @@ dev-team/
     │       + locked.py                     a mkdir lock around the three shared edits (uv add, an entry-point line, the .gitignore block)
     │       + entry_point.py                one entry-point line in the package pyproject.toml, under the deps lock
     ├── planning-templates/   headings for every document the loop writes and parses, the decisions inbox included
+    ├── data-quality/         a section built from its data profile: kinds, treatments, the reject record (invoked: marked sections)
     ├── project-structure/    layout, size limits, config placement        (preloaded: 5 agents)
     ├── python-style-guide/   inside a file: docstrings, function shape, … (preloaded: impl, test, review)
     ├── python-implementation/ splitting mechanics, config code            (invoked on demand)
@@ -519,6 +520,7 @@ mechanism in Claude Code that scopes by agent.
 | `python-implementation` — splitting mechanics, config code | — | — | invoked | — | — | — | — |
 | `workspace-scaffold` — pyproject, import-linter, mkdocs, CI skeletons | invoked | — | invoked | — | — | — | — |
 | `planning-templates` — headings for every document the loop parses | invoked | read | read | read | read | — | invoked |
+| `data-quality` — a data-heavy section from its profile: a handler and a test per kind | — | invoked | invoked | — | — | — | — |
 | `security-review` — checklist | — | — | invoked | — | invoked | — | — |
 | `test-driven-development` — red-green-refactor, test design, pytest | — | — | ✓ | ✓ | — | — | — |
 | `debugging-and-error-recovery` — root-cause triage for tests and builds | — | — | invoked | — | — | — | — |

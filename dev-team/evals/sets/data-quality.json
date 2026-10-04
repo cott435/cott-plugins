@@ -25,7 +25,7 @@
         "K3 and K5 have the treatment `quarantine` and K4 has `flag`, each with `—` (or an equivalent 'none') under `decided by`; no treatment in the table is `repair` or `drop` except K1's",
         "The design states a default for a row that fails a check and matches no kind in the table: it is quarantined (kept out of the output and recorded) with the reason `unclassified`, that exact word",
         "The design says what the reject record holds for every rejected or altered row: the row's key (`seq`), the kind id as the reason, the treatment applied, and for K1's repair the value before",
-        "The design's **Tests** names one case for each of K1, K2, K3, K4 and K5, each run on that kind's rows in `rawtrades.sample.json` and each asserting the treatment and the reject record's reason",
+        "The design's **Tests** names one case for each of K1, K2, K3, K4 and K5, each run on that kind's rows in `rawtrades.sample.json` and each asserting the treatment and the reject record's reason, which is the kind id (`K1` … `K5`)",
         "The design's **Tests** also names a case that the `accepted` rows of `rawtrades.sample.json` stay accepted and unchanged, and a case that a failing row of no kind is quarantined as `unclassified`",
         "The design's **Skills used** lists `data-quality`"
       ],
