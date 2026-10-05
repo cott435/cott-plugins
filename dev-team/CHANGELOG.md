@@ -12,6 +12,41 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [2.8.0] - 2026-10-05
+
+A package's whole-repo checks run before its paths review and its close, not only in CI, and a
+CI workflow exists to run them again before anything merges. From a review that found no
+whole-repo test run before review or before a commit reached GitHub. Evidence:
+`evals/2026-10-05-2.8-integration-check.md`.
+
+### Added
+
+- `gate_on_stop.py --integration <pkg>`: every Floor and Enforced row of `docs/constraints.md`
+  (else the Toolchain) over the whole repo — the `repo`-scope pytest the stop gate skips
+  included — every failure a FAIL, placed by section in `.dev-team/integration/<pkg>.txt`
+  (6abfd28)
+- `status.py`'s `integration:` line: a failing record re-opens each section of the package a
+  failure lies in at FIX n, with the record in its implementer's **Review**, up to a cap at run
+  3; the record goes stale on any change under the package root (6abfd28)
+- The stop gate's regression check: the whole suite of every finished package that depends on
+  the section's package, `FAIL` when the failure traces into the section's files, else
+  `ELSEWHERE` (6abfd28)
+- `.github/workflows/ci.yml`: `workspace-scaffold` §5 carries the workflow, the implementer's
+  scaffold mode writes it and adds any command it lacks, and `status.py --scaffold` asks for it
+  and for each Floor and Enforced command (else Toolchain line) it does not hold (6abfd28)
+
+### Changed
+
+- `shipped:` needs `integration: pass` on the package's current code; a package shipped under
+  2.7 prints `shipped: no (integration needed)` until one `/dev-team:run-package` runs the check
+  (6abfd28)
+- `run-package` step 7 is integration, paths, then close; it asks at the integration cap (*one
+  more round* or *stop here*, no *defer*) and on a failure no section of the package owns or a
+  run out of time (*fixed, run it again* or *stop here*) (6abfd28)
+- A skipped `repo`-scope pytest row reads `repo-scope pytest is the integration check's`; a
+  contract claim forbids the old "CI's" wording in every live file (6abfd28)
+
+
 ## [2.7.0] - 2026-10-05
 
 Data-heavy sections are designed from a profile of the real data they will receive, and
