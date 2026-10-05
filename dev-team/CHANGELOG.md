@@ -12,7 +12,7 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
-## [Unreleased] — 2.7.0
+## [2.7.0] - 2026-10-05
 
 Data-heavy sections are designed from a profile of the real data they will receive, and
 profiled again on their own output before they are DONE. Design:
@@ -49,6 +49,13 @@ profiled again on their own output before they are DONE. Design:
   cap, and counts `profiler <n>` in its summary.
 - **PROBE** and **BLOCKED** in `status.py` gain the `stage:` conditions. A contract with no
   `stage:` row derives exactly the 2.6.0 states.
+- The profiler, run-package and architect eval sets check sampled rows, driver calls and the
+  built treatments from raw evidence in `outputs/`, one fact per expectation (cec82ae)
+
+### Fixed
+
+- The Hand-offs sequence chart in `site/flow.md` renders again; two `;` in its notes had
+  broken it since 2.2 (428b1f5)
 
 
 ## [2.6.0] - 2026-10-03
