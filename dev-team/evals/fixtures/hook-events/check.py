@@ -22,7 +22,9 @@ Each case is `events/<case>.json`:
   or `transcript_file`, a recorded transcript under this directory
   (`transcripts/<name>.jsonl`) copied there instead.
 - `event`: the hook input as Claude Code sends it, `{cwd}` standing for the repo and
-  `{plugin}` for this plugin's root (a `locked.py` path in a Bash command); or `raw`,
+  `{plugin}` for this plugin's root (a `locked.py` path in a Bash command); a `tool_input`
+  value, like a `setup.files` content, may be `{"repeat": ["<string>", <n>]}`, the string
+  repeated `n` times (a write too large to hold in a case); or `raw`,
   stdin sent verbatim. `args`: command-line arguments, for the gate's `--report` mode and the
   sync hook's `--all`, which read no stdin.
 - `env`: extra environment for the script (the gate's `DEV_TEAM_GATE_TIMEOUT` and
@@ -87,6 +89,14 @@ def _sub(value: object, run_sha: str) -> object:
     return value
 
 
+def _expand(value: object) -> object:
+    """value, or `{"repeat": ["<string>", <n>]}` as the string repeated n times."""
+    if isinstance(value, dict) and "repeat" in value:
+        text, n = value["repeat"]
+        return text * n
+    return value
+
+
 def check(case: Path) -> list[str]:
     spec = json.loads(case.read_text())
     exp, setup = spec["expect"], spec.get("setup", {})
@@ -110,7 +120,7 @@ def check(case: Path) -> list[str]:
         exp = _sub(exp, run_sha)
         for rel, text in setup.get("files", {}).items():
             (repo / rel).parent.mkdir(parents=True, exist_ok=True)
-            (repo / rel).write_text(text.replace("{RUN_SHA}", run_sha))
+            (repo / rel).write_text(_expand(text).replace("{RUN_SHA}", run_sha))
         for rel in setup.get("remove", []):
             shutil.rmtree(repo / rel) if (repo / rel).is_dir() else (repo / rel).unlink()
         if "commit" in setup:
@@ -123,6 +133,8 @@ def check(case: Path) -> list[str]:
             then = time.time() - 1200
             os.utime(lock, (then, then))
         event = spec.get("event")
+        if event and isinstance(event.get("tool_input"), dict):
+            event["tool_input"] = {k: _expand(v) for k, v in event["tool_input"].items()}
         agent_id = (event or {}).get("agent_id", "")
         atp = (event or {}).get("agent_transcript_path", "").replace("{cwd}", str(repo))
         if not atp and (event or {}).get("transcript_path") and agent_id:

@@ -1,0 +1,33 @@
+{
+  "note": "--profile with nothing due still prints a round-0 profile block, the hand re-profile (2.7, phase 2)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "profile",
+      "lines": [
+        "pending verify",
+        "kinds: 1 (0 to decide)"
+      ]
+    }
+  ],
+  "args": [
+    "--profile",
+    "data/clean"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "Mode: profile",
+      "Round: 0",
+      "Revise: none",
+      "Commit: none"
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "note": "round 1 over the built code closed clean on the reviewed commit: DONE (2.7, phase 5)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "profile",
+      "lines": [
+        "pending verify",
+        "kinds: 1 (0 to decide)"
+      ]
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "profile",
+      "append": true,
+      "lines": [
+        {
+          "round": 1,
+          "commit": "{HEAD}",
+          "verdict": "clean"
+        }
+      ]
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "clean",
+    "state": "DONE"
+  }
+}

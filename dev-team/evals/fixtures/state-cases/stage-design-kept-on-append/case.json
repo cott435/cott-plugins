@@ -1,0 +1,43 @@
+{
+  "note": "a round line appended to the profile after the design re-opens nothing (2.7, phase 2)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "profile",
+      "lines": [
+        "pending verify",
+        "kinds: 1 (0 to decide)"
+      ]
+    },
+    {
+      "do": "design",
+      "section": "clean"
+    },
+    {
+      "do": "profile",
+      "append": true,
+      "lines": [
+        {
+          "round": 0,
+          "commit": "none",
+          "verdict": "kinds: 1 (0 to decide)"
+        }
+      ]
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "clean",
+    "state": "TEST",
+    "absent": [
+      "newer than design"
+    ]
+  }
+}

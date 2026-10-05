@@ -77,7 +77,8 @@ The driver's own output, written as it happens:
 - `<outputs>/spawns.md` — one entry per Agent call, in order: index; batch number (the calls of
   one assistant message share it); `subagent_type`; `run_in_background`; the full prompt,
   verbatim, in a fenced block, with its line breaks as you would send them; `recorded, not
-  sent`. When the driver made no Agent call, the one line `no Agent call`.
+  sent`. When the driver made no Agent call, the one line `no Agent call`. The prompt is copied
+  whole, character for character: never abbreviated, summarised, elided with `…`, or described.
 - `<outputs>/summary.md` — the driver's final message, verbatim and whole.
 
 Then, after the final message, read-only copies from `<copy>`. These are the harness's, not
@@ -96,3 +97,18 @@ the driver's:
   each question, its options and the answer, and each batch with its calls, at the point in
   that order where it happened; the final message; then the line `--- harness copies ---` and
   the copies above.
+
+## The runner's step
+
+Not the executor's. This eval runs its executor headless (`claude -p --output-format
+stream-json --verbose`, the stream kept as `<run_dir>/stream.jsonl`), so that what the driver
+read and wrote is on record apart from its own account. When the session has ended, whoever
+ran it runs
+`python3 <plugin>/evals/sets/files/run-package/collect_stream.py <run_dir>/stream.jsonl <outputs>`,
+which writes the driver's own tool calls as the session made them: `reads.txt` (every Read,
+Glob and Grep, with its path), `writes.txt` (every Write and Edit, with its path), `bash.txt`
+(every Bash command, whole), `driver-log.txt` (all of them in order, each Bash command with its
+output) and `agent-calls.md` (any Agent call actually made; this eval records its calls in
+`spawns.md` instead and makes none). The expectations' no-read and no-write clauses read
+these. A run made any other way — an executor subagent, which has no stream — has none of
+these files, and those clauses fail for it rather than resting on `transcript.md`.

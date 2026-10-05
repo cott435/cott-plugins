@@ -1,0 +1,19 @@
+{
+  "note": "--profile on a section the contract lacks exits 2 (2.7, phase 2)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    }
+  ],
+  "args": [
+    "--profile",
+    "data/nope"
+  ],
+  "expect": {
+    "exit": 2,
+    "contains": [
+      "no section nope in docs/packages/data/contract.md"
+    ]
+  }
+}

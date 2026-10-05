@@ -1,0 +1,19 @@
+{
+  "note": "--profile on a row with no stage: source says so and exits 0 (2.7, phase 2)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    }
+  ],
+  "args": [
+    "--profile",
+    "data/ingest"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "profile: no stage source in data/ingest"
+    ]
+  }
+}

@@ -23,7 +23,15 @@ the 2.2 paths under `docs/packages/<pkg>/` and the ledger heading's `— <k>`; `
 paths and heading. `edit` takes `path`, `message`, and `append` (text added at the end),
 `"replace": ["<old>", "<new>"]` (the first occurrence, applied before `append`), or both.
 `base` takes `call_paths: true` (a **Call paths** heading matching the `commands` macro's tree)
-or a string (the heading's body verbatim).
+or a string (the heading's body verbatim), and `stage: true` (2.7): the `clean` row's `source`
+`stage:rawtrades` and `builds with` `dev-team:data-quality`, and a **Package conventions**
+line for the stage at the contract's end; `stage: "no-deps"` writes the same with the `clean`
+row's `depends on` cell `—`. `profile` writes `docs/sources/rawtrades.md`, a
+data profile serving `data/<section>` (default `clean`), one round line per entry of `lines`:
+a verdict string (round 0, commit `none`) or `{"round": r, "commit": "{HEAD}" | "none",
+"verdict": "…"}`; with `append: true` it adds only the lines. A `files` content may be
+`{"repeat": ["<string>", <n>]}`, the string repeated `n` times (2.7, phase 7: a file too large
+to hold in a case).
 """
 
 from __future__ import annotations
@@ -81,6 +89,32 @@ Loads, cleans and stores the trade export.
 # **Call paths** entry, so a contract can match the code `--paths` reads.
 CALL_PATHS = """- `data-load` (budget 8):
   - file write: 1 `cli.load` → 2 `pipelines.run_load` → 3 `ingest.read_trades` → `shutil.copy`
+"""
+
+# The `stage: true` option of `base` (2.7, phase 2): the `clean` row marked as a data stage.
+STAGE_ROW = ("| clean | dedupe and sort | packages/data/src/data/clean/ | docs/packages/data/design/clean.md | — | ingest | — |",
+             "| clean | dedupe and sort | packages/data/src/data/clean/ | docs/packages/data/design/clean.md | dev-team:data-quality | ingest | stage:rawtrades |")
+STAGE_CONVENTIONS = """
+## Package conventions
+
+- `stage:rawtrades` — the trade rows ingest reads; lands at data/trades.csv; pull cap 400 rows, D1
+"""
+
+# The `profile` macro's document (2.7, phase 2): a round-0 data profile, before its round lines.
+PROFILE = """# Source probe — rawtrades — stage — 2026-09-27
+
+Purpose: dedupe and sort
+Profile: rawtrades.profile.py · Examples: rawtrades.sample.json
+
+## Quirks
+
+- K1 exact duplicates — checks C1; 2 of 400; the same row twice; proposed: drop; D?; unverified
+
+## Sections served
+
+## data/{section}
+
+dedupe and sort
 """
 
 TRADES = """# trades — dataset
@@ -242,12 +276,20 @@ def run(dest: Path, *args: str) -> str:
     return out.stdout.strip()
 
 
+def expand(content: str | dict) -> str:
+    """content, or `{"repeat": ["<string>", <n>]}` as the string repeated n times."""
+    if isinstance(content, dict) and "repeat" in content:
+        text, n = content["repeat"]
+        return text * n
+    return content
+
+
 def write(dest: Path, files: dict[str, str]) -> None:
     head = run(dest, "rev-parse", "HEAD")
     for rel, content in files.items():
         p = dest / rel
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(content.replace("{HEAD}", head))
+        p.write_text(expand(content).replace("{HEAD}", head))
 
 
 def commit(dest: Path, files: dict[str, str], message: str) -> None:
@@ -274,6 +316,10 @@ def m_base(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
         if cp:
             body = CALL_PATHS if cp is True else cp
             text += "\n## Call paths\n\n" + body.rstrip("\n") + "\n"
+        if step.get("stage"):
+            text = text.replace(*STAGE_ROW) + STAGE_CONVENTIONS
+            if step["stage"] == "no-deps":  # 2.7, phase 4: a stage row nothing produces
+                text = text.replace("| dev-team:data-quality | ingest | stage:", "| dev-team:data-quality | — | stage:")
         files["docs/packages/data/contract.md"] = text
     if step.get("sources", True):
         if contract == "api":
@@ -281,6 +327,20 @@ def m_base(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
         else:
             files["docs/sources/trades.md"] = TRADES
     return [(files, "docs: architecture, data contract, probe doc")]
+
+
+def m_profile(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
+    """`docs/sources/rawtrades.md` with one round line per entry of `lines`; `append` adds only the lines."""
+    rel = "docs/sources/rawtrades.md"
+    out = []
+    for entry in step.get("lines", []):
+        e = {"round": 0, "commit": "none", "verdict": entry} if isinstance(entry, str) else entry
+        out.append(f"Round {e['round']} — {DATE} — commit {e['commit']} — {e['verdict']}\n")
+    if step.get("append"):
+        text = (dest / rel).read_text() + "".join(out)
+    else:
+        text = PROFILE.format(section=step.get("section", "clean")) + ("\n" + "".join(out) if out else "")
+    return [({rel: text}, "docs/sources: rawtrades profiled")]
 
 
 def m_design(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
@@ -383,7 +443,7 @@ def m_deviation(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
     evidence = "Did: built it the other way" if kind == "deviation" else "Found: src/x.py:1"
     entry = (f"\n## {PKG}/{s} — {DATE} — {kind}{k}\n\nClause: {step.get('clause', 'design §5 load_trades')}\n"
              f"Said: \"one thing\"\n{evidence}\nWhy: the data says otherwise\nStatus: {step['status']}\n"
-             f"Raised by: implementer — run-package {PKG}\nResolved by: —\n")
+             f"Raised by: {step.get('raised_by', f'implementer — run-package {PKG}')}\nResolved by: —\n")
     return [({rel: old + entry}, f"{PKG}/{s}: {kind} {step['status']}")]
 
 

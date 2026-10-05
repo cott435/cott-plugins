@@ -1,0 +1,53 @@
+{
+  "note": "the code changed and was approved again after round 1's commit: the next round is due (2.7, phase 5)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "profile",
+      "lines": [
+        "pending verify",
+        "kinds: 1 (0 to decide)"
+      ]
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "profile",
+      "append": true,
+      "lines": [
+        {
+          "round": 1,
+          "commit": "{HEAD}",
+          "verdict": "clean"
+        }
+      ]
+    },
+    {
+      "do": "fix",
+      "section": "clean"
+    },
+    {
+      "do": "review",
+      "section": "clean",
+      "round": 2,
+      "reports": {
+        "s": "approve"
+      }
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "clean",
+    "state": "PROBE",
+    "evidence": "^stage:rawtrades r1 \\w{7} older than code \\w{7}$"
+  }
+}

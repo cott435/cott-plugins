@@ -1,0 +1,19 @@
+{
+  "note": "--run-gate passes a stage: row that depends on ingest (2.7, phase 4)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    }
+  ],
+  "args": [
+    "--run-gate",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "run gate: PASS"
+    ]
+  }
+}

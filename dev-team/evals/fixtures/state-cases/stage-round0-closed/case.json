@@ -1,0 +1,26 @@
+{
+  "note": "round 0 closed with nothing to decide: the section moves on to DESIGN (2.7, phase 2)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "profile",
+      "lines": [
+        "pending verify",
+        "kinds: 1 (0 to decide)"
+      ]
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "clean",
+    "state": "DESIGN",
+    "evidence": "^no design$"
+  }
+}

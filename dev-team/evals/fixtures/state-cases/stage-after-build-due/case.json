@@ -1,0 +1,30 @@
+{
+  "note": "a marked section approved and DONE whose built output has no round line: PROBE (2.7, phase 5)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "profile",
+      "lines": [
+        "pending verify",
+        "kinds: 1 (0 to decide)"
+      ]
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "clean",
+    "state": "PROBE",
+    "evidence": "^stage:rawtrades r0 not profiled on built code$"
+  }
+}

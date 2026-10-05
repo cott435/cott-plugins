@@ -1,0 +1,58 @@
+{
+  "note": "--fields at the profile cap: the evidence holds an open spec-change:design, so delta (2.7, phase 6)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "profile",
+      "lines": [
+        "pending verify",
+        "kinds: 1 (0 to decide)"
+      ]
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "profile",
+      "append": true,
+      "lines": [
+        {
+          "round": 1,
+          "commit": "{HEAD}",
+          "verdict": "new kinds: K2"
+        },
+        {
+          "round": 2,
+          "commit": "{HEAD}",
+          "verdict": "new kinds: K3"
+        }
+      ]
+    },
+    {
+      "do": "deviation",
+      "section": "clean",
+      "kind": "spec-change:design",
+      "status": "open",
+      "raised_by": "profiler — run-package data",
+      "clause": "design §4 kinds table"
+    }
+  ],
+  "args": [
+    "--fields",
+    "data/clean"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "mode: delta\n"
+    ]
+  }
+}

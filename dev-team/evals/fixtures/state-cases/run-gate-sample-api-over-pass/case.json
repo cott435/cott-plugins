@@ -1,0 +1,29 @@
+{
+  "note": "--run-gate passes a researcher's api sample over 200 KB: not a data profile's (2.7, phase 7)",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "files": {
+        "docs/sources/polygon.sample.json": {
+          "repeat": [
+            "x",
+            210000
+          ]
+        }
+      },
+      "message": "docs/sources: polygon api sample"
+    }
+  ],
+  "args": [
+    "--run-gate",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "run gate: PASS"
+    ]
+  }
+}

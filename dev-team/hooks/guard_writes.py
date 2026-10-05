@@ -18,7 +18,9 @@ New entries go to `docs/packages/<pkg>/deviations/<section>.md`, reports to
 `docs/packages/<pkg>/reviews/<section>/`; the old ledgers (`docs/deviations/<pkg>/<section>.md`,
 the pre-split `docs/deviations.md`) and `docs/reviews/` stay writable wherever the new ones are,
 so an entry is edited in the file that holds it. A designer or implementer writes its section's
-decisions inbox, `docs/packages/<pkg>/decisions/<section>.md`, never `docs/decisions.md`.
+decisions inbox, `docs/packages/<pkg>/decisions/<section>.md`, never `docs/decisions.md`. A
+profiler writes the profile under `docs/sources/`, its local folder `.dev-team/data/**`, the
+ledgers, the inboxes and `docs/followups.md`.
 
 Suppression comments: a Write or Edit under `**/tests/intent/**` that adds `# noqa`, `# type:
 ignore` or `# pragma: no cover` (SUPPRESS, the gate's own patterns) is refused, exit 2. "Adds" is
@@ -26,6 +28,13 @@ a count: a Write whose `content` holds more matches than the file on disk (none 
 exist), an Edit whose `new_string` holds more than its `old_string`; an edit that keeps an
 existing comment in place passes. An event with no `content` or `new_string` skips the check and
 the path rule decides alone.
+
+Example rows: a Write or Edit that would leave a data profile's `docs/sources/<token>.sample.json`
+over 200 KB is refused for every guarded role, exit 2. A profile's file is one the profiler
+writes, or one whose sibling `<token>.md` has a `— stage —` title line; a researcher's api sample
+is not one. An Edit's size is computed (the file on disk, less `old_string`, plus `new_string`;
+`replace_all` is not modelled, and `status.py --run-gate` checks the file on disk). An event with
+no text passes this rule, which runs before the path rule.
 
 Section scope: an implementer whose spawn prompt carries `Section: <pkg>/<section>` (read from
 its transcript by `status.cached_section`) may write only its section's files, SECTION_SCOPE:
@@ -58,11 +67,16 @@ LEDGERS = ("docs/deviations.md", "docs/deviations/**", "docs/packages/*/deviatio
 INBOXES = ("docs/packages/*/decisions/**",)
 REVIEWS = ("docs/reviews/**", "docs/packages/*/reviews/**")
 
+SAMPLE = "docs/sources/*.sample.json"
+SAMPLE_CAP = 200 * 1024
+STAGE_TITLE = re.compile(r"# Source probe — .+ — stage — ")
+
 # agent_type → (allowed, excluded, carved back out of the exclusions).
 ALLOWED: dict[str, tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]] = {
     "dev-team:architect": (("docs/**",), ("docs/packages/*/design/**", *REVIEWS), LEDGERS),
     "dev-team:designer": (("docs/packages/*/design/**", *LEDGERS, *INBOXES), (), ()),
     "dev-team:researcher": (("docs/sources/**", ".claude/skills/*/**"), (), ()),
+    "dev-team:profiler": (("docs/sources/**", ".dev-team/data/**", *LEDGERS, *INBOXES, "docs/followups.md"), (), ()),
     "dev-team:tester": ((INTENT, "**/tests/fixtures/**", *LEDGERS), (), ()),
     "dev-team:reviewer": ((*REVIEWS, *LEDGERS, "docs/followups.md"), (), ()),
     "dev-team:documenter": (("README.md", "packages/*/README.md", "docs/index.md", "docs/readme-previous.md",
@@ -143,6 +157,31 @@ def added_suppression(event: dict, path: str) -> str | None:
     return next((item for item, rx in SUPPRESS if len(rx.findall(new)) > len(rx.findall(old))), None)
 
 
+def profile_sample(agent: str, path: str) -> bool:
+    """True when path is a data profile's example rows: the profiler writes it, or its sibling
+    `<token>.md` exists and its first line is a `— stage —` title."""
+    if agent == "dev-team:profiler":
+        return True
+    doc = Path(path.removesuffix(".sample.json") + ".md")
+    try:
+        with doc.open(encoding="utf-8") as f:
+            return STAGE_TITLE.match(f.readline()) is not None
+    except (OSError, UnicodeDecodeError):
+        return False
+
+
+def new_size(event: dict, path: str) -> int:
+    """Bytes the file would hold after the write: a Write's content; for an Edit the size on disk
+    (0 when absent) less old_string plus new_string; 0 with no text."""
+    ti = event.get("tool_input") or {}
+    if isinstance(ti.get("content"), str):
+        return len(ti["content"].encode())
+    if isinstance(ti.get("new_string"), str):
+        on_disk = os.path.getsize(path) if os.path.isfile(path) else 0
+        return on_disk - len((ti.get("old_string") or "").encode()) + len(ti["new_string"].encode())
+    return 0
+
+
 def section_scope(event: dict, cwd: Path) -> tuple[str, str, tuple[str, ...], list[tuple[str, str]]] | None:
     """(pkg, section, globs, nested) for an implementer spawned on a section the contract lists; else
     None. nested is (section, path) for every other section whose path lies under this one's."""
@@ -184,6 +223,10 @@ def main() -> int:
     rel = os.path.relpath(path, root).replace(os.sep, "/")
     outside = rel == ".." or rel.startswith("../")
     shown = raw if outside else rel
+    if not outside and _match(SAMPLE, rel) and profile_sample(agent, path) and (size := new_size(event, path)) > SAMPLE_CAP:
+        print(f"dev-team write guard: {shown} would be {size // 1024} KB. A profile's example rows stay under 200 KB: "
+              "five rows per kind, and the full failing set under .dev-team/data/.", file=sys.stderr)
+        return 2
     scoped = section_scope(event, cwd) if agent == "dev-team:implementer" else None
     if scoped is not None:
         pkg, section, scope, nested = scoped

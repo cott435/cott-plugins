@@ -1,0 +1,35 @@
+{
+  "note": "--run-gate fails a data profile's example rows over 200 KB (2.7, phase 7)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "profile",
+      "lines": []
+    },
+    {
+      "files": {
+        "docs/sources/rawtrades.sample.json": {
+          "repeat": [
+            "x",
+            210000
+          ]
+        }
+      },
+      "message": "docs/sources: rawtrades example rows"
+    }
+  ],
+  "args": [
+    "--run-gate",
+    "data"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "run gate: FAIL",
+      "docs/sources/rawtrades.sample.json: 205 KB, over 200 KB"
+    ]
+  }
+}

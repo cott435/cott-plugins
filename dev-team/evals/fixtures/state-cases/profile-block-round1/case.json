@@ -1,0 +1,38 @@
+{
+  "note": "--profile on a built section with round 1 due prints round 1 on the section's commit (2.7, phase 5)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "profile",
+      "lines": [
+        "pending verify",
+        "kinds: 1 (0 to decide)"
+      ]
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    }
+  ],
+  "args": [
+    "--profile",
+    "data/clean"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "Mode: profile",
+      "Round: 1"
+    ],
+    "matches": [
+      "^Commit: [0-9a-f]{7,40}$"
+    ]
+  }
+}

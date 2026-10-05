@@ -1,0 +1,20 @@
+{
+  "note": "--run-gate fails on a stage: row whose depends on is empty: nothing produces its data (2.7, phase 4)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": "no-deps"
+    }
+  ],
+  "args": [
+    "--run-gate",
+    "data"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "run gate: FAIL",
+      "data/clean: stage:rawtrades has no depends on; nothing produces its data"
+    ]
+  }
+}

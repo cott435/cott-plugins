@@ -21,7 +21,7 @@ row, the `trades` probe doc; `contract: false | "api"`, `sources: false`), `desi
 round 1 `a` and `b` approving), `fix`, `edit`, `regenerate` (a
 `<pkg>/<section>: regenerate 1 intent tests` commit), `deviation` (one entry in the
 section's ledger, `docs/packages/<pkg>/deviations/<section>.md` with the heading's `— <k>`, or
-with `"legacy": true` in the pre-split `docs/deviations.md`), `change` (`slug`, `sections`,
+with `"legacy": true` in the pre-split `docs/deviations.md`; `raised_by` sets its `Raised by:`), `change` (`slug`, `sections`,
 `status`, `pkg`: a change file at `docs/packages/<pkg>/changes/<slug>.md`), `inbox`
 (`section`, `entries`: the section's decisions inbox, entries verbatim), `commands` (a
 package with one `[project.scripts]` command, **The call tree (2.5)** below) and
@@ -156,6 +156,35 @@ with the built frame or `missing`, a built frame between two matched ones `extra
 column is padded to the entry's longest frame, so the expectations on a shorter frame are
 regexes. Without an entry, or without the heading, one `contract:` line ends the block and no
 `summary:` prints.
+
+**Data stages (2.7).** Fourteen cases (`site/notes/2.7-data-loop-02-status-and-driver.md`,
+the last fourteen rows). Each runs `base` with `"stage": true`: the `clean` row's `source` is
+`stage:rawtrades`, its `builds with` `dev-team:data-quality`, and the contract ends with a
+**Package conventions** line for the stage (pull cap 400 rows, `D1`). The `profile` macro
+commits `docs/sources/rawtrades.md`, a round-0 profile with one kind under **Quirks** and a
+`## data/clean` heading under **Sections served**, then one round line per entry of `lines`
+(`Round <r> — 2026-09-27 — commit <c> — <verdict>`), or with `append` only the lines. A
+`stage:` source is PROBE with no round line, or while the newest one is `pending verify` or
+`revise: …`; any other verdict closes round 0 and the row moves on. `--profile` prints the
+profiler's fifteen-line block. Four of the fourteen (`stage-round0-closed`,
+`stage-round0-blocked`, `stage-design-kept-on-append`, `inputs-stage-source-probes`) already
+passed on 2.6.0's `status.py`, which ignores a `stage:` source: they pin that round 0 closed
+leaves the row where the older rules put it. Phase 5 adds seven
+(`site/notes/2.7-data-loop-05-after-build-rounds.md`), each after a closed round 0: a row that
+would be DONE is PROBE again while its newest round line's commit is `none` or older than the
+section's code. Four of them (`-clean`, `-new-kinds`, `-verify`, `-not-done`) passed before the
+change: they pin that the after-build round never preempts another state. Phase 6 adds six
+(`site/notes/2.7-data-loop-06-cap-and-defer.md`), each after a closed round 0 on built code,
+with the `deviation` macro's `raised_by` option for the profiler's `spec-change:design` entry:
+a round 2 or later closing `new kinds: …` while that entry is open is BLOCKED at the profile
+cap, and `--profile … --defer` prints the defer block. Three of them (`-round1-not-cap`,
+`-entry-resolved`, `stage-deferred`) and `fields-delta-profile-cap` passed before the change:
+they pin that the cap fires only at round 2 or later on an open entry, and that `--fields`
+stays `delta` once the cap's evidence leads with `profile`.
+Phase 7 adds two (`site/notes/2.7-data-loop-07-size-guard.md`): `--run-gate` fails a data
+profile's `rawtrades.sample.json` over 200 KB, and passes a researcher's api sample of the same
+size. A `files` content may be `{"repeat": ["<string>", <n>]}`, the string repeated `n` times.
+`run-gate-sample-api-over-pass` passed before the change, by construction.
 
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
@@ -325,3 +354,34 @@ optional flag).
 | `calltree-contract-prose-line` | as `-match`, with a wrapped prose line starting `**Call paths**` above `## Public surface (intent)` (`edit`) | the same | `contract: data-load (budget 8)`; `summary: 3 match, 0 extra, 0 missing; depth 2 of budget 8`; no `contract: no entry`; exit 0 (phase 7: only a numbered bold line is an item) |
 | `calltree-contract-change-file` | as `-extra`, plus an open `docs/packages/data/changes/load-read.md` whose `## Contract changes` gives the `data-load` entry `from` (three frames) and `to` (with `3 pipelines._read`), a nested bullet after it | the same | `contract: data-load (budget 8) from docs/packages/data/changes/load-read.md`; a line `/^    3 pipelines\._read\s+match  _read \(…load\.py:\d+\)$/`; `summary: 4 match, 0 extra, 0 missing; depth 3 of budget 8`; no `extra  _read`; exit 0 |
 | `calltree-contract-change-file-synced` | as `-change-file`, `Status: synced` | the same | `contract: data-load (budget 8)`; `summary: 3 match, 1 extra, 0 missing`; no ` from docs/packages/data/changes/`; exit 0 |
+| `stage-probe-dependency-not-done` | `base` (`stage: true`) | `—` | `clean · PROBE`, ready `no`, evidence `stage:rawtrades lacks ## data/clean` |
+| `stage-probe-no-profile` | the same, ingest done | `—` | `clean · PROBE`, ready `yes`, the same evidence |
+| `stage-probe-pending-verify` | ingest done; `profile` `["pending verify"]` | `—` | `clean · PROBE`, evidence `stage:rawtrades r0 pending verify` |
+| `stage-probe-revise` | ingest done; `profile` `["pending verify", "revise: K1"]` | `—` | `clean · PROBE`, evidence `stage:rawtrades r0 revise: K1` |
+| `stage-round0-closed` | ingest done; `profile` `["pending verify", "kinds: 1 (0 to decide)"]` | `—` | `clean · DESIGN`, evidence `no design` |
+| `stage-round0-blocked` | as closed, `kinds: 1 (1 to decide)`; `docs/decisions.md` with `D2` open, `Scope: data/clean`, no assumption | `—` | `clean · BLOCKED`, evidence `D2 open, no assumption` |
+| `stage-design-kept-on-append` | as closed; `design` clean; `profile` `append` one more round-0 line | `—` | `clean · TEST`; no `newer than design` |
+| `profile-block-round0` | ingest done | `--profile data/clean` | every field line in order, `Mode: profile` to `Run: run-package data`, `Skills to invoke: none`, the `Data:` line as the contract writes it; `Source probes: docs/sources/trades.md`; exit 0 |
+| `profile-block-verify` | as `stage-probe-pending-verify` | `--profile data/clean` | `Mode: verify`, `Round: 0`, `Revise: none` |
+| `profile-block-revise` | as `stage-probe-revise` | `--profile data/clean` | `Mode: profile`, `Revise: K1` |
+| `profile-block-none-due` | as `stage-round0-closed` | `--profile data/clean` | `Mode: profile`, `Round: 0`, `Revise: none`, `Commit: none` |
+| `profile-no-stage-source` | `base` (`stage: true`) | `--profile data/ingest` | `profile: no stage source in data/ingest`; exit 0 |
+| `profile-bad-target` | the same | `--profile data/nope` | `no section nope in docs/packages/data/contract.md`; exit 2 |
+| `inputs-stage-source-probes` | as `stage-round0-closed`; `design` clean | `--inputs data/clean` | `Source probes: docs/sources/rawtrades.md` |
+| `run-gate-stage-no-deps` | `base` (`stage: "no-deps"`): the `clean` row's `depends on` is `—` (phase 4) | `--run-gate data` | `run gate: FAIL`; `data/clean: stage:rawtrades has no depends on; nothing produces its data`; exit 1 |
+| `run-gate-stage-ok` | `base` (`stage: true`) (phase 4) | `--run-gate data` | `run gate: PASS`; exit 0 |
+| `stage-after-build-due` | ingest done; round 0 closed; `done` clean (phase 5) | `—` | `clean · PROBE`, evidence `stage:rawtrades r0 not profiled on built code` |
+| `stage-after-build-clean` | as `-due`; `profile` `append` round 1 on `{HEAD}`, `clean` | `—` | `clean · DONE` |
+| `stage-after-build-code-newer` | as `-clean`; `fix` clean; `review` round 2 `s` approving the new code | `—` | `clean · PROBE`, evidence matches `stage:rawtrades r1 \w{7} older than code \w{7}` |
+| `stage-after-build-new-kinds` | as `-due`; round 1 `new kinds: K2`; an open `spec-change:design` ledger entry, `Raised by: profiler — run-package data` (explicit step) | `—` | `clean · DESIGN`, evidence starts `open data/clean — ` |
+| `stage-after-build-verify` | as `-due`; round 1 `pending verify` | `—` | `clean · PROBE`, evidence `stage:rawtrades r1 pending verify` |
+| `stage-after-build-not-done` | ingest done; round 0 closed; `design` and `tests` clean, no build | `—` | `clean · IMPLEMENT` |
+| `profile-block-round1` | as `stage-after-build-due` | `--profile data/clean` | `Mode: profile`, `Round: 1`; a line `^Commit: [0-9a-f]{7,40}$`; exit 0 |
+| `stage-cap` | as `-due`; `profile` `append` round 1 `new kinds: K2` and round 2 `new kinds: K3` on `{HEAD}`; an open `spec-change:design` entry, `raised_by` `profiler — run-package data` (phase 6) | `—` | `clean · BLOCKED`, evidence matches `^profile r2 new kinds \(cap\), open data/clean — ` |
+| `stage-cap-round1-not-cap` | as `-due`; round 1 `new kinds: K2`; the entry, open | `—` | `clean · DESIGN`, evidence starts `open data/clean — ` |
+| `stage-cap-entry-resolved` | as `stage-cap`, the entry `resolved` | `—` | no `clean · BLOCKED`, no `(cap)` |
+| `stage-deferred` | as `stage-cap`, the entry `resolved`; `profile` `append` round 2 `deferred` on `{HEAD}` | `—` | `clean · DONE` |
+| `profile-block-defer` | as `stage-cap` | `--profile data/clean --defer` | `Mode: defer`, `Round: 2`; a line `^Commit: [0-9a-f]{7,40}$`; exit 0 |
+| `fields-delta-profile-cap` | as `stage-cap` | `--fields data/clean` | `mode: delta` |
+| `run-gate-sample-over` | `base` (`stage: true`); `profile` `[]`; `docs/sources/rawtrades.sample.json` as `{"repeat": ["x", 210000]}` (phase 7) | `--run-gate data` | `run gate: FAIL`; `docs/sources/rawtrades.sample.json: 205 KB, over 200 KB`; exit 1 |
+| `run-gate-sample-api-over-pass` | `base`; `docs/sources/polygon.sample.json` the same size, no `— stage —` sibling (phase 7) | `--run-gate data` | `run gate: PASS`; exit 0 |

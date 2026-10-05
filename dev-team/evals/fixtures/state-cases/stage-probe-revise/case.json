@@ -1,0 +1,26 @@
+{
+  "note": "the verify run rejected K1: PROBE, a profile run revises it (2.7, phase 2)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "profile",
+      "lines": [
+        "pending verify",
+        "revise: K1"
+      ]
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "clean",
+    "state": "PROBE",
+    "evidence": "^stage:rawtrades r0 revise: K1$"
+  }
+}

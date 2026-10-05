@@ -21,15 +21,21 @@ change item for `/dev-team:plan-repo`, stubbed as a `D<n>` scoped `repo` until t
    `Depends on` names sections in this package only, and must form a DAG — it becomes an
    import-linter contract and the order `/dev-team:run-package` builds in.
 
-   `source` is each external source the section consumes, written `<kind>:<token>` — `api` for a
-   service called over the network, `dataset` for a file, table or corpus that is read. The
-   token is one lowercase word and is the name `docs/sources/<token>.md` carries; probe docs are
-   repo-wide, so a source two packages consume is one document. Several sources are
-   comma-separated (`api:fred, dataset:trades-2024`); no source is `—`. A bare token with no
-   prefix means `api`, which is how every contract written before kinds existed still reads.
-   `/dev-team:run-package`'s PROBE step probes every entry in this column before the section's
-   designer runs, so a source not named here is never probed, and a kind written wrong probes
-   the wrong thing.
+   `source` is each external source the section consumes, written `<kind>:<token>` — `api`
+   for a service called over the network, `dataset` for a file, table or corpus that is
+   read, `stage` for data the section's own dependencies produce (below). The token is one
+   lowercase word and is the name `docs/sources/<token>.md` carries; probe docs are repo-wide,
+   so a source two packages consume is one document. Several sources are comma-separated
+   (`api:fred, dataset:trades-2024`); no source is `—`. A bare token with no prefix means `api`,
+   which is how every contract written before kinds existed still reads. `/dev-team:run-package`'s
+   PROBE step probes every entry in this column before the section's designer runs, so a
+   source not named here is never probed, and a kind written wrong probes the wrong thing. A
+   section whose job is to clean, validate, reconcile or audit data its dependencies produce
+   is marked: `stage:<token>` in `source` (the token names the data, `rawbars`, not the
+   section), `dev-team:data-quality` in `builds with`, and one **Package conventions** line,
+   `` `stage:<token>` — <what the data is>; lands at <path>; pull cap <n> <unit>, D<n> ``, the
+   cap from the vendor probes' cost and quota headings, stubbed with an assumption. Never on a row
+   with no `depends on`, and never on a section that only passes data through.
 
    Every section name and source token follows `project-structure` §4: one lowercase token,
    and never starting with `report`, `summary`, `findings` or `analysis`. A subagent cannot

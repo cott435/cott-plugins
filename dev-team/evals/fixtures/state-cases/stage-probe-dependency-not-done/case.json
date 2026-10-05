@@ -1,0 +1,16 @@
+{
+  "note": "a stage: source with no profile is PROBE, not ready while its dependency is not DONE (2.7, phase 2)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "clean",
+    "state": "PROBE",
+    "ready": false,
+    "evidence": "^stage:rawtrades lacks ## data/clean$"
+  }
+}

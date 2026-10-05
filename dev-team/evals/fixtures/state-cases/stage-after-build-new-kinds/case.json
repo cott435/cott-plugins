@@ -1,0 +1,47 @@
+{
+  "note": "round 1 found new kinds and the verify run opened a spec-change:design entry: DESIGN by rule 4 (2.7, phase 5)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "profile",
+      "lines": [
+        "pending verify",
+        "kinds: 1 (0 to decide)"
+      ]
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "profile",
+      "append": true,
+      "lines": [
+        {
+          "round": 1,
+          "commit": "{HEAD}",
+          "verdict": "new kinds: K2"
+        }
+      ]
+    },
+    {
+      "files": {
+        "docs/packages/data/deviations/clean.md": "# Deviations — data/clean\n\n## data/clean — 2026-09-27 — spec-change:design — 1\n\nClause: design §4 kinds table\nSaid: K1\nFound: K2 stray zero-size rows, 3 of 398; docs/sources/rawtrades.md **Quirks**\nWhy: the built section's output holds rows no kind accounts for\nStatus: open\nRaised by: profiler — run-package data\nResolved by: —\n"
+      },
+      "message": "data/clean: spec-change:design open"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "clean",
+    "state": "DESIGN",
+    "evidence": "^open data/clean — "
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "note": "round 0 closed with a drop to decide: the open decision with no assumption blocks the section (2.7, phase 2)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "profile",
+      "lines": [
+        "pending verify",
+        "kinds: 1 (1 to decide)"
+      ]
+    },
+    {
+      "files": {
+        "docs/decisions.md": "# Decisions\n\n## D2 — drop exact duplicates?\nScope: data/clean\nRecommendation: drop\nAssumption if unanswered:\nStatus: open\n"
+      },
+      "message": "docs: decisions"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "clean",
+    "state": "BLOCKED",
+    "evidence": "D2 open, no assumption"
+  }
+}

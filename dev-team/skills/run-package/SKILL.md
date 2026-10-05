@@ -58,7 +58,7 @@ The first word is `<pkg>`. After it, in any order:
 - `<section>` — a word not starting with `--`: walk that section alone.
 - `--step <STEP>` — one of `PROBE`, `DESIGN`, `TEST`, `IMPLEMENT`, `REVIEW`: run that one step
   for the named section and stop.
-- `--defer` — at a review cap or the paths cap, defer instead of asking.
+- `--defer` — at a review cap, the paths cap or a profile cap, defer instead of asking.
 - `--serial` — one kind of step per batch and one implementer at a time, the 2.1 loop, for a
   repo whose sections share a file the write guard cannot separate.
 
@@ -114,6 +114,11 @@ take turns, since both extend one file.
 | **Section** | `<pkg>/<section>` |
 | **Write to** | `docs/sources/<token>.md` |
 | **Run** | `run-package <pkg>` |
+
+A `stage:` token is not the researcher's. A row at PROBE whose evidence starts `stage:` gets
+one `subagent_type: "dev-team:profiler"` per block `status.py --profile <pkg>/<section>`
+prints, the block sent verbatim as the prompt, as `--inputs` is for the implementer; its
+docstring is the one list of the fields. Do not add, drop or rewrite a line of it.
 
 ### Designer — DESIGN
 
@@ -267,11 +272,11 @@ granted *one more round* at a cap.
    else: it edits the contracts the designers read, so every other row waits one batch.
    Otherwise spawn **every ready row's step in one message**, whatever mix of steps the rows
    are at:
-   - PROBE → the researchers, one per source that lacks the section's entry (two sections
-     waiting on one source take turns).
-   - DESIGN → a designer per section; also a section at TEST whose last tester run this run
-     returned `design-gap` — the `surface` row included when `status.py` marks it ready, which
-     with **Call paths** is right after PLAN.
+   - PROBE → a researcher per `api:` or `dataset:` source lacking the section's entry (sections
+     on one source take turns); the profiler for a `stage:` source or a profile-cap row granted *defer*.
+   - DESIGN → a designer per section, a profile-cap row granted *one more round* included; also
+     a section at TEST whose last tester run this run returned `design-gap` — the `surface` row
+     included when `status.py` marks it ready, which with **Call paths** is right after PLAN.
    - TEST → a tester per section.
    - IMPLEMENT or FIX n → an implementer per section. A cap row granted *one more round* gets
      its implementer here, then its `full` reviewer as a REVIEW next batch. A gate-BLOCKED row
@@ -346,13 +351,13 @@ verdict itself.
 ### One step
 
 After the run gate and the scaffold (**Loop** step 1), `--step <STEP>` runs that step for the
-named section once, against whatever is on disk and
-whatever its derived state, and then **Summary**. A BLOCKED row does not stop it: no question
-is asked, which is how *one more round* is typed by hand. PROBE spawns a researcher for every
-source in the row; REVIEW is round `r` = the row's round plus one — two reviewers at round 1,
-one `full` reviewer otherwise, including at FIX n and at a cap. A missing document is the
-agent's to report: its own preconditions return `blocked`, which ends the step with the
-return's first two lines as `stopped because`.
+named section once, against whatever is on disk and whatever its derived state, and then
+**Summary**. A BLOCKED row does not stop it: no question is asked, which is how *one more
+round* is typed by hand. PROBE spawns a researcher for every `api:` or `dataset:` source in
+the row and the profiler for a `stage:` one; REVIEW is round `r` = the row's round plus one —
+two reviewers at round 1, one `full` reviewer otherwise, including at FIX n and at a cap. A
+missing document is the agent's to report: its own preconditions return `blocked`, which ends
+the step with the return's first two lines as `stopped because`.
 
 ## Asking
 
@@ -363,6 +368,8 @@ One `AskUserQuestion` per block, its text built from what stopped:
 - an agent `blocked` (a missing credential, a failed precondition): the return's lines, with
   *fixed, retry* and *stop here* as the options;
 - a review cap: the row's evidence, with *one more round* and *defer* as the options;
+- a profile cap (evidence `profile r<n> new kinds (cap), open <heading>; …`): the row's
+  evidence, with *one more round* and *defer* as the options;
 - a third `design-gap`: the tester's `Gap:` lines, with the designer's options where the return
   names them;
 - a section whose agent returned `spec-change` and whose next row is not PLAN, DESIGN or TEST:
@@ -393,6 +400,9 @@ Record the answer, then re-run **Loop** step 2:
   in the next batch.
 - For a cap, no ledger edit: *one more round* grants the section an implementer and a `full`
   reviewer; *defer* grants it a `defer` reviewer.
+- For a profile cap, no ledger edit: *one more round* grants the section its designer, the
+  headings after `open` as `Spec-change:`; *defer* grants it a profiler, whose prompt is
+  `status.py --profile <pkg>/<section> --defer`, verbatim.
 - For *fixed, retry*, nothing; the step runs again. For *stop here*, **Summary**.
 - For a gate-BLOCKED row, no ledger edit: *run the implementer again* grants the section an
   implementer, with the `--inputs` block as at IMPLEMENT; *review anyway* grants it its
@@ -413,7 +423,7 @@ Your ledger edits stay uncommitted: `docs/decisions.md` is exempt from the run g
 agent that stages it carries it, and otherwise the user commits it.
 
 No questions when `AskUserQuestion` is not available (a headless run) or the command has
-`--defer`: a review cap or the paths cap with `--defer` is answered *defer*; every other block goes to **Summary**,
+`--defer`: a review cap, the paths cap or a profile cap with `--defer` is answered *defer*; every other block goes to **Summary**,
 with the agent's first two lines, or the row's evidence, as `stopped because`. A
 gate-BLOCKED row is quoted as it prints.
 
@@ -426,7 +436,7 @@ in the block and on disk; a sentence around it is a second summary nobody checks
 ```
 run-package <arguments as typed>: <done | stopped at <section> <STEP>>
 sections: <DONE>/<total> DONE; <section> · <state>, …
-agent runs: designer <n> · tester <n> · implementer <n> · reviewer <n> · researcher <n> · architect <n>
+agent runs: designer <n> · tester <n> · implementer <n> · reviewer <n> · researcher <n> · profiler <n> · architect <n>
 commits: <start sha>..<end sha> (<count>)
 stopped because: <the agent's first two lines, the row as it prints, the shipped: line, the paths: line, or the run gate's FAIL lines>
 no Result: line: <role> <section>: no Result: line; state advanced, …

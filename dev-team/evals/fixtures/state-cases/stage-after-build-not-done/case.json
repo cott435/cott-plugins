@@ -1,0 +1,33 @@
+{
+  "note": "designed and tested, not built: the after-build round does not preempt IMPLEMENT (2.7, phase 5)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "profile",
+      "lines": [
+        "pending verify",
+        "kinds: 1 (0 to decide)"
+      ]
+    },
+    {
+      "do": "design",
+      "section": "clean"
+    },
+    {
+      "do": "tests",
+      "section": "clean"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "clean",
+    "state": "IMPLEMENT"
+  }
+}

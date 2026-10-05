@@ -1,0 +1,31 @@
+{
+  "note": "--profile after a round line pending verify prints a verify block (2.7, phase 2)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "profile",
+      "lines": [
+        "pending verify"
+      ]
+    }
+  ],
+  "args": [
+    "--profile",
+    "data/clean"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "Mode: verify",
+      "Round: 0",
+      "Revise: none"
+    ]
+  }
+}

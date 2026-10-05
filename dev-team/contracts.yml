@@ -140,7 +140,7 @@ forbid:
   - name: every hook matcher and agent_type names an agent this plugin ships
     # A SubagentStop matcher or an agent_type test on a name with no agents/<name>.md never
     # fires, and the gate it implements silently does not exist.
-    pattern: 'dev-team:(?!architect|designer|researcher|tester|implementer|reviewer|documenter|curator)[a-z-]+'
+    pattern: 'dev-team:(?!architect|designer|researcher|tester|implementer|reviewer|documenter|curator|profiler)[a-z-]+'
     files: ['hooks/hooks.json', 'hooks/*.py']
 
   # The six claims below hold the 2.2 paths and defaults against drift. Each is scoped with
@@ -261,6 +261,24 @@ headings:
       - file: agents/implementer.md
         cites: ['Observed schema', 'Leakage']
 
+  - name: data profile headings its readers parse are ones planning-templates defines
+    # A profile is a probe doc of kind `stage`. The profiler writes it by these headings;
+    # the designer finds the kinds under Quirks and the schema under Observed schema with no
+    # edit to its own file, so the template must keep the source probe's spelling.
+    owner: skills/planning-templates/references/data-profile.md
+    owner_span: ['1. **Access**', null]
+    readers:
+      - file: agents/profiler.md
+        cites: ['Access', 'Provenance', 'Shape', 'Observed schema', 'Duplicates and keys',
+                'Checks', 'Quirks', 'Unexplained', 'Expected and not found', 'Rounds',
+                'Cost and time of a full pass', 'Sections served']
+      - file: agents/designer.md
+        cites: ['Observed schema', 'Quirks', 'Duplicates and keys']
+      - file: skills/status/scripts/status.py
+        cites: ['Sections served']
+      - file: skills/data-quality/SKILL.md
+        cites: ['Observed schema', 'Checks', 'Quirks', 'Unexplained']
+
   - name: section README headings its readers parse are ones the implementer writes
     owner: agents/implementer.md
     owner_span: ['## Section README template', '## The surface section']
@@ -282,6 +300,9 @@ headings:
       # new ledger entry under Implementation notes.
       - file: skills/pair/SKILL.md
         cites: ['Purpose', 'Entry points and interfaces', 'Implementation notes']
+      # data-quality has the README list the handlers by kind id and name the profile.
+      - file: skills/data-quality/SKILL.md
+        cites: ['Pipeline / workflow', 'Implementation notes']
 
   - name: design headings the tester writes tests from are ones the designer's template defines
     # The tester inventories its cases by design heading and cites them in every test's
@@ -301,6 +322,9 @@ headings:
       - file: agents/reviewer.md
         cites: ['Interfaces', 'Workflow / pipeline', 'Error handling and logging', 'Tests',
                 'Open questions']
+      # data-quality puts the kinds table under Workflow / pipeline and names its cases.
+      - file: skills/data-quality/SKILL.md
+        cites: ['Workflow / pipeline', 'Tests', 'Skills used', 'Open questions']
 
   - name: every agent that commits cites the one commit rule, by its rule names
     # git-workflow-and-versioning §Project convention is the one copy of the run gate, staging,
@@ -325,6 +349,8 @@ headings:
       - file: agents/tester.md
         span: ['§Project convention', 'rules; stage']
       - file: agents/designer.md
+        span: ['§Project convention', 'rules; stage']
+      - file: agents/profiler.md
         span: ['§Project convention', 'rules; stage']
 
   - name: the reviewer ranks documents by the implementer's order of authority
@@ -366,6 +392,9 @@ headings:
       # pair writes the entries for what was built by hand, field by field, at wrap-up.
       - file: skills/pair/SKILL.md
         cites: ['Clause', 'Said', 'Did', 'Found', 'Why', 'Status', 'Raised by', 'Resolved by']
+      # The profiler's verify run, at round 1 or later, appends a spec-change:design entry.
+      - file: agents/profiler.md
+        cites: ['Clause', 'Said', 'Found', 'Why', 'Status', 'Raised by', 'Resolved by']
 
   - name: change file headings its readers parse are ones planning-templates defines
     # The architect writes a change file on a CHANGE outcome and sync-plan verifies and applies
@@ -393,6 +422,8 @@ headings:
         cites: ['Applied']
       - file: hooks/sync_decisions.py
         cites: ['Applied', 'Status']
+      - file: agents/profiler.md
+        cites: ['Scope', 'Raised by', 'Recommendation', 'Assumption if unanswered', 'Status']
 
   - name: review report headings its readers parse are ones planning-templates defines
     # status.py reads the header lines, the fix-round implementer reads CRITICAL and WARNING,
@@ -494,7 +525,7 @@ headings:
     owner_span: ['**Evidence.**', '**Gate record.**']
     readers:
       - file: skills/run-package/SKILL.md
-        cites: ['open', 'regenerate', 'gate blocked', 'gate let through']
+        cites: ['open', 'regenerate', 'gate blocked', 'gate let through', 'stage', 'profile cap']
 
   - name: every field the driver sends the researcher is one the researcher's Inputs defines
     # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.
@@ -531,6 +562,16 @@ headings:
     readers:
       - file: skills/status/scripts/status.py
         span: ['`--inputs <pkg>/<section>` prints', 'from __future__']
+
+  - name: every field status.py --profile prints is one the profiler's Inputs defines
+    # The profiler's block is not a driver table: `status.py --profile` resolves and prints
+    # it and run-package sends it verbatim. A field the agent does not define is a line it
+    # never reads, and a renamed one arrives empty.
+    owner: agents/profiler.md
+    owner_span: ['## Inputs', '## Modes']
+    readers:
+      - file: skills/status/scripts/status.py
+        span: ['`--profile <pkg>/<section>` prints', '`--inputs <pkg>/<section>` prints']
 
   - name: every field the driver sends the reviewer is one the reviewer's Inputs defines
     # The driver's block for this role is a table whose bold first column is the fields it fills; a field the agent does not define is a line it never reads, and a renamed one arrives empty.

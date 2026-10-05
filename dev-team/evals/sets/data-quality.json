@@ -1,0 +1,63 @@
+{
+  "target": "data-quality",
+  "target_path": "skills/data-quality/SKILL.md",
+  "evals": [
+    {
+      "id": 1,
+      "name": "design-clean-from-profile",
+      "kind": "behavioral",
+      "baseline": "none",
+      "prompt": "Write the design of the `clean` section of the `data` package, as one markdown file, `clean.md`. Everything you need is in `evals/sets/files/data-quality/`, in the dev-team plugin directory: `contract-clean.md` is the package contract's part for this section (in the repo, `docs/packages/data/contract.md`), `rawtrades.md` is the data profile of what `clean` receives (`docs/sources/rawtrades.md`), `rawtrades.sample.json` is the profile's example rows, and `decisions.md` is `docs/decisions.md` as it stands today. Our designs have, among their headings, **Workflow / pipeline**, **Tests**, **Open questions** and **Skills used**. Write the design only: no code and no tests.",
+      "expected_output": "a design of `clean` whose Workflow / pipeline ends in a kinds table with one row for each of K1 to K5 and none for K6, K1 repaired the way D7 was answered, K2 quarantined and waiting on D8 under Open questions, a default that quarantines any other failing row as `unclassified`, a test per kind on that kind's example rows, and `data-quality` under Skills used",
+      "files": [
+        "evals/sets/files/data-quality/contract-clean.md",
+        "evals/sets/files/data-quality/rawtrades.md",
+        "evals/sets/files/data-quality/rawtrades.sample.json",
+        "evals/sets/files/data-quality/decisions.md"
+      ],
+      "expectations": [
+        "outputs/ holds the design as one markdown file, and under its **Workflow / pipeline** heading, after the steps, there is a table whose header columns are exactly `kind`, `rule`, `handler`, `treatment`, `decided by`, in that order (capitalisation aside)",
+        "That table has exactly five rows, one each for K1, K2, K3, K4 and K5, each naming the kind's id and name, a rule in words and a handler function",
+        "K6 (odd-lot, `unverified` in the profile) has no row in the table and no handler anywhere in the design; where the design mentions it, it says its rows are not designed for and fall to the default for unclassified rows",
+        "K1's row has the treatment `repair` and `D7` under `decided by`, and the repair is the one D7's answer gives, `size` to its absolute value and `side` set to `S`; the design does not give the profile's proposal (the absolute value alone) as the treatment",
+        "K2's row has the treatment `quarantine`, not `drop`; nowhere does the design drop or delete K2's rows",
+        "The design's **Open questions** lists K2 as waiting on D8",
+        "K3 and K5 have the treatment `quarantine` and K4 has `flag`, each with `—` (or an equivalent 'none') under `decided by`; no treatment in the table is `repair` or `drop` except K1's",
+        "The design states a default for a row that fails a check and matches no kind in the table: it is quarantined (kept out of the output and recorded) with the reason `unclassified`, that exact word",
+        "The design says what the reject record holds for every rejected or altered row: the row's key (`seq`), the kind id as the reason, the treatment applied, and for K1's repair the value before",
+        "The design's **Tests** names one case for each of K1, K2, K3, K4 and K5, each run on that kind's rows in `rawtrades.sample.json` and each asserting the treatment and the reject record's reason, which is the kind id (`K1` … `K5`)",
+        "The design's **Tests** also names a case that the `accepted` rows of `rawtrades.sample.json` stay accepted and unchanged, and a case that a failing row of no kind is quarantined as `unclassified`",
+        "The design's **Skills used** lists `data-quality`"
+      ],
+      "added_in": "2.7-data-loop phase 0, run from phase 3"
+    },
+    {
+      "id": 2,
+      "name": "build-clean-from-design",
+      "kind": "behavioral",
+      "baseline": "none",
+      "prompt": "Implement the `clean` section of the `data` package from its design: the module `clean.py`, its unit tests `test_clean.py`, and the section's `README.md`. The design is `evals/sets/files/data-quality/design-clean.md`, in the dev-team plugin directory (in the repo, `docs/packages/data/design/clean.md`). Beside it are `contract-clean.md`, the package contract's part for this section; `rawtrades.md`, the data profile the design was written from (`docs/sources/rawtrades.md`); and `rawtrades.sample.json`, the profile's example rows, which are your test fixtures: copy the file next to the tests. Plain Python and pytest, standard library only. Run the tests before you finish.",
+      "expected_output": "a `clean` with one handler per kind of the design's table that keeps every rejected or altered row in the reject record under its kind id (with the values before for the K1 repair), quarantines a failing row of no kind as `unclassified`, returns accepted rows unchanged, and a README whose workflow lists the handlers with their kind ids and whose notes name the profile and round 0",
+      "files": [
+        "evals/sets/files/data-quality/design-clean.md",
+        "evals/sets/files/data-quality/contract-clean.md",
+        "evals/sets/files/data-quality/rawtrades.md",
+        "evals/sets/files/data-quality/rawtrades.sample.json"
+      ],
+      "expectations": [
+        "outputs/ holds `clean.py` defining `clean(rows)` and `CleanResult` with `accepted` and `rejects`, and the five handlers the design's table names (`_repair_negative_size`, `_quarantine_duplicate_trade_id`, `_quarantine_zero_price`, `_flag_off_session`, `_quarantine_unknown_symbol`), each called from `clean` in the table's order",
+        "For the `K1` rows of `rawtrades.sample.json` (seq 312, 15840, 40117), `clean` returns each in `accepted` with `size` positive and `side` `S`, and puts one entry per row in `rejects` whose reason is the kind id `K1` and which carries the row's `seq`",
+        "Each K1 entry in `rejects` holds the value before the repair: the original negative `size` (the original row, or the original `size` and `side`, both count)",
+        "For the `K2`, `K3` and `K5` rows of the sample (run with the `accepted` rows, so the K2 rows have their first prints), `clean` keeps each row out of `accepted` and puts one entry per row in `rejects` whose reason is that row's kind id (`K2`, `K3`, `K5`) and whose treatment is `quarantine`; no such row is discarded without an entry",
+        "For the `K4` rows of the sample (seq 4, 48102), `clean` returns each in `accepted`, marked with `K4` (the design's `flags` of `[\"K4\"]`) and otherwise unchanged",
+        "For the `K6` rows of the sample (seq 5530, 27344), which fail C6 and match no kind in the design's table, `clean` keeps each out of `accepted` and puts it in `rejects` with the reason exactly `unclassified`; the same default covers any row failing C7 or any other check with no handler, and the code does not raise on such a row or let it through",
+        "For the five `accepted` rows of the sample, `clean` returns each in `accepted` equal to its input row (no key added, no value changed) and puts none of them in `rejects`",
+        "Run on all eighteen rows of the sample at once, `clean` loses no row: every input `seq` is in `accepted`, in `rejects`, or (K1) in both, and every entry in `rejects` has a reason that is one of `K1`, `K2`, `K3`, `K5` (and `K4`, if the code records flagged rows) or `unclassified`",
+        "outputs/ holds `test_clean.py` with one test per kind K1 to K5 that loads that kind's rows from `rawtrades.sample.json` and asserts both the treatment and the reject record's reason, a test that the `accepted` rows stay accepted and unchanged, and a test that a failing row of no kind is quarantined as `unclassified`; transcript.md shows the tests were run and passed",
+        "outputs/ holds `README.md` whose workflow part (headed **Pipeline / workflow**, or a heading to that effect) lists the five handlers in the order they run, each with its kind id",
+        "The README's notes (headed **Implementation notes**, or a heading to that effect) name the profile, `docs/sources/rawtrades.md` (or `rawtrades.md`), and say the section was built from its round 0"
+      ],
+      "added_in": "2.7-data-loop phase 0, run from phase 3"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "note": "the newest round line waits on its verify run: PROBE (2.7, phase 2)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": true
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "profile",
+      "lines": [
+        "pending verify"
+      ]
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "clean",
+    "state": "PROBE",
+    "evidence": "^stage:rawtrades r0 pending verify$"
+  }
+}
