@@ -385,3 +385,31 @@ optional flag).
 | `fields-delta-profile-cap` | as `stage-cap` | `--fields data/clean` | `mode: delta` |
 | `run-gate-sample-over` | `base` (`stage: true`); `profile` `[]`; `docs/sources/rawtrades.sample.json` as `{"repeat": ["x", 210000]}` (phase 7) | `--run-gate data` | `run gate: FAIL`; `docs/sources/rawtrades.sample.json: 205 KB, over 200 KB`; exit 1 |
 | `run-gate-sample-api-over-pass` | `base`; `docs/sources/polygon.sample.json` the same size, no `— stage —` sibling (phase 7) | `--run-gate data` | `run gate: PASS`; exit 0 |
+
+**The integration record (2.8).** A top-level `integration` key writes
+`.dev-team/integration/data.txt` (`"pass"`, or the record's text with `{HEAD}` the short sha of
+`HEAD`); a step `{"do": "integration"}` writes it mid-case with no commit, so the steps after
+it can make it stale. `shipped: yes` now needs `integration: pass`, so the eleven cases that
+expect it or a later `shipped:` reason (`shipped`, `shipped-sync`, `repo-paths-needed` and the
+eight `paths-*` cases that reach the `shipped:` line) carry `"integration": "pass"`;
+`scaffold-done` gained a `.github/workflows/ci.yml` holding both Toolchain lines, and
+`scaffold-no-package` now expects `no .github/workflows/ci.yml` beside its first reason.
+
+| Case | Setup | Args | Expect |
+|---|---|---|---|
+| `integration-needed` | every section done, no record | `—` | `integration: needed`, `shipped: no (integration needed)`, `next: /dev-team:run-package data` |
+| `integration-not-all-done` | ingest done only, no record | `—` | no `integration:` line |
+| `integration-fail-reopens` | every section done; a run-1 fail, `reopens: ingest` | `—` | `ingest · FIX 1`, evidence `integration run 1 fail (.dev-team/integration/data.txt)`; `integration: run 1 fail (reopens: ingest)` |
+| `integration-fail-cap` | the same at run 3 | `—` | `ingest · DONE`; `integration: run 3 fail (reopens: ingest) (cap)` |
+| `integration-fail-unowned` | a run-1 fail, `reopens: none`, one `unowned:` path | `—` | `integration: run 1 fail (reopens: no section named)` |
+| `integration-incomplete` | a `TIMEOUT` row, `result: incomplete` | `—` | `integration: run 1 incomplete (…)`, `shipped: no (integration run 1 incomplete)` |
+| `integration-stale-package-file` | a pass, then a commit of `packages/data/tests/conftest.py` | `—` | every section DONE; `integration: needed` |
+| `integration-stale-uncommitted` | a pass; the same file left uncommitted | `—` | `integration: needed` |
+| `integration-docs-only-holds` | a pass, then a `docs/` commit | `—` | `integration: pass (…)`, `shipped: yes` |
+| `integration-other-package-holds` | a pass, then a commit under `packages/analysis/` | `—` | `integration: pass (…)`, `shipped: yes` |
+| `integration-dirty-record` | a pass written with `tree: uncommitted (1 paths)` | `—` | `integration: needed` |
+| `integration-stale-fail-reopens-nothing` | a fail naming ingest, then `fix` ingest | `—` | `ingest · REVIEW`; `integration: needed` |
+| `inputs-integration-fix` | as `integration-fail-reopens` | `--inputs data/ingest` | `Review: .dev-team/integration/data.txt`, `Round: 2` |
+| `scaffold-ci-missing` | workspace root and package `pyproject.toml`, no workflow | `--scaffold data` | `scaffold: needed (no .github/workflows/ci.yml)`; exit 1 |
+| `scaffold-ci-lacks` | a workflow holding `uv run pytest packages/$pkg` only | `--scaffold data` | ``scaffold: needed (.github/workflows/ci.yml lacks `uv run ruff check`)``; exit 1 |
+| `scaffold-ci-constraints` | the same workflow; `docs/constraints.md` with two Floor rows, one Enforced and one Measured | `--scaffold data` | lacks `` `uv run lint-imports`; `uv run mypy packages/$pkg/src` ``; no Toolchain line, no Measured command |

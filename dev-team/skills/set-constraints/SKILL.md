@@ -20,10 +20,14 @@ headings are what every reader parses.
 ## Boundaries
 
 - **Write only** `docs/constraints.md`. No installs, no `pyproject.toml` edits, no CI edits:
-  the implementer's scaffold step adds the dev dependencies and CI commands the file names.
-- **Who reads it.** The implementer's `SubagentStop` gate and CI run the **Floor** and
-  **Enforced** rows, parsed by `status.py` — the same list, so a build that passes the gate
-  passes CI. The reviewer runs nothing: it reads **Measured** to report values and
+  the implementer's scaffold step adds the dev dependencies and CI commands the file names. A
+  row added after the first scaffold is in no workflow yet: `status.py --scaffold` then says
+  `.github/workflows/ci.yml lacks` it, and the next `/dev-team:run-package` runs the scaffold
+  step, which adds it.
+- **Who reads it.** The implementer's `SubagentStop` gate, the integration check run-package
+  runs once a package's sections are all DONE, and CI run the **Floor** and **Enforced** rows,
+  parsed by `status.py` — the same list, so a package that passes the integration check passes
+  CI. The reviewer runs nothing: it reads **Measured** to report values and
   **Exceptions** to honour them. The tester reads the coverage row. Lowering a row is this skill, the user's
   call; **Guarded** catches an agent doing it.
 - **Tighten, never loosen.** The file may add checks and tighten `project-structure` §2's

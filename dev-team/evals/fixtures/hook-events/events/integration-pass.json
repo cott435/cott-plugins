@@ -1,0 +1,24 @@
+{
+  "script": "gate",
+  "repo": "built",
+  "setup": {
+    "files": {
+      "docs/constraints.md": "# Constraints\n\n## Floor\n\n| check | threshold | command | scope |\n|---|---|---|---|\n| lint | 0 errors | `ruff check packages/<pkg>` | package |\n| format | clean | `ruff format --check packages/<pkg>` | package |\n| tests pass | 0 failures | `cd packages/data && python3 -m pytest -q -p no:cacheprovider` | repo |\n\n## Enforced\n\n| dimension | threshold | command | scope |\n|---|---|---|---|\n| docstrings | 80% | `python3 -c \"print('docstrings: 100%')\"` | package |\n\n## Measured\n\n| dimension | current | target | command | scope |\n|---|---|---|---|---|\n\n## Guarded\n\n- a new `# noqa`, `# type: ignore`, `# pragma: no cover`\n- a new `@pytest.mark.skip` or `@pytest.mark.xfail` whose reason does not cite a `D<n>`\n- a deleted or weakened assertion in an existing test\n- a threshold in this file edited down\n\n## Exceptions\n\n| path or glob | check | reason | expires |\n|---|---|---|---|\n",
+      "packages/data/tests/intent/ingest/test_loader.py": "\"\"\"Intent tests for data/ingest.\"\"\"\n\n\ndef test_green() -> None:\n    \"\"\"Design §4 read: green.\"\"\"\n    assert True\n"
+    },
+    "commit": "data/ingest: green intent tests"
+  },
+  "args": [
+    "--integration",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "stdout_contains": [
+      "tree: clean",
+      "PASS tests pass: cd packages/data && python3 -m pytest",
+      "reopens: none",
+      "result: pass"
+    ]
+  }
+}

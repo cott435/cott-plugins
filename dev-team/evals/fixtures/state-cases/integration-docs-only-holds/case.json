@@ -1,0 +1,40 @@
+{
+  "note": "a docs-only commit after a passing record: it still holds",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    },
+    {
+      "do": "integration"
+    },
+    {
+      "files": {
+        "docs/notes.md": "# notes\n"
+      },
+      "message": "docs: notes"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "contains": [
+      "integration: pass (.dev-team/integration/data.txt)",
+      "shipped: yes"
+    ]
+  }
+}

@@ -52,6 +52,15 @@ forbid:
     # plugin-dev is installed.
     pattern: '(^|[\s"(\[`])/(?!dev-team:|plugin-dev:|reload-plugins)(?:[a-z][a-z0-9]*-[a-z0-9-]+|status)\b'
 
+  - name: no file leaves the repo-wide pytest to CI alone
+    # 2.8: the stop gate skips a `repo`-scope pytest row, and the integration check
+    # (`gate_on_stop.py --integration`) runs it before the paths review and the close. A file
+    # that still calls that row "CI's" tells a reader nothing local ever runs it.
+    pattern: "(?:pytest|row) (?:is|are) CI's|SKIPPED`?: CI's|leaves to CI\\b"
+    # The notes under site/notes/ are the record of what each release decided, 2.2's included,
+    # and are not rewritten; every file that describes the plugin as it is now is in scope.
+    files: ['agents/*.md', 'skills/**/*.md', 'skills/**/*.py', 'hooks/*.py', 'README.md', 'site/*.md', 'site/workflows/*.md']
+
   - name: no agent or skill stages everything
     # §Project convention stages by explicit path, so a run never commits a file it did not
     # write. Scoped with `files:` so the 0.5 design note, which quotes the pattern, is not a

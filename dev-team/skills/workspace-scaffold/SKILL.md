@@ -1,6 +1,6 @@
 ---
 name: workspace-scaffold
-description: The skeleton files a new repository or package starts from — root and package pyproject.toml for a uv workspace, the import-linter contracts that enforce dependency direction, mkdocs.yml, and the CI commands. Invoke when planning a repo's Toolchain section, at run-package's SCAFFOLD step (the implementer builds the workspace root and a package skeleton before any tester runs), or when building a package's surface section. Values come from docs/architecture.md and the package contract's Sections table; this skill supplies the shapes.
+description: The skeleton files a new repository or package starts from — root and package pyproject.toml for a uv workspace, the import-linter contracts that enforce dependency direction, mkdocs.yml, the CI commands and the GitHub Actions workflow that runs them. Invoke when planning a repo's Toolchain section, at run-package's SCAFFOLD step (the implementer builds the workspace root and a package skeleton before any tester runs), or when building a package's surface section. Values come from docs/architecture.md and the package contract's Sections table; this skill supplies the shapes.
 ---
 
 # Workspace scaffold
@@ -204,7 +204,7 @@ section adds `docs/api/<pkg>/index.md` (one `::: <module>` block per providing m
 `mkdocs build --strict` turns an unresolved one, or a nav entry with no file, into a build
 failure — which is the point.
 
-## 5. CI commands
+## 5. CI commands and the workflow
 
 Run in the workspace environment, from the root:
 
@@ -224,6 +224,64 @@ gate runs when a repo has no `docs/constraints.md`.
 When `docs/constraints.md` exists, CI runs its **Floor** and **Enforced** rows instead of the
 fixed list above — `repo` rows once, `package` rows once per package with `<pkg>`
 substituted — after `uv sync --all-packages`, plus the `pylint` size check, which the Floor
-does not carry. They are the same rows the implementer's stop gate runs before every
-implementer may finish, so a section the gate let through is one CI passes. Without that
-file, the list above is the CI.
+does not carry. Without that file, the list above is the CI.
+
+Three runs share that list, each at a different scope:
+
+1. **The stop gate**, every time an implementer finishes: the section's own suites, the
+   `package` rows for its package, and the suites of the finished packages that depend on it.
+   A `repo` row that runs `pytest` is skipped here: it never finished inside the gate's budget.
+2. **The integration check**, `hooks/gate_on_stop.py --integration <pkg>`, which run-package
+   runs once every section of a package is DONE and before its paths review: every row, the
+   repo-wide `pytest` included, over every package, every failure a FAIL. A package does not
+   ship until it passes on the package's current code.
+3. **CI**, `.github/workflows/ci.yml`, on every push to `main` and every pull request: the same
+   rows again on a clean machine, so a commit is not merged on a local pass alone. Make the
+   `checks` job a required status check in the GitHub repository's branch protection, or a red
+   run still merges.
+
+### The workflow
+
+The SCAFFOLD step writes `.github/workflows/ci.yml` with the workspace root, and rewrites it
+whenever `status.py --scaffold <pkg>` says it `lacks` a command — a Floor or Enforced row added
+by `/dev-team:set-constraints` after the first scaffold. Every command goes in verbatim, on its
+own line, `<pkg>` written `$pkg`: the check matches each line as text, and a package row runs
+inside the loop over `packages/*/`, so a new package needs no edit here.
+
+```yaml
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --all-packages
+      # repo rows (or the Toolchain lines with no <pkg>), each once
+      - name: repo checks
+        run: |
+          uv run ruff check && uv run ruff format --check
+          uv run pylint --disable=all --enable=C0302,R0904 packages/*/src
+          uv run lint-imports
+          uv run pytest packages/*/tests
+          uv run mkdocs build --strict
+      # package rows (or the Toolchain lines with <pkg>), once per package
+      - name: package checks
+        run: |
+          for dir in packages/*/; do
+            pkg=$(basename "$dir")
+            uv run --package $pkg pytest packages/$pkg/tests
+          done
+```
+
+With `docs/constraints.md`, the two `run:` blocks hold its rows instead: each `repo` row's
+command under **repo checks**, each `package` row's under **package checks** with `<pkg>`
+written `$pkg`, and the `pylint` line kept under **repo checks**. A `Measured` row is not
+CI's: it reports a value and fails nothing. A repo whose packages are not under `packages/`
+loops over the Packages table's paths instead.

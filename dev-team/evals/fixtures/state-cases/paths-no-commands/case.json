@@ -1,5 +1,5 @@
 {
-  "note": "every section DONE, no [project.scripts]: approved with nothing to review",
+  "note": "every section DONE, no [project.scripts]: approved with nothing to review; the integration check passed at HEAD",
   "steps": [
     {
       "do": "base"
@@ -27,5 +27,6 @@
       "paths: approved (no commands)",
       "shipped: yes"
     ]
-  }
+  },
+  "integration": "pass"
 }

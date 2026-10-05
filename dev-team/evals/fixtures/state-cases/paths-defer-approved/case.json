@@ -1,5 +1,5 @@
 {
-  "note": "the cap answered defer: a round-4 report with Focus: defer approves",
+  "note": "the cap answered defer: a round-4 report with Focus: defer approves; the integration check passed at HEAD",
   "steps": [
     {
       "do": "base"
@@ -60,5 +60,6 @@
       "paths: approved (docs/packages/data/reviews/paths/2026-09-27-r4-p.md)",
       "shipped: yes"
     ]
-  }
+  },
+  "integration": "pass"
 }

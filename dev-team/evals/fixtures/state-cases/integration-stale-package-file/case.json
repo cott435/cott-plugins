@@ -1,0 +1,42 @@
+{
+  "note": "a file under the package root but in no section changed after the record: needed again, every section still DONE",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    },
+    {
+      "do": "integration"
+    },
+    {
+      "files": {
+        "packages/data/tests/conftest.py": "import pytest\n"
+      },
+      "message": "data: conftest"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "DONE",
+    "contains": [
+      "integration: needed",
+      "shipped: no (integration needed)"
+    ]
+  }
+}

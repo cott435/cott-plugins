@@ -72,9 +72,10 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
 7. **Source probes** — `docs/sources/<source>.md` per entry in the row's `source`. *May be
    `none`.*
 8. **Intent tests** — `<package root>/tests/intent/<section>/`. *May be `none`.*
-9. **Review** — the newest round's report paths, comma-separated, and the package's paths
-   report (`docs/packages/<pkg>/reviews/paths/…-p.md`) when it names this section. *May be
-   `none`.*
+9. **Review** — the newest round's report paths, comma-separated, the package's paths
+   report (`docs/packages/<pkg>/reviews/paths/…-p.md`) when it names this section, and the
+   package's integration record (`.dev-team/integration/<pkg>.txt`) when its `reopens:` line
+   names this section. *May be `none`.*
 10. **Round** — `1` on the first build; `n+1` in FIX `n`.
 11. **Change file** — `docs/packages/<pkg>/changes/<slug>.md`
     (or a pre-2.2 `docs/changes/<slug>.md`) when an open change file names the section. *May be `none`.*
@@ -248,7 +249,7 @@ spawned.
 ## Scaffold mode
 
 The driver spawns you once, before any other agent, when `status.py --scaffold <pkg>` says the
-workspace is missing. Every tester and implementer after you runs inside what you build, under
+workspace is missing, or its CI workflow is missing or lacks a command. Every tester and implementer after you runs inside what you build, under
 the repo's own lint rules, so an intent test that passes lint when it is written still passes
 when the gate runs. You build no section and write nothing under `docs/`.
 
@@ -273,17 +274,27 @@ when the gate runs. You build no section and write nothing under `docs/`.
    with this package in `source_modules` and `allow_indirect_imports = true` (§3): no section
    implementer of either package may edit the root `pyproject.toml` later, so the root config
    the first consumer needs is yours.
+   **The CI workflow**, when the root is a uv workspace: run
+   `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --scaffold <pkg>`. On `no
+   .github/workflows/ci.yml`, write it from §5's workflow, every command of the Floor and
+   Enforced rows of `docs/constraints.md` (else of the Toolchain) verbatim on its own line,
+   `<pkg>` written `$pkg`. On `.github/workflows/ci.yml lacks …`, add each command it names to
+   the block its scope gives — a `repo` row under **repo checks**, a `package` row inside the
+   **package checks** loop — and leave every other line as it stands: the user may have added
+   steps of their own.
 4. **Check.** `uv sync --all-packages`, then `uv run ruff check`, `uv run ruff format --check`,
    `uv run lint-imports` and `uv run mkdocs build --strict`. Each passes on an empty workspace;
-   one that does not is yours to fix now, since every later gate runs it.
+   one that does not is yours to fix now, since every later gate runs it. Then `status.py
+   --scaffold <pkg>` again: it must print `scaffold: done`.
 5. **Commit** (**Commit**) every path you wrote and `uv.lock`, by explicit path: scope `<pkg>`,
-   summary `scaffold` (`scaffold (repo root)` when you wrote the root), trailer from `Run:`. The
-   stop gate finds no section in this diff and lets you stop.
+   summary `scaffold` (`scaffold (repo root)` when you wrote the root, `scaffold (ci)` when the
+   workflow is all you wrote), trailer from `Run:`. The stop gate finds no section in this diff
+   and lets you stop.
 6. **Return:**
 
    ```
    Result: done
-   Scaffolded: <repo root, <pkg> | <pkg>>
+   Scaffolded: <what you wrote, comma-separated, of: repo root, <pkg>, ci>
    Files: <paths>
    Checks: sync, ruff, format, lint-imports, mkdocs — pass
    Commit: <sha>
@@ -451,6 +462,17 @@ when the gate runs. You build no section and write nothing under `docs/`.
    that is a `spec-change:contract` (**Deviations and spec-changes**) with the paths line
    quoted whole, as it stands in the report, as `Found:`. You never edit the other section. A paths finding is about shape, not behaviour:
    it owes no test seen red, and the section's suites pass after the fix as they did before.
+
+   `.dev-team/integration/<pkg>.txt` is the integration record: every check CI runs, over the
+   whole repo, run once every section of the package was DONE. Each `FAIL` line is a check
+   that failed there; the ones whose `path:line` lies under your section's paths are yours,
+   and they failed after your section passed its own gate and its review, so the cause is
+   usually where your code meets another section's or another package's: a name, a type, a
+   default, a test that collides with one elsewhere when the whole repo is collected. Run the
+   check the line names, as it stands, from the repo root before you change anything, and see
+   it fail. When the fix lies outside your section, or the record's `FAIL` names your file for
+   something your code does not do, that is a block (**The stop gate**), with the `FAIL` line
+   as its reason.
 
    A `rejected` deviation entry for your section means build the design as written, or, when it
    cannot be built as written, a `spec-change` with the reviewer's reason answered. Then read
@@ -793,8 +815,16 @@ and you cannot stop until it is green:
   `tests/unit/<section>/`;
 - the **Floor** and **Enforced** rows of `docs/constraints.md` for your package — `package`
   rows with `<pkg>` substituted, a `repo` row once, except a `repo` row that runs `pytest`,
-  which is CI's and is written `SKIPPED`; without that file, the Toolchain commands;
-  **Measured** rows printed, never failed on;
+  which the integration check runs once the package is DONE, and is written `SKIPPED`;
+  without that file, the Toolchain commands; **Measured** rows printed, never failed on;
+- the regression check: the whole suite of every finished package that depends on yours
+  (every section DONE), one `regression <dep>` line each. A failure whose output traces into
+  your section's files — a traceback frame in one of them, or an `ImportError` naming one of
+  your modules — is `FAIL`: a consumer that passed before your change no longer does. Restore
+  what it consumes. When your design asks for the change, the plan missed a consumer — one a
+  change file had re-opened would not be finished, and its suite would not run: that is a
+  block, with the `FAIL` line as its reason, never an edit to the other package. A failure
+  that does not trace to your files is `ELSEWHERE`;
 - a check whose every located failure lies outside your section's paths — a sibling's
   half-built module, another section's red intent tests — or in an intent-test file, yours
   included (a lint, type or Guarded hit in the tester's lines), is `ELSEWHERE`, not `FAIL`, and

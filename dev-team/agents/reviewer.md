@@ -142,7 +142,9 @@ later implementer's stop never overwrites yours. Read it before the code.
   not a failure.
 - **`ELSEWHERE` lines** are checks whose every located failure lies outside this section's
   paths in files the run did not touch — a sibling's half-built module, another section's red
-  intent tests. The gate did not hold the implementer to them. Quote each under **WARNING**
+  intent tests, or a `regression <dep>` line: a finished package that depends on this one
+  failing for a reason its output does not trace to this section. The gate did not hold the
+  implementer to them. Quote each under **WARNING**
   with the paths it names, as a problem for that section, never as this one's, and append it
   to the backlog (step 8): the implementer's return is read by no one past its first line, so
   this is the only place such a line survives the run.
@@ -151,8 +153,8 @@ later implementer's stop never overwrites yours. Read it before the code.
   each under **WARNING** as unchecked, never as a failure of this section.
 - **`MEASURED` lines** go under **SUGGESTION** verbatim, one bullet each. They are never
   failed on.
-- **`SKIPPED` lines** are `repo`-scope pytest rows the gate leaves to CI. Informational: quote
-  none, fail on none.
+- **`SKIPPED` lines** are `repo`-scope pytest rows the gate leaves to the integration check,
+  which runs them once every section is DONE. Informational: quote none, fail on none.
 - **No gate file**, or one whose header names another section: say so under **WARNING** and
   review the code without it. You still run nothing.
 

@@ -1,0 +1,19 @@
+{
+  "note": "a section not DONE and no record: no integration line",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "clean",
+    "absent": [
+      "integration:"
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "script": "gate",
+  "repo": "built",
+  "setup": {
+    "files": {
+      "packages/data/src/data/ingest/extra.py": "\"\"\"Extra.\"\"\"\n"
+    }
+  },
+  "args": [
+    "--integration",
+    "data"
+  ],
+  "expect": {
+    "stdout_contains": [
+      "tree: uncommitted (1 paths)"
+    ]
+  }
+}

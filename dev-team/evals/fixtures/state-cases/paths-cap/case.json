@@ -1,5 +1,5 @@
 {
-  "note": "paths rounds 1 to 3 each request changes: at the cap nothing re-opens",
+  "note": "paths rounds 1 to 3 each request changes: at the cap nothing re-opens; the integration check passed at HEAD",
   "steps": [
     {
       "do": "base"
@@ -57,5 +57,6 @@
       "shipped: no (paths round 3)",
       "next: /dev-team:run-package data or /dev-team:run-package data --defer"
     ]
-  }
+  },
+  "integration": "pass"
 }

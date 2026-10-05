@@ -35,7 +35,8 @@ Also in your conversation, any time before the first build. Four questions — c
 type strictness, docstring coverage, anything to measure without enforcing — each with a
 default, then `docs/constraints.md`: **Floor**, **Enforced**, **Measured**, **Guarded** and
 **Exceptions** rows, each a command. That file is the stop gate's spec: every implementer
-stop runs its Floor and Enforced rows, and CI runs the same rows. Skip it and the Toolchain's
+stop runs its Floor and Enforced rows, the integration check runs them over the whole repo once
+a package's sections are DONE, and CI runs the same rows on every push and pull request. Skip it and the Toolchain's
 commands in `docs/architecture.md` are the bar.
 
 ## 3. The repo contract
@@ -100,8 +101,9 @@ and spawns each one's step — whatever step each is at — in one message:
   again with its reasons.
 - **IMPLEMENT** — an implementer per ready section, in parallel: code, unit tests and the
   section README. The write guard keeps each inside its own section, and its stop gate keeps it
-  running until its section's intent and unit suites, the package's constraints rows and the
-  Guarded grep are green (a `repo`-scope pytest row is `SKIPPED`: CI's).
+  running until its section's intent and unit suites, the package's constraints rows, the
+  suites of any finished package that depends on this one, and the Guarded grep are green (a
+  `repo`-scope pytest row is `SKIPPED`: the integration check runs it).
 - **REVIEW** — round 1 is two reviewers in parallel: A for conformance (a coverage table over
   every contract clause and design item), B for correctness and security. `request changes`
   makes the section FIX 1: the implementer reads the reports, then one diff-scoped reviewer.
@@ -120,7 +122,15 @@ READMEs, and its implementer writes the lazy top-level `__init__.py`, the pipeli
 `docs/api/data/index.md` and `docs/packages/data/interface.md`; its review approves the
 package's public surface.
 
-When every section is DONE, the driver runs the paths review: one reviewer (`Focus: paths`)
+When every section is DONE, the driver runs the integration check, `gate_on_stop.py
+--integration data`: every Floor and Enforced row — the repo-wide `pytest` the stop gate
+skipped included — over every package in the repo, recorded in
+`.dev-team/integration/data.txt`. A failure in one of the package's sections re-opens it as a
+FIX round, with the record in its implementer's **Review**; once it is DONE again, the check
+runs again. At run 3, or on a failure no section of the package owns, the driver asks. The
+package does not ship until the check passes.
+
+Then the driver runs the paths review: one reviewer (`Focus: paths`)
 follows each `[project.scripts]` command from `cli.py` to its external effects, comparing the
 call tree `status.py --paths data --against-contract` prints to the contract's **Call paths**,
 and writes `docs/packages/data/reviews/paths/`. A frame the contract does not list, or one it
@@ -130,8 +140,12 @@ closure or mapping dispatch on a main path whose target the call site does not n
 pipeline or orchestrator that fails the reader's test in `references/pipelines.md` (P3), and a
 trivial single-use helper or options bag on a main path (P4). Each finding names a section,
 which comes back as a FIX round, then a review, then the paths review again; at round 3 the
-driver asks *one more round* or *defer*. The close waits for `paths: approved`; a package with
-no commands needs none.
+driver asks *one more round* or *defer*. The close waits for `integration: pass` and `paths:
+approved`; a package with no commands needs no paths review.
+
+The scaffold step also wrote `.github/workflows/ci.yml`, which runs the same rows on GitHub for
+every push to `main` and every pull request. Make its `checks` job a required status check in
+the repository's branch protection, so a branch whose whole-repo checks fail cannot merge.
 
 Then the driver runs the architect as `sync-plan`: approved deviations go into the contract,
 verified against the code. The summary ends with `next: /dev-team:plan-package analysis`.

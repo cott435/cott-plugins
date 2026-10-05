@@ -1,0 +1,14 @@
+{
+  "script": "gate",
+  "repo": "built",
+  "setup": {},
+  "args": [
+    "--integration"
+  ],
+  "expect": {
+    "exit": 2,
+    "stderr_contains": [
+      "--integration <pkg>"
+    ]
+  }
+}

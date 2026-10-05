@@ -1,0 +1,31 @@
+{
+  "note": "a record written over uncommitted changes never holds",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    }
+  ],
+  "integration": "dev-team integration — run 1 — 2026-09-27 10:00:00 — package data\ncommit: {HEAD}\ntree: uncommitted (1 paths)\nPASS toolchain: uv run ruff check\nreopens: none\nunowned: none\nunplaced: none\nresult: pass\n",
+  "args": [],
+  "expect": {
+    "contains": [
+      "integration: needed"
+    ]
+  }
+}
