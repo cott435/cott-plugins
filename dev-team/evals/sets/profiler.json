@@ -1,7 +1,7 @@
 {
  "target": "profiler",
  "target_path": "agents/profiler.md",
- "note": "Written in 2.7-data-loop phase 0, before agents/profiler.md exists. Evals 1-3 run from phase 1 (baseline none), 4-6 from phase 5, 7 from phase 6 (baseline previous); eval 1 is rerun as a regression in phase 5. The agent is exercised as a proxy: a general-purpose subagent given agents/profiler.md, started with the spawn block status.py --profile would print. Its tools list, the write guard and the decisions sync hook are not reproduced. Each eval's seed is a small git repository built by evals/sets/files/profiler/build.py case-<id>; the executor works in a mktemp copy and build.py collect copies what it changed into outputs/. The profile program needs uv and network access for duckdb; a harness sheet says what is recorded when either is missing. A Commit: sha in a prompt is the one build.py prints for that case; it changes if build.py or seed/trades.csv changes, and the prompt and the expectations that quote it are then updated with it.",
+ "note": "Written in 2.7-data-loop phase 0, before agents/profiler.md exists. Evals 1-3 run from phase 1 (baseline none), 4-6 from phase 5, 7 from phase 6 (baseline previous); eval 1 is rerun as a regression in phase 5. The agent is exercised as a proxy: a general-purpose subagent given agents/profiler.md, started with the spawn block status.py --profile would print. Its tools list, the write guard and the decisions sync hook are not reproduced. Each eval's seed is a small git repository built by evals/sets/files/profiler/build.py case-<id>; the executor works in a mktemp copy and build.py collect copies what it changed into outputs/. The profile program needs uv and network access for duckdb; a harness sheet says what is recorded when either is missing. A Commit: sha in a prompt is the one build.py prints for that case; it changes if build.py or seed/trades.csv changes, and the prompt and the expectations that quote it are then updated with it. 2.7-data-loop eval hardening (after phase 8): a verify case's sheet (case-2, case-3, case-6) has the executor record the trade_ids it drew per kind in outputs/sample-ids.json, and `build.py collect` writes outputs/sample-check.txt from it, recomputing from the seed commit which rows each kind's checks flag and which the contract's rules would; the expectations about which rows were sampled read that file, not the transcript. Cases 1-3 tell a run given no plugin root to read nothing in the plugin directory but its sheet (phase 1 found the without_skill baseline reading data-profile.md). Collect writes nothing into the seed, so every seed sha is unchanged.",
  "evals": [
   {
    "id": 1,
@@ -22,14 +22,16 @@
     "Under Checks is a table with one row per check id `C<n>`: a rule, a non-empty `judged against` cell naming a document and heading or a comparison, and the rows failing beside a denominator: 306, or the number of rows the check reads when its rule or a line under the table says which rows it leaves out (300 for a neighbour check that sets the 6 exact copies aside); under Rounds a `### Round 0` block gives the rows failing per check",
     "Every kind under Quirks is one line of the form `- K<n> <name> — checks C<…>; <count> of <denominator>; <one clause>; proposed: <repair | drop | quarantine | flag>; <D? | no decision needed>; unverified`: every kind names at least one check id that is in the Checks table, no kind line reads `verified`, and none carries a numbered `D<n>`",
     "The kinds include one for exact duplicate rows whose count is 6 (the second copies) or 12 (both copies) of 306, one for a negative price whose count is 4 of 306, and one for a timestamp out of order within a symbol whose count is 5 of 306, or 5 of 300 when the profile says its check reads the rows with the 6 exact copies left out",
-    "The row with trade_id 500156 (venue `ZZ`) is accounted for: it is the one row of a kind of its own, or it is counted under Unexplained; Unexplained gives `<n> of <all failing rows>`, and n is 0 only when every failing row is in a kind",
+    "The row with trade_id 500156 (venue `ZZ`) is accounted for in outputs/docs/sources/rawtrades.md: either it is the one row of a kind of its own under Quirks (count 1, and outputs/docs/sources/rawtrades.sample.json holds trade_id 500156 under that kind's key), or a line under Unexplained names it",
+    "Unexplained states how many failing rows are in no kind, as `<k> of <all failing rows>`, and k is 0 when every failing row is in a kind under Quirks (500156 in a kind of its own) and 1 when 500156 alone is left out. The template's item 8 also says the rows of an `unverified` kind count under Unexplained, and before the verify run every kind is `unverified`; so a profile whose first count under the heading includes those rows passes, provided a line under the heading states the in-no-kind count separately. Either reading passes; a profile that gives only a count of unverified-kind rows, with no in-no-kind count, fails",
     "outputs/docs/sources/rawtrades.sample.json parses as JSON with one key per kind id written under Quirks, each holding between one and five rows, and a key `accepted` holding exactly five rows; every row carries its `trade_id`; no row under `accepted` has a negative price or venue `ZZ`",
     "outputs/docs/sources/rawtrades.md has a `## data/clean` heading under Sections served, and the last line under it is `Round 0 — <date> — commit none — pending verify`; it is the only round line in the file",
-    "outputs/docs/sources/rawtrades.profile.py holds every check of the Checks table as a query with its `C<n>` id; transcript.md shows it run as `uv run --with duckdb python docs/sources/rawtrades.profile.py`; outputs/store-files.txt lists `.dev-team/data/rawtrades/rounds/0/failing.parquet` and `.dev-team/data/rawtrades/rounds/0/counts.json`",
-    "No decision stub is written: outputs/ holds no file under `docs/packages/data/decisions/`",
+    "outputs/docs/sources/rawtrades.profile.py holds every check of the Checks table as a query with its `C<n>` id; outputs/store-files.txt lists `.dev-team/data/rawtrades/rounds/0/failing.parquet` and `.dev-team/data/rawtrades/rounds/0/counts.json`; and the copy of that counts.json under outputs/.dev-team/data/rawtrades/rounds/0/ names every check id of the Checks table, so the program as written was run over the data",
+    "outputs/changes.txt lists `docs/sources/rawtrades.md` (the run wrote its profile), and no decision stub is written: outputs/changes.txt lists no path under `docs/packages/data/decisions/`, and outputs/ holds no file there",
     "outputs/commit.md stages only the three `docs/sources/rawtrades.*` paths, nothing under `.dev-team/`, and the final message in transcript.md starts with the line `Result: done` and is ten lines or fewer"
    ],
-   "added_in": "2.7-data-loop phase 0, run from phase 1"
+   "added_in": "2.7-data-loop phase 0, run from phase 1",
+   "note_hardening": "2.7-data-loop eval hardening: #7 split in two and its conflict with `data-profile.md` item 8 (\"The rows of an `unverified` kind count here\", which at round 0 is every kind) resolved by accepting either count as long as the in-no-kind count is stated; #11 (now #12) gains the precondition that the profile was written, so a run that wrote nothing no longer passes it. After review (iteration 6): #11 no longer asks transcript.md to show the `uv run` command, which the executor paraphrases; it requires the round-0 counts.json the program writes to name every check id instead."
   },
   {
    "id": 2,
@@ -47,12 +49,14 @@
     "The last line under `## data/clean` in outputs/docs/sources/rawtrades.md is `Round 0 — <date> — commit none — revise: K3`, directly below the seed's `pending verify` line; it names K3 and no other kind",
     "outputs/changes.diff shows `docs/sources/rawtrades.md` changed by exactly one added line, the round line: no line is removed or reworded, and every kind line under Quirks still ends `unverified` with `D?` or `no decision needed` as the seed had it",
     "outputs/changes.txt lists `docs/sources/rawtrades.md` and no other path: `rawtrades.profile.py`, `rawtrades.sample.json`, `docs/decisions.md` and everything under `packages/` are unchanged",
-    "No decision stub is written: outputs/ holds no file under `docs/packages/data/decisions/`",
-    "transcript.md shows rows that K3's check flags judged against the contract's rule for `ts` (an equal `ts` is valid), and names at least one flagged row whose `ts` equals the previous row's as a good row the check should not catch",
-    "transcript.md shows a sample of flagged rows and of passing rows drawn for each of K1, K2, K3 and K4, not for K3 alone",
+    "outputs/changes.txt lists `docs/sources/rawtrades.md` (the run wrote its round line), and no decision stub is written: outputs/changes.txt lists no path under `docs/packages/data/decisions/`, and outputs/ holds no file there",
+    "outputs/sample-check.txt's K3 line reports `misjudged` 1 or more, with no complaint that a misjudged id is one the check judges as the contract does: every trade_id the verify run recorded as misjudged for K3 is a row the seed's C3 as written flags and the contract's rule for `ts` (an equal `ts` is valid) passes — a row whose `ts` equals the previous row's in its symbol",
+    "The final message in transcript.md names, by trade_id, at least one row K3's check flags whose `ts` equals the previous row's in its symbol, and the contract's rule it is judged by (an equal `ts` is valid)",
+    "outputs/sample-check.txt (written by `build.py collect` from the executor's outputs/sample-ids.json, held against the seed's data and checks) has a line for each of K1, K2, K3 and K4 that starts `<kind>: ok`: for each kind the trade_ids recorded as drawn from the rows its checks flag are rows those checks flag, at least 20 of them or all there are, and those recorded as drawn from the rows they pass are rows they pass, at least 20. A run with no sample-ids.json reads `sample: no sample-ids.json` and fails this",
     "outputs/commit.md stages `docs/sources/rawtrades.md` and nothing else, and the final message in transcript.md starts with the line `Result: done`"
    ],
-   "added_in": "2.7-data-loop phase 0, run from phase 1"
+   "added_in": "2.7-data-loop phase 0, run from phase 1",
+   "note_hardening": "2.7-data-loop eval hardening: #5 and #6 rested on the executor's narration of its sample (phase 1 iteration 2 missed #6 on narration alone). The harness sheet now has the run record the trade_ids it drew per kind in outputs/sample-ids.json, and `build.py collect` holds them against the seed's data and checks in outputs/sample-check.txt; #5 is split into that check and the return naming the row; #4 gains the precondition that the profile was changed."
   },
   {
    "id": 3,
@@ -73,10 +77,12 @@
     "Under Quirks all four kind lines end `verified`; K3 and K4 still read `no decision needed`; K1 and K2 read `D?` or a numbered `D<n>`",
     "outputs/changes.diff shows no other change to `docs/sources/rawtrades.md`: apart from the last two fields of the four kind lines and the added round line, no line is removed or reworded",
     "outputs/changes.txt lists `docs/sources/rawtrades.md` and `docs/packages/data/decisions/clean.md` and no other path: `docs/decisions.md` is not written, and the program, the example rows and everything under `packages/` are unchanged",
-    "transcript.md shows, for each of the four kinds, rows its checks flag and rows they pass sampled and judged before any stub was written",
+    "outputs/sample-check.txt has a line for each of K1, K2, K3 and K4 that starts `<kind>: ok` and reads `misjudged 0`: for each kind the run recorded at least 20 (or all) trade_ids its checks flag and at least 20 they pass, every one of them a row the check puts there",
+    "outputs/sample-check.txt reads `written before the run's changes in the copy: yes`: outputs/sample-ids.json was written before the inbox `docs/packages/data/decisions/clean.md` and the profile's edits, so the rows were judged before any stub was written",
     "outputs/commit.md stages the profile and the section's inbox and nothing else, and the final message in transcript.md starts with the line `Result: done`"
    ],
-   "added_in": "2.7-data-loop phase 0, run from phase 1"
+   "added_in": "2.7-data-loop phase 0, run from phase 1",
+   "note_hardening": "2.7-data-loop eval hardening: #7 rested on the executor's narration of its sample; it now reads outputs/sample-check.txt, split into the sample and its timing."
   },
   {
    "id": 4,
@@ -99,10 +105,11 @@
     "outputs/changes.diff shows only added lines for `docs/sources/rawtrades.md`: every line the seed's profile had is kept byte for byte",
     "The last line under `## data/clean` in outputs/docs/sources/rawtrades.md is `Round 1 — <date> — commit f0783a2 — pending verify`, below the two unchanged round-0 lines (if harness case-4 had the executor substitute another sha, that sha in place of f0783a2)",
     "outputs/docs/sources/rawtrades.sample.json gains a key `K4` holding the row with trade_id 500196 and at most five rows; its `K1`, `K2`, `K3` and `accepted` keys hold the rows the seed had",
-    "No ledger entry and no decision stub is written by this run: outputs/ holds no file under `docs/packages/data/deviations/` or `docs/packages/data/decisions/`, and `docs/decisions.md` is not in outputs/changes.txt",
+    "outputs/changes.txt lists `docs/sources/rawtrades.md` (the run wrote its round), and no ledger entry and no decision stub is written by this run: outputs/ holds no file under `docs/packages/data/deviations/` or `docs/packages/data/decisions/`, and `docs/decisions.md` is not in outputs/changes.txt",
     "The final message in transcript.md starts with the line `Result: done`"
    ],
-   "added_in": "2.7-data-loop phase 0, run from phase 5"
+   "added_in": "2.7-data-loop phase 0, run from phase 5",
+   "note_hardening": "2.7-data-loop eval hardening: the no-write expectation gains a precondition that the run wrote what it should, so a run that wrote nothing no longer passes it. Not rerun in the hardening change."
   },
   {
    "id": 5,
@@ -120,13 +127,14 @@
     "The last line under `## data/clean` in outputs/docs/sources/rawtrades.md is `Round 1 — <date> — commit c2104e1 — clean` (if harness case-5 had the executor substitute another sha, that sha in place of c2104e1); no `pending verify` line is added at round 1",
     "No kind is added: Quirks still holds exactly the lines K1, K2 and K3, and outputs/changes.diff shows only added lines for `docs/sources/rawtrades.md`",
     "outputs/docs/sources/rawtrades.md has a `### Round 1` block under Rounds whose table gives per check the accepted count, the rejected count and the previous round's count; every accepted count is 0, and the rejected counts are 6 for C1, 4 for C2, 5 for C3 and 4 for C5",
-    "No ledger entry and no decision stub is written: outputs/ holds no file under `docs/packages/data/deviations/` or `docs/packages/data/decisions/`",
+    "outputs/changes.txt lists `docs/sources/rawtrades.md` (the run wrote its round), and no ledger entry and no decision stub is written: outputs/ holds no file under `docs/packages/data/deviations/` or `docs/packages/data/decisions/`",
     "outputs/store-files.txt lists `.dev-team/data/rawtrades/work/accepted.csv` and `.dev-team/data/rawtrades/rounds/1/counts.json`; transcript.md shows the section run with `DATA_CLEAN_STORE` pointing at `.dev-team/data/rawtrades/work`; outputs/changes.txt lists no path under `data/clean/` or `packages/`",
     "transcript.md records, before the verdict is written, that no accepted row fails a check and that every rejected row carries a decided kind as its reason (K1 6 rows, K2 4, K3 5; none `unclassified`)",
     "`docs/sources/rawtrades.sample.json` is not listed in outputs/changes.txt",
     "The final message in transcript.md starts with the line `Result: done`"
    ],
-   "added_in": "2.7-data-loop phase 0, run from phase 5"
+   "added_in": "2.7-data-loop phase 0, run from phase 5",
+   "note_hardening": "2.7-data-loop eval hardening: the no-write expectation gains a precondition that the run wrote what it should, so a run that wrote nothing no longer passes it. Not rerun in the hardening change."
   },
   {
    "id": 6,
@@ -144,12 +152,14 @@
     "outputs/docs/packages/data/deviations/clean.md exists and holds exactly one entry, under a heading of the form `## data/clean — <date> — spec-change:design — 1`",
     "The entry's Clause is `design §4 kinds table`; its Said names the design's kinds K1, K2 and K3 by id; its Found names K4 with its count 1 and denominator (295 accepted rows) and cites `docs/sources/rawtrades.md` Quirks; its Why is `the built section's output holds rows no kind accounts for`; its Status is `open`; its Raised by is `profiler — run-package data`; its Resolved by is `—`",
     "The last line under `## data/clean` in outputs/docs/sources/rawtrades.md is `Round 1 — <date> — commit f0783a2 — new kinds: K4`, below the seed's round-1 `pending verify` line (if harness case-6 had the executor substitute another sha, that sha); no `kinds: <k> (<d> to decide)` line is added for round 1",
-    "No decision stub is written, K4 proposing quarantine: outputs/ holds no file under `docs/packages/data/decisions/`, and `docs/decisions.md`, `docs/packages/data/design/clean.md` and everything under `packages/` are absent from outputs/changes.txt",
+    "outputs/changes.txt lists `docs/packages/data/deviations/clean.md` (the run wrote its ledger entry), and no decision stub is written, K4 proposing quarantine: outputs/ holds no file under `docs/packages/data/decisions/`, and `docs/decisions.md`, `docs/packages/data/design/clean.md` and everything under `packages/` are absent from outputs/changes.txt",
     "outputs/changes.diff shows, for `docs/sources/rawtrades.md`, no line removed or reworded except at most the last two fields of K4's own line: the K1, K2 and K3 lines and every round line the seed had are byte for byte",
-    "transcript.md shows K4's check sampled on the built section's output — the accepted row it flags (trade_id 500196) and rows it passes — and judged before the ledger entry was written",
+    "outputs/sample-check.txt has a line starting `K4: ok`: the trade_ids the run recorded as drawn for K4 include 500196, the one accepted row its check flags, and at least 20 accepted rows it passes, each a row the check puts there",
+    "outputs/sample-check.txt reads `written before the run's changes in the copy: yes`: outputs/sample-ids.json was written before the ledger entry and the round line",
     "outputs/commit.md stages the profile and the ledger, and the final message in transcript.md starts with the line `Result: done`"
    ],
-   "added_in": "2.7-data-loop phase 0, run from phase 5"
+   "added_in": "2.7-data-loop phase 0, run from phase 5",
+   "note_hardening": "2.7-data-loop eval hardening: #6 rested on the executor's narration of its sample; it now reads outputs/sample-check.txt (split into the sample and its timing). #4 gains a precondition. Not rerun in the hardening change."
   },
   {
    "id": 7,
@@ -167,12 +177,13 @@
     "outputs/docs/followups.md keeps the seed's `# Follow-ups` heading and its `data/ingest` line unchanged and gains exactly two lines, one for K5 and one for K6; it gains no line for K1, K2, K3 or K4",
     "Each added line has the form `- data/clean — K<n> <name>: <count> of <denominator>, proposed <treatment> — deferred at profile round 2 (docs/sources/rawtrades.md)`: K5 unknown symbol with 2 of 294, proposed quarantine; K6 zero size with 1 of 294, proposed quarantine",
     "In outputs/docs/packages/data/deviations/clean.md the entry `## data/clean — 2026-10-02 — spec-change:design — 2` reads `Status: resolved` and `Resolved by: profiler — run-package data`",
-    "outputs/changes.diff shows those two lines as the ledger's only changes: entry 1, already resolved by the designer, is untouched, and no entry is added or removed",
+    "outputs/changes.diff shows `docs/packages/data/deviations/clean.md` changed, and those two lines (`Status: resolved`, `Resolved by: profiler — run-package data` on entry 2) are its only changes: entry 1, already resolved by the designer, is untouched, and no entry is added or removed",
     "The last line under `## data/clean` in outputs/docs/sources/rawtrades.md is `Round 2 — <date> — commit 4a75e3e — deferred` (if harness case-7 had the executor substitute another sha, that sha), and outputs/changes.diff shows it as the only change to the profile",
     "outputs/changes.txt lists exactly three paths: `docs/followups.md`, `docs/packages/data/deviations/clean.md` and `docs/sources/rawtrades.md`",
     "outputs/commit.md stages those three paths and nothing else, and the final message in transcript.md starts with the line `Result: done`"
    ],
-   "added_in": "2.7-data-loop phase 0, run from phase 6"
+   "added_in": "2.7-data-loop phase 0, run from phase 6",
+   "note_hardening": "2.7-data-loop eval hardening: the no-write expectation gains a precondition that the run wrote what it should, so a run that wrote nothing no longer passes it. Not rerun in the hardening change."
   }
  ]
 }

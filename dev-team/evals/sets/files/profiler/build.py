@@ -19,6 +19,7 @@ import csv
 import io
 import json
 import os
+import re
 import shutil
 import statistics
 import subprocess
@@ -945,7 +946,101 @@ def collect(dest: Path, outputs: Path) -> None:
             target = outputs / p.relative_to(dest)
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(p, target)
+    changed_paths = [p for s, p in changed if s != "D"] + untracked
+    print(sample_check(dest, outputs, changed_paths, git))
     print(f"collect: ok — {len(lines)} changed paths, {len(found)} files under .dev-team/, copied to {outputs}")
+
+
+# ------------------------------------------------------------------------------- sample check
+
+def sample_check(dest: Path, outputs: Path, changed_paths: list[str], git) -> str:
+    """Hold a verify run's `outputs/sample-ids.json` against the seed; write `sample-check.txt`.
+
+    The sheet of a verify case has the executor record, per kind it judged, the `trade_id` of
+    every row it drew from those the kind's checks flag (`flagged`) and from those they pass
+    (`passing`), and the ones it judged the check got wrong (`misjudged`). Everything this
+    holds them against is read from the seed commit itself — the profile's Quirks lines (which
+    kinds are `unverified` and which checks isolate each), the program's check ids and C3
+    predicate, the landed data, and at round 1 or later the seeded section — and recomputed
+    with the same rules the profile was written from (`failures`, `section_clean`). Nothing
+    here is per case.
+    """
+    record, report = outputs / "sample-ids.json", outputs / "sample-check.txt"
+    head = "# sample-check — outputs/sample-ids.json held against the seed (build.py collect)\n"
+    if not record.exists():
+        report.write_text(head + "sample: no sample-ids.json in outputs/\n")
+        return "sample-check: no sample-ids.json"
+    try:
+        drawn = json.loads(record.read_text())
+        assert isinstance(drawn, dict)
+    except (ValueError, AssertionError) as error:
+        report.write_text(head + f"sample: FAIL — sample-ids.json is not a JSON object: {error}\n")
+        return "sample-check: FAIL"
+    profile = git("show", "seed:docs/sources/rawtrades.md")
+    prog = git("show", "seed:docs/sources/rawtrades.profile.py")
+    rows = list(csv.DictReader(io.StringIO(git("show", f"seed:{RAW}"))))
+    ids = re.findall(r'^    "(C\d+)": \(', prog, re.M)
+    written = {c: CHECK_ROWS[c] for c in ids}
+    if "ts <= prev_ts" in prog:
+        written["C3"] = C3_BROAD
+    canonical = {c: CHECK_ROWS[c] for c in ids}
+    kinds = {m[0]: set(m[1].split(", ")) for m in
+             re.findall(r"^- (K\d+) .*? — checks (C\d+(?:, C\d+)*); .*; unverified$", profile, re.M)}
+    rounds = [int(r) for r in re.findall(r"^Round (\d+) — ", profile, re.M)]
+    n = max(rounds) if rounds else 0
+    if n == 0:
+        judged, where = rows, f"the stage's {len(rows)} rows"
+    else:
+        band = "K4: quarantine" in git("show", "seed:packages/data/src/data/clean/rules.py")
+        judged, _ = section_clean(rows, band)
+        where = f"the {len(judged)} rows the seeded section accepts"
+    as_written, by_rule = failures(judged, written, rows), failures(judged, canonical, rows)
+    present = {r["trade_id"] for r in judged}
+    lines, failed = [f"round {n} · drawn from {where} · kinds the seed leaves unverified: "
+                     + (", ".join(kinds) or "none")], []
+    for kind, checks in kinds.items():
+        flag_ids = {r["trade_id"] for r, f in zip(judged, as_written) if f & checks}
+        pass_ids = {r["trade_id"] for r, f in zip(judged, as_written) if not f & checks}
+        wrong = {r["trade_id"] for r, f, g in zip(judged, as_written, by_rule) if bool(f & checks) != bool(g & checks)}
+        entry = drawn.get(kind) if isinstance(drawn.get(kind), dict) else {}
+        got = {side: {str(x) for x in entry.get(side, []) if not isinstance(x, (dict, list))}
+               for side in ("flagged", "passing", "misjudged")}
+        need_f, need_p = min(20, len(flag_ids)), min(20, len(pass_ids))
+        problems = []
+        if not entry:
+            problems.append("no entry")
+        if len(got["flagged"] & flag_ids) < need_f:
+            problems.append(f"flagged {len(got['flagged'] & flag_ids)} of the {need_f} needed")
+        if len(got["passing"] & pass_ids) < need_p:
+            problems.append(f"passing {len(got['passing'] & pass_ids)} of the {need_p} needed")
+        for side, allowed in (("flagged", flag_ids), ("passing", pass_ids)):
+            stray = sorted(got[side] - allowed)
+            if stray:
+                problems.append(f"{side} ids the check does not put there or not in the data: {', '.join(stray[:8])}")
+        stray = sorted(got["misjudged"] - wrong)
+        if stray:
+            problems.append(f"misjudged ids the check judges as the contract does: {', '.join(stray[:8])}")
+        lines.append(
+            f"{kind}: {'ok' if not problems else 'FAIL'} — checks {', '.join(sorted(checks))} · population "
+            f"{len(flag_ids)} flagged, {len(pass_ids)} passing · drawn {len(got['flagged'])} flagged, "
+            f"{len(got['passing'])} passing · misjudged {len(got['misjudged'])}"
+            + (f" ({', '.join(sorted(got['misjudged'])[:8])}: rows the check as written judges unlike the contract's rule)"
+               if got["misjudged"] and not stray else "")
+            + (" · rows the check misjudges by the contract: " + str(len(wrong)) if wrong else "")
+            + ("" if not problems else " · " + "; ".join(problems)))
+        if problems:
+            failed.append(kind)
+    others = sorted(set(drawn) - set(kinds))
+    if others:
+        lines.append(f"keys for no unverified kind: {', '.join(others)}")
+    stamp = record.stat().st_mtime
+    after = [p for p in changed_paths if (dest / p).exists() and (dest / p).stat().st_mtime < stamp]
+    lines.append("written before the run's changes in the copy: "
+                 + ("yes" if changed_paths and not after else
+                    "no — changed before it: " + ", ".join(after) if after else "no path changed"))
+    lines.append("sample: " + ("ok" if kinds and not failed else "FAIL" + (f" — {', '.join(failed)}" if failed else " — no kind to judge")))
+    report.write_text(head + "\n".join(lines) + "\n")
+    return "sample-check: " + lines[-1]
 
 
 def main(argv: list[str]) -> None:

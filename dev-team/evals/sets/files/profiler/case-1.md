@@ -31,6 +31,9 @@ in `<copy>`.
   `skills/planning-templates/references/` in that plugin root, and invoking
   `git-workflow-and-versioning` means reading `skills/git-workflow-and-versioning/SKILL.md` there;
   record each read in `transcript.md`.
+- **No plugin root.** When your prompt names no plugin root, read nothing in the plugin
+  directory but this sheet: not `skills/`, not `agents/`, not `evals/`. You run `build.py`
+  from it and nothing else.
 - **Hooks.** No hook runs in the copy: nothing guards a write, and no number is assigned to a
   decision stub.
 - **`uv` and the network.** Any program under `docs/sources/` is run as

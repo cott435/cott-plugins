@@ -37,6 +37,13 @@ in `<copy>`.
   `uv run --with duckdb python <path>`. Before the first such run, check `uv --version`. If `uv` is
   missing, or `uv run --with duckdb` cannot fetch `duckdb`, write the command and its error to
   `outputs/not-run.md` and stop; do not use another engine in its place.
+- **Sample record.** Whenever your instructions have you draw rows to judge a kind's checks,
+  record what you drew in `<outputs_dir>/sample-ids.json`, written once with the Write tool when
+  your judging is done and before you write or edit anything in `<copy>`: one key per kind id
+  you judged, each an object `{"flagged": [...], "passing": [...], "misjudged": [...]}` — the
+  `trade_id` of every row you drew from those the kind's checks flag, of every row you drew
+  from those they pass, and of each drawn row you judged the check got wrong (`[]` when none).
+  Every id is one you drew and judged; none is added afterwards. Nothing else goes in the file.
 - **Scratch.** Delete nothing you did not create. Leave `<copy>` in place when you finish.
 
 ## When the task is done
@@ -46,6 +53,7 @@ in `<copy>`.
    and writes `outputs/changes.txt` (every path that differs), `outputs/changes.diff` (the diff of
    tracked files against the seed), `outputs/commits-after-seed.txt`, and
    `outputs/store-files.txt` (every file under `.dev-team/`, with the small text files copied
-   beside it). Run it even when the task ended early.
+   beside it), and `outputs/sample-check.txt` (your `sample-ids.json` held against the seed's
+   data and checks). Run it even when the task ended early.
 2. End `transcript.md` with your final message, word for word: what you would return to whoever
    started you. Record in `transcript.md` every command you ran in the copy.

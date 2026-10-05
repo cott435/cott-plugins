@@ -24,8 +24,8 @@ run to the section's DONE, and what the agents it spawns leave on disk.
 ## Names
 
 - `<plugin>`: the working tree's plugin directory — the one holding this file under
-  `evals/sets/files/`, with `.claude-plugin/plugin.json` at its top. Only `reset.sh` and the
-  seed are taken from it: a baseline snapshot has no `evals/`.
+  `evals/sets/files/`, with `.claude-plugin/plugin.json` at its top. Only `reset.sh`, the
+  seed and the collect script are taken from it: a baseline snapshot has no `evals/`.
 - `<root>`: the plugin root your prompt names — `<plugin>` for `with_skill`, the baseline
   snapshot's copy of the plugin for `old_skill`. It is `${CLAUDE_PLUGIN_ROOT}` wherever the
   target writes that; substitute it yourself. `status.py` means
@@ -58,7 +58,9 @@ This is fixture setup, not the driver: the driver starts at the target's first s
 
 - You are the driver, in this session, exactly as the target describes it: derive state with
   `status.py`, take the ready set, spawn the agents, branch as the target says, end with the
-  summary block. The limits the target puts on the driver bind you as it states them: what it
+  summary block. Run `status.py` by the command `python3 <root>/skills/status/scripts/status.py
+  …`, never through a script, alias or variable of your own, so the session's own record names
+  every run. The limits the target puts on the driver bind you as it states them: what it
   reads of a return, which files it may open, what it may write in `<copy>`, which git commands
   it may run, which spawn fields come from `status.py`. The read-only copies under **After the
   run** are the one exception, taken after the summary.
@@ -145,29 +147,30 @@ The driver's own output, written as it happens:
 - `<outputs>/spawns.md` — one entry per Agent call, in order: index; batch number (the calls of
   one assistant message share it); `subagent_type`; `run_in_background`; the full prompt,
   verbatim, in a fenced block, with its line breaks as sent; `sent` or `recorded, not sent`;
-  and for a call that was sent, the first line of its return.
+  and for a call that was sent, the first line of its return. The prompt is copied whole,
+  character for character: never abbreviated, summarised, elided with `…`, or described
+  ("as #1 except …", "the `--profile` output"). A prompt that is not there in full is a
+  harness break.
 - `<outputs>/interview.md` — one block per question, as above. No question: no file.
 - `<outputs>/summary.md` — the driver's final message, verbatim and whole.
 
-Then, after the final message, read-only copies from `<copy>`. These are the harness's, not
-the driver's:
+Then, after the final message, the harness's read-only copies from `<copy>`, not the driver's:
 
 - `<outputs>/status-log.txt` — every `status.py` invocation the driver made, in order, each
   with its arguments and full output as the driver's own call printed it, and a line between
   them wherever a batch was sent (`batch <n>`), so the order of runs and batches can be read
   from this file alone. A run that printed a block the driver then sent as a prompt is kept
-  whole, every line as printed. `<outputs>/status-final.txt` — `status.py data` run once more.
-- `<outputs>/git-log.txt` — `git -C <copy> log --format='%H%n%B' --stat <seed-sha>..HEAD`,
-  newest first as git prints it; `<outputs>/git-status.txt` — `git -C <copy> status
-  --porcelain`.
-- `<outputs>/repo/` — the copy's `docs/`, `packages/` and `data/`
-  (`rsync -a --exclude .git --exclude .venv --exclude __pycache__`), so the documents under
-  `docs/sources/`, the design, the reports, the ledgers, `docs/decisions.md` and the code as
-  the agents left them can be read.
-- `<outputs>/stores.txt` — three listings, each under a line naming its command, run from
-  `<copy>`: `find .dev-team/data -type f | sort` (with `wc -c` beside each file; `no such
-  directory` when it is absent); `git ls-files .dev-team`; and `ls -la rejects` (`no such
-  directory` when it is absent).
+  whole, every line as printed.
+- One command for the rest:
+  `python3 <plugin>/evals/sets/files/run-package/collect_19.py <copy> <outputs> <seed-sha> <root>`.
+  It writes `status-final.txt` (`status.py data` once more), `git-log.txt` (every commit after
+  `<seed-sha>` with its message and `--name-status`), `git-log-docs.patch` (the same commits'
+  patch of every path under `docs/`), `git-status.txt`, `repo/` (the copy's `docs/`,
+  `packages/` and `data/`), `stores.txt` (the files under `.dev-team/data/` with their sizes,
+  `git ls-files .dev-team`, and `ls -la rejects`), and `treatment-check.txt` (the built `clean`
+  run on the stage's input and the newest profile program rerun as at round 0, by
+  `check_treatments.py`, ending `exit: <n>`). Do not open or edit what it wrote; it is not the
+  driver's to read.
 - `<outputs>/returns.md` — one row per agent run: role, its `Section:` line, its `Mode:` line
   when the prompt has one, and the first line of its last hand-back.
 - `transcript.md` — every tool call you made as the driver, in order, each with its tool (Bash,
@@ -177,3 +180,16 @@ the driver's:
   output; any question, its options and its answer, at the point in that order where it
   happened; where the run ended and why; the final message; then the line
   `--- harness copies ---` and the copies above.
+
+## The runner's step
+
+Not the executor's. This eval runs its executor headless (`claude -p --output-format
+stream-json --verbose`, the stream kept as `<run_dir>/stream.jsonl`), because a `with_skill`
+driver must spawn `dev-team:profiler` and a session registers the `dev-team:` types of the
+plugin it was started with. When the session has ended, whoever ran it runs
+`python3 <plugin>/evals/sets/files/run-package/collect_stream.py <run_dir>/stream.jsonl <outputs>`,
+which writes the driver's own tool calls as the session made them: `agent-calls.md` (every
+Agent call with its prompt verbatim and its batch), `driver-log.txt` (every Bash command with
+its output, every Read, Write and Edit path, and a `[[collect_stream]] batch <n> sent` line per Agent batch, in
+order), `reads.txt`, `writes.txt` and `bash.txt`. The expectations read these where they ask
+what was sent or run; `spawns.md` and `status-log.txt` remain the executor's account.
