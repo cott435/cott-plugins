@@ -1,5 +1,5 @@
 {
-  "note": "the workspace root and the package pyproject exist",
+  "note": "the workspace root, the package pyproject and a CI workflow holding every Toolchain command exist",
   "steps": [
     {
       "do": "base"
@@ -7,7 +7,8 @@
     {
       "files": {
         "pyproject.toml": "[project]\nname = \"repo\"\nversion = \"0.0.0\"\n\n[tool.uv.workspace]\nmembers = [\"packages/*\"]\n",
-        "packages/data/pyproject.toml": "[project]\nname = \"data\"\nversion = \"0.0.0\"\n"
+        "packages/data/pyproject.toml": "[project]\nname = \"data\"\nversion = \"0.0.0\"\n",
+        ".github/workflows/ci.yml": "name: ci\non: [push, pull_request]\njobs:\n  checks:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v5\n      - name: repo checks\n        run: |\n          uv run ruff check\n      - name: package checks\n        run: |\n          for dir in packages/*/; do\n            pkg=$(basename \"$dir\")\n            uv run pytest packages/$pkg\n          done\n"
       },
       "message": "data: scaffold"
     }

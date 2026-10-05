@@ -1,5 +1,5 @@
 {
-  "note": "surface DONE with an approved deviation: sync-plan",
+  "note": "surface DONE with an approved deviation: sync-plan; the integration check passed at HEAD",
   "steps": [
     {
       "do": "base"
@@ -37,5 +37,6 @@
       "next: /dev-team:sync-plan data",
       "paths: approved (no commands)"
     ]
-  }
+  },
+  "integration": "pass"
 }

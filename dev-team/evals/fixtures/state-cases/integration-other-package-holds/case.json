@@ -1,0 +1,40 @@
+{
+  "note": "a commit under another package's root after a passing record: data's record still holds",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    },
+    {
+      "do": "integration"
+    },
+    {
+      "files": {
+        "packages/analysis/src/analysis/__init__.py": "\"\"\"analysis.\"\"\"\n"
+      },
+      "message": "analysis: start"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "contains": [
+      "integration: pass (.dev-team/integration/data.txt)",
+      "shipped: yes"
+    ]
+  }
+}

@@ -32,6 +32,12 @@ a verdict string (round 0, commit `none`) or `{"round": r, "commit": "{HEAD}" | 
 "verdict": "…"}`; with `append: true` it adds only the lines. A `files` content may be
 `{"repeat": ["<string>", <n>]}`, the string repeated `n` times (2.7, phase 7: a file too large
 to hold in a case).
+
+The integration record (2.8). A top-level `integration` key writes
+`.dev-team/integration/data.txt` after `dirty` and `gate`: `"pass"` for a passing run at
+`HEAD`, or the record's text, `{HEAD}` the short sha of `HEAD`. A step `{"do": "integration"}`
+(with an optional `text`, default `"pass"`) writes it at that point instead, with no commit, so
+the steps after it can make it stale.
 """
 
 from __future__ import annotations
@@ -464,7 +470,37 @@ def m_inbox(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
     return [({rel: text}, f"{PKG}/{s}: decisions inbox")]
 
 
+INTEGRATION_PASS = """dev-team integration — run 1 — 2026-09-27 10:00:00 — package data
+commit: {HEAD}
+tree: clean
+PASS toolchain (data): uv run pytest packages/data
+PASS toolchain: uv run ruff check
+reopens: none
+unowned: none
+unplaced: none
+result: pass
+"""
+
+
+def write_integration(dest: Path, text: str) -> None:
+    """Write the integration record `.dev-team/integration/data.txt` — `"pass"` for a passing run
+    at `HEAD`, else the text — `{HEAD}` the short sha of `HEAD`, and exclude `.dev-team/` from git
+    as a scaffolded repo's `.gitignore` would. No commit."""
+    head = run(dest, "rev-parse", "--short=7", "HEAD")
+    p = dest / ".dev-team" / "integration" / f"{PKG}.txt"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text((INTEGRATION_PASS if text == "pass" else text).replace("{HEAD}", head))
+    exclude = dest / ".git" / "info" / "exclude"
+    exclude.parent.mkdir(parents=True, exist_ok=True)
+    held = exclude.read_text() if exclude.exists() else ""
+    if ".dev-team/\n" not in held:
+        exclude.write_text(held + ".dev-team/\n")
+
+
 def apply(dest: Path, step: dict) -> None:
+    if step.get("do") == "integration":
+        write_integration(dest, step.get("text", "pass"))
+        return
     if "do" in step:
         commits = globals()[f"m_{step['do']}"](dest, step)
     else:
@@ -492,6 +528,8 @@ def build(case: Path, dest: Path) -> Path:
     write(dest, spec.get("dirty", {}))
     if "gate" in spec:
         write_gate(dest, spec["gate"])
+    if "integration" in spec:
+        write_integration(dest, spec["integration"])
     return dest
 
 

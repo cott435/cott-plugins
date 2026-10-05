@@ -18,10 +18,17 @@ nothing else — no edits, no fixes, no command run on the user's behalf.
 With no flag, the script prints one block per package in `docs/architecture.md`'s Packages
 table (with a package name, only that one): a `section · state · evidence · ready · round ·
 open spec-change · last commit` row per row of the contract's Sections table, then `scaffold:
-needed (<reasons>)` when it applies, then `paths: needed`, `paths: round <n> (request changes:
-<sections>)` (ending ` (cap)` from round 3) or `paths: approved (<report>)` once every section
-is DONE or a paths report exists, then `shipped: yes` or `shipped: no (<why>)`, then `next:
-<exact command>`. Each state is the first
+needed (<reasons>)` when it applies, then `integration: needed`, `integration: pass
+(<record>)`, `integration: run <n> fail (reopens: <sections>)` (ending ` (cap)` from run 3) or
+`integration: run <n> incomplete (<record>)` once every section is DONE or the record
+`.dev-team/integration/<pkg>.txt` exists, then `paths: needed`, `paths: round <n> (request
+changes: <sections>)` (ending ` (cap)` from round 3) or `paths: approved (<report>)` once every
+section is DONE or a paths report exists, then `shipped: yes` or `shipped: no (<why>)`, then
+`next: <exact command>`. The integration record is the whole repo's checks — every Floor and
+Enforced row, the repo-wide `pytest` included, else the Toolchain — run by
+`hooks/gate_on_stop.py --integration <pkg>`; it holds while nothing under the package root has
+changed since its commit, and a fail re-opens each section of the package a failure lies in as
+FIX n. A package ships only once it passes. Each state is the first
 of the nine rules in the script's docstring that fires, and the evidence names the file or
 commit it fired on. "Newer than" is commit order, never file times; a path with uncommitted
 changes counts as newest of all and says so in the evidence. A section is ready when it is
@@ -92,14 +99,17 @@ contract.
 lines per target), each item on a `  - ` line, `  - none` for an empty group.
 
 `--scaffold <pkg>` prints `scaffold: done` (exit 0) or `scaffold: needed (<reasons>)` (exit 1):
-no root `pyproject.toml`, or a uv workspace root with no `pyproject.toml` at the package root.
-A root that is not a uv workspace is an adopted repo's own layout and needs nothing. The
+no root `pyproject.toml`, or a uv workspace root with no `pyproject.toml` at the package root,
+no `.github/workflows/ci.yml`, or a workflow that lacks one of the commands CI must run (the
+Floor and Enforced rows, else the Toolchain's lines, `<pkg>` written `$pkg`, each matched as
+text). A root that is not a uv workspace is an adopted repo's own layout and needs nothing. The
 package block shows the same `scaffold: needed` line, before `shipped:`. run-package's SCAFFOLD
 step reads it.
 
 `--inputs <pkg>/<section>` prints the implementer's spawn block — twelve `<Field>: <value>`
 lines, `none` where a field has nothing to hold — resolved from the contract, the Packages
-table, and the review reports and open change files at either location. `/dev-team:run-package` sends it verbatim
+table, and the review reports, the integration record and open change files at either
+location. `/dev-team:run-package` sends it verbatim
 to the implementer, and `/dev-team:pair` reads the files it names. The script's docstring lists
 the fields and how each resolves. A section the contract lacks prints one line and exits 2.
 

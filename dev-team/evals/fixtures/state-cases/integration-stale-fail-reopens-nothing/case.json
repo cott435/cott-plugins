@@ -1,0 +1,40 @@
+{
+  "note": "a failing record made stale by the fix: ingest is REVIEW from its code, not FIX",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    },
+    {
+      "do": "integration",
+      "text": "dev-team integration — run 1 — 2026-09-27 10:00:00 — package data\ncommit: {HEAD}\ntree: clean\nFAIL toolchain (data): uv run pytest packages/data exited 1: packages/data/tests/unit/ingest/test_unit_ingest.py:2: AssertionError\nreopens: ingest\nunowned: none\nunplaced: none\nresult: fail (1 failure)\n"
+    },
+    {
+      "do": "fix",
+      "section": "ingest"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "ingest",
+    "state": "REVIEW",
+    "contains": [
+      "integration: needed"
+    ]
+  }
+}

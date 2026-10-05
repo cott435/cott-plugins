@@ -1,0 +1,31 @@
+{
+  "note": "with docs/constraints.md the workflow must hold its Floor and Enforced rows, not the Toolchain; Measured is not CI's",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "files": {
+        "pyproject.toml": "[project]\nname = \"repo\"\nversion = \"0.0.0\"\n\n[tool.uv.workspace]\nmembers = [\"packages/*\"]\n",
+        "packages/data/pyproject.toml": "[project]\nname = \"data\"\nversion = \"0.0.0\"\n",
+        ".github/workflows/ci.yml": "name: ci\non: [push, pull_request]\njobs:\n  checks:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v5\n      - name: package checks\n        run: |\n          for dir in packages/*/; do\n            pkg=$(basename \"$dir\")\n            uv run pytest packages/$pkg\n          done\n",
+        "docs/constraints.md": "# Constraints\n\n## Floor\n\n| check | threshold | command | scope |\n|---|---|---|---|\n| tests pass | 0 failures | `uv run pytest packages/<pkg>` | package |\n| import direction | 0 violations | `uv run lint-imports` | repo |\n\n## Enforced\n\n| dimension | threshold | command | scope |\n|---|---|---|---|\n| types | mypy | `uv run mypy packages/<pkg>/src` | package |\n\n## Measured\n\n| dimension | current | target | command | scope |\n|---|---|---|---|---|\n| runtime | — | 10 s | `time uv run data-load` | repo |\n"
+      },
+      "message": "data: scaffold"
+    }
+  ],
+  "args": [
+    "--scaffold",
+    "data"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "scaffold: needed (.github/workflows/ci.yml lacks `uv run lint-imports`; `uv run mypy packages/$pkg/src`)"
+    ],
+    "absent": [
+      "ruff check",
+      "data-load"
+    ]
+  }
+}

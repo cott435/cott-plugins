@@ -1,0 +1,35 @@
+{
+  "note": "every section DONE and no integration record: needed, and the package does not ship",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    }
+  ],
+  "args": [],
+  "expect": {
+    "section": "surface",
+    "state": "DONE",
+    "contains": [
+      "integration: needed",
+      "paths: approved (no commands)",
+      "shipped: no (integration needed)",
+      "next: /dev-team:run-package data"
+    ]
+  }
+}

@@ -192,9 +192,16 @@ each command deeper than 8.
    after it — a gate retry, a block, a third red attempt — reaches the driver as a row, since
    the stop gate writes every stop to the section's record and `status.py` reads it.
 5. **Re-derive** and loop.
-6. **The close.** When every section is DONE, the architect runs as `sync-plan`: approved
+6. **The integration check.** When every section is DONE, the driver runs
+   `hooks/gate_on_stop.py --integration <pkg>`: every check CI runs — each **Floor** and
+   **Enforced** row of `docs/constraints.md`, the repo-wide `pytest` included, else the
+   Toolchain — over the whole repo, every failure a `FAIL`, recorded in
+   `.dev-team/integration/<pkg>.txt`. A failure located in a section of the package re-opens it
+   at FIX n with the record in its implementer's **Review**; once the fixed sections are DONE
+   again, the check runs again. The paths review waits for `integration: pass`.
+7. **The close.** When the paths review approves, the architect runs as `sync-plan`: approved
    deviations and pending change files go into the contracts, each verified against the code.
-7. **Summary** — always the last message: sections, agent runs per role, the commit range, why
+8. **Summary** — always the last message: sections, agent runs per role, the commit range, why
    it stopped, and `next:`, the exact command to type.
 
 **The caps.** A review loop gets three rounds, two when a prior finding is unfixed. At the cap
@@ -222,6 +229,15 @@ questions come from the stop gate's record:
   …) (cap)`): the driver quotes the line and offers *one more round*, which runs an
   implementer and a review for each section it names and then the paths review again, or
   *defer*, which moves the findings to `docs/followups.md`.
+- **An integration check that still fails at run 3** (`integration: run 3 fail (reopens: …)
+  (cap)`): the driver quotes the record's `FAIL` lines and offers *one more round* or *stop
+  here*. There is no *defer*: a package whose whole-repo checks fail does not ship.
+- **An integration failure no section of the package owns** (`integration: run <n> fail
+  (reopens: no section named)`) — a test of another package, a shared config — or a run that
+  ran out of time (`integration: run <n> incomplete`): the driver quotes the record's `FAIL`,
+  `TIMEOUT`, `unowned:` and `unplaced:` lines and offers *fixed, run it again* or *stop here*.
+  No agent of the run may edit there; you fix it, or run the check by hand with
+  `DEV_TEAM_INTEGRATION_BUDGET` raised.
 
 An answer that is none of the options — free text typed in place of a choice — ends the run
 where it stands with the Summary. The driver does not act on the text; you read the Summary
@@ -274,14 +290,17 @@ every call and never stored:
 | **TEST** | no intent tests; or the design is newer than them; or an open `spec-change:test` entry; or an `approved` deviation's clause is cited by a test not yet regenerated |
 | **IMPLEMENT** | no README (for `surface`, no `interface.md`); or the intent tests are newer than it (a regeneration commit, or one marked `intent tests current with design`, does not count); or the gate's record for the current commit says `not done`, a run that died between attempts |
 | **REVIEW** | no review round; or round 1 lacks its `a` or `b` report; or the code is newer than the newest round's `Commit:`; or a `spec-change` verdict has no open entry left |
-| **FIX n** | round `n` says `request changes`, under the cap, and nothing changed since; or the section is DONE and the package's paths review names it |
+| **FIX n** | round `n` says `request changes`, under the cap, and nothing changed since; or the section is DONE and the package's paths review names it; or the section is DONE and the package's current integration record fails in its files, below run 3 |
 | **DONE** | the newest round approves and the code is not newer than its `Commit:` |
 
 A package is **shipped** when its `surface` section is DONE, `status.py --surface <pkg>`
-passes, and its paths review, against the contract's **Call paths**, approves (`paths:
-approved`). A package whose check fails prints
-`shipped: no (surface check FAIL)`; one whose commands have not been reviewed prints `shipped:
-no (paths needed)` until `/dev-team:run-package <pkg>` has run the review. A round is the
+passes, the integration check passes on the package's current code (`integration: pass`),
+and its paths review, against the contract's **Call paths**, approves (`paths: approved`). A
+package whose check fails prints `shipped: no (surface check FAIL)`; one whose whole-repo
+checks have not run since its code last changed prints `shipped: no (integration needed)`, and
+one whose commands have not been reviewed prints `shipped: no (paths needed)`, until
+`/dev-team:run-package <pkg>` has run them. The integration record holds while nothing under
+the package root changes; another package's later work does not unship it. A round is the
 set of reports sharing `-r<n>`; its verdict is the worst of them.
 
 ## Pairing on a section
@@ -334,10 +353,14 @@ guarded before the repo contract exists:
   backticks, and every `Public: yes` name is one the contract's **Public surface (intent)**
   names), so a README's author meets a bad row in its own run; then the **Floor** and
   **Enforced** rows of `docs/constraints.md` for the package (else the Toolchain commands of
-  `docs/architecture.md`). A `repo`-scope pytest row is CI's: the record says `SKIPPED <row>:
-  repo-scope pytest is CI's` and never runs it. A check whose every located failure lies
-  outside the section's paths, or in an intent-test file (a lint, type or Guarded hit in the
-  tester's lines), is `ELSEWHERE`, not `FAIL`: the implementer may not edit there, and the
+  `docs/architecture.md`). A `repo`-scope pytest row is the integration check's: the record
+  says `SKIPPED <row>: repo-scope pytest is the integration check's` and never runs it. Then
+  the regression check: the whole suite of every finished package (every section DONE) that
+  depends on this one, one `regression <dep>` line each — `FAIL` when the failure's output
+  traces into the section's files (a traceback frame, or an `ImportError` naming one of its
+  modules), else `ELSEWHERE`, since a sibling in the same batch may be the cause. A check
+  whose every located failure lies outside the section's paths, or in an intent-test file (a
+  lint, type or Guarded hit in the tester's lines), is `ELSEWHERE`, not `FAIL`: the implementer may not edit there, and the
   reviewer carries each such line to `docs/followups.md`. A failing
   intent test is still `FAIL`, since what fails is the code. Guarded's removed items are a
   test file that lost more `assert` lines than it gained, or more `pytest.raises`, counted per
@@ -365,7 +388,10 @@ guarded before the repo contract exists:
   the same trailer; from the second attempt the message names `debugging-and-error-recovery`.
   By hand, `gate_on_stop.py --report [--base <rev>]` runs the same checks over
   `<rev>`..working tree with no counter and no marker, writes the same records, and exits 1 on
-  a FAIL; `/dev-team:pair` runs it at wrap-up.
+  a FAIL; `/dev-team:pair` runs it at wrap-up. `gate_on_stop.py --integration <pkg>` is the
+  integration check (**The loop**, step 6), run by the driver from the Bash tool rather than
+  the hook, so its rows share `DEV_TEAM_INTEGRATION_BUDGET` (570 s by default, under the Bash
+  tool's limit) instead of the hook's 600 s.
 - **`guard_writes.py`** (`PreToolUse` on `Write|Edit`) — each role writes only where its job
   is: the architect under `docs/` but not designs or reviews; the designer to designs, the
   ledgers and its section's decisions inbox; the researcher to `docs/sources/` and
@@ -730,6 +756,17 @@ passing → shipped.
   lists that the code does not pass through, is a break (CRITICAL) under the section that
   holds it, and P1 uses the command's own budget. Without the heading the review runs as in
   2.5.
+- **Upgrading from 2.7: a shipped package prints `shipped: no (integration needed)`.**
+  `shipped:` now needs the integration check. Run `/dev-team:run-package <pkg>` once: the
+  driver runs the check, re-opens any section a failure lies in, and closes the package again
+  when it passes. The repo-wide `pytest` row that the stop gate skipped runs here for the first
+  time, so expect it to find what nothing ran before.
+- **Upgrading from 2.7: the scaffold step writes `.github/workflows/ci.yml`.** An existing
+  workspace prints `scaffold: needed (no .github/workflows/ci.yml)`, and the next
+  `/dev-team:run-package` writes it before anything else. Make its `checks` job a required
+  status check in the GitHub repository's branch protection: until then a red run still
+  merges. The workflow is matched line by line against the Floor and Enforced rows, so a row
+  `/dev-team:set-constraints` adds later is added to it by the next scaffold step.
 - **Upgrading from 2.5: a legacy close writes the heading.** `/dev-team:sync-plan <pkg>` (or
   `run-package`'s close) on a contract with no **Call paths** writes it as built from
   `status.py --paths`, and writes `docs/packages/<pkg>/changes/paths-<command>.md` for each

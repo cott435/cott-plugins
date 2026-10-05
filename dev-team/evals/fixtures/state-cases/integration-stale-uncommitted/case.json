@@ -1,0 +1,34 @@
+{
+  "note": "an uncommitted change under the package root: the record does not hold",
+  "steps": [
+    {
+      "do": "base"
+    },
+    {
+      "do": "done",
+      "section": "ingest"
+    },
+    {
+      "do": "done",
+      "section": "clean"
+    },
+    {
+      "do": "done",
+      "section": "storage"
+    },
+    {
+      "do": "done",
+      "section": "surface"
+    }
+  ],
+  "dirty": {
+    "packages/data/tests/conftest.py": "import pytest\n"
+  },
+  "integration": "pass",
+  "args": [],
+  "expect": {
+    "contains": [
+      "integration: needed"
+    ]
+  }
+}

@@ -46,7 +46,10 @@ A section is in exactly one state, decided in this order, first match wins:
 8. **FIX n** — the newest round `n` says `request changes`, the cap is not hit, and the code is
    not newer than its `Commit:`; or the newest round approves, the code is not newer than its
    `Commit:`, and the package's newest paths report is current, says `request changes`, is
-   below its cap (round 3), and names the section on a line under **CRITICAL**.
+   below its cap (round 3), and names the section on a line under **CRITICAL**; or the newest
+   round approves, the code is not newer than its `Commit:`, and the package's integration
+   record is current, fails, is below its cap (run 3), and names the section on its `reopens:`
+   line (**Integration.** below).
 9. **DONE** — the newest round approves and the code is not newer than its `Commit:`.
 
 The **ledger** is one file per section, `docs/deviations/<pkg>/<section>.md`, so agents that
@@ -95,9 +98,11 @@ IMPLEMENT on. While the contract has a `## Call paths` heading (2.6), its PLAN, 
 TEST rows are ready whatever the other rows show, so the surface is designed and tested right
 after PLAN from the contract; without the heading it waits for every other row at every
 state, as before.
-Shipped: the `surface` section is DONE, `--surface <pkg>` passes, and the paths review
-approves; otherwise the block prints `shipped: no (surface <STATE>)`, `shipped: no (surface
-check FAIL)`, `shipped: no (paths needed)` or `shipped: no (paths round <n>)`. Rounds: the highest `n`
+Shipped: the `surface` section is DONE, `--surface <pkg>` passes, the integration check
+passes on the package's current code, and the paths review approves; otherwise the block
+prints `shipped: no (surface <STATE>)`, `shipped: no (surface check FAIL)`, `shipped: no
+(integration needed)`, `shipped: no (integration run <n> fail)`, `shipped: no (integration run
+<n> incomplete)`, `shipped: no (paths needed)` or `shipped: no (paths round <n>)`. Rounds: the highest `n`
 over the section's review reports, at either location; a round's verdict is the worst of its
 reports (request changes > spec-change > approve); a report with no `-r<n>-` is round 1.
 
@@ -257,7 +262,7 @@ commands)` when the heading says so, or `contract: entries for <command>, …, n
 Exit codes as for `--paths`; `--against-contract` without `--paths` prints `--against-contract
 needs --paths <pkg>` and exits 2.
 
-**Paths review.** The package block's `paths:` line, printed after `scaffold:` and before
+**Paths review.** The package block's `paths:` line, printed after `integration:` and before
 `shipped:` once every section row is DONE or a paths report exists, says where the package's
 paths review stands, decided in this order:
 
@@ -277,14 +282,39 @@ The line is `paths: needed`, `paths: approved (<report path>)` or `paths: approv
 commands)`, or `paths: round <n> (request changes: <section>, …)`, with `no section named` in
 place of the list when no CRITICAL line names a section, and ` (cap)` appended at the cap.
 
+**Integration.** The package block's `integration:` line, printed after `scaffold:` and
+before `paths:` once every section row is DONE or the record exists, says whether the whole
+repo's checks pass with the package's current code. The record is
+`.dev-team/integration/<pkg>.txt`, written by `hooks/gate_on_stop.py --integration <pkg>`
+(run-package runs it once every section is DONE, before the paths review): a header
+`dev-team integration — run <n> — <stamp> — package <pkg>`, then `commit: <short sha>` (`HEAD`
+when it ran), `tree: clean` or `tree: uncommitted (<k> paths)`, one line per check, then
+`reopens: <section>; …` (the package's sections a located failure lies in), `unowned: <path>;
+…` (located failures no section of the package owns) and `unplaced: <check>; …` (failing checks
+whose output names no file in the repo), each `none` when empty,, and `result: pass`, `result: fail (<k> failures)` or `result: incomplete (<k> out of
+time)`. The record is current when its `tree:` is `clean`, its `commit:` is an ancestor of
+`HEAD`, and nothing under the package root (for a package at the repo root, the repo less
+`docs/`, `.dev-team/` and `.claude/`) has changed since, committed or not; otherwise the line
+is `integration: needed`. A current record prints `integration: pass (<record>)`,
+`integration: run <n> incomplete (<record>)`, or `integration: run <n> fail (reopens:
+<section>, …)` — `no section named` in place of the list when `reopens:` names none of the
+package's sections, ` (cap)` appended when it names one at run 3 or later. Below the cap each
+named section that would otherwise be DONE is FIX n (rule 8); at the cap none is re-opened and
+the driver asks. `<n>` is the writer's: one more than the previous record's when that record's
+result was a fail, else 1.
+
 **Scaffold.** A package is ready to be built in when its workspace exists: a root
 `pyproject.toml`, and, when that root is a uv workspace (`[tool.uv.workspace]`), a
-`pyproject.toml` at the package root. `--scaffold <pkg>` prints `scaffold: done` and exits 0,
-or `scaffold: needed (<reasons>)` and exits 1: `no root pyproject.toml`, `no <package
-root>/pyproject.toml`. A root `pyproject.toml` that is not a uv workspace is an adopted repo's
-own layout and needs nothing. The package block prints the same `scaffold: needed` line, before
-`shipped:`, when it applies. run-package runs the SCAFFOLD step on it before any other spawn,
-so every tester runs inside the workspace, under the repo's own lint rules.
+`pyproject.toml` at the package root and a CI workflow at `.github/workflows/ci.yml` holding,
+verbatim, every command CI must run: the Floor and Enforced rows of `docs/constraints.md`,
+else the Toolchain's lines less a trailing `# comment`, `<pkg>` written `$pkg`. `--scaffold
+<pkg>` prints `scaffold: done` and exits 0, or `scaffold: needed (<reasons>)` and exits 1: `no
+root pyproject.toml`, `no <package root>/pyproject.toml`, `no .github/workflows/ci.yml`,
+``.github/workflows/ci.yml lacks `<cmd>`; …``. A root `pyproject.toml` that is not a uv
+workspace is an adopted repo's own layout and needs nothing. The package block prints the
+same `scaffold: needed` line, before `shipped:`, when it applies. run-package runs the
+SCAFFOLD step on it before any other spawn, so every tester runs inside the workspace, under
+the repo's own lint rules.
 
 `--profile <pkg>/<section>` prints the profiler's spawn block, the one place its values are
 resolved: run-package sends it verbatim. One block per `stage:` source of the row that
@@ -337,8 +367,9 @@ it names before touching the section. One `<Field>: <value>` line per field, in 
 8. **Intent tests** — `<package root>/tests/intent/<section>/` when it exists.
 9. **Review** — from either location, the newest round's reports when its verdict is `request changes` (FIX n, or a
    cap granted one more round) or `spec-change` (a rebuild after the step it re-opened: its
-   CRITICALs still stand), and the package's paths report while it names the section and no
-   review round of the section is newer than it.
+   CRITICALs still stand), the package's paths report while it names the section and no
+   review round of the section is newer than it, and the package's integration record while it
+   is current, fails, and names the section on its `reopens:` line.
 10. **Round** — the newest round plus one.
 11. **Change file** — from either location, every open `docs/packages/<pkg>/changes/<slug>.md`
     or `docs/changes/<slug>.md` whose Affected sections names the section.
@@ -1400,13 +1431,15 @@ def _gate_hold(pkg: str, section: str, readme: Path) -> dict[str, object] | None
     return gate_record(pkg, section)
 
 
-def section_state(pkg: str, section: str, paths: dict[str, object] | None = None) -> tuple[str, str]:
+def section_state(pkg: str, section: str, paths: dict[str, object] | None = None,
+                  integration: dict[str, object] | None = None) -> tuple[str, str]:
     """(STATE, evidence) for one section: the first rule in the module docstring that fires.
 
-    paths is the package's `paths_state`, computed here when not given; `package_table` passes
-    it once for every row. Rule 3's after-build round applies only where the rest would say DONE.
+    paths is the package's `paths_state` and integration its `integration_state`, each computed
+    here when not given; `package_table` passes both once for every row. Rule 3's after-build
+    round applies only where the rest would say DONE.
     """
-    state, evidence = _state_before_built_round(pkg, section, paths)
+    state, evidence = _state_before_built_round(pkg, section, paths, integration)
     if state != "DONE":
         return state, evidence
     row = _row(pkg, section) or {}
@@ -1416,7 +1449,8 @@ def section_state(pkg: str, section: str, paths: dict[str, object] | None = None
     return state, evidence
 
 
-def _state_before_built_round(pkg: str, section: str, paths: dict[str, object] | None) -> tuple[str, str]:
+def _state_before_built_round(pkg: str, section: str, paths: dict[str, object] | None,
+                              integration: dict[str, object] | None = None) -> tuple[str, str]:
     """`section_state` without rule 3's after-build round."""
     p = _paths(pkg, section)
     row: dict[str, str] = p["row"]  # type: ignore[assignment]
@@ -1532,6 +1566,10 @@ def _state_before_built_round(pkg: str, section: str, paths: dict[str, object] |
         paths = paths_state(pkg)
     if paths["kind"] == "round" and not paths["cap"] and section in paths["sections"]:  # type: ignore[operator]
         return f"FIX {n}", f"paths r{paths['n']} request changes ({_rel(paths['report'])})"  # type: ignore[arg-type]
+    if integration is None:
+        integration = integration_state(pkg)
+    if integration["kind"] == "fail" and not integration["cap"] and section in integration["sections"]:  # type: ignore[operator]
+        return f"FIX {n}", f"integration run {integration['n']} fail ({_rel(integration['record'])})"  # type: ignore[arg-type]
 
     # 9. DONE
     return "DONE", f"review r{n} approve @{rsha[:7]}"
@@ -1656,6 +1694,109 @@ def section_paths_report(pkg: str, section: str) -> Path | None:
     return report
 
 
+INTEGRATION_HEADER = re.compile(r"^dev-team integration — run (\d+) — ")
+
+
+def integration_path(pkg: str) -> Path:
+    """The package's integration record, `.dev-team/integration/<pkg>.txt`."""
+    return ROOT / ".dev-team" / "integration" / f"{pkg}.txt"
+
+
+def integration_pathspec(pkg: str) -> list[str]:
+    """What an integration record speaks for: the package root; for a package at the repo root,
+    the repo less `docs/`, `.dev-team/` and `.claude/`."""
+    rel = _rel(package_root(pkg))
+    if rel != ".":
+        return [rel]
+    return [".", ":(exclude)docs", ":(exclude).dev-team", ":(exclude).claude"]
+
+
+def read_integration(pkg: str) -> dict[str, object] | None:
+    """The package's integration record parsed, current or not; None when absent or unreadable.
+
+    Keys: n (the header's run), commit, clean (the `tree:` line reads `clean`), result (the text
+    after `result: ` on the last non-empty line), reopens, unowned and unplaced (the `; `-separated
+    values of those lines, `none` read as empty).
+    """
+    try:
+        lines = integration_path(pkg).read_text().splitlines()
+    except (OSError, UnicodeDecodeError):
+        return None
+    head = INTEGRATION_HEADER.match(lines[0]) if lines else None
+    if head is None:
+        return None
+
+    def value(key: str) -> str:
+        return next((line[len(key) + 1:].strip() for line in lines if line.startswith(f"{key}:")), "")
+
+    def items(key: str) -> list[str]:
+        return [v.strip() for v in value(key).split(";") if v.strip() and v.strip() != "none"]
+
+    last = next((line for line in reversed(lines) if line.strip()), "")
+    return {
+        "n": int(head.group(1)),
+        "commit": value("commit"),
+        "clean": value("tree") == "clean",
+        "result": last[len("result: "):].strip() if last.startswith("result: ") else "",
+        "reopens": items("reopens"),
+        "unowned": items("unowned"),
+        "unplaced": items("unplaced"),
+    }
+
+
+def integration_state(pkg: str) -> dict[str, object]:
+    """Where the package's integration check stands; the module docstring's **Integration.**.
+
+    Keys: kind (`needed`, `pass`, `fail` or `incomplete`), n (the record's run, 0 without a
+    current one), record (its path, or None), sections (the package's sections its `reopens:`
+    line names, in the Sections table's order), unowned, unplaced, cap (`fail` naming a section
+    at run 3 or later).
+    """
+    out: dict[str, object] = {"kind": "needed", "n": 0, "record": None, "sections": [], "unowned": [],
+                              "unplaced": [], "cap": False}
+    rec = read_integration(pkg)
+    if rec is None or not rec["clean"]:
+        return out
+    sha = str(rec["commit"])
+    if not re.fullmatch(r"[0-9a-f]{7,40}", sha) or git("rev-parse", "--verify", "-q", f"{sha}^{{commit}}") is None:
+        return out
+    if changed_since(sha, *integration_pathspec(pkg)) is not None:
+        return out
+    result = str(rec["result"])
+    current = {**out, "n": rec["n"], "record": integration_path(pkg)}
+    if result.startswith("pass"):
+        return {**current, "kind": "pass"}
+    if result.startswith("incomplete"):
+        return {**current, "kind": "incomplete"}
+    if not result.startswith("fail"):
+        return out
+    named = [r["section"] for r in sections(pkg) if r["section"] in rec["reopens"]]  # type: ignore[operator]
+    return {**current, "kind": "fail", "sections": named, "unowned": rec["unowned"], "unplaced": rec["unplaced"],
+            "cap": bool(named) and int(rec["n"]) >= 3}  # type: ignore[call-overload]
+
+
+def integration_line(state: dict[str, object]) -> str:
+    """The package block's `integration:` line for an `integration_state`."""
+    record = _rel(state["record"]) if state["record"] else ""  # type: ignore[arg-type]
+    if state["kind"] == "needed":
+        return "integration: needed"
+    if state["kind"] == "pass":
+        return f"integration: pass ({record})"
+    if state["kind"] == "incomplete":
+        return f"integration: run {state['n']} incomplete ({record})"
+    named = ", ".join(state["sections"]) or "no section named"  # type: ignore[arg-type]
+    return f"integration: run {state['n']} fail (reopens: {named})" + (" (cap)" if state["cap"] else "")
+
+
+def section_integration_record(pkg: str, section: str) -> Path | None:
+    """The integration record while it is current, fails and names the section on its `reopens:`
+    line: `--inputs`' Review carries it."""
+    state = integration_state(pkg)
+    if state["kind"] == "fail" and section in state["sections"]:  # type: ignore[operator]
+        return state["record"]  # type: ignore[return-value]
+    return None
+
+
 def _section_rev(pkg: str, section: str) -> str | None:
     p = _paths(pkg, section)
     return _rev(p["design"], p["intent"], p["unit"], p["readme"], *p["code"])  # type: ignore[arg-type]
@@ -1665,7 +1806,8 @@ def package_table(pkg: str) -> list[dict[str, object]]:
     """One dict per section: section, state, evidence, ready, round, spec, commit."""
     rows = sections(pkg)
     paths = paths_state(pkg)
-    states = {r["section"]: section_state(pkg, r["section"], paths) for r in rows}
+    integration = integration_state(pkg)
+    states = {r["section"]: section_state(pkg, r["section"], paths, integration) for r in rows}
     names = set(states)
     out = []
     for r in rows:
@@ -1713,6 +1855,8 @@ def next_command(pkg: str, table: list[dict[str, object]] | None = None) -> str:
         return f"/dev-team:run-package {pkg}"
     if shipped_line(pkg, table) == "shipped: no (surface check FAIL)":
         return f"correct the README rows status.py --surface {pkg} names, then /dev-team:run-package {pkg}"
+    if integration_state(pkg)["kind"] != "pass":
+        return f"/dev-team:run-package {pkg}"
     paths = paths_state(pkg)
     if paths["kind"] == "round" and paths["cap"]:
         return f"/dev-team:run-package {pkg} or /dev-team:run-package {pkg} --defer"
@@ -1730,6 +1874,32 @@ def next_command(pkg: str, table: list[dict[str, object]] | None = None) -> str:
     return "/dev-team:finalize-project"
 
 
+CI_WORKFLOW = ".github/workflows/ci.yml"
+
+
+def ci_commands() -> list[str]:
+    """The commands the CI workflow must run: the Floor and Enforced rows of
+    `docs/constraints.md`, else the Toolchain's lines less a trailing `# comment`, `<pkg>` written
+    `$pkg` (the workflow's loop variable over the packages); each once, in order."""
+    if (DOCS / "constraints.md").exists():
+        cmds = [cmd for heading, _, cmd, _ in constraints_rows("$pkg") if heading != "Measured"]
+    else:
+        cmds = [re.sub(r"\s+#.*$", "", c).replace("<pkg>", "$pkg") for c in toolchain_commands()]
+    return list(dict.fromkeys(cmds))
+
+
+def ci_needed() -> list[str]:
+    """What the CI workflow lacks: `no .github/workflows/ci.yml`, or the one reason naming every
+    `ci_commands` line its text does not hold verbatim; [] when nothing."""
+    f = ROOT / CI_WORKFLOW
+    try:
+        text = f.read_text()
+    except (OSError, UnicodeDecodeError):
+        return [f"no {CI_WORKFLOW}"]
+    missing = [c for c in ci_commands() if c not in text]
+    return [f"{CI_WORKFLOW} lacks " + "; ".join(f"`{c}`" for c in missing)] if missing else []
+
+
 def scaffold_needed(pkg: str) -> list[str]:
     """What the SCAFFOLD step must create before pkg is built in: [] when nothing."""
     root_py = ROOT / "pyproject.toml"
@@ -1739,15 +1909,16 @@ def scaffold_needed(pkg: str) -> list[str]:
         is_workspace = "[tool.uv.workspace]" in root_py.read_text()
     except OSError:
         return []
+    if not is_workspace:
+        return []
     pkg_py = package_root(pkg) / "pyproject.toml"
-    if is_workspace and not pkg_py.exists():
-        return [f"no {_rel(pkg_py)}"]
-    return []
+    return ([f"no {_rel(pkg_py)}"] if not pkg_py.exists() else []) + ci_needed()
 
 
 def shipped_line(pkg: str, table: list[dict[str, object]]) -> str:
-    """The block's `shipped:` line: yes only when `surface` is DONE, `--surface <pkg>` passes and
-    the paths review approves. The check runs only once `surface` is DONE."""
+    """The block's `shipped:` line: yes only when `surface` is DONE, `--surface <pkg>` passes, the
+    integration check passes on the package's current code and the paths review approves. The
+    check runs only once `surface` is DONE."""
     surface = next((r for r in table if r["section"] == "surface"), None)
     if surface is None:
         return "shipped: no (no surface row)"
@@ -1755,6 +1926,11 @@ def shipped_line(pkg: str, table: list[dict[str, object]]) -> str:
         return f"shipped: no (surface {surface['state']})"
     if surface_check(pkg)[0] != "PASS":
         return "shipped: no (surface check FAIL)"
+    integration = integration_state(pkg)
+    if integration["kind"] == "needed":
+        return "shipped: no (integration needed)"
+    if integration["kind"] != "pass":
+        return f"shipped: no (integration run {integration['n']} {integration['kind']})"
     paths = paths_state(pkg)
     if paths["kind"] == "approved":
         return "shipped: yes"
@@ -1775,6 +1951,8 @@ def package_report(pkg: str) -> list[str]:
                                  str(r["spec"]), str(r["commit"])]))
     if needed := scaffold_needed(pkg):
         lines.append(f"scaffold: needed ({', '.join(needed)})")
+    if all(r["state"] == "DONE" for r in table) or integration_path(pkg).exists():
+        lines.append(integration_line(integration_state(pkg)))
     if all(r["state"] == "DONE" for r in table) or paths_reports(pkg):
         lines.append(paths_line(paths_state(pkg)))
     lines.append(shipped_line(pkg, table))
@@ -2988,7 +3166,7 @@ def repo_report() -> list[str]:
             pk.append(f"{pkg}: shipped")
         elif shipped == "shipped: no (surface check FAIL)":
             pk.append(f"{pkg}: building ({done}/{len(table)} DONE, surface check FAIL)")
-        elif shipped.startswith("shipped: no (paths "):
+        elif shipped.startswith(("shipped: no (paths ", "shipped: no (integration ")):
             pk.append(f"{pkg}: building ({done}/{len(table)} DONE, {shipped[len('shipped: no ('):-1]})")
         elif not any(_paths(pkg, str(r["section"]))["design"].exists() for r in table):  # type: ignore[union-attr]
             pk.append(f"{pkg}: planned")
@@ -3023,6 +3201,25 @@ def upstream_packages(pkg: str) -> list[str]:
         if col(row, "package") == pkg:
             return _names(col(row, "depends"))
     return []
+
+
+def dependent_packages(pkg: str) -> list[str]:
+    """Every other package whose `depends on`, followed through the Packages table, reaches pkg;
+    in the table's order. The stop gate runs the finished ones' suites (its regression check)."""
+    ups = {name: upstream_packages(name) for name, _ in packages()}
+    out = []
+    for name, direct in ups.items():
+        seen: set[str] = set()
+        stack = list(direct)
+        while stack and name != pkg:
+            dep = stack.pop()
+            if dep == pkg:
+                out.append(name)
+                break
+            if dep not in seen:
+                seen.add(dep)
+                stack += ups.get(dep, [])
+    return out
 
 
 def design_upstream(pkg: str, section: str) -> list[str] | None:
@@ -3084,6 +3281,8 @@ def implementer_inputs(pkg: str, section: str) -> list[str]:
     review = sorted(_rel(f) for f in _reports(pkg, section).get(n, [])) if verdict in ("request changes", "spec-change") else []
     if (report := section_paths_report(pkg, section)) is not None:
         review.append(_rel(report))
+    if (record := section_integration_record(pkg, section)) is not None:
+        review.append(_rel(record))
     changes = [_rel(c["path"]) for c in open_changes(pkg, section)]  # type: ignore[arg-type]
 
     def cell(values: list[str]) -> str:

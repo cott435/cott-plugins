@@ -60,24 +60,28 @@ alone at PLAN — so the chart's stages run side by side for different sections;
 
 ```mermaid
 flowchart TB
-  CMD(["/dev-team:run-package pkg [section] [--step] [--serial]"]) --> SCAF{"workspace exists?<br/>status.py --scaffold pkg"}
-  SCAF -->|"no"| SCAFFOLD["implementer (scaffold)<br/>root pyproject with the lint rules · package skeleton · uv sync · one commit"]
+  CMD(["/dev-team:run-package pkg [section] [--step] [--serial]"]) --> SCAF{"workspace and CI workflow exist?<br/>status.py --scaffold pkg"}
+  SCAF -->|"no"| SCAFFOLD["implementer (scaffold)<br/>root pyproject with the lint rules · package skeleton · .github/workflows/ci.yml · uv sync · one commit"]
   SCAFFOLD --> STATE
   SCAF -->|"yes"| STATE["status.py: derive each section's state from disk<br/>PROBE · DESIGN · TEST · IMPLEMENT · REVIEW · FIX n · PLAN · DONE · BLOCKED"]
   STATE --> READY{"ready set: in-package deps DONE?<br/>surface DESIGN and TEST: once the contract has Call paths"}
   READY -->|"none ready, some BLOCKED"| ASK
-  READY -->|"all DONE, surface check PASS, paths: needed"| PATHS["reviewer<br/>Focus: paths"]
+  READY -->|"all DONE, surface check PASS, integration: needed"| INTEG[["integration check, the driver's Bash<br/>gate_on_stop.py --integration pkg<br/>every Floor and Enforced row over the whole repo, repo pytest included"]]
+  INTEG -->|".dev-team/integration/pkg.txt"| STATE
+  INTEG -->|"fail: FIX n on the sections a failure lies in"| IMPL
+  INTEG -->|"cap: run 3; a failure no section owns; out of time"| ASK
+  READY -->|"all DONE, integration: pass, paths: needed"| PATHS["reviewer<br/>Focus: paths"]
   PATHS -->|"status.py --paths pkg --against-contract: each command's call tree beside its Call paths<br/>docs/packages/pkg/reviews/paths/date-rN-p.md"| STATE
   PATHS -->|"FIX n on the sections it names"| IMPL
   PATHS -->|"cap: round 3"| ASK
-  READY -->|"all DONE, surface check PASS, paths: approved"| SYNC["architect: sync-plan pkg<br/>apply approved deviations and change files, verified against code<br/>no Call paths: written as built, a change file per path past 8"]
+  READY -->|"all DONE, integration: pass, paths: approved"| SYNC["architect: sync-plan pkg<br/>apply approved deviations and change files, verified against code<br/>no Call paths: written as built, a change file per path past 8"]
   READY -->|"all DONE, surface check FAIL"| ASK
   READY -->|"ready set R"| PROBE["researcher ×P (probe) · profiler (a stage: source)<br/>sources with no entry yet; a built marked section"]
   PROBE -->|"docs/sources/source.md extended"| DESIGN["designer ×R<br/>contract row · dep READMEs · probe · decisions"]
   DESIGN -->|"design/section.md"| TEST["tester ×R<br/>intent tests from documents only, all red<br/>hook: ruff on every edit"]
   TEST -->|"design-gap"| DESIGN
   TEST -->|"tests/intent/section/"| IMPL["implementer ×N, one batch<br/>code · unit tests · README (surface: interface.md)<br/>hooks: ruff on every edit · write guard to its section · no shell writes"]
-  IMPL --> GATE[["SubagentStop hook, per section<br/>intent + unit suites · README name check · package rows · repo pytest SKIPPED · Guarded grep since the last review<br/>exit 2 until green; a per-section marker or 3 attempts lets it stop"]]
+  IMPL --> GATE[["SubagentStop hook, per section<br/>intent + unit suites · README name check · package rows · repo pytest SKIPPED · finished dependents' suites · Guarded grep since the last review<br/>exit 2 until green; a per-section marker or 3 attempts lets it stop"]]
   GATE -->|"commit and result, every stop"| REC[(".dev-team/gate/pkg/section.txt")]
   REC -->|"blocked or let through, for the current commit: BLOCKED"| STATE
   GATE --> REVIEW["reviewer ×2, round 1: A conformance and seams (coverage table) · B correctness and security<br/>reviewer ×1, round 2+: diff-scoped, prior findings fixed/unfixed, count only shrinks"]
@@ -115,9 +119,12 @@ after — a retry, a block, a third red attempt — reaches the driver through t
 which `status.py` reads: a section whose implementer blocked or was let through for its current
 commit is BLOCKED, and the driver asks *run the implementer again*, *review anyway* or *stop
 here*. When every section is DONE and the surface check fails, it quotes the check's `FAIL`
-lines and asks *fixed, retry* or *stop here*; the close waits. When the paths review still
+lines and asks *fixed, retry* or *stop here*; the close waits. Then the driver runs the
+integration check — every check CI runs, over the whole repo — and a failure in a section of
+the package re-opens it at FIX n; at run 3, or on a failure no section of the package owns,
+it quotes the record and asks, and there is no *defer*. When the paths review still
 requests changes at round 3, it asks *one more round* or *defer*; the close waits for
-`paths: approved`. A free-text answer ends the run
+`integration: pass` and `paths: approved`. A free-text answer ends the run
 with the Summary. A `spec-change` is never relayed: its entry is on disk in
 `docs/packages/<pkg>/deviations/<section>.md`, and the next `status.py` re-opens the step its
 level names. Every state
@@ -159,6 +166,7 @@ sequenceDiagram
   Rev-->>Drv: Result · Verdict: approve | request changes | spec-change
   Note over Drv,Rev: FIX n: implementer, then one Focus full reviewer on the diff
   Note over Drv: every section DONE, surface built last
+  Note over Drv: integration check: gate_on_stop.py --integration pkg, every CI row over the whole repo; a fail re-opens the sections it lies in (FIX n)
   Drv->>Rev: PATHS: Package · Focus paths, letter p · Round · Previous round · Diff
   Rev-->>Drv: Result · Verdict: approve | request changes (each CRITICAL names a section: FIX n)
   Drv->>Arch: Package · Run (the close: sync-plan)
@@ -211,9 +219,11 @@ upstream `interface.md`, a probe doc — wins over every plan-time document abou
 | `docs/packages/<pkg>/changes/<slug>.md` (one per affected package; the 2.0 `docs/changes/…` still read) | architect (a CHANGE outcome) | `status.py`, designer (delta), implementer, reviewer, architect (sync-plan) | its sections are DONE and `sync-plan` has not run |
 | `docs/decisions.md` | `sync_decisions.py` from the inboxes; architect (stubs); you, the driver or `pair` (`Decision:`, `Status:`) | every agent; `status.py`; documenter | never; retired by `superseded` |
 | `docs/packages/<pkg>/decisions/<section>.md` (the inbox) | designer (`D?` stubs), implementer (`Applied:`) | `sync_decisions.py`; `status.py --run-gate` | an entry not yet in `docs/decisions.md` (`sync_decisions.py --all` repairs) |
-| `docs/constraints.md` | `set-constraints`, you | the stop gate, `status.py --run-gate`, CI, reviewer (Measured, Exceptions), tester (coverage) | you change the bar |
+| `docs/constraints.md` | `set-constraints`, you | the stop gate, the integration check, `status.py --run-gate` and `--scaffold`, CI, reviewer (Measured, Exceptions), tester (coverage) | you change the bar |
 | `docs/followups.md` | reviewer (out-of-diff WARNINGs, `ELSEWHERE` lines, defer), architect (map-repo defects) | the fix-round implementer (entries for its section), documenter, you | never counted, never a gate |
 | `docs/history/<date>-<name>.md` | architect, before every contract edit | you | never |
 | `docs/index.md`, `packages/*/README.md`, root `README.md` | documenter | you | a shipped document changed after it |
 | `.dev-team/gate/<pkg>/<section>.txt` | the stop gate, on every implementer stop; `gate_on_stop.py --report` (`pair` at wrap-up) | `status.py` (holds a blocked or let-through section BLOCKED), the reviewer (its evidence), the driver (quotes it when it asks about a gate-BLOCKED row) | its `commit:` is not the section's current commit, or it has none (written before 2.4) |
+| `.dev-team/integration/<pkg>.txt` | `gate_on_stop.py --integration`, run by the driver once every section is DONE | `status.py` (re-opens the sections a failure lies in; `shipped:` needs `pass`), the FIX implementer (in its **Review**), the driver (quotes it when it asks) | anything under the package root changed after its `commit:`, or it ran on uncommitted changes |
+| `.github/workflows/ci.yml` | implementer (scaffold) | GitHub Actions, on every push to `main` and pull request; `status.py --scaffold` (every Floor and Enforced command, as text) | a Floor or Enforced row it lacks |
 | `.dev-team/stop/<pkg>/<section>` | implementer (`blocked` or `spec-change`) | the stop gate, for that section only | deleted by the gate |

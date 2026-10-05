@@ -204,4 +204,20 @@ the per-section `.dev-team/stop/<pkg>/<section>` (or `.dev-team/stop/scaffold`);
 writes the 2.1 single marker. Decision stubs and `Applied:` lines live in
 `docs/packages/data/decisions/<section>.md`, the `sync-*` cases' inbox.
 
+**The 2.8 regression and integration checks.** The four `gate-regression-*` cases add, in
+`setup.prior`, a finished `analysis` package that depends on `data` (the Packages table gains
+its row; one section, `vwap`, with a design, intent and unit tests, code and README), and in
+`setup.files` its round-1 `a` and `b` reports approving `{RUN_SHA}`, so its every section is
+DONE: `gate-regression-traced` breaks `data.ingest.loader` and expects `FAIL regression
+analysis: … traced to packages/data/src/data/ingest/loader.py`; `gate-regression-elsewhere`
+fails an `analysis` test on its own and expects `ELSEWHERE regression analysis: … not traced
+to data/ingest`; `gate-regression-pass` expects `PASS regression analysis: 2 passed`; and
+`gate-regression-unfinished-skipped`, with no reports, runs no regression line. The five
+`integration-*` cases run `--integration` by hand (`args`): with a `repo`-scope pytest row in
+`docs/constraints.md`, the red intent test the stop gate tolerates is a `FAIL` that reopens
+`ingest` (`integration-fail-reopens`), the same row passes once the intent tests are green and
+committed (`integration-pass`), an uncommitted file under the package root writes `tree:
+uncommitted (1 paths)`, and a package with no contract or a missing package name exits 2.
+`file_contains` now reports a missing file as a failure instead of raising.
+
 Needs ruff 0.16.0 or later on PATH and `pytest` importable by `python3`.

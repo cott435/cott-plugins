@@ -28,7 +28,7 @@
     "exit": 0,
     "counter": null,
     "gate_contains": [
-      "SKIPPED tests pass: python3 -m pytest packages not run: repo-scope pytest is CI's",
+      "SKIPPED tests pass: python3 -m pytest packages not run: repo-scope pytest is the integration check's",
       "result: pass (1 check skipped)"
     ],
     "gate_lacks": [

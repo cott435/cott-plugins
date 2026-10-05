@@ -1,6 +1,6 @@
 ---
 name: run-package
-description: Drive one package to shipped - scaffold its workspace first when it has none, derive every section's state from disk, run every ready row's step in one message (designers, testers, implementers in parallel, two reviewers in round 1; the architect alone at PLAN), route design-gap and spec-change, ask you on a block and record the answer, review the package's paths once every section is DONE, close the package with sync-plan, and end with a summary and the exact next command. Optional section and --step run one section or one step by hand; --defer moves a stuck review's findings to the backlog instead of asking; --serial runs one kind of step per batch and one implementer at a time.
+description: Drive one package to shipped - scaffold its workspace first when it has none, derive every section's state from disk, run every ready row's step in one message (designers, testers, implementers in parallel, two reviewers in round 1; the architect alone at PLAN), route design-gap and spec-change, ask you on a block and record the answer, run the whole repo's checks once every section is DONE and re-open the sections they fail in, review the package's paths, close the package with sync-plan, and end with a summary and the exact next command. Optional section and --step run one section or one step by hand; --defer moves a stuck review's findings to the backlog instead of asking; --serial runs one kind of step per batch and one implementer at a time.
 argument-hint: "<pkg> [<section>] [--step PROBE|DESIGN|TEST|IMPLEMENT|REVIEW] [--defer] [--serial]"
 arguments: [pkg, rest]
 disable-model-invocation: true
@@ -18,7 +18,10 @@ and you re-run it after every batch. A re-run of this command a week later, afte
 a crash, therefore picks up exactly where the files say.
 
 Every `status.py` below is `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py`,
-run from the repo root. It exits 1 on a failing gate; that is the answer, not an error.
+run from the repo root. It exits 1 on a failing gate; that is the answer, not an error. The
+integration check is `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/gate_on_stop.py --integration <pkg>`,
+run from the repo root with the Bash tool's `timeout` at `600000`; it exits 1 on a fail or an
+incomplete run, and that is the answer too.
 
 ## What you never do
 
@@ -35,9 +38,10 @@ run from the repo root. It exits 1 on a failing gate; that is the answer, not an
 - Open the files the agents wrote to check their work. Read only with the Read tool, and only:
   the Sections table of `docs/packages/<pkg>/contract.md`, the `<pkg>` row of
   `docs/architecture.md` and its **Shared conventions** (a source's access variable), the
-  `docs/legacy/inventory.md` row for a source token, and the gate record
-  `.dev-team/gate/<pkg>/<section>.txt` of a row whose evidence starts `gate `, for the question
-  you ask about it (**Asking**). Every other spawn field comes from
+  `docs/legacy/inventory.md` row for a source token, the gate record
+  `.dev-team/gate/<pkg>/<section>.txt` of a row whose evidence starts `gate `, and the
+  integration record `.dev-team/integration/<pkg>.txt` when the `integration:` line is a
+  question, each for the question you ask about it (**Asking**). Every other spawn field comes from
   `status.py --fields <pkg>/<section>`, and a reviewer's **Previous round** from the file names
   the Glob tool finds under `docs/packages/<pkg>/reviews/<section>/` (or the older
   `docs/reviews/`). Never `ls`, `grep`, `find`, `cat` or `head` a repo file, except that a session without the Glob
@@ -219,10 +223,10 @@ code, and neither may be handed the other's report. Round 2 and later is one: `F
 ### Reviewer — PATHS
 
 `subagent_type: "dev-team:reviewer"`, one per package, alone in its batch, when every section
-is DONE and `status.py <pkg>` prints `paths: needed` (step 7 of the loop). Run `status.py
---rounds <pkg>/paths` once (five lines: `rounds:`, `next round:`, `commit:`, `previous:`,
-`diff base:`): the round is `r`, its `next round:` line. At the paths cap the
-user's *defer* (or `--defer`) is this block with `Focus: defer`.
+is DONE and `status.py <pkg>` prints `integration: pass (…)` and `paths: needed` (step 7 of
+the loop). Run `status.py --rounds <pkg>/paths` once (five lines: `rounds:`, `next round:`,
+`commit:`, `previous:`, `diff base:`): the round is `r`, its `next round:` line. At the paths
+cap the user's *defer* (or `--defer`) is this block with `Focus: defer`.
 
 | Field | Value |
 |---|---|
@@ -281,8 +285,8 @@ granted *one more round* at a cap.
    - IMPLEMENT or FIX n → an implementer per section. A cap row granted *one more round* gets
      its implementer here, then its `full` reviewer as a REVIEW next batch. A gate-BLOCKED row
      granted *run the implementer again* gets its implementer here. A section named at the
-     paths cap and granted *one more round* gets its implementer here; its row then reads
-     REVIEW and the loop runs it.
+     paths cap or the integration cap and granted *one more round* gets its implementer here;
+     its row then reads REVIEW and the loop runs it.
    - REVIEW → the reviewers of every such row: two per round-1 section, one otherwise; a row
      granted *defer* gets its `defer` reviewer here. A gate-BLOCKED row granted *review
      anyway* gets its reviewers here: two at round 1, one `full` otherwise.
@@ -326,17 +330,31 @@ granted *one more round* at a cap.
    agent returned `done` this batch and whose state and evidence are exactly what they were
    before it ran did not move: spawning the same step again would repeat the same run. Send
    it to **Asking** instead, with the row and the agent's first two lines. Back to step 2.
-7. **Paths, then close.** Every section of the package is DONE. Read the `shipped:` and
-   `paths:` lines of the last `status.py <pkg>`:
-   - `shipped: no (surface check FAIL)` → **Asking**; neither the paths review nor the close
-     runs.
-   - `paths: needed` → the paths reviewer (**Reviewer — PATHS**), then steps 5 and 6. A
+7. **Integration, paths, then close.** Every section of the package is DONE. Read the
+   `shipped:`, `integration:` and `paths:` lines of the last `status.py <pkg>`, in that order;
+   the first that applies decides:
+   - `shipped: no (surface check FAIL)` → **Asking**; neither the integration check, the paths
+     review nor the close runs.
+   - `integration: needed` → run the integration check, then step 6. A fail that names sections
+     of this package re-opens them: the next `status.py` shows them at FIX n, and steps 2 to 6
+     run them like any FIX row — the implementer's `--inputs` block carries the record. When
+     they are DONE again the line reads `integration: needed` and the check runs again. Nothing
+     is spawned from the record itself. An exit of 2, or a line that still reads `integration:
+     needed` after the check ran, is **Asking**, with the check's output as the question and
+     *fixed, run it again* and *stop here* as the options.
+   - `integration: run <n> fail (reopens: …) (cap)` → **Asking**, the integration cap.
+   - `integration: run <n> fail (reopens: no section named)` or `integration: run <n>
+     incomplete (…)` → **Asking**, with the record.
+   - `integration: pass (…)` and `paths: needed` → the paths reviewer (**Reviewer — PATHS**),
+     then steps 5 and 6. A
      `request changes` re-opens the sections its report names: the next `status.py` shows them
      at FIX n, and steps 2 to 6 run them like any FIX row. When they are DONE again the line
      reads `paths: needed` and the next round runs.
    - `paths: round <n> (request changes: …) (cap)` → **Asking**, the paths cap.
    - `paths: round <n> (request changes: no section named)` → **Asking**, with the line.
-   - `paths: approved (…)` → the architect with `Package:` and `Run:` only — the close.
+   - `paths: approved (…)` → the architect with `Package:` and `Run:` only — the close. It runs
+     only after `integration: pass`: a paths fix that changed code made the line `needed`
+     again, and the check runs before the next paths round.
 
    A `<section>` walk skips this step unless its section was the last one not DONE. Then
    **Summary**.
@@ -346,7 +364,8 @@ says FIX n (the implementer, then a `full` review) or BLOCKED with evidence `(ca
 or round 2 with a prior unfixed — and a cap goes to **Asking**, never to another implementer.
 A paths review's `request changes` is handled the same way: the next `status.py` shows the
 named sections at FIX n, or the `paths:` line at its cap, and nothing is spawned from the
-verdict itself.
+verdict itself. So is an integration fail: the named sections at FIX n, or the
+`integration:` line at its cap.
 
 ### One step
 
@@ -388,7 +407,18 @@ One `AskUserQuestion` per block, its text built from what stopped:
 - every section DONE and `paths: round <n> (request changes: <sections>) (cap)`: the line as
   it prints, with *one more round* and *defer* as the options;
 - every section DONE and `paths: round <n> (request changes: no section named)`: the line,
-  with *run the paths review again* and *stop here* as the options.
+  with *run the paths review again* and *stop here* as the options;
+- every section DONE and `integration: run <n> fail (reopens: <sections>) (cap)`: Read
+  `.dev-team/integration/<pkg>.txt`; the question is the line and the record's `FAIL` lines,
+  quoted as they stand, with *one more round* and *stop here* as the options;
+- every section DONE and `integration: run <n> fail (reopens: no section named)` or
+  `integration: run <n> incomplete (…)`: Read the record; the question is the line, its `FAIL`
+  and `TIMEOUT` lines and its `unowned:` and `unplaced:` lines, quoted as they stand, with
+  *fixed, run it again* and *stop here* as the options. A failure no section of this package
+  owns is in another package or the repo's shared files, which no agent of this run may edit;
+  a `TIMEOUT` is a check longer than the Bash tool's limit, which the user can run by hand:
+  `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/gate_on_stop.py --integration <pkg>` with
+  `DEV_TEAM_INTEGRATION_BUDGET` raised writes the same record.
 
 Record the answer, then re-run **Loop** step 2:
 
@@ -414,6 +444,10 @@ Record the answer, then re-run **Loop** step 2:
   implementer, with the `--inputs` block, which carries the paths report; *defer* grants the
   package a paths reviewer with `Focus: defer`. For *run the paths review again*, the paths
   reviewer runs at the next round.
+- For the integration cap, no ledger edit: *one more round* grants each section the line names
+  an implementer, with the `--inputs` block, which carries the record; its row then reads
+  REVIEW and the loop runs it. There is no *defer*: a package whose whole-repo checks fail does
+  not ship. For *fixed, run it again*, the integration check runs again.
 - **An answer that is none of the options** — free text typed in place of a choice — ends the
   loop where it stands: go to **Summary**, with the row or the two lines you asked about as
   `stopped because`. Do not act on the text: no diagnosis of the plugin, no file this skill
@@ -423,7 +457,7 @@ Your ledger edits stay uncommitted: `docs/decisions.md` is exempt from the run g
 agent that stages it carries it, and otherwise the user commits it.
 
 No questions when `AskUserQuestion` is not available (a headless run) or the command has
-`--defer`: a review cap, the paths cap or a profile cap with `--defer` is answered *defer*; every other block goes to **Summary**,
+`--defer`: a review cap, the paths cap or a profile cap with `--defer` is answered *defer*; every other block, the integration cap included, goes to **Summary**,
 with the agent's first two lines, or the row's evidence, as `stopped because`. A
 gate-BLOCKED row is quoted as it prints.
 
@@ -438,7 +472,7 @@ run-package <arguments as typed>: <done | stopped at <section> <STEP>>
 sections: <DONE>/<total> DONE; <section> · <state>, …
 agent runs: designer <n> · tester <n> · implementer <n> · reviewer <n> · researcher <n> · profiler <n> · architect <n>
 commits: <start sha>..<end sha> (<count>)
-stopped because: <the agent's first two lines, the row as it prints, the shipped: line, the paths: line, or the run gate's FAIL lines>
+stopped because: <the agent's first two lines, the row as it prints, the shipped: line, the integration: line, the paths: line, or the run gate's FAIL lines>
 no Result: line: <role> <section>: no Result: line; state advanced, …
 uncommitted: docs/decisions.md
 next: <status.py's next line>
@@ -449,8 +483,9 @@ data: done`, `run-package data ingest: done`, `run-package data ingest --step RE
 `run-package data --serial: done`.
 `done` means the walk you were asked for finished — the package closed, the section DONE, or
 the one step run. The first line reads `stopped at <section> BLOCKED` for a stop at a BLOCKED
-row, `stopped at the surface check` for a stop at the surface question, and `stopped at the
-paths review` for a stop at a paths question. `stopped because`
+row, `stopped at the surface check` for a stop at the surface question, `stopped at the
+integration check` for a stop at an integration question, and `stopped at the paths review`
+for a stop at a paths question. `stopped because`
 appears only when stopped, `no Result: line` only when a return's first line was not
 `Result:` and its row had advanced (**Loop** step 5), and `uncommitted` only when `git status
 --porcelain -- docs/decisions.md` prints a line: an agent's commit may have carried your edit,

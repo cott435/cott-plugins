@@ -1,5 +1,5 @@
 {
-  "note": "a round-2 s review approves the fix: ingest DONE, the next paths round needed",
+  "note": "a round-2 s review approves the fix: ingest DONE, the next paths round needed; the integration check passed at HEAD",
   "steps": [
     {
       "do": "base"
@@ -54,5 +54,6 @@
       "paths: needed",
       "shipped: no (paths needed)"
     ]
-  }
+  },
+  "integration": "pass"
 }

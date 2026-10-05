@@ -37,9 +37,15 @@ Input: the hook JSON on stdin (`cwd`, `agent_id`, `agent_type`, `stop_hook_activ
    but `surface`; then the shape check, `status.py --shape <pkg> --section <section>`, for
    every section, its lines copied as printed; then
    the Floor and Enforced rows of `docs/constraints.md` for the section's package — a `repo`
-   row once, except a `repo` row whose command runs `pytest`, which is CI's and is written
-   `SKIPPED <row>: … repo-scope pytest is CI's` (never run: it never finished inside any
-   audited gate) — else the Toolchain commands; Measured rows printed, never failed on.
+   row once, except a `repo` row whose command runs `pytest`, which is the integration check's
+   (`--integration`, below) and CI's, and is written `SKIPPED <row>: … repo-scope pytest is the
+   integration check's` (never run here: it never finished inside any audited gate) — else the
+   Toolchain commands; Measured rows printed, never failed on; then the regression check: the
+   whole suite of every finished package that depends on the section's package (status.py's
+   `dependent_packages`, followed through the Packages table; finished: every section DONE),
+   one `regression <dep>` line each, `FAIL` when the failure's output traces into the section's
+   files (a `.py` path, or a quoted dotted module, that resolves under them), else `ELSEWHERE`:
+   a sibling built in the same batch may be the cause, and the integration check runs it again.
    An intent failure is tolerated when its `Design §<n> <item>` docstring matches the
    `Clause:` of a `proposed` or `approved` deviation entry for the section (the full item name,
    status.py's `clause_key`). The Guarded grep is pardoned by an unexpired Exceptions row.
@@ -84,6 +90,15 @@ goes.
 It prints the file and exits 1 on a FAIL line, 2 on a bad argument. The pair skill runs it at
 wrap-up, so the reviewer of hand-made code reads a gate record of that code, not of the last
 implementer's.
+
+`python3 gate_on_stop.py --integration <pkg>` from the repo root is the integration check,
+which run-package runs once every section of the package is DONE, before its paths review:
+every check CI runs (`integration_commands`: the Floor, Enforced and Measured rows of
+`docs/constraints.md`, a `repo` row once — its `pytest` included — and a `package` row once per
+package whose root directory exists; else the Toolchain), over the whole repo, every failure `FAIL`. It writes
+`.dev-team/integration/<pkg>.txt` (status.py's **Integration.** reads it and names its lines),
+prints it, and exits 0 on `result: pass`, 1 on a fail or an incomplete run, 2 on a bad
+argument.
 
 The record's lines, in order (status.py and the reviewer read them by these names):
 
@@ -137,6 +152,8 @@ MARKER_REASONS = ("blocked", "spec-change")
 MAX_ATTEMPTS = 3
 TIMEOUT = int(os.environ.get("DEV_TEAM_GATE_TIMEOUT") or 240)
 BUDGET = int(os.environ.get("DEV_TEAM_GATE_BUDGET") or 540)  # below hooks.json's 600 s
+# below the Bash tool's 600 s foreground limit, which is what run-package runs `--integration` under
+INTEGRATION_BUDGET = int(os.environ.get("DEV_TEAM_INTEGRATION_BUDGET") or 570)
 
 # Guarded items on added lines: (the name a FAIL line prints, pattern). .py files only, so a
 # README that quotes one is not a hit.
@@ -340,7 +357,7 @@ def check_rows(pkgs: list[str], touched: set[str] | None = None, deadline: float
                section: tuple[str, str] | None = None) -> list[str]:
     """Floor and Enforced rows as PASS/FAIL/ELSEWHERE/TIMEOUT, Measured rows as MEASURED; else the
     Toolchain. Every row shares what is left of the budget until deadline. A `repo` row whose
-    command runs pytest is SKIPPED when gating a section: CI's, never run here."""
+    command runs pytest is SKIPPED when gating a section: the integration check's, never run here."""
     import time
 
     touched = touched or set()
@@ -356,7 +373,7 @@ def check_rows(pkgs: list[str], touched: set[str] | None = None, deadline: float
                 seen.add(key)
                 what = dim or cmd
                 if section is not None and scope.startswith("repo") and "pytest" in cmd:
-                    lines.append(f"SKIPPED {what}: {cmd} not run: repo-scope pytest is CI's")
+                    lines.append(f"SKIPPED {what}: {cmd} not run: repo-scope pytest is the integration check's")
                     continue
                 code, out, limit = _timed(cmd, deadline)
                 if code == 125:
@@ -376,6 +393,89 @@ def check_rows(pkgs: list[str], touched: set[str] | None = None, deadline: float
             code, out, limit = _timed(cmd, deadline)
             lines.append(_unrun("toolchain", cmd) if code == 125
                          else _row("toolchain", cmd, code, out, touched, limit, section))
+    return lines
+
+
+TRACE_PATH = re.compile(r"[\w./-]+\.py\b")
+TRACE_MODULE = re.compile(r"""['"]([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)['"]""")
+
+
+def _import_root(pkg: str) -> Path:
+    """The directory pkg's dotted module names start from: the `surface` path's parent, else
+    `<package root>/src`."""
+    surface = next((r for r in status.sections(pkg) if r["section"] == "surface"), None)
+    return (status.ROOT / surface["path"]).parent if surface else status.package_root(pkg) / "src"
+
+
+def _traced(out: str, cwd: Path, pkg: str, sections: list[str]) -> list[str]:
+    """The repo-relative files of pkg's given sections a failure's output names: a `.py` path
+    (repo-relative, relative to cwd, or absolute) or a quoted dotted module (`'data.ingest.reader'`,
+    an ImportError's or an AttributeError's) that resolves to a file under one of them."""
+    hits: set[str] = set()
+
+    def place(path: Path) -> None:
+        hit = status.section_for_path(path)
+        if hit is not None and hit[0] == pkg and hit[1] in sections:
+            hits.add(status._rel(path))
+
+    for m in TRACE_PATH.finditer(out):
+        raw = m.group(0)
+        for path in ([Path(raw)] if raw.startswith("/") else [cwd / raw, status.ROOT / raw]):
+            path = path.resolve()
+            if path.is_file():
+                place(path)
+                break
+    root = _import_root(pkg)
+    for m in TRACE_MODULE.finditer(out):
+        name = m.group(1)
+        if name != pkg and not name.startswith(f"{pkg}."):
+            continue
+        base = root.joinpath(*name.split("."))
+        for path in (base.with_suffix(".py"), base / "__init__.py"):
+            if path.is_file():
+                place(path.resolve())
+                break
+    return sorted(hits)
+
+
+def check_dependents(pkg: str, sections: list[str], deadline: float) -> list[str]:
+    """The regression check: the whole test suite of every finished package that depends on pkg
+    (`status.dependent_packages`; finished: every section DONE), run from the repo root, one line
+    each. A failure is FAIL when its output traces into one of the given sections' files, else
+    ELSEWHERE: a sibling built in the same batch may be the cause, and the integration check
+    runs every package once the package is DONE."""
+    import time
+
+    runner = "uv run" if (status.ROOT / "uv.lock").exists() else "python3 -m"
+    lines: list[str] = []
+    for dep in status.dependent_packages(pkg):
+        root = status.package_root(dep)
+        rel = status._rel(root)
+        if rel == "." or not status.contract_path(dep).exists():
+            continue
+        table = status.package_table(dep)
+        if not table or any(r["state"] != "DONE" for r in table):
+            continue
+        cmd = f"{runner} pytest {rel} -q -p no:cacheprovider --tb=short"
+        label = f"regression {dep}"
+        left = int(deadline - time.monotonic())
+        if left < 5:
+            lines.append(_unrun(label, cmd))
+            continue
+        limit = min(TIMEOUT, left)
+        code, out = _run(cmd, status.ROOT, limit)
+        if code == 0:
+            m = re.search(r"(\d+) passed", out)
+            lines.append(f"PASS {label}: {m.group(1) if m else 0} passed")
+        elif code == 5:
+            lines.append(f"PASS {label}: no tests collected")
+        elif code == 124 and out.startswith("timed out"):
+            lines.append(f"TIMEOUT {label}: {cmd} did not finish in {limit}s")
+        elif traced := _traced(out, status.ROOT, pkg, sections):
+            lines.append(f"FAIL {label}: {cmd} exited {code}, traced to {', '.join(traced)}: {_tail(out)}")
+        else:
+            lines.append(f"ELSEWHERE {label}: {cmd} exited {code}, not traced to "
+                         f"{', '.join(f'{pkg}/{s}' for s in sections)}: {_tail(out)}")
     return lines
 
 
@@ -616,6 +716,7 @@ def run_checks(base: str, section: tuple[str, str]) -> tuple[list[tuple[str, str
     own += check_surface(pkg) if sec == "surface" else check_surface_names(pkg, sec)
     own += check_shape(pkg, sec)
     lines = check_rows([pkg], touched, start + BUDGET, section)
+    lines += check_dependents(pkg, [sec], start + BUDGET)
     return [section], lines + own
 
 
@@ -643,6 +744,8 @@ def run_checks_legacy(base: str | None) -> tuple[list[tuple[str, str]], list[str
     for pkg, section in targets:
         own += check_shape(pkg, section)
     lines = check_rows(pkgs, set(paths), start + BUDGET)
+    for pkg in pkgs:
+        lines += check_dependents(pkg, [s for p, s in targets if p == pkg], start + BUDGET)
     return targets, lines + own
 
 
@@ -698,6 +801,123 @@ def report(cwd: Path, base: str) -> int:
     records = write_records(cwd, targets, f"dev-team gate — report — {stamp} — sections {names}", lines, outcome)
     print("".join(r.read_text() for r in records), end="")
     return 1 if fails else 0
+
+
+# ---------------------------------------------------------------------------------------------
+# The integration check
+# ---------------------------------------------------------------------------------------------
+
+
+def integration_commands() -> list[tuple[str, str, str]]:
+    """(heading, label, command) for every check CI runs: the Floor, Enforced and Measured rows
+    of `docs/constraints.md` — a `repo` row once, a `package` row once per package whose root
+    directory exists, `<pkg>` filled — else the Toolchain's lines, those naming `<pkg>` once per
+    such package. A package not yet scaffolded has nothing to run."""
+    built = [name for name, root in status.packages() if root.is_dir()]
+    out: list[tuple[str, str, str]] = []
+    seen: set[str] = set()
+    if (status.DOCS / "constraints.md").exists():
+        for name, _ in status.packages():
+            for heading, dim, cmd, scope in status.constraints_rows(name):
+                repo = scope.startswith("repo")
+                if cmd in seen or (not repo and name not in built):
+                    continue
+                seen.add(cmd)
+                out.append((heading, dim or cmd if repo else f"{dim or cmd} ({name})", cmd))
+        return out
+    for line in status.toolchain_commands():
+        for name in (built if "<pkg>" in line else [""]):
+            cmd = line.replace("<pkg>", name)
+            if cmd not in seen:
+                seen.add(cmd)
+                out.append(("Toolchain", f"toolchain ({name})" if name else "toolchain", cmd))
+    return out
+
+
+def integration(cwd: Path, pkg: str) -> int:
+    """`--integration <pkg>`: every check CI runs, over the whole repo, at `HEAD` and the working
+    tree; the record `.dev-team/integration/<pkg>.txt` (status.py's **Integration.**).
+
+    Every failure is FAIL: nothing is in flight once a package's sections are all DONE, so there
+    is no sibling to excuse it. Each FAIL's located files are placed: a section of pkg (the
+    `reopens:` line), a file no section of pkg owns (`unowned:`), or no file at all (`unplaced:`,
+    the check's label). The rows share `DEV_TEAM_INTEGRATION_BUDGET` (default 570 s); a row out of
+    time is TIMEOUT and makes the result `incomplete`, never `pass`. Prints the record; exits 0 on
+    `pass`, 1 otherwise, 2 on a bad argument.
+    """
+    import time
+
+    if not (cwd / "docs" / "architecture.md").exists():
+        print("dev-team integration: no docs/architecture.md here — run from the repo root", file=sys.stderr)
+        return 2
+    status.set_root(cwd)
+    if not status.contract_path(pkg).exists():
+        print(f"dev-team integration: no docs/packages/{pkg}/contract.md", file=sys.stderr)
+        return 2
+    head = status.git("rev-parse", "--short", "HEAD")
+    if head is None:
+        print("dev-team integration: no commit to run against", file=sys.stderr)
+        return 2
+    prev = status.read_integration(pkg)
+    n = int(prev["n"]) + 1 if prev and str(prev["result"]).startswith("fail") else 1  # type: ignore[call-overload]
+    dirty = [ln for ln in (status.git("status", "--porcelain", "--untracked-files=all", "--",
+                                      *status.integration_pathspec(pkg)) or "").splitlines() if ln.strip()]
+    deadline = time.monotonic() + INTEGRATION_BUDGET
+    lines: list[str] = []
+    reopens: list[str] = []
+    unowned: list[str] = []
+    unplaced: list[str] = []
+    for heading, label, cmd in integration_commands():
+        left = int(deadline - time.monotonic())
+        if left < 5:
+            lines.append(f"TIMEOUT {label}: {cmd} not run: the {INTEGRATION_BUDGET}s budget was spent")
+            continue
+        code, out = _run(cmd, status.ROOT, left)
+        if heading == "Measured":
+            last = [ln for ln in out.strip().splitlines() if ln.strip()]
+            lines.append(f"MEASURED {label}: {last[-1].strip() if last else 'no output'}")
+        elif code == 0:
+            lines.append(f"PASS {label}: {cmd}")
+        elif code == 5 and "pytest" in cmd:
+            lines.append(f"PASS {label}: {cmd} (no tests collected)")
+        elif code == 124 and out.startswith("timed out"):
+            lines.append(f"TIMEOUT {label}: {cmd} did not finish in {left}s")
+        else:
+            lines.append(f"FAIL {label}: {cmd} exited {code}: {_tail(out)}")
+            located = _located(out)
+            if not located:
+                unplaced.append(label)
+            for path in sorted(located):
+                hit = status.section_for_path(status.ROOT / path)
+                if hit is not None and hit[0] == pkg:
+                    reopens.append(hit[1])
+                else:
+                    unowned.append(path)
+    names = [r["section"] for r in status.sections(pkg)]
+    reopens = [s for s in names if s in reopens]
+    fails = sum(1 for ln in lines if ln.startswith("FAIL"))
+    timeouts = sum(1 for ln in lines if ln.startswith("TIMEOUT"))
+    if fails:
+        result = f"result: fail ({fails} failure{'s' * (fails != 1)})"
+    elif timeouts:
+        result = f"result: incomplete ({timeouts} out of time)"
+    else:
+        result = "result: pass"
+    stamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    record = status.integration_path(pkg)
+    record.parent.mkdir(parents=True, exist_ok=True)
+    record.write_text("\n".join([
+        f"dev-team integration — run {n} — {stamp} — package {pkg}",
+        f"commit: {head}",
+        "tree: clean" if not dirty else f"tree: uncommitted ({len(dirty)} paths)",
+        *lines,
+        f"reopens: {'; '.join(reopens) or 'none'}",
+        f"unowned: {'; '.join(dict.fromkeys(unowned)) or 'none'}",
+        f"unplaced: {'; '.join(unplaced) or 'none'}",
+        result,
+    ]) + "\n")
+    print(record.read_text(), end="")
+    return 0 if result == "result: pass" else 1
 
 
 def _stop_reason(marker: Path) -> bool:
@@ -831,9 +1051,11 @@ def gate(event: dict) -> int:
 def main() -> int:
     argv = sys.argv[1:]
     if argv:
+        if argv[0] == "--integration" and len(argv) == 2:
+            return integration(Path.cwd().resolve(), argv[1])
         if argv[0] != "--report" or len(argv) not in (1, 3) or (len(argv) == 3 and argv[1] != "--base"):
-            print("usage: gate_on_stop.py --report [--base <rev>]  (with no arguments: the SubagentStop hook)",
-                  file=sys.stderr)
+            print("usage: gate_on_stop.py --report [--base <rev>] | --integration <pkg>  "
+                  "(with no arguments: the SubagentStop hook)", file=sys.stderr)
             return 2
         return report(Path.cwd().resolve(), argv[2] if len(argv) == 3 else "HEAD")
     try:

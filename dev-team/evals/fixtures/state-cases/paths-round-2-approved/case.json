@@ -1,5 +1,5 @@
 {
-  "note": "paths round 2 approves after the fix",
+  "note": "paths round 2 approves after the fix; the integration check passed at HEAD",
   "steps": [
     {
       "do": "base"
@@ -57,5 +57,6 @@
       "paths: approved (docs/packages/data/reviews/paths/2026-09-27-r2-p.md)",
       "shipped: yes"
     ]
-  }
+  },
+  "integration": "pass"
 }

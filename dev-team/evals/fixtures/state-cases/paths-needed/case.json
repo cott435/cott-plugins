@@ -1,5 +1,5 @@
 {
-  "note": "every section DONE, a package with one command and no paths report: the review is needed (2.5 phase 7)",
+  "note": "every section DONE, a package with one command and no paths report: the review is needed (2.5 phase 7); the integration check passed at HEAD",
   "steps": [
     {
       "do": "base"
@@ -31,5 +31,6 @@
       "shipped: no (paths needed)",
       "next: /dev-team:run-package data"
     ]
-  }
+  },
+  "integration": "pass"
 }

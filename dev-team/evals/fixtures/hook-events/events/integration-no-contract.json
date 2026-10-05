@@ -1,0 +1,15 @@
+{
+  "script": "gate",
+  "repo": "built",
+  "setup": {},
+  "args": [
+    "--integration",
+    "nope"
+  ],
+  "expect": {
+    "exit": 2,
+    "stderr_contains": [
+      "no docs/packages/nope/contract.md"
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "note": "surface DONE, nothing to sync: next package",
+  "note": "surface DONE, nothing to sync: next package; the integration check passed at HEAD",
   "steps": [
     {
       "do": "base"
@@ -30,5 +30,6 @@
       "next: /dev-team:plan-package analysis",
       "paths: approved (no commands)"
     ]
-  }
+  },
+  "integration": "pass"
 }

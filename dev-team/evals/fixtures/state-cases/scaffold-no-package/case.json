@@ -18,7 +18,7 @@
   "expect": {
     "exit": 1,
     "contains": [
-      "scaffold: needed (no packages/data/pyproject.toml)"
+      "scaffold: needed (no packages/data/pyproject.toml, no .github/workflows/ci.yml)"
     ]
   }
 }

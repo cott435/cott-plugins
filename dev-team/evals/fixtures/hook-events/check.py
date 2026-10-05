@@ -172,6 +172,9 @@ def check(case: Path) -> list[str]:
             if (repo / rel).read_text() != text:
                 problems.append(f"{rel} changed:\n{(repo / rel).read_text()}")
         for rel, subs in exp.get("file_contains", {}).items():
+            if not (repo / rel).is_file():
+                problems.append(f"no {rel}")
+                continue
             problems += [f"{rel} lacks {s!r}" for s in subs if s not in (repo / rel).read_text()]
         for rel, subs in exp.get("file_lacks", {}).items():
             problems += [f"{rel} has {s!r}" for s in subs if s in (repo / rel).read_text()]
