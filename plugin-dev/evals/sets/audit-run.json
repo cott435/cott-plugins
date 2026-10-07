@@ -83,6 +83,63 @@
         "find without --all hides both planted sessions (their project is under /tmp/)"
       ],
       "added_in": "audit-run: chat titles and forks (2026-09-29)"
+    },
+    {
+      "id": 5,
+      "name": "audit-writes-ledger",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/audit-run/ledger-first-audit.md",
+      "prompt": "/plugin-dev:audit-run 0a0d17f0",
+      "expected_output": "A full audit of the planted session, run from the toy plugin directory, files one issue per planted defect through issues.py, writes audits/runs/<date>-0a0d17f0.md from the report template with issue ids on its headings, renders audits/INDEX.md, makes exactly one audits/ commit, and logs the short form",
+      "files": [
+        "evals/fixtures/audit-run/make_session.py"
+      ],
+      "expectations": [
+        "outputs/audits/issues/ holds at least five files named TO-<nnn>.md, and between them the five planted defects each have an issue: the write to notes/scratch.md (P1), the 'tests: 4 passed' claim against '1 failed, 3 passed' (P2), the 'commit: abc1234' claim (P3), the return starting 'Done.' instead of 'Result: done' (P4), and the driver's Write of out/extra.txt (P5)",
+        "every file under outputs/audits/issues/ has exactly the issue template's frontmatter keys — id, plugin, title, fault, severity, check, applies_to, rule_file, rule_line, rule_quote, found_version, found_session, found_date — with plugin 'toy', found_session 0a0d17f0 and found_version 0.1.0, and the four sections Finding, Found in, Fix and Checks",
+        "every issue's Found in line carries a unit or segment and a step id (U01.S<n> for the writer's issues, D<n> for the driver's), one short quote, and ends with the report path audits/runs/<date>-0a0d17f0.md followed by the finding id (E<n>, W<n> or N<n>)",
+        "outputs/issues-check.txt shows `issues.py check` printing 'ok: <n> issues' with exit code 0, where <n> is the number of files under outputs/audits/issues/, and outputs/audits/INDEX.md has one row per issue file, every row with Status 'open'",
+        "outputs/audits/runs/<date>-0a0d17f0.md exists, with the template's headings in order (Errors, Warnings, Notes, Prior issues, Audited, Not audited, Dropped on spot-check), and every '### E<n>' and '### W<n>' heading reads '<E|W><n> · TO-<nnn> (new) · <fault> · <one line>' with an id that is a file under outputs/audits/issues/",
+        "the report's Totals line ends 'issues: <n> new, 0 seen again · prior: 0 held, 0 recurred, 0 not exercised, 0 not testable', with <n> new equal to the number of issue files",
+        "the report's Prior issues section is the empty table followed by the line 'none: no issue had a fix in the code that ran'",
+        "the report's Flow chart line names evals/workspace/audit/0a0d17f0/flow.html and says it is rebuilt with /plugin-dev:run-flow 0a0d17f0",
+        "transcript.md shows every issue created by an `issues.py new` command (and INDEX.md rendered by issues.py), with no Write, heredoc or editor step that creates or edits a file under audits/issues/ or audits/INDEX.md by hand, and no write of a report.md under evals/workspace/",
+        "outputs/git-log.txt shows exactly two commits: 'fixture' and, on top of it, one whose message is 'toy audits: 0a0d17f0 — <n> new, 0 seen, 0 checked' with the same <n> as the Totals line, and whose files are all under audits/ (the issue files, the run report and INDEX.md)",
+        "outputs/git-log.txt and outputs/git-status.txt show nothing under agents/ or skills/ of the toy plugin changed after the fixture commit",
+        "outputs/eval-log.md has the headings Tested against, What was tested, Method, Results, Verdict; its Results names the new issue ids (new: TO-001 …), 'seen again: none' and 'prior: none'; its last line is 'Report: audits/runs/<date>-0a0d17f0.md'; and it contains no findings table (no table whose columns are id, unit, fault, finding, rule)",
+        "transcript.md's final message to the user opens with one line giving the issue counts (<n> new, 0 seen again) and the report path audits/runs/<date>-0a0d17f0.md, and names /plugin-dev:run-flow 0a0d17f0 as the way to see the chart"
+      ],
+      "added_in": "0.16-audit-ledger phase 0, run from phase 4"
+    },
+    {
+      "id": 6,
+      "name": "audit-checks-prior-fixes",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/audit-run/ledger-prior-issues.md",
+      "prompt": "/plugin-dev:audit-run 0a0d17f0",
+      "expected_output": "Auditing the planted session with a ledger that already holds TO-001 (fixed and released for the write outside out/, so testable by version) and TO-002 (fixed but unreleased, so not testable), the audit gives the writer's auditor TO-001 as a prior issue, reports it recurred at U01.S3 and TO-002 not testable, writes both Checks lines, files no second issue for the same rule, and counts them in Totals, the log and the commit message",
+      "files": [
+        "evals/fixtures/audit-run/make_session.py"
+      ],
+      "expectations": [
+        "transcript.md shows the fix-ran decision per issue before any auditor is spawned: TO-001 testable because the plugin root is not a git checkout and the run's version 0.1.0 is at least fixed_in 0.1.0; TO-002 not testable because its attempt has no fixed_in",
+        "transcript.md shows the run-auditor block for U01 with a 'Prior issues:' line naming TO-001 · attempt 1 · watch agent:writer · held when every Write path starts out/ · recurred when a Write path is outside out/, and not naming TO-002; the block for seg-1 says 'Prior issues: none'",
+        "outputs/findings/U01.md has a '## Prior issues' section with a line 'P · TO-001 · recurred · U01.S3 — …' quoting the write to notes/scratch.md",
+        "the report outputs/audits/runs/<date>-0a0d17f0.md has a Prior issues table with exactly two rows: TO-001 · attempt 1 · recurred · U01 · U01.S3 with evidence quoting the notes/scratch.md write, and TO-002 · attempt 1 · not testable with evidence saying its fix is not in a released version (fixed_in blank)",
+        "the report's Totals line ends 'prior: 0 held, 1 recurred, 0 not exercised, 1 not testable'",
+        "the report's Errors section has no heading for the write to notes/scratch.md: that sighting appears only in the Prior issues table (a recurrence is a P line, not an F finding)",
+        "outputs/audits/issues/TO-001.md's Checks section has exactly one line, '<date> · 0a0d17f0 · 0.1.0 · attempt 1 · recurred · U01 · U01.S3 — \"…\"', and its Found in section has gained a second line for 0a0d17f0 · 0.1.0 · U01 · U01.S3 ending with audits/runs/<date>-0a0d17f0.md; its Fix section is unchanged",
+        "outputs/audits/issues/TO-002.md's Checks section has exactly one line, '<date> · 0a0d17f0 · 0.1.0 · attempt 1 · not testable · — · — — \"…\"', whose evidence names the blank fixed_in; its Fix section is unchanged",
+        "no file under outputs/audits/issues/ other than TO-001.md has rule_file agents/writer.md with a rule_quote about writing only under out/, and no new issue file's Finding is about the write to notes/scratch.md",
+        "outputs/audits/issues/ holds new issues TO-003 onward for the other planted defects — the 'tests: 4 passed' claim, the 'commit: abc1234' claim, the 'Done.' first line and the driver's Write of out/extra.txt — each created by an `issues.py new` command in transcript.md",
+        "outputs/issues-check.txt shows `issues.py check` printing 'ok: <n> issues' with exit code 0; in outputs/audits/INDEX.md the TO-001 row is first with Status 'recurred' and the TO-002 row has Status 'fixed' and Last check '<date> not testable'",
+        "outputs/commit-message.txt (and transcript.md) carry the commit message 'toy audits: 0a0d17f0 — <n> new, <n> seen, 2 checked', and the audit made no commit (outputs/plugin-diff.txt is empty and transcript.md shows no git init or git commit in $TMP/toy)",
+        "outputs/eval-log.md's Results names the new issue ids and reads 'prior: held none, recurred TO-001, not exercised none, not testable TO-002'; its last line is 'Report: audits/runs/<date>-0a0d17f0.md'; it contains no findings table",
+        "transcript.md's final message to the user gives the counts including '1 recurred' and '1 not testable', the report path, /plugin-dev:run-flow 0a0d17f0 for the chart, and tells the user to type /plugin-dev:fix-issues (run:0a0d17f0 or recurred) to fix what it found"
+      ],
+      "added_in": "0.16-audit-ledger phase 0, run from phase 7"
     }
   ]
 }
