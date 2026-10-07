@@ -33,7 +33,8 @@ In a profile each item below is a `## <Name>` heading, in this order, as in a so
    its seed and n. Under a sample every count below says `(sample)`.
 
 4. **Observed schema** — per column: column | dtype as loaded | declared dtype | null % |
-   distinct | range or top-k | notes. A column that looks personal is `<redacted>`.
+   distinct | range or top-k | notes. A column that looks personal is `<redacted>`, and its notes
+   cell says `personal`; **Quirks** never names it.
 
 5. **Duplicates and keys** — the exact-duplicate row count; each candidate key and whether it
    is unique.
@@ -51,7 +52,8 @@ In a profile each item below is a `## <Name>` heading, in this order, as in a so
    closes. A duplicates kind counts the extra copies, the rows a `drop` would remove.
 
 8. **Unexplained** — `<n> of <all failing rows>` failing rows in no kind, then the largest
-   remaining groups, one line each. The rows of an `unverified` kind count here.
+   remaining groups, one line each. The rows of a kind a verify run rejected a second time
+   (it stays `unverified`) count here; a kind still awaiting its verify run does not.
 
 9. **Expected and not found** — each rule of the row's project skills that matched no row, one
    line each; a rule that could not be checked is `not checkable: <why>`.
@@ -71,4 +73,5 @@ In a profile each item below is a `## <Name>` heading, in this order, as in a so
 
 **`<token>.sample.json`** — one key per kind id holding up to five failing rows as the stage
 holds them, and `accepted` holding five rows that pass every check; each row carries its key
-columns; never over 200 KB; written with the Write tool.
+columns; never over 200 KB; written with the Write tool (a revise run may Edit its reworked
+kinds' rows).

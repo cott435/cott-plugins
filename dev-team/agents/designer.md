@@ -349,7 +349,8 @@ questions** entry with an assumption.
 
 1. Read `${CLAUDE_PLUGIN_ROOT}/skills/planning-templates/references/deviations-entry.md` with
    the Read tool.
-2. Append one entry to `docs/packages/<pkg>/deviations/<section>.md`, heading
+2. Append one entry per contract clause that is wrong — one `Clause:` each, so the architect
+   can answer each on its own — to `docs/packages/<pkg>/deviations/<section>.md`, heading
    `## <pkg>/<section> — <date> — spec-change:contract — <k>` (`<k>` per the template), and
    its lines in the template's order: `Clause:` (the contract row or heading it cites; for a path, the command's **Call paths**
    line), `Said:` (what the contract says, quoted), `Found:` (the evidence: the
@@ -391,8 +392,10 @@ sync_decisions.py --all` to the line: the run gate holds the inbox until it is m
 the inbox, and `docs/decisions.md` when the hook changed it, then return `Result: stopped`,
 then `Stopped for decisions: D14, …`, then `Commit: <sha>`.
 
-`spec-change` — `Result: spec-change`, then `Spec-change: contract — <one line>`, then the
-entry heading as written, then `Commit: <sha>`.
+`spec-change` — `Result: spec-change`, then `Spec-change: contract — <one line>`, then each
+entry heading as written, one per line, then `Commit: <sha>`. Nothing else: a heading is the
+heading, with no count, parenthesis or list after it, and the entries' content is in the
+ledger, not the return.
 
 ## Commit
 

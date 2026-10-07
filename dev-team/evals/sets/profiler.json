@@ -23,12 +23,13 @@
     "Every kind under Quirks is one line of the form `- K<n> <name> — checks C<…>; <count> of <denominator>; <one clause>; proposed: <repair | drop | quarantine | flag>; <D? | no decision needed>; unverified`: every kind names at least one check id that is in the Checks table, no kind line reads `verified`, and none carries a numbered `D<n>`",
     "The kinds include one for exact duplicate rows whose count is 6 (the second copies) or 12 (both copies) of 306, one for a negative price whose count is 4 of 306, and one for a timestamp out of order within a symbol whose count is 5 of 306, or 5 of 300 when the profile says its check reads the rows with the 6 exact copies left out",
     "The row with trade_id 500156 (venue `ZZ`) is accounted for in outputs/docs/sources/rawtrades.md: either it is the one row of a kind of its own under Quirks (count 1, and outputs/docs/sources/rawtrades.sample.json holds trade_id 500156 under that kind's key), or a line under Unexplained names it",
-    "Unexplained states how many failing rows are in no kind, as `<k> of <all failing rows>`, and k is 0 when every failing row is in a kind under Quirks (500156 in a kind of its own) and 1 when 500156 alone is left out. The template's item 8 also says the rows of an `unverified` kind count under Unexplained, and before the verify run every kind is `unverified`; so a profile whose first count under the heading includes those rows passes, provided a line under the heading states the in-no-kind count separately. Either reading passes; a profile that gives only a count of unverified-kind rows, with no in-no-kind count, fails",
+    "Unexplained states how many failing rows are in no kind, as `<k> of <all failing rows>`, and k is 0 when every failing row is in a kind under Quirks (500156 in a kind of its own) and 1 when 500156 alone is left out. Rows of kinds still awaiting their verify run do not count here (the template's item 8 counts only a kind rejected a second time), so a first count under the heading that includes them fails",
     "outputs/docs/sources/rawtrades.sample.json parses as JSON with one key per kind id written under Quirks, each holding between one and five rows, and a key `accepted` holding exactly five rows; every row carries its `trade_id`; no row under `accepted` has a negative price or venue `ZZ`",
     "outputs/docs/sources/rawtrades.md has a `## data/clean` heading under Sections served, and the last line under it is `Round 0 — <date> — commit none — pending verify`; it is the only round line in the file",
     "outputs/docs/sources/rawtrades.profile.py holds every check of the Checks table as a query with its `C<n>` id; outputs/store-files.txt lists `.dev-team/data/rawtrades/rounds/0/failing.parquet` and `.dev-team/data/rawtrades/rounds/0/counts.json`; and the copy of that counts.json under outputs/.dev-team/data/rawtrades/rounds/0/ names every check id of the Checks table, so the program as written was run over the data",
     "outputs/changes.txt lists `docs/sources/rawtrades.md` (the run wrote its profile), and no decision stub is written: outputs/changes.txt lists no path under `docs/packages/data/decisions/`, and outputs/ holds no file there",
-    "outputs/commit.md stages only the three `docs/sources/rawtrades.*` paths, nothing under `.dev-team/`, and the final message in transcript.md starts with the line `Result: done` and is ten lines or fewer"
+    "outputs/commit.md stages only the three `docs/sources/rawtrades.*` paths, nothing under `.dev-team/`, and the final message in transcript.md starts with the line `Result: done` and is ten lines or fewer",
+    "The final message in transcript.md is the profile-mode **Return** of agents/profiler.md and nothing else: exactly the eight lines `Result: done`, `Profile:`, `Round line:`, `Data:`, `Kinds:` (the counts alone, no list of kinds), `Revised:`, `Gaps:`, `Commit:`, in that order (a harness note after `Commit: none` aside). Added in 2.8-audit-fixes (profiler return forms)."
    ],
    "added_in": "2.7-data-loop phase 0, run from phase 1",
    "note_hardening": "2.7-data-loop eval hardening: #7 split in two and its conflict with `data-profile.md` item 8 (\"The rows of an `unverified` kind count here\", which at round 0 is every kind) resolved by accepting either count as long as the in-no-kind count is stated; #11 (now #12) gains the precondition that the profile was written, so a run that wrote nothing no longer passes it. After review (iteration 6): #11 no longer asks transcript.md to show the `uv run` command, which the executor paraphrases; it requires the round-0 counts.json the program writes to name every check id instead."
@@ -53,7 +54,8 @@
     "outputs/sample-check.txt's K3 line reports `misjudged` 1 or more, with no complaint that a misjudged id is one the check judges as the contract does: every trade_id the verify run recorded as misjudged for K3 is a row the seed's C3 as written flags and the contract's rule for `ts` (an equal `ts` is valid) passes — a row whose `ts` equals the previous row's in its symbol",
     "The final message in transcript.md names, by trade_id, at least one row K3's check flags whose `ts` equals the previous row's in its symbol, and the contract's rule it is judged by (an equal `ts` is valid)",
     "outputs/sample-check.txt (written by `build.py collect` from the executor's outputs/sample-ids.json, held against the seed's data and checks) has a line for each of K1, K2, K3 and K4 that starts `<kind>: ok`: for each kind the trade_ids recorded as drawn from the rows its checks flag are rows those checks flag, at least 20 of them or all there are, and those recorded as drawn from the rows they pass are rows they pass, at least 20. A run with no sample-ids.json reads `sample: no sample-ids.json` and fails this",
-    "outputs/commit.md stages `docs/sources/rawtrades.md` and nothing else, and the final message in transcript.md starts with the line `Result: done`"
+    "outputs/commit.md stages `docs/sources/rawtrades.md` and nothing else, and the final message in transcript.md starts with the line `Result: done`",
+    "The final message in transcript.md is the verify-mode **Return** of agents/profiler.md and nothing else: at most ten lines, `Result: done`, `Round line:`, a `Judged:` line giving every kind this run judged as `K<n> <flagged>/<passed>`, exactly one `Rejected:` line, for K3, naming a misjudged row by its key columns and the rule it is judged by, `Raised:`, `Commit:` (a harness note after `Commit: none` aside). Added in 2.8-audit-fixes (profiler return forms)."
    ],
    "added_in": "2.7-data-loop phase 0, run from phase 1",
    "note_hardening": "2.7-data-loop eval hardening: #5 and #6 rested on the executor's narration of its sample (phase 1 iteration 2 missed #6 on narration alone). The harness sheet now has the run record the trade_ids it drew per kind in outputs/sample-ids.json, and `build.py collect` holds them against the seed's data and checks in outputs/sample-check.txt; #5 is split into that check and the return naming the row; #4 gains the precondition that the profile was changed."
@@ -79,7 +81,8 @@
     "outputs/changes.txt lists `docs/sources/rawtrades.md` and `docs/packages/data/decisions/clean.md` and no other path: `docs/decisions.md` is not written, and the program, the example rows and everything under `packages/` are unchanged",
     "outputs/sample-check.txt has a line for each of K1, K2, K3 and K4 that starts `<kind>: ok` and reads `misjudged 0`: for each kind the run recorded at least 20 (or all) trade_ids its checks flag and at least 20 they pass, every one of them a row the check puts there",
     "outputs/sample-check.txt reads `written before the run's changes in the copy: yes`: outputs/sample-ids.json was written before the inbox `docs/packages/data/decisions/clean.md` and the profile's edits, so the rows were judged before any stub was written",
-    "outputs/commit.md stages the profile and the section's inbox and nothing else, and the final message in transcript.md starts with the line `Result: done`"
+    "outputs/commit.md stages the profile and the section's inbox and nothing else, and the final message in transcript.md starts with the line `Result: done`",
+    "The final message in transcript.md is the verify-mode **Return** of agents/profiler.md and nothing else: at most ten lines, `Result: done`, `Round line:`, a `Judged:` line giving every kind this run judged as `K<n> <flagged>/<passed>`, no `Rejected:` line, `Raised:`, `Commit:` (a harness note after `Commit: none` aside). Added in 2.8-audit-fixes (profiler return forms)."
    ],
    "added_in": "2.7-data-loop phase 0, run from phase 1",
    "note_hardening": "2.7-data-loop eval hardening: #7 rested on the executor's narration of its sample; it now reads outputs/sample-check.txt, split into the sample and its timing."
@@ -106,7 +109,8 @@
     "The last line under `## data/clean` in outputs/docs/sources/rawtrades.md is `Round 1 — <date> — commit f0783a2 — pending verify`, below the two unchanged round-0 lines (if harness case-4 had the executor substitute another sha, that sha in place of f0783a2)",
     "outputs/docs/sources/rawtrades.sample.json gains a key `K4` holding the row with trade_id 500196 and at most five rows; its `K1`, `K2`, `K3` and `accepted` keys hold the rows the seed had",
     "outputs/changes.txt lists `docs/sources/rawtrades.md` (the run wrote its round), and no ledger entry and no decision stub is written by this run: outputs/ holds no file under `docs/packages/data/deviations/` or `docs/packages/data/decisions/`, and `docs/decisions.md` is not in outputs/changes.txt",
-    "The final message in transcript.md starts with the line `Result: done`"
+    "The final message in transcript.md starts with the line `Result: done`",
+    "The final message in transcript.md is the profile-mode **Return** of agents/profiler.md and nothing else: exactly the eight lines `Result: done`, `Profile:`, `Round line:`, `Data:`, `Kinds:` (the counts alone, no list of kinds), `Revised:`, `Gaps:`, `Commit:`, in that order (a harness note after `Commit: none` aside). Added in 2.8-audit-fixes (profiler return forms)."
    ],
    "added_in": "2.7-data-loop phase 0, run from phase 5",
    "note_hardening": "2.7-data-loop eval hardening: the no-write expectation gains a precondition that the run wrote what it should, so a run that wrote nothing no longer passes it. Not rerun in the hardening change."
@@ -131,7 +135,8 @@
     "outputs/store-files.txt lists `.dev-team/data/rawtrades/work/accepted.csv` and `.dev-team/data/rawtrades/rounds/1/counts.json`; transcript.md shows the section run with `DATA_CLEAN_STORE` pointing at `.dev-team/data/rawtrades/work`; outputs/changes.txt lists no path under `data/clean/` or `packages/`",
     "transcript.md records, before the verdict is written, that no accepted row fails a check and that every rejected row carries a decided kind as its reason (K1 6 rows, K2 4, K3 5; none `unclassified`)",
     "`docs/sources/rawtrades.sample.json` is not listed in outputs/changes.txt",
-    "The final message in transcript.md starts with the line `Result: done`"
+    "The final message in transcript.md starts with the line `Result: done`",
+    "The final message in transcript.md is the profile-mode **Return** of agents/profiler.md and nothing else: exactly the eight lines `Result: done`, `Profile:`, `Round line:`, `Data:`, `Kinds:` (the counts alone, no list of kinds), `Revised:`, `Gaps:`, `Commit:`, in that order (a harness note after `Commit: none` aside). Added in 2.8-audit-fixes (profiler return forms)."
    ],
    "added_in": "2.7-data-loop phase 0, run from phase 5",
    "note_hardening": "2.7-data-loop eval hardening: the no-write expectation gains a precondition that the run wrote what it should, so a run that wrote nothing no longer passes it. Not rerun in the hardening change."
@@ -156,7 +161,8 @@
     "outputs/changes.diff shows, for `docs/sources/rawtrades.md`, no line removed or reworded except at most the last two fields of K4's own line: the K1, K2 and K3 lines and every round line the seed had are byte for byte",
     "outputs/sample-check.txt has a line starting `K4: ok`: the trade_ids the run recorded as drawn for K4 include 500196, the one accepted row its check flags, and at least 20 accepted rows it passes, each a row the check puts there",
     "outputs/sample-check.txt reads `written before the run's changes in the copy: yes`: outputs/sample-ids.json was written before the ledger entry and the round line",
-    "outputs/commit.md stages the profile and the ledger, and the final message in transcript.md starts with the line `Result: done`"
+    "outputs/commit.md stages the profile and the ledger, and the final message in transcript.md starts with the line `Result: done`",
+    "The final message in transcript.md is the verify-mode **Return** of agents/profiler.md and nothing else: at most ten lines, `Result: done`, `Round line:`, a `Judged:` line giving every kind this run judged as `K<n> <flagged>/<passed>`, no `Rejected:` line, `Raised:`, `Commit:` (a harness note after `Commit: none` aside). Added in 2.8-audit-fixes (profiler return forms)."
    ],
    "added_in": "2.7-data-loop phase 0, run from phase 5",
    "note_hardening": "2.7-data-loop eval hardening: #6 rested on the executor's narration of its sample; it now reads outputs/sample-check.txt (split into the sample and its timing). #4 gains a precondition. Not rerun in the hardening change."
@@ -180,7 +186,8 @@
     "outputs/changes.diff shows `docs/packages/data/deviations/clean.md` changed, and those two lines (`Status: resolved`, `Resolved by: profiler — run-package data` on entry 2) are its only changes: entry 1, already resolved by the designer, is untouched, and no entry is added or removed",
     "The last line under `## data/clean` in outputs/docs/sources/rawtrades.md is `Round 2 — <date> — commit 4a75e3e — deferred` (if harness case-7 had the executor substitute another sha, that sha), and outputs/changes.diff shows it as the only change to the profile",
     "outputs/changes.txt lists exactly three paths: `docs/followups.md`, `docs/packages/data/deviations/clean.md` and `docs/sources/rawtrades.md`",
-    "outputs/commit.md stages those three paths and nothing else, and the final message in transcript.md starts with the line `Result: done`"
+    "outputs/commit.md stages those three paths and nothing else, and the final message in transcript.md starts with the line `Result: done`",
+    "The final message in transcript.md is exactly three lines: `Result: done`, `Deferred: K5, K6`, `Commit:` (a harness note after `Commit: none` aside). Added in 2.8-audit-fixes (profiler return forms)."
    ],
    "added_in": "2.7-data-loop phase 0, run from phase 6",
    "note_hardening": "2.7-data-loop eval hardening: the no-write expectation gains a precondition that the run wrote what it should, so a run that wrote nothing no longer passes it. Not rerun in the hardening change."

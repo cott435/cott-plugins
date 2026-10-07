@@ -327,7 +327,9 @@ when the gate runs. You build no section and write nothing under `docs/`.
    workspace before any tester ran, so it exists; if it does not (a `--step` run on a repo
    never scaffolded), do **Scaffold mode**'s steps 2–4 first, in this run. Every one of those
    tests is part of your definition of done. On new code they are the RED half of
-   `test-driven-development`'s cycle; on adopted code they are expected green already.
+   `test-driven-development`'s cycle; on adopted code they are expected green already. This
+   run comes before your first write under the section's path: a first run after the code
+   exists skips RED and leaves no starting count.
 
 2. **Scaffold, or match the layout.** Confirm the repo's language, package manager and test
    runner from the repo contract's **Toolchain** section, `CLAUDE.md`, and existing files.
@@ -787,8 +789,9 @@ writes one marker and a marker names one heading. A `spec-change:test` entry alr
 naming that entry (no new entry), and return `Result: spec-change` at step 1. Build nothing
 further from that point (a
 `spec-change:test` met at a save point stops the build there; what was built is committed and
-listed), commit the ledger and whatever was already built, and return `Result: spec-change`
-naming the entry. The driver routes it by level.
+listed), run step 5's grep over what was built (the return's marker lines are its output),
+commit the ledger and whatever was already built, and return `Result: spec-change` naming the
+entry. The driver routes it by level.
 
 **A consumed name that differs from the contract.** Look in
 `docs/packages/<pkg>/deviations/<section>.md` (and the older locations) first. An entry that
@@ -893,21 +896,35 @@ no line in it goes to the ledger (a design defect is a `spec-change:design`), th
 paragraph. A heading is the heading: no parenthesis, clause or sentence after it, and no
 prose after the hand-back.
 
-The report, under 20 lines:
+The report, under 20 lines. Every label is present on every return, in this order, `none`
+when the run has nothing for it, and each is one line except `Review:` and `Needed from
+elsewhere:`, which take one line per item:
 
-- `Result:`, and on `blocked` the blocker on the next line
-- Files created / modified (paths only)
-- Deviations: the entry headings; Spec-change: the entry heading — the heading alone, no
-  clause or reason after it; what a marker return left unbuilt has no line, the entry and the
-  next spawn carry it
-- `D<n>` applied this run (decided entries only; an open one built on its assumption is a
-  marker left), and `TODO(decision D<n>)` markers resolved
-- Markers left: `TODO(decision D<n>)` with their IDs, `TODO(probe <source>)`
-- Review findings addressed (`<finding> (test seen red: <test>)` for a bug); backlog lines
-  taken
-- Needed from elsewhere; names consumed as provisional
-- Path of the section README (`interface.md` for the surface)
-- `Commit: <sha>`
+```
+Result: done
+Files: <paths written, comma-separated>
+Deviations: <entry headings, `; `-separated> | none
+Applied: <D<n>, comma-separated> | none
+Markers resolved: <D<n>, comma-separated> | none
+Markers left: <TODO(decision D<n>) and TODO(probe <source>), comma-separated> | none
+Review: <finding addressed> | none
+Backlog taken: <backlog lines, comma-separated> | none
+Needed from elsewhere: <item> | none
+Provisional: <names consumed as provisional, comma-separated> | none
+README: <path> | none
+Commit: <sha>
+```
+
+- `Result: blocked` is followed by `Blocked: <the blocker>`; `Result: spec-change` puts
+  `Spec-change: <entry heading>` after `Deviations:` — the heading alone, no clause or reason
+  after it. What a marker return left unbuilt has no line: the entry and the next spawn carry
+  it.
+- `Applied:` is decided entries only: an open one built on its assumption is a marker left.
+- `Markers resolved:` and `Markers left:` are what step 5's grep printed, re-run after your
+  last write, on a stop as on a finish — never a list kept from memory.
+- `Review:` is `<finding> (test seen red: <test>)` for a bug, the finding alone otherwise.
+- `README:` is the section README's path (`interface.md` for the surface); `none` only when the
+  run stopped before step 12.
 
 ## Commit
 
@@ -921,7 +938,12 @@ hook merged your lines into it) when you wrote `Applied:` lines — and commit w
 paths as a pathspec; never anything under `tests/intent/` or `.dev-team/`, and never the
 package `pyproject.toml`, `uv.lock` or `.gitignore` except when `locked.py` changed them this
 run (a dependency, an entry point, the ignore block), in which case they are yours to stage
-too. Scope `<pkg>/<section>` (`<pkg>/surface` for the surface); trailer from `Run:` —
+too. The lock orders the writes to those files, not the commits: a parallel run that stages
+them after your `locked.py` call commits your lines with its own, and a sibling's lines may
+ride in yours. Both are expected. When `git status --short --` on those files prints nothing
+at your commit, a sibling's commit holds your change: leave the files out, and add the body
+line `Dependencies committed in <sha>: <dep>, …` (the sibling's sha from `git log -1
+--format=%h -- <file>`) so the section's history still names them. Scope `<pkg>/<section>` (`<pkg>/surface` for the surface); trailer from `Run:` —
 `Dev-Team-Run: run-package <pkg>` under the driver, `Dev-Team-Run: implementer
 <pkg>/<section>` with no `Run:` line. A blocker met before any
 file was written commits nothing; a block after files were written commits what was built; a

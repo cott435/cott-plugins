@@ -251,8 +251,10 @@ how *one more round* is typed by hand.
 The architect marks, at PLAN, each section whose job is to clean, validate, reconcile or audit
 data its dependencies produce, in the Sections table where you can see and edit it:
 `stage:<token>` in the `source` cell, `dev-team:data-quality` in `builds with`, and one
-**Package conventions** line saying what the data is, where it lands and its pull cap, a
-`D<n>` with a recommendation and an assumption.
+**Package conventions** line saying what the data is, where it lands, the standards it is
+judged against and its pull cap, a `D<n>` with a recommendation and an assumption. The row's
+`responsibility` ends with what the section guarantees about its output, never a treatment:
+the kinds of failing row come from the profile, and you decide each treatment.
 
 Before such a section is designed, once every section it depends on is DONE, the **profiler**
 reads the data already on disk (else pulls it through the shipped entry points, up to the
@@ -409,7 +411,9 @@ guarded before the repo contract exists:
   has that file in scope. A scaffold run or an unreadable transcript falls back to the
   role-wide rule. Every role's globs cover the 2.2 paths, and the old locations stay writable
   for status edits. Nobody but the tester writes under `tests/intent/`, and a Write or Edit
-  there that adds `# noqa`, `# type: ignore` or `# pragma: no cover` is refused.
+  there that adds `# noqa`, `# type: ignore` or `# pragma: no cover` is refused. A Write of an
+  existing `.claude/agent-memory/<role>/MEMORY.md` that would drop a line is refused too:
+  parallel runs of one role each add their line with Edit.
 - **`guard_bash.py`** (`PreToolUse` on `Bash`) — no dev-team agent writes a repo file from the
   shell: a redirect (`>`, `>>`) to anything but `/dev/null` or a path under `.dev-team/tmp/`
   (refused as `may not redirect to <target>: it is outside .dev-team/tmp/`; a researcher may

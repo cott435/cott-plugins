@@ -29,6 +29,11 @@ exist), an Edit whose `new_string` holds more than its `old_string`; an edit tha
 existing comment in place passes. An event with no `content` or `new_string` skips the check and
 the path rule decides alone.
 
+Memory index: a Write of an existing `.claude/agent-memory/<role>/MEMORY.md` whose `content`
+lacks a non-blank line the file on disk holds is refused for every guarded role, exit 2. Agents
+of one role run in parallel and each adds its line with the Edit tool; a whole-file Write drops
+the lines another run just added. A Write that keeps every line passes, and so does any Edit.
+
 Example rows: a Write or Edit that would leave a data profile's `docs/sources/<token>.sample.json`
 over 200 KB is refused for every guarded role, exit 2. A profile's file is one the profiler
 writes, or one whose sibling `<token>.md` has a `— stage —` title line; a researcher's api sample
@@ -62,6 +67,7 @@ from pathlib import Path
 
 INTENT = "**/tests/intent/**"
 MEMORY = ".claude/agent-memory/**"
+MEMORY_INDEX = ".claude/agent-memory/*/MEMORY.md"
 
 LEDGERS = ("docs/deviations.md", "docs/deviations/**", "docs/packages/*/deviations/**")
 INBOXES = ("docs/packages/*/decisions/**",)
@@ -157,6 +163,19 @@ def added_suppression(event: dict, path: str) -> str | None:
     return next((item for item, rx in SUPPRESS if len(rx.findall(new)) > len(rx.findall(old))), None)
 
 
+def dropped_index_lines(event: dict, path: str) -> int:
+    """How many non-blank lines of the index on disk a Write's `content` lacks; 0 for an Edit."""
+    content = (event.get("tool_input") or {}).get("content")
+    if not isinstance(content, str) or not os.path.isfile(path):
+        return 0
+    try:
+        old = Path(path).read_text()
+    except (OSError, UnicodeDecodeError):
+        return 0
+    kept = {line.rstrip() for line in content.splitlines()}
+    return sum(1 for line in old.splitlines() if line.strip() and line.rstrip() not in kept)
+
+
 def profile_sample(agent: str, path: str) -> bool:
     """True when path is a data profile's example rows: the profiler writes it, or its sibling
     `<token>.md` exists and its first line is a `— stage —` title."""
@@ -226,6 +245,10 @@ def main() -> int:
     if not outside and _match(SAMPLE, rel) and profile_sample(agent, path) and (size := new_size(event, path)) > SAMPLE_CAP:
         print(f"dev-team write guard: {shown} would be {size // 1024} KB. A profile's example rows stay under 200 KB: "
               "five rows per kind, and the full failing set under .dev-team/data/.", file=sys.stderr)
+        return 2
+    if not outside and _match(MEMORY_INDEX, rel) and (dropped := dropped_index_lines(event, path)):
+        print(f"dev-team write guard: {agent} may not rewrite {shown}: it would drop {dropped} line(s) another run "
+              "may have just added. Add your line with the Edit tool; never rewrite the index.", file=sys.stderr)
         return 2
     scoped = section_scope(event, cwd) if agent == "dev-team:implementer" else None
     if scoped is not None:

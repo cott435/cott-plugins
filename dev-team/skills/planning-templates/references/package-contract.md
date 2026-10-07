@@ -33,9 +33,15 @@ change item for `/dev-team:plan-repo`, stubbed as a `D<n>` scoped `repo` until t
    section whose job is to clean, validate, reconcile or audit data its dependencies produce
    is marked: `stage:<token>` in `source` (the token names the data, `rawbars`, not the
    section), `dev-team:data-quality` in `builds with`, and one **Package conventions** line,
-   `` `stage:<token>` — <what the data is>; lands at <path>; pull cap <n> <unit>, D<n> ``, the
-   cap from the vendor probes' cost and quota headings, stubbed with an assumption. Never on a row
-   with no `depends on`, and never on a section that only passes data through.
+   `` `stage:<token>` — <what the data is>; lands at <path>; judged against <standards>; pull cap <n> <unit>, D<n> ``,
+   the cap from the vendor probes' cost and quota headings, stubbed with an assumption.
+   `<standards>` are the brief clauses, project skills and probe docs the data is held to, by
+   name. A marked row's `responsibility` ends with a clause that says what the section
+   guarantees about its output, in the brief's words from **Purpose** (`guarantees no two
+   unrelated securities share an ID, and a failed metadata lookup never removes a delisted
+   instrument`). State the guarantee and never a treatment (`repair`, `drop`): the kinds of
+   failing row come from the profile, and each treatment that changes data is the user's `D<n>`.
+   Never on a row with no `depends on`, and never on a section that only passes data through.
 
    Every section name and source token follows `project-structure` §4: one lowercase token,
    and never starting with `report`, `summary`, `findings` or `analysis`. A subagent cannot

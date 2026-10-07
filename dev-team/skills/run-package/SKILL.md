@@ -269,7 +269,11 @@ granted *one more round* at a cap.
    7.
 3. **BLOCKED rows.** For each BLOCKED row that counts, **Asking**. A row granted *one more
    round*, *defer*, *run the implementer again* or *review anyway* this run is not asked
-   again: step 4 runs it. After the answers, re-run step 2.
+   again: step 4 runs it. After the answers, re-run step 2. `status.py` cannot see a grant: a
+   cap row granted *one more round* prints the same `(cap)` BLOCKED row after its implementer
+   returns, and still owes its `full` reviewer, which step 4 spawns as REVIEW in the next
+   batch. The grant is spent when that reviewer returns — not by the implementer, a restart, an
+   interrupted question, or other answers recorded in between.
 4. **The ready set.** The rows that count with `ready` `yes`, plus the rows granted a round, a
    defer, an implementer run or a review. When any of them is PLAN, the batch is one architect
    for the package, with every open heading of every PLAN row in `Spec-change:`, and nothing
@@ -452,6 +456,10 @@ Record the answer, then re-run **Loop** step 2:
   loop where it stands: go to **Summary**, with the row or the two lines you asked about as
   `stopped because`. Do not act on the text: no diagnosis of the plugin, no file this skill
   forbids you to read, no edit. The user reads the Summary and types what they want next.
+- **A question with no answer** — the user interrupted it, or the tool call was rejected or
+  failed — is not a stop. When the user resumes, re-run **Loop** step 2 and ask it again. Only
+  an answer ends the loop, and `stopped because` never says the user asked to stop unless the
+  user's own words did.
 
 Your ledger edits stay uncommitted: `docs/decisions.md` is exempt from the run gate, the next
 agent that stages it carries it, and otherwise the user commits it.
@@ -486,6 +494,7 @@ the one step run. The first line reads `stopped at <section> BLOCKED` for a stop
 row, `stopped at the surface check` for a stop at the surface question, `stopped at the
 integration check` for a stop at an integration question, and `stopped at the paths review`
 for a stop at a paths question. `stopped because`
+is one of the things its line lists, quoted as it stands, never a reason of your own, and it
 appears only when stopped, `no Result: line` only when a return's first line was not
 `Result:` and its row had advanced (**Loop** step 5), and `uncommitted` only when `git status
 --porcelain -- docs/decisions.md` prints a line: an agent's commit may have carried your edit,

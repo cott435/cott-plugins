@@ -48,7 +48,8 @@ shipped package is consumed from that package's `interface.md`; if the name is n
 the change file carries it.
 
 A section the architect marked `stage:<token>` — one that cleans, validates, reconciles or
-audits data — is profiled on the real data before it is designed: the **profiler** runs checks
+audits data, with what it guarantees about its output at the end of its `responsibility` — is
+profiled on the real data before it is designed: the **profiler** runs checks
 over all of it, sorts the failing rows into kinds and proposes a treatment for each, and the
 section is designed and built with one handler and one test per kind. Once its reviewers
 approve, it is profiled again on its own output, and new kinds reopen its design. You are asked
