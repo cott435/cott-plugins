@@ -12,6 +12,30 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [2.9.0] - 2026-10-07
+
+A section marked as a data stage says in its Sections row what it guarantees about its output,
+and its Package conventions line names the standards the data is judged against. From reading
+a real contract (`quant-rebuild`'s `identity`), where the row's `responsibility` said nothing
+about cleaning, only the skill did. Evidence:
+`evals/2026-10-07-architect-stage-guarantee-clause.md`.
+
+### Added
+
+- A marked row's `responsibility` ends with a clause that says what the section guarantees about
+  its output, in the brief's words, never a treatment: the kinds of failing row come from the
+  profile and each treatment that changes data is the user's `D<n>`
+- `judged against <standards>` in the `stage:<token>` **Package conventions** line, between
+  `lands at` and `pull cap`: the brief clauses, project skills and probe docs the data is held to
+
+### Changed
+
+- `package-contract.md`'s `source` paragraph, the README's **Data-heavy sections** and the
+  `add-package` and `new-repo` workflow pages describe both; `agents/architect.md` is unchanged,
+  since it writes the contract from the template
+- `evals/sets/architect.json` eval 10 gains two expectations, one for each new field
+
+
 ## [2.8.0] - 2026-10-05
 
 A package's whole-repo checks run before its paths review and its close, not only in CI, and a

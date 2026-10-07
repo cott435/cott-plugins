@@ -251,8 +251,10 @@ how *one more round* is typed by hand.
 The architect marks, at PLAN, each section whose job is to clean, validate, reconcile or audit
 data its dependencies produce, in the Sections table where you can see and edit it:
 `stage:<token>` in the `source` cell, `dev-team:data-quality` in `builds with`, and one
-**Package conventions** line saying what the data is, where it lands and its pull cap, a
-`D<n>` with a recommendation and an assumption.
+**Package conventions** line saying what the data is, where it lands, the standards it is
+judged against and its pull cap, a `D<n>` with a recommendation and an assumption. The row's
+`responsibility` ends with what the section guarantees about its output, never a treatment:
+the kinds of failing row come from the profile, and you decide each treatment.
 
 Before such a section is designed, once every section it depends on is DONE, the **profiler**
 reads the data already on disk (else pulls it through the shipped entry points, up to the
