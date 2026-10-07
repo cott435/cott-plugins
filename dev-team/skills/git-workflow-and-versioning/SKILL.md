@@ -48,6 +48,7 @@ section disagrees, this section wins.
    | implementer | `<pkg>/<section>` · `<pkg>/surface` | what was built — `data/ingest: parse trades.csv into Trade rows` |
    | reviewer | `review <pkg>/<section>` | `r<n>-<letter>: <verdict> (<k> critical)` — `review data/ingest: r1-a: request changes (2 critical)`; the report is under `docs/packages/<pkg>/reviews/<section>/` |
    | researcher | `probe <source>` | what was probed, for whom — `probe polygon: aggregates for data/ingest` |
+   | profiler | `profile <token>` | what the round did — `profile rawmeta: 19 kinds over 500 instruments for data/identity` · `profile rawmeta: verify r0: revise K13` |
    | architect | `plan <target>` | `plan data: contract with surface row` |
    | curator | `legacy` | `legacy: inventory of ../old-repo` |
    | documenter | `docs` | `docs: package READMEs, root README` |

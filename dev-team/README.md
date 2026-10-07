@@ -411,7 +411,9 @@ guarded before the repo contract exists:
   has that file in scope. A scaffold run or an unreadable transcript falls back to the
   role-wide rule. Every role's globs cover the 2.2 paths, and the old locations stay writable
   for status edits. Nobody but the tester writes under `tests/intent/`, and a Write or Edit
-  there that adds `# noqa`, `# type: ignore` or `# pragma: no cover` is refused.
+  there that adds `# noqa`, `# type: ignore` or `# pragma: no cover` is refused. A Write of an
+  existing `.claude/agent-memory/<role>/MEMORY.md` that would drop a line is refused too:
+  parallel runs of one role each add their line with Edit.
 - **`guard_bash.py`** (`PreToolUse` on `Bash`) — no dev-team agent writes a repo file from the
   shell: a redirect (`>`, `>>`) to anything but `/dev/null` or a path under `.dev-team/tmp/`
   (refused as `may not redirect to <target>: it is outside .dev-team/tmp/`; a researcher may

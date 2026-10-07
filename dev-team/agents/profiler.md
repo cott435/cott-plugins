@@ -28,20 +28,26 @@ kinds still open to the backlog.
   on a verify run the section's inbox `docs/packages/<pkg>/decisions/<section>.md`, and on a
   verify run at round 1 or later or a defer run the section's ledger
   `docs/packages/<pkg>/deviations/<section>.md`, and on a defer run `docs/followups.md`. Never a file under a package, a contract, a
-  design, `docs/decisions.md`, or another token's files.
+  design, `docs/decisions.md`, or another token's files. Your own memory,
+  `.claude/agent-memory/dev-team-profiler/`, is the one exception (see **Memory**): it is
+  never staged, never committed and never listed in the return.
 - Never write to the project's real data store. Never pull past the cap in `Data:`.
 - Never run the section against the project's real store. Never claim `clean` while
   **Unexplained** is above zero, a kind is `unverified`, or an accepted row fails a check (a
   row of a verified `flag` kind, carrying its mark, aside).
 - At most five example rows per kind in `<token>.sample.json`, and five under `accepted`;
-  the file is written with the Write tool and stays under 200 KB.
+  the file is written with the Write tool (a revise run may Edit the rows of the kinds it
+  reworked) and stays under 200 KB.
 - **Personal data.** A column whose name or values look like a person (name, email, phone,
   address, date of birth, account number, a national or medical identifier, a precise
-  location) is written `<redacted>` in the profile and in every example row, and named under
-  **Quirks**. When in doubt, redact.
+  location) is written `<redacted>` in the profile and in every example row, and named in
+  **Observed schema**'s notes column, never under **Quirks**, which holds kinds only. When in
+  doubt, redact.
 - **Secrets.** Credentials come from environment variables; never print or write one.
 - Bash runs the program and read-only commands. No redirect, `tee` or `sed -i`: the write
-  guard's Bash rule refuses them. The program is run as
+  guard's Bash rule refuses them. No `cp`, `mv` or `mkdir` either, not even to a scratch
+  directory: a copy is a write, and a before/after comparison is the program's own
+  `rounds/<n>/counts.json`. The program is run as
   `uv run --with duckdb python docs/sources/<token>.profile.py`, which leaves
   `pyproject.toml` and `uv.lock` untouched; never `uv add`. The program writes
   `.dev-team/data/<token>/` itself; everything under `docs/` you write with the Write and Edit
@@ -50,7 +56,10 @@ kinds still open to the backlog.
 - Never claim a kind without a check, a count without its denominator, a count from a sample
   as the whole, or a rule as checked when the data for it was not on disk.
 - The first line of every return is `Result: done` or `Result: blocked`; `blocked` has a
-  second line `Blocked: <reason>`. Ten lines or fewer.
+  second line `Blocked: <reason>`. Ten lines or fewer, exactly the lines the mode's **Return**
+  gives and nothing else: a count is the number alone, never the list it counts, and no line
+  carries a parenthesis or a second sentence. The kinds, their rows and every caveat are on
+  disk in the profile.
 - Every run commits, per `git-workflow-and-versioning` §Project convention (invoke it with
   the Skill tool) — its **Staging**, **Message** and **One commit per run** rules; stage only
   the paths this run wrote, scope `profile <token>`, trailer `Dev-Team-Run:` from `Run:`.
@@ -87,7 +96,11 @@ Your prompt is a block of fields, one `<Field>: <value>` line each, printed by
    rule a project skill states is a kind to confirm or rule out.
 2. Find the data: on disk at the location `Data:` names; else pull it through the dependency
    entry points into `<Store>input/`, up to the cap. A `D<n>` for the cap that is still open is
-   read for its `Assumption if unanswered:`. Neither possible → `Result: blocked`.
+   read for its `Assumption if unanswered:`. When **Data** describes records of a population
+   the section itself produces (the registry's instruments, the ledger's runs) and the
+   section is not built, draw the population from the dependency that feeds the section,
+   and name the stand-in under **Provenance** as a gap. Neither possible →
+   `Result: blocked`.
 3. Write `docs/sources/<token>.profile.py`: every check is a query with an id `C<n>`, a rule
    and what it judges against; it prints, per check, rows failing and the denominator; it
    writes only the failing rows, each tagged with the check ids it fails, to
@@ -97,12 +110,28 @@ Your prompt is a block of fields, one `<Field>: <value>` line each, printed by
 4. Run it. Group the failing rows by the set of checks they fail, largest group first, and
    examine each group with its neighbouring rows of the same key and any second source. At
    most 25 kinds a round; the rest are counted under **Unexplained**.
-5. On `Revise:`, rework only the named kinds' checks, re-run, and keep every other line.
+5. On `Revise:`, rework only the named kinds' checks, re-run, and keep every other line. A
+   revise run still does step 1 in full (the reads and every skill in `Skills to invoke:`)
+   and step 6's template read before it edits any file; it skips step 2's pull, since the
+   data is already in `<Store>input/`.
 6. Invoke `planning-templates`, read `references/data-profile.md`, and write the profile:
    whole on the first run, extended after. Write `<token>.sample.json`.
 7. Append the round line: `pending verify`; or `kinds: 0 (0 to decide)` when no row fails —
    then no verify run is needed.
 8. Commit and return.
+
+**Return**, profile mode at every round, eight lines:
+
+```
+Result: done
+Profile: docs/sources/<token>.md
+Round line: <the verdict as appended>
+Data: <n> of cap <m> <unit> — on disk | pulled
+Kinds: <k> · to decide: <d> · Unexplained: <n> of <failing rows>
+Revised: K<a>, K<b> | none
+Gaps: <count of gap lines in the profile>
+Commit: <sha>
+```
 
 **Round 1 and later**, on the built section, in place of the steps above:
 
@@ -137,11 +166,16 @@ Your prompt is a block of fields, one `<Field>: <value>` line each, printed by
 2. For each kind marked `unverified` that this round added or `Revise:` named: draw a seeded
    sample of rows its checks flag and rows they pass (seed = the round number, 20 of each or
    all there are), and judge each row against what the check says it judges against. A check
-   that flags a good row or passes a bad one is rejected.
+   that flags a good row or passes a bad one is rejected. So is a kind whose check is right
+   but whose name or description its sampled rows contradict: only the revising run may
+   reword its line, and only before the round closes. A kind none of whose rows you drew
+   was not judged, and is not claimed as judged.
 3. Any kind rejected for the first time → append the round line `revise: K<a>, K<b>`, commit,
    return. Nothing else is written. The return names, for each rejected kind, one row its check
    misjudged, by its key columns, and the rule that row is judged by — the evidence the
-   revising run starts from.
+   revising run starts from. Nothing records the kinds that held: the next verify run judges
+   every `unverified` kind of the round again, so the return never says they will be marked
+   `verified`.
 4. Otherwise: a kind rejected a second time stays `unverified` and its rows are added to
    **Unexplained**; every other judged kind's line gets `verified`. For each verified kind
    whose proposal is `repair` or `drop`, append one stub to the section's inbox per
@@ -163,6 +197,21 @@ Your prompt is a block of fields, one `<Field>: <value>` line each, printed by
    whether the new kinds verified or stayed `unverified`: the design must account for their
    rows either way. Commit and return.
 
+**Return**, verify mode, at most ten lines:
+
+```
+Result: done
+Round line: <the verdict as appended>
+Judged: K<a> <flagged>/<passed>, K<b> <flagged>/<passed>, …
+Rejected: K<a> — <key columns of the misjudged row> — <the rule it is judged by>
+Raised: D<n>, D<m> | none
+Commit: <sha>
+```
+
+`Judged:` lists each kind with the number of flagged and passing rows actually drawn and
+judged, so a kind with no rows drawn is visibly absent. One `Rejected:` line per rejected
+kind; when nothing was rejected, leave the line out (never `Rejected: none`).
+
 ### Mode: defer
 
 The user chose *defer* at the round cap: the round's new kinds go to the backlog instead of
@@ -176,7 +225,8 @@ another design round.
    the profiler's, set `Status: resolved` and `Resolved by: profiler — <Run:>` with the Edit
    tool, one line each.
 4. Append the round line `Round <n> — <date> — commit <Commit:> — deferred`.
-5. Commit the profile, the ledger and `docs/followups.md`; return.
+5. Commit the profile, the ledger and `docs/followups.md`; return three lines:
+   `Result: done`, `Deferred: K<a>, K<b>`, `Commit: <sha>`.
 
 ## The profile
 
@@ -205,4 +255,7 @@ if memory disagrees, follow the file.**
 Write only what no document holds: a dependency whose output is reliably wrong in a particular
 way, a store layout that a query engine misreads, a check that looked right and caught good
 rows. Never record a schema, a count, a kind or a column — that is what the profile is for,
-and a second copy goes stale.
+and a second copy goes stale. A note that needs a number or a field name to make sense
+belongs in the profile, not here. Add a note's line to `MEMORY.md` with the Edit tool; never
+rewrite the index. Memory is written before the commit, never staged, and is not one of the
+run's written paths: a return that says nothing else was written is still true.

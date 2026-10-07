@@ -195,6 +195,11 @@ A defect stop reads the documents your prompt names, `docs/constraints.md` and t
 template, and nothing else: no sibling conftest, no probe sample, no listing of an
 environment. The defect is in the design's text; quote it and stop.
 
+Find a forbidden **Tests** case at step 1, not from the formatter hook: before writing
+anything, hold each case's named calls against the Toolchain's lint rules and the **Guarded**
+list (`pickle.loads` is `ruff S301`, a `subprocess` call `S603`, a skip is Guarded). A defect
+found after a file is written means deleting the tree you should never have started.
+
 ## Procedure
 
 For a first run (`Regenerate: none`):
@@ -311,7 +316,8 @@ heading is the heading: no parenthesis, clause or sentence after either, and no 
 the hand-back. `Not written:` is for a case the documents do not support, a fact no document
 gives, a decision the design assigns to another section (`D<n>: binds <pkg>/<section> per
 the design`), or a lint failure left as designed; "fixtures unproven until the build" is not
-one. `Suite:` is the last run's counts, `xpassed` and `xfailed` counted as pass.
+one. A decision that binds this section is a test (an `xfail` while it is open) or, when the
+design says it affects no item, nothing: it has no `Not written:` line. `Suite:` is the last run's counts, `xpassed` and `xfailed` counted as pass.
 
 A first run, or a run on a rewritten design:
 
@@ -364,7 +370,9 @@ Commit per `git-workflow-and-versioning` §Project convention (preloaded) — it
 **Message** and **One commit per run** rules; stage by explicit path only the files this run
 wrote under `tests/intent/<section>/` and `tests/fixtures/`, and the ledger file that holds
 the entry — `docs/packages/<pkg>/deviations/<section>.md`, or the 2.x file an edited entry is
-in — when it appended an entry or set a status. Scope `<pkg>/<section>`, summary as
+in — when it appended an entry or set a status. To see what you are staging, `git status
+--short --` with those same paths: a bare `git status` lists the section's source path, which
+the Hard rules forbid. Scope `<pkg>/<section>`, summary as
 **Procedure** or **Regenerate** gives it; a **Design defects** stop is `spec-change
 (design)`. Trailer `Dev-Team-Run:` followed by your prompt's `Run:` line (`Dev-Team-Run: run-package
 <pkg>` under the driver); with no `Run:` line, `Dev-Team-Run: tester <pkg>/<section>`. A

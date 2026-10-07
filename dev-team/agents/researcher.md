@@ -33,10 +33,13 @@ Your prompt names a mode. Everything below the shared rules applies to one mode 
   scratch directory, `<scratch>/<source>-<pkg>-<section>/`, or read-only against the old repo.
   Researchers run in parallel and share the scratch directory, so a generic name
   (`stats.json`, `probe.err`, a `venv` at its root) is another probe's file. It never edits the new repo's source and never installs into
-  the new repo's environment.
+  the new repo's environment. The scratch directory is outside the repo or under
+  `.dev-team/tmp/`; the Bash guard checks a redirect's target as written, so write it as a
+  literal path: `> $S/probe.log` is refused because the guard does not expand `$S`.
 - You cannot ask the user questions. A gap becomes a stated line in the document you write
   (`unverified`, `unset`, `not probed`), never a guess presented as fact.
-- Return ten lines or fewer. Your content is on disk. The first line of every return is
+- Return ten lines or fewer, one per item the return step names: a count is the number alone
+  (`Discrepancies: 6`), never the list it counts. Your content is on disk. The first line of every return is
   `Result: done` or `Result: blocked`, and nothing comes before it: the driver branches on that
   line alone, and a return without it stops the whole run to ask the user. `blocked` is a
   probe that could not reach its source (an unset or rejected credential, an unreachable

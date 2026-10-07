@@ -17,8 +17,12 @@ of the name is the **dev_team v4 Flow** artifact in the gallery, which is a titl
 A section marked as a data stage says in its Sections row what it guarantees about its output,
 and its Package conventions line names the standards the data is judged against. From reading
 a real contract (`quant-rebuild`'s `identity`), where the row's `responsibility` said nothing
-about cleaning, only the skill did. Evidence:
-`evals/2026-10-07-architect-stage-guarantee-clause.md`.
+about cleaning, only the skill did. The same release carries the fixes from the audit of a real
+`run-package data` run (session 96a768ee, dev-team 2.8.0): agent return forms, the tester's
+stage check, the driver's grants, the profiler's verify honesty and a write guard on agent
+memory. Evidence: `evals/2026-10-07-architect-stage-guarantee-clause.md`,
+`evals/2026-10-06-audit-run-package-96a768ee.md`, `evals/2026-10-06-audit-96a768ee-fixes.md`
+and `evals/2026-10-07-profiler-audit-fixes-96a768ee.md`.
 
 ### Added
 
@@ -34,6 +38,25 @@ about cleaning, only the skill did. Evidence:
   `add-package` and `new-repo` workflow pages describe both; `agents/architect.md` is unchanged,
   since it writes the contract from the template
 - `evals/sets/architect.json` eval 10 gains two expectations, one for each new field
+
+### Fixed
+
+- Implementer: the return is an exact-label template, `README: none` after a stop, and marker
+  lines come from the grep re-run after the last write; eval 18 gains an expectation that pins
+  the template
+- Tester: the stage check is `git status --short -- <paths>`, a decision binding the section
+  gets no `Not written:` line, and a forbidden §7 case is found at step 1
+- Designer: one entry per wrong clause, each heading on its own line; researcher: a count in the
+  return is the number and a redirect target is a literal path
+- `run-package`: a granted round stays owed until its reviewer returns, an unanswered question
+  is asked again, and `stopped because` is never the driver's own
+- Profiler: each mode has a fixed return form; a verify run returns a per-kind `Judged:` line
+  and may not claim kinds it never drew; memory is the one write-list exception and is never
+  staged; no `cp`, `mv` or `mkdir` in Bash; a revise run redoes step 1; **Unexplained** counts
+  only kinds a verify run rejected twice; personal data goes in **Observed schema**; a stand-in
+  population is named under **Provenance**
+- `hooks/guard_writes.py` refuses a Write of an existing `.claude/agent-memory/<role>/MEMORY.md`
+  that would drop a line: parallel runs of one role each add theirs with Edit
 
 
 ## [2.8.0] - 2026-10-05
