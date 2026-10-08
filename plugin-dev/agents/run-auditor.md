@@ -40,6 +40,10 @@ The spawn prompt is a block of `Field: value` lines:
   `git diff`, `ls`, `cat`. Its current state may be later than the run; use git history, not
   the working tree, for what a file said at a step.
 - **Findings**: the path to write.
+- **Prior issues**: `none`, or one indented continuation line per issue a rerun should show
+  fixed in this piece, each `<ID> · attempt <n> · watch <applies_to> · held when <…> ·
+  recurred when <…>`. Decide for each whether this trace exercised that behavior, and what it
+  shows.
 
 ## What to read, in order
 
@@ -135,6 +139,22 @@ unit's full trace only to settle a question.
 - **Rework.** A step the run did more than once for the same section (a retry, a redesign, a
   regeneration) and whether the reason is in the trace.
 
+## Prior issues
+
+When **Prior issues** is not `none`, after the checks write one line per issue given, in the
+order given, under a `## Prior issues` heading after the last F finding:
+
+`P · <ID> · <verdict> · <step id or —> — <evidence quoted short, or why it was not exercised>`
+
+The verdict is one of:
+
+1. **held** — the trace reached the behavior the issue's `held when` names and shows it. Cite
+   the step. Never from the absence of a failure: a unit that never got there is not exercised.
+2. **recurred** — the trace shows what `recurred when` names. Cite the step. Write the P line
+   only, never also an F finding for the same fact, so it is not counted twice.
+3. **not exercised** — this piece never reached that behavior. Say why in a few words, with
+   `—` for the step, so the line reads `P · <ID> · not exercised · — — <why>`.
+
 ## Severity and fault
 
 Every finding has one severity and one fault.
@@ -174,7 +194,12 @@ Checked: inputs, procedure, scope, hooks, claims, shape, waste   (those that app
 **Rule:** `agents/researcher.md:212` — "the rule, quoted short".
 
 ## F2 · …
+
+## Prior issues
+P · DT-003 · held · U03.S12 — "Result: done" after the gate's "12 passed"
 ```
+
+The `## Prior issues` section is present only when the input carried prior issues.
 
 Number findings from F1 within the file, most severe first. `Rule:` is `none` only for a
 `platform` fault or a cross-unit contradiction. Use a path relative to **Plugin root**, and
@@ -186,5 +211,8 @@ file is the header block with `Verdict: clean` and nothing after `Checked:`.
 Exactly one line, then nothing:
 
 ```
-Findings: <n> ERROR, <n> WARN, <n> NOTE — <Findings path>
+Findings: <n> ERROR, <n> WARN, <n> NOTE · prior <h> held, <r> recurred, <x> not exercised — <Findings path>
 ```
+
+The `· prior …` part appears only when prior issues were given; with `Prior issues: none` the
+line is exactly as before: `Findings: <n> ERROR, <n> WARN, <n> NOTE — <Findings path>`.

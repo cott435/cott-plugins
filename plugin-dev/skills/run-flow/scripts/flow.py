@@ -23,12 +23,20 @@ A review is any unit whose return carries `Verdict:`; its box is coloured by the
 shows its critical and warning counts. A unit with a findings file gets a badge with its
 ERROR count. Everything here is read from index.json, so re-running `trace.py flow` after an
 audit adds the badges without rebuilding the trace.
+
+Issue marks come from the plugin's ledger, `audits/issues/*.md`: by default the directory four
+levels above the workspace (`<plugin>/evals/workspace/audit/<id8>/`), else the `issues`
+directory passed in. For this session's `<id8>`, a Found in line on a unit marks it `+ <ID>`
+(first found there), and a Checks line on a unit marks it `✓ <ID>` (held) or `✗ <ID>`
+(recurred); other verdicts are not drawn. Marks are a second badge line on the box and an
+**Issues** row on the unit page, linking to each issue file. No ledger, no marks.
 """
 
 from __future__ import annotations
 
 import html
 import json
+import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -46,6 +54,7 @@ RESULT = {"done": "ok", "blocked": "idle", "stopped": "idle", "failed": "bad",
           "spec-change": "warn", "design-gap": "warn"}
 
 LEFT, CW, BH, GAP, HEAD, BAND = 150, 178, 54, 6, 64, 34
+MARK_LINE, MARKS_SHOWN = 14, 3  # the issue-mark line's height, and how many marks fit on it
 
 
 def ts(s: str) -> datetime | None:
@@ -67,16 +76,72 @@ def audit_errors(out: Path, unit: str) -> int | None:
     return len(re.findall(r"^## F\d+ · ERROR", f.read_text(encoding="utf-8"), re.M))
 
 
+# ---------------------------------------------------------------- issue marks
+
+
+MARK = {"found": ("+", "idle"), "held": ("✓", "ok"), "recurred": ("✗", "bad")}
+MARK_ORDER = ["recurred", "held", "found"]
+
+
+def default_issues(out: Path) -> Path:
+    """`<plugin>/audits/issues/` for a workspace at `<plugin>/evals/workspace/audit/<id8>/`."""
+    parents = out.resolve().parents
+    return parents[3] / "audits" / "issues" if len(parents) > 3 else out / "audits" / "issues"
+
+
+def issue_marks(issues: Path | None, id8: str) -> dict[str, list[tuple[str, str, Path]]]:
+    """unit -> [(kind, ID, file)] for this session's Found in and Checks lines.
+
+    A Found in line is `- <date> · <id8> · <version> · <unit> · <step> — …`; a Checks line is
+    `- <date> · <id8> · <version> · attempt <n> · <verdict> · <unit> · <step> — …`.
+    """
+    marks: dict[str, list[tuple[str, str, Path]]] = {}
+    if not issues or not issues.is_dir():
+        return marks
+    for f in sorted(issues.resolve().glob("*.md")):
+        text = f.read_text(encoding="utf-8", errors="replace")
+        m = re.search(r"^id:\s*(\S+)", text, re.M)
+        iid = m.group(1) if m else f.stem
+        section = None
+        for line in text.splitlines():
+            if line.startswith("## "):
+                section = line[3:].strip()
+                continue
+            if not line.startswith("- "):
+                continue
+            head = line[2:].split(" — ", 1)[0]
+            parts = [x.strip() for x in head.split(" · ")]
+            if len(parts) < 2 or parts[1][:8] != id8:
+                continue
+            if section == "Found in" and len(parts) >= 5:
+                kind, unit = "found", parts[3]
+            elif section == "Checks" and len(parts) >= 7 and parts[4] in ("held", "recurred"):
+                kind, unit = parts[4], parts[5]
+            else:
+                continue
+            if unit and unit != "—" and (kind, iid, f) not in marks.get(unit, []):
+                marks.setdefault(unit, []).append((kind, iid, f))
+    for unit in marks:
+        marks[unit].sort(key=lambda k: (MARK_ORDER.index(k[0]), k[1]))
+    return marks
+
+
+def mark_label(kind: str, iid: str) -> str:
+    return f"{MARK[kind][0]} {iid}"
+
+
 # ---------------------------------------------------------------- model
 
 
-def model(index: dict, out: Path | None = None) -> dict:
+def model(index: dict, out: Path | None = None, marks: dict | None = None) -> dict:
     units = index["units"]
+    marks = marks or {}
     for u in units:
         u["lane"] = u.get("lane") or "(other)"
         u["mins"] = minutes(u["first_ts"], u["last_ts"])
         u["audit"] = audit_errors(out, u["unit"]) if out else None
         u["page"] = f"units/{u['unit']}.html" if out and (out / "units" / f"{u['unit']}.json").exists() else None
+        u["marks"] = [(k, i) for k, i, _ in marks.get(u["unit"], [])]
 
     waves: dict[str, list[dict]] = {}
     for u in units:
@@ -122,7 +187,8 @@ def model(index: dict, out: Path | None = None) -> dict:
         rows.append({"wave": n, "units": us, "start": start, "end": max(u["last_ts"] for u in us),
                      "spawner": us[0]["spawner"]})
     rows.extend({"band": b} for b in pending)
-    return {"rows": rows, "lanes": lanes, "roles": roles, "lane_info": lane_info, "waves": len(wave_list)}
+    return {"rows": rows, "lanes": lanes, "roles": roles, "lane_info": lane_info, "waves": len(wave_list),
+            "bh": BH + MARK_LINE if any(u["marks"] for u in units) else BH}
 
 
 # ---------------------------------------------------------------- text, for run.md
@@ -188,16 +254,18 @@ def sublabel(u: dict) -> str:
     return re.sub(r"\s{2,}", " ", d).strip(" -—·")
 
 
-def box(u: dict, x: float, y: float, w: float, color: str) -> str:
+def box(u: dict, x: float, y: float, w: float, color: str, bh: int = BH) -> str:
+    marks = u.get("marks") or []
     title = (f"{u['unit']} · {u['type']}\n{u['description']}\n"
              f"{u['mins'] if u['mins'] is not None else '?'} min · {u['tool_calls']} tools · "
              f"{u['errors']} errors · {u['hook_blocks']} hook blocks\n"
              f"commits: {', '.join(u['commits']) or 'none'}\n"
              f"returned: {u['return_first_line'] or '(still running)'}"
+             + (f"\nissues: {', '.join(mark_label(k, i) for k, i in marks)}" if marks else "")
              + ("\nclick for every step" if u.get("page") else ""))
     parts = [f'<g class="unit"><title>{esc(title)}</title>',
-             f'<rect x="{x}" y="{y}" width="{w}" height="{BH}" rx="6" class="box"/>',
-             f'<rect x="{x}" y="{y}" width="5" height="{BH}" rx="2" fill="{color}"/>',
+             f'<rect x="{x}" y="{y}" width="{w}" height="{bh}" rx="6" class="box"/>',
+             f'<rect x="{x}" y="{y}" width="5" height="{bh}" rx="2" fill="{color}"/>',
              f'<text x="{x + 11}" y="{y + 16}" class="role">{esc(u["role"])}</text>',
              f'<text x="{x + w - 6}" y="{y + 16}" class="uid" text-anchor="end">{u["unit"]}</text>']
     sub = sublabel(u)
@@ -222,6 +290,12 @@ def box(u: dict, x: float, y: float, w: float, color: str) -> str:
             meta += f" · {u['hook_blocks']}⛔"
         parts.append(f'<text x="{x + 11}" y="{y + 45}" class="badge {cls}">{esc(res)}</text>')
         parts.append(f'<text x="{x + w - 6}" y="{y + 45}" class="meta" text-anchor="end">{esc(meta)}</text>')
+    if marks:
+        spans = "".join(f'<tspan class="badge {MARK[k][1]}">{esc(mark_label(k, i))}</tspan> '
+                        for k, i in marks[:MARKS_SHOWN])
+        if len(marks) > MARKS_SHOWN:
+            spans += f'<tspan class="meta">+{len(marks) - MARKS_SHOWN} more</tspan>'
+        parts.append(f'<text x="{x + 11}" y="{y + BH + 5}" class="marks">{spans}</text>')
     if u.get("audit") is not None:
         cls = "bad" if u["audit"] else "ok"
         parts.append(f'<circle cx="{x + w - 2}" cy="{y + 2}" r="9" class="audit {cls}"/>'
@@ -237,6 +311,7 @@ def svg(m: dict) -> str:
     """Four SVGs in a CSS grid, so the lane headers stick to the top and the wave labels to
     the left while the body scrolls under them."""
     lanes, rows = m["lanes"], m["rows"]
+    bh = m.get("bh", BH)
     color = {r: PALETTE[i % len(PALETTE)] for i, r in enumerate(m["roles"])}
     width = CW * len(lanes) + 10
     y = 0
@@ -264,7 +339,7 @@ def svg(m: dict) -> str:
         per_lane: dict[str, list[dict]] = {}
         for u in us:
             per_lane.setdefault(u["lane"], []).append(u)
-        height = max(len(v) for v in per_lane.values()) * (BH + GAP) + GAP
+        height = max(len(v) for v in per_lane.values()) * (bh + GAP) + GAP
         par = len(us) > 1
         shade = "rowp" if par else "rows"
         body.append(f'<rect x="0" y="{y}" width="{width}" height="{height}" class="{shade}"/>')
@@ -279,13 +354,13 @@ def svg(m: dict) -> str:
             x = lanes.index(lane) * CW + 6
             cx = x + (CW - 12) / 2
             for k, u in enumerate(lus):
-                by_ = y + GAP + k * (BH + GAP)
+                by_ = y + GAP + k * (bh + GAP)
                 if k == 0 and lane in last_box:
                     px, py = last_box[lane]
                     links.append(f'<line x1="{px}" y1="{py}" x2="{cx}" y2="{by_ - 1}" class="link" '
                                  f'marker-end="url(#arrow)"/>')
-                body.append(box(u, x, by_, CW - 12, color[u["role"]]))
-            last_box[lane] = (cx, y + GAP + (len(lus) - 1) * (BH + GAP) + BH)
+                body.append(box(u, x, by_, CW - 12, color[u["role"]], bh))
+            last_box[lane] = (cx, y + GAP + (len(lus) - 1) * (bh + GAP) + bh)
         y += height
     height = y + 10
 
@@ -342,7 +417,7 @@ svg text{fill:var(--fg);font-family:-apple-system,system-ui,sans-serif}
 .meta.bad{fill:var(--bad);font-weight:600}.lane{font-size:13px;font-weight:700}.wave{font-size:13px;font-weight:700}
 .par{fill:#4e79a7}.ser{fill:var(--muted)}.rowp{fill:var(--rowp)}.rows{fill:transparent}.band{fill:var(--band)}
 .bandt{font-size:11.5px}.grid{stroke:var(--line)}.link{stroke:var(--muted);stroke-width:1.2;opacity:.55}
-.arrowhead{fill:var(--muted)}.audit{stroke:var(--box);stroke-width:2}.auditn{font-size:10px;font-weight:700;fill:#fff}
+.arrowhead{fill:var(--muted)}.marks{font-size:10.5px}.audit{stroke:var(--box);stroke-width:2}.auditn{font-size:10px;font-weight:700;fill:#fff}
 a{color:inherit}svg a .box{cursor:pointer}
 """
 
@@ -402,8 +477,8 @@ def step_block(s: dict, unit_of_agent: dict) -> str:
     return head + "".join(body) + "</div>"
 
 
-def unit_page(d: dict, unit_of_agent: dict) -> str:
-    """One unit's page, from its `units/U<nn>.json` only."""
+def unit_page(d: dict, unit_of_agent: dict, marks: list | None = None, here: Path | None = None) -> str:
+    """One unit's page, from its `units/U<nn>.json` only, plus its issue marks, if any."""
     mins = minutes(d.get("first_ts", ""), d.get("last_ts", ""))
     spawned = f"{d.get('spawner')}" + (f" at {d['spawn_step']}" if d.get("spawn_step") else "")
     if d.get("spawner") in unit_of_agent.values():
@@ -424,6 +499,14 @@ def unit_page(d: dict, unit_of_agent: dict) -> str:
         ("Steps", str(d.get("step_count", len(d.get("steps", []))))),
         ("Finished", "yes" if d.get("finished") else "no (still running, or never handed back)"),
     ]
+    if marks:
+        links = []
+        for kind, iid, f in marks:
+            href = os.path.relpath(f, here) if here else None
+            label = f'<span class="{MARK[kind][1]}">{esc(mark_label(kind, iid))}</span>'
+            word = {"found": "found here", "held": "held", "recurred": "recurred"}[kind]
+            links.append((f'<a href="{esc(href)}">{label}</a>' if href and f.exists() else label) + f" {word}")
+        rows.append(("Issues", " · ".join(links)))
     commits = [c for s in d.get("steps", []) for c in s.get("commits") or []]
     commit_rows = "".join(
         f"<tr><td><code>{esc(c['sha'])}</code>{' <span class=err>unconfirmed</span>' if not c['confirmed'] else ''}</td>"
@@ -446,15 +529,17 @@ def unit_page(d: dict, unit_of_agent: dict) -> str:
 </body></html>"""
 
 
-def write_unit_pages(out: Path, index: dict) -> list[str]:
+def write_unit_pages(out: Path, index: dict, marks: dict | None = None) -> list[str]:
     unit_of_agent = {u["agent_id"]: u["unit"] for u in index["units"]}
+    marks = marks or {}
     written = []
     for u in index["units"]:
         src = out / "units" / f"{u['unit']}.json"
         if not src.exists():
             continue
         d = json.loads(src.read_text(encoding="utf-8"))
-        (out / "units" / f"{u['unit']}.html").write_text(unit_page(d, unit_of_agent), encoding="utf-8")
+        page = unit_page(d, unit_of_agent, marks.get(u["unit"]), (out / "units").resolve())
+        (out / "units" / f"{u['unit']}.html").write_text(page, encoding="utf-8")
         written.append(u["unit"])
     return written
 
@@ -556,9 +641,10 @@ def write_view(root: Path, workspaces: list[Path], agent_type: str, date: str) -
     return path
 
 
-def write_html(out: Path) -> Path:
+def write_html(out: Path, issues: Path | None = None) -> Path:
     index = json.loads((out / "index.json").read_text(encoding="utf-8"))
-    m = model(index, out)
+    marks = issue_marks(Path(issues) if issues else default_issues(out), index["session"][:8])
+    m = model(index, out, marks)
     units = index["units"]
     par = [r for r in m["rows"] if "wave" in r and len(r["units"]) > 1]
     commands = ", ".join(s["command"] for s in index["segments"]) or "(no command of the plugin)"
@@ -585,6 +671,9 @@ def write_html(out: Path) -> Path:
         f"<td>{u.get('warning') if u.get('warning') is not None else '—'}</td></tr>" for u in flagged)
     audit_note = (f"{len(audited)} audited; the badge on a box is its audit ERROR count (✓ none)."
                   if audited else "No unit audited yet; run `trace.py flow` after an audit to add badges.")
+    if marks:
+        audit_note += (" The line under a box names the issues the ledger ties to it: <span class=\"ok\">✓</span>"
+                       " a prior fix held there, <span class=\"bad\">✗</span> it recurred there, + first found there.")
     unit_rows = "".join(
         "<tr><td>" + (f'<a href="{esc(u["page"])}">{esc(u["unit"])}</a>' if u.get("page") else esc(u["unit"]))
         + f"</td><td>{esc(u['type'])}</td><td>{esc(u['lane'])}</td><td>{esc(u['description'])}</td>"
@@ -631,6 +720,6 @@ Hover a box for its duration, tools, commits and return; click it for every step
 </body></html>"""
     path = out / "flow.html"
     path.write_text(page, encoding="utf-8")
-    write_unit_pages(out, index)
+    write_unit_pages(out, index, marks)
     write_agent_pages(out, json.loads((out / "index.json").read_text(encoding="utf-8")))  # unmodelled
     return path

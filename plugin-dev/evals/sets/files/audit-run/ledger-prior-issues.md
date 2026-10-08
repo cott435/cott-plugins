@@ -24,6 +24,9 @@ a directory of your own and work there:
    (make `$TMP/pristine` first).
 5. `${CLAUDE_PLUGIN_ROOT}` stays the plugin root the executor prompt gave you: plugin-dev's
    scripts, templates and agents are read from there, never from `$TMP/toy`.
+   The auditors too: spawn each one as a `general-purpose` agent told to read and follow
+   `<plugin root>/agents/run-auditor.md` with its input block, never as
+   `plugin-dev:run-auditor`, which loads the installed copy rather than your plugin root's.
 6. Create the ledger at `$TMP/toy/audits/issues/` **before the target starts**, with the
    commands below run from `$TMP/toy` (`I` is `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/issues.py`),
    in this order — `stamp` marks every fixed issue when the directory is not a git checkout,
@@ -142,3 +145,5 @@ a directory of your own and work there:
 - `diff -r $TMP/pristine/agents $TMP/toy/agents; diff -r $TMP/pristine/skills $TMP/toy/skills` → `outputs/plugin-diff.txt` (empty when the toy plugin's agents and skills were not touched).
 - The eval log: `log-eval` would write an entry under the audited plugin's `evals/` and commit it. Write that entry's full content to `outputs/eval-log.md` instead, and skip its README row and its commit. If the target wrote the entry somewhere in `$TMP/toy` as well, copy it; the `outputs/` copy is the one that counts.
 - Your final message to the user goes at the end of `transcript.md`, verbatim.
+- `transcript.md` lists every shell command you ran, verbatim and in order, each with the first line of its output. A summary of what the commands did is not enough: the run is graded on which commands wrote the ledger. When you put commands in a script file, paste the script's whole body into `transcript.md` before you run it, and keep the file.
+- `transcript.md` also holds every block you sent an auditor, verbatim and whole (every field, `Prior issues` with its continuation lines), each under the unit or segment it was for.

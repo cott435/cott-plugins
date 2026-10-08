@@ -118,6 +118,41 @@ Every segment that spawned a selected unit is audited in `driver` mode too. With
 new`, audit a segment only once it has finished, meaning a later segment has begun or its
 last step is the driver's summary after every unit returned.
 
+**Prior issues.** A rerun's audit also checks each earlier fix, and widens the selection so
+every fix is exercised. With no `audits/issues/` in the plugin, skip this: every block in §4
+says `Prior issues: none`.
+
+1. **Which issues.** `I list --status fixed,released,verified --format json`, each with its
+   latest attempt (the last of its `attempts`). A `recurred` issue's fix already failed and
+   its next attempt is what gets checked; a `wontfix` or `open` one has nothing to check.
+2. **Once per session.** Skip an issue that already has a Checks line for this `<id8>` (a
+   re-pass with `--units new`).
+3. **Was the fix in the code that ran?** Per issue, with `index.json`'s `plugin_root` and
+   `version`:
+   - when `git -C <plugin_root> rev-parse --git-dir` succeeds, the root is a git checkout:
+     testable when `git -C <plugin_root> merge-base --is-ancestor <commit> HEAD` exits 0;
+   - otherwise, by version: testable when the attempt's `fixed_in` is set and `version` ≥
+     `fixed_in`, compared as dotted integers (`0.10.0` is above `0.9.0`).
+
+   An issue that is not testable is given to no auditor. §5 writes its Checks line as **not
+   testable**, with `—` for the unit and the step and evidence that says why: `fix <commit>
+   not an ancestor of <plugin_root> HEAD <sha>`, `fixed_in blank`, or `run version <v> below
+   fixed_in <w>`. *not testable* is this skill's own word, for an issue no auditor was given;
+   every other verdict is one run-auditor defines.
+4. **Coverage.** Run the selection as `T select <workspace> --units <how> --cover <entries>`,
+   where `<entries>` is every `applies_to` entry of the testable issues, comma-separated,
+   once each. It adds the first finished unit of each `agent:<type>` the selection lacks
+   (reason `covers agent:<type>`); prints `cover segments: seg-<n>, …` for the segments that
+   ran each `driver:<command>`; prints `uncovered: …` for entries nothing in this run
+   matches; and prints `over cap: …` for units the cap kept out. The cap of 12 and the
+   question beyond it apply to the widened selection. Segments on the `cover segments:` line
+   are audited in `driver` mode even when none of their units was selected. A `cross` entry
+   is covered by the cross auditor. An issue whose entries are all uncovered goes to no
+   auditor and ends **not exercised** in §5, with `no <entry> in this run` as its evidence.
+5. Show the issues as a table beside the selection: id, attempt, testable (and how: `git
+   ancestor`, `version 0.2.0 ≥ 0.1.0`, or why not), covered by (the units and segments whose
+   auditors will be given it, or `—`).
+
 ## 4. The auditors
 
 Spawn one `plugin-dev:run-auditor` per selected unit and one per selected segment, all in
@@ -133,10 +168,19 @@ Plugin root: <the root from §2>
 Spawner: <trace> · <definition> of what spawned it (a segment or another unit) | none
 Project: <index.json project>
 Findings: <workspace>/findings/<U<nn> | seg-<n>>.md
+Prior issues: none | one line per issue below
 ```
 
+**Prior issues** is the block's last field and always present. It is `none`, or
+`Prior issues:` followed by one line per testable issue from §3 whose `applies_to` names this
+unit's agent type (`agent:<role>`), this segment's skill (`driver:<skill>`), or, for the cross
+auditor, `cross`. Each line is indented two spaces, in the form run-auditor's Inputs give:
+`<ID> · attempt <n> · watch <applies_to> · held when <…> · recurred when <…>`, taken from the
+attempt's `Verify:` line with its `; ` separators written as ` · `.
+
 When they have all returned, spawn one more with `Mode: cross`, `Trace: <workspace>/run.md`,
-`Definition: none`, `Spawner: none`, `Findings: <workspace>/findings/cross.md`. It reads the
+`Definition: none`, `Spawner: none`, `Findings: <workspace>/findings/cross.md`, and the
+`Prior issues` whose `applies_to` names `cross`. It reads the
 others' findings files, so it runs last. With `--units new`, skip `cross` until the whole run
 has finished.
 
@@ -146,7 +190,9 @@ one once. If it fails a second time, list it under **Not audited**.
 ## 5. The report
 
 Run `T flow <workspace>`. It re-renders `flow.html` with a badge on every audited box: that
-unit's ERROR count, or ✓. Then read every findings file, and:
+unit's ERROR count, or ✓. Run it once more after step 5, when the ledger holds this audit's
+lines: each box then also shows the issues first found there and the prior issues that held
+(✓) or recurred (✗) there. Then read every findings file, and:
 
 1. **Merge.** When `cross` wrote a systemic finding covering units' findings, keep the
    systemic one and list the units under it. A `cross` finding that restates one unit's or
@@ -161,7 +207,29 @@ unit's ERROR count, or ✓. Then read every findings file, and:
 3. **Still true?** For each `definition` fault, grep the working tree's copy of the cited file
    for the quoted rule. Mark it `still at HEAD` or `changed since <version>`. A `changed since`
    finding may already be fixed. Say so rather than dropping it.
-4. **Issues.** Each finding that is an ERROR or WARN with a fault other than `platform`, or
+4. **Verdicts.** Read the `## Prior issues` section of every findings file that has one:
+   `P · <ID> · <verdict> · <step> — <evidence>` lines. Ignore a P line for an issue that
+   auditor was not given.
+   - **Spot-check** every **held** and **recurred** at its step: open the trace there and
+     confirm the step shows what the issue's `Verify:` line says for that verdict. One that
+     does not is dropped to **not exercised** and listed under **Dropped on spot-check** with
+     the reason.
+   - **Combine** per issue: **recurred** if any auditor said so and the spot-check held; else
+     **held** if any did; else **not exercised**. Keep the unit and step of the line whose
+     verdict you keep.
+   - **Write** one Checks line per issue §3 took, from the plugin's own directory: `I
+     check-result <ID> --attempt <n> --verdict <held | recurred | not exercised | not
+     testable> --session <id8> --version <version> --date <today> [--unit <U<nn> | seg-<n> |
+     cross> --step <step>] --evidence "<short quote, or why not>"`. That includes every
+     **not testable** issue and every issue no auditor reached.
+   - A **recurred** issue also gets `I seen <ID>` with the same unit and step, `--report
+     audits/runs/<date>-<id8>.md` and `--finding-id P`, since it has no F finding. File no new
+     issue for it in the next step: if an auditor wrote an F finding for the same act as well,
+     fold it into the P verdict and leave it out of the report's findings and counts. A
+     recurrence is counted once, under `prior: … recurred`, never in `seen again` or the
+     commit's `<n> seen`. A different F finding that step 5 matches to the same issue (another
+     act against the same rule) is an ordinary `seen` and counts in `seen again` as usual.
+5. **Issues.** Each finding that is an ERROR or WARN with a fault other than `platform`, or
    a `definition` NOTE, becomes an issue; other NOTEs, and `platform` faults, get none. Take
    them in report order (E1…, W1…, N1…) so the ids read in the same order. For each, from
    the plugin's own directory: `I candidates --rule-file <rule file> --fault <fault>`. If a
@@ -188,7 +256,7 @@ unit's ERROR count, or ✓. Then read every findings file, and:
    `issues.py` writes the issue's frontmatter, **Finding**, **Found in** and **Checks** and
    re-renders `audits/INDEX.md`; never write or edit a file under `audits/issues/`, or
    `INDEX.md`, by hand.
-5. **The run report.** Write `audits/runs/<YYYY-MM-DD>-<id8>.md` from
+6. **The run report.** Write `audits/runs/<YYYY-MM-DD>-<id8>.md` from
    `${CLAUDE_PLUGIN_ROOT}/templates/audits/run-report.md`: its header lines and its headings
    (**Errors**, **Warnings**, **Notes**, **Prior issues**, **Audited**, **Not audited**,
    **Dropped on spot-check**) in its order, and nothing it does not define.
@@ -198,14 +266,18 @@ unit's ERROR count, or ✓. Then read every findings file, and:
    - Each finding's body is two or three sentences: what happened, why it matters, and, for
      a `definition` fault, the edit that would fix it.
    - **Totals:** `<n> ERROR · <n> WARN · <n> NOTE · issues: <n> new, <n> seen again · prior:
-     0 held, 0 recurred, 0 not exercised, 0 not testable`.
-   - **Prior issues:** the template's empty table, then the line `none: no issue had a fix
-     in the code that ran`.
+     <n> held, <n> recurred, <n> not exercised, <n> not testable`, the prior counts from
+     step 4.
+   - **Prior issues:** the template's table, one row per issue step 4 wrote a Checks line
+     for, **not testable** ones included: `| <ID> | <title> | <attempt> | <verdict> | <unit> ·
+     <step>, or — | <evidence, or why not> |`. With none, the empty table and then the line
+     `none: no fixed issue to check`.
    - **Flow chart:** the template's line, naming `evals/workspace/audit/<id8>/flow.html` and
      `/plugin-dev:run-flow <id8>`.
-6. **Commit the ledger.** `I check` must print `ok`; if it does not, fix what it names
+7. **Commit the ledger.** `I check` must print `ok`; if it does not, fix what it names
    through `issues.py` and run it again. Then `git add audits && git commit -m "<P> audits:
-   <id8> — <n> new, <n> seen, 0 checked" -- audits`, staging nothing outside `audits/`
+   <id8> — <n> new, <n> seen, <n> checked" -- audits`, where `<n> checked` is the number of
+   Checks lines step 4 wrote, staging nothing outside `audits/`
    because the checkout may hold other work. This is the one commit this skill makes
    itself. When the plugin directory is not in a git checkout (a cache copy, a fixture), the
    files are still the record: print the message you would have used and say the commit was
@@ -223,7 +295,8 @@ Invoke `log-eval` before saying anything about the results. The entry is
 - **Method**: the session id and project, how units were selected, and how many auditors
   ran.
 - **Results**: the issue ids by outcome, as `new: <ids | none>; seen again: <ids | none>;
-  prior: none`. The findings themselves are in the committed run report, so the entry does
+  prior: held <ids | none>, recurred <ids | none>, not exercised <ids | none>, not testable
+  <ids | none>`. The findings themselves are in the committed run report, so the entry does
   not repeat them as a table.
 - **Verdict**: clean, or the count by fault, and which `definition` findings are still at
   HEAD.
@@ -232,14 +305,16 @@ Invoke `log-eval` before saying anything about the results. The entry is
 Then tell the user, in this order and briefly:
 
 1. One line: the run, the version, the totals, the issue counts (`<n> new, <n> seen
-   again`), the report path `audits/runs/<date>-<id8>.md`, and the path to `flow.html`. Say
+   again`), the prior counts (`<n> held, <n> recurred, <n> not exercised, <n> not
+   testable`), the report path `audits/runs/<date>-<id8>.md`, and the path to `flow.html`. Say
    that `/plugin-dev:run-flow <id8>` opens it in the browser pane.
 2. Each ERROR: what happened, its evidence step and its rule, as a clickable `file:line`
    into the working tree when it is still at HEAD.
 3. How many WARN and NOTE findings there are, with their issue ids.
 4. Issues were filed for the findings above. Tell the user that
-   `/plugin-dev:fix-issues run:<id8>` fixes them from any chat; this skill cannot start it (a
-   typed skill is started only by a person). Do not make the edits unasked.
+   `/plugin-dev:fix-issues run:<id8>` fixes them from any chat, and, when any prior issue
+   recurred, that `/plugin-dev:fix-issues recurred` takes those; this skill cannot start it
+   (a typed skill is started only by a person). Do not make the edits unasked.
 
 ## What this skill never does
 

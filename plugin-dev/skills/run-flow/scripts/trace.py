@@ -16,13 +16,20 @@ Usage:
   trace.py find --plugin NAME [--limit N] [--all]
       Sessions that used NAME's skills or agents, newest first, each with the chat's title
       as the app shows it, its project, its git branch, its span and the commands it ran.
-  trace.py select DIR [--units risk|all|new|seg:N|U01,U05] [--cap N]
+  trace.py select DIR [--units risk|all|new|seg:N|U01,U05] [--cap N] [--cover a,b,...]
       Which units to audit, one per line with the reason, from DIR/index.json. `risk`
       (the default) is the first unit of each type plus every unit that stands out; `new`
-      is every finished unit with no DIR/findings/U<nn>.md yet.
-  trace.py flow DIR
-      Re-render DIR/flow.html from DIR/index.json, adding a badge for every unit that has a
-      findings file. `build` renders it too, before any audit.
+      is every finished unit with no DIR/findings/U<nn>.md yet. --cover widens any of these
+      so each entry is exercised: `agent:<type>` adds the first finished unit of that type
+      (reason `covers agent:<type>`) when no selected unit is one, within --cap (the rest
+      are printed on an `over cap:` line); `driver:<command>` names, on a `cover segments:`
+      line, every segment that ran /<plugin>:<command>; entries nothing matches are printed
+      on an `uncovered:` line. `cross` entries are covered by the cross audit and ignored.
+  trace.py flow DIR [--issues DIR]
+      Re-render DIR/flow.html and DIR/units/U<nn>.html from DIR/index.json, adding a badge
+      for every unit that has a findings file, and the issue marks for this session from
+      the plugin's audits/issues/ (four levels above DIR, or --issues). `build` renders it
+      too, before any audit.
   trace.py build SESSION --plugin NAME --out DIR [--full]
       SESSION is a .jsonl path, a session id (or unique prefix), `latest`, or words from
       the chat's title (case-insensitive, must match one session that used NAME).
@@ -1052,6 +1059,49 @@ def select(out: Path, how: str, cap: int) -> list[tuple[str, str]]:
     return sorted(((k, "; ".join(v[1])) for k, v in ranked), key=lambda x: x[0])
 
 
+def cover(out: Path, picked: list[tuple[str, str]], entries: list[str], cap: int) -> dict:
+    """Widen a selection so every `agent:<type>` entry has a unit and name the driver segments.
+
+    Returns {"picked": the widened list, "over": entries the cap kept out, "segments": the
+    segment numbers to audit in driver mode, "uncovered": entries nothing in the run matches}.
+    """
+    index = json.loads((out / "index.json").read_text())
+    plugin = index.get("plugin", "")
+    done = [u for u in index["units"] if u["finished"]]
+    by_id = {u["unit"]: u for u in index["units"]}
+    picked = list(picked)
+    over, segs, uncovered = [], [], []
+    for entry in entries:
+        kind, _, name = entry.partition(":")
+        if kind == "cross" and not name:
+            continue
+        if kind == "agent" and name:
+            def is_it(u: dict) -> bool:
+                return name.lower() in (u.get("role", "").lower(), u.get("type", "").lower())
+            if any(is_it(by_id[k]) for k, _ in picked if k in by_id):
+                continue
+            first = next((u for u in done if is_it(u)), None)
+            if first is None:
+                uncovered.append(entry)
+            elif len(picked) >= cap:
+                over.append(f"{first['unit']} ({entry})")
+            else:
+                picked.append((first["unit"], f"covers {entry}"))
+            continue
+        if kind == "driver" and name:
+            cmd = name.lstrip("/").removeprefix(f"{plugin}:")
+            hits = [s["seg"] for s in index["segments"]
+                    if s["command"].split()[0] == f"/{plugin}:{cmd}"]
+            if hits:
+                segs += [h for h in hits if h not in segs]
+            else:
+                uncovered.append(entry)
+            continue
+        uncovered.append(entry)
+    picked.sort(key=lambda x: x[0])
+    return {"picked": picked, "over": over, "segments": sorted(segs), "uncovered": uncovered}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -1061,10 +1111,13 @@ def main() -> int:
     f.add_argument("--all", action="store_true", help="include headless runs in temp dirs (eval harnesses)")
     fl = sub.add_parser("flow")
     fl.add_argument("out")
+    fl.add_argument("--issues", help="an audits/issues/ directory to mark (default: four levels above OUT)")
     se = sub.add_parser("select")
     se.add_argument("out")
     se.add_argument("--units", default="risk")
     se.add_argument("--cap", type=int, default=12)
+    se.add_argument("--cover", default="",
+                    help="comma-separated agent:<type>, driver:<command> or cross entries the selection must cover")
     b = sub.add_parser("build")
     b.add_argument("session")
     b.add_argument("--plugin", required=True)
@@ -1089,17 +1142,27 @@ def main() -> int:
         return 0
 
     if a.cmd == "flow":
-        print(flow.write_html(Path(a.out)))
+        print(flow.write_html(Path(a.out), Path(a.issues) if a.issues else None))
         return 0
 
     if a.cmd == "select":
         index = json.loads((Path(a.out) / "index.json").read_text())
         running = [u["unit"] for u in index["units"] if not u["finished"]]
         picked = select(Path(a.out), a.units, a.cap)
+        entries = [x.strip() for x in a.cover.split(",") if x.strip()]
+        widened = cover(Path(a.out), picked, entries, a.cap) if entries else None
+        if widened:
+            picked = widened["picked"]
         for unit, why in picked:
             print(f"{unit}  {why}")
         print(f"selected {len(picked)} of {len(index['units'])} units"
               + (f"; still running, never selected: {', '.join(running)}" if running else ""))
+        if widened:
+            if widened["over"]:
+                print(f"over cap: {', '.join(widened['over'])}")
+            print("cover segments: " + (", ".join(f"seg-{n}" for n in widened["segments"]) or "none"))
+            if widened["uncovered"]:
+                print(f"uncovered: {', '.join(widened['uncovered'])}")
         return 0
 
     if a.cmd == "view":
