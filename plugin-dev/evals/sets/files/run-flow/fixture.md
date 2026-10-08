@@ -21,10 +21,14 @@ The run to draw is a planted fixture, not a real chat. Build it first:
    under the repo is written, including its `evals/workspace/`.
 
 # Browser and server
-There is no browser pane in this session. Where the target would open a page, print the URL
-and the file path in your final message instead. If you start `python3 -m http.server`, note
-its pid and kill it before your final message, and say in `transcript.md` that you did; or do
-not start it, and say so in your final message. Leave no server running.
+There is no browser pane in this session. Serve the page exactly as the target says all the
+same: find a free port, start `python3 -m http.server <port> --bind 127.0.0.1 --directory
+<dir>` in the background, note its pid, and confirm the page answers (`curl -s -o /dev/null
+-w '%{http_code}' http://127.0.0.1:<port>/<page>` prints 200). Where the target would open the
+page, print that `http://127.0.0.1:<port>/…` URL and the file path in your final message
+instead. Then kill the server by its pid before your final message, and say in
+`transcript.md` that you did. The URL in the final message is the one you served, even though
+the server is gone by the time anyone reads it. Leave no server running.
 
 # Harness override for every run-flow eval
 Write the target's final chat message, exactly as you would say it to the user, to

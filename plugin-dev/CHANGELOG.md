@@ -6,6 +6,20 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [Unreleased]
+
+### Added
+- **`run-flow`**: draws any run from its transcripts as a page in the browser pane; every agent on the chart opens to its full record (prompt, every step with full input and output, each Write's content and each Edit's old and new text, commits, hand-back). `--agent <type>` lists every run of one agent type across one chat or several (`--sessions`, `--branch`). `--explain` adds a short narration per unit from the new `run-narrator` agent (Sonnet 5.5).
+- **A committed issue ledger**: every audit files its ERROR and WARN findings (and `definition` NOTEs) as issues under the audited plugin's `audits/issues/` with ids that stay (`DT-031`), an index, and the run report under `audits/runs/`. `scripts/issues.py` is the only writer; status is derived, never stored.
+- **`fix-issues`**: fixes ledger issues from any chat on a worktree branch, records a Fix attempt with a `Verify:` line in each, and proposes the merge and the bump.
+- **Rerun audits check prior fixes**: `run-auditor` takes the fixed issues that apply to its piece and reports each held, recurred or not exercised with a step; `audit-run` tests whether the fix was in the code that ran, widens the selection for coverage, spot-checks every verdict, and writes a Checks line per issue. The chart marks held and recurred on the boxes.
+- `dev-team/audits/` seeded from the ca48b249 audit: 27 issues.
+
+### Changed
+- `trace.py` and `flow.py` live at `skills/run-flow/scripts/`; `audit-run` runs them from there. Running them by hand from the old path no longer works.
+- An audit makes one more commit (`audits/`) in the checkout it runs in, and its eval log is short: the issue ids by outcome and a link to the run report.
+- `bump-version` stamps `fixed_in` on the issues a release carries, when the plugin has `audits/`.
+
 ## [0.15.0] - 2026-10-01
 
 ### Added
