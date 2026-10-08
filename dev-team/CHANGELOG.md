@@ -12,6 +12,57 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [2.10.0] - 2026-10-08
+
+The fixes from the audit of a real `run-package data` run (session ca48b249, dev-team 2.9.0):
+31 of the 35 issues it filed or saw again, planned and applied by `/plugin-dev:fix-issues
+run:ca48b249`, each with a Verify line the next audit of a rerun checks; DT-007, DT-015, DT-017
+and DT-054 are `wontfix` in `audits/`. Evidence: `evals/2026-10-08-audit-ca48b249-fixes.md`
+(11 evals over five sets against 2.9.0, 97/101 vs 94/101, blind 4/8).
+
+### Added
+
+- Profiler: a verify run that rejects a kind writes `<Store>rounds/<n>/rejected.md`, the
+  misjudged row and its rule per kind, and the revise run reads it before reworking a check
+  (DT-058); `<d>` is the count of `D?` kinds in the committed profile and `pulled` means this
+  run's step 2 pulled, `on disk` otherwise (DT-013, DT-018, DT-053) — `e3b69c2`
+- Designer: the `stage` probe kind — **Quirks** are kinds to handle one each, the schema is
+  read as a `dataset`'s, the profiler's program and sample files are not the designer's to read
+  (DT-026); memory is the Write-list exception (DT-027) — `e3b69c2`
+- Reviewer: a gate record whose `commit:` is not an ancestor of `HEAD` is treated as no record,
+  settled by one `git merge-base --is-ancestor`, the one git command added to the allowlist
+  (DT-005, DT-016); the report and ledger templates are read with the other inputs (DT-006) —
+  `e3b69c2`
+- `run-package`: `docs/decisions.md` joins the driver's Read list, whole and never `grep`ped
+  (DT-002, DT-019); four questions per `AskUserQuestion` call with one re-derive after a block
+  (DT-020); `stopped because: user: "<words>"` for a mid-run stop the user typed (DT-021) —
+  `e3b69c2`
+
+### Changed
+
+- Implementer: the per-item `Review:` and `Needed from elsewhere:` lines are not counted against
+  the 20-line return cap and never merge two items (DT-008, DT-009, DT-031); Inputs and step 0
+  agree that the review reports are read after the ledger and backlog (DT-010, DT-023); reading
+  the intent-tests directory means a Read of each test file (DT-024); the starting suite count is
+  recorded nowhere (DT-055); a review finding that raises a dependency floor goes through
+  `locked.py deps` (DT-056) — `e3b69c2`
+- Designer: an unlisted **Call paths** frame is never a §10 deviation, however additive
+  (DT-011, DT-025); step 1 reads nothing beyond the prompt's files — not another section's
+  design, a dependency's source or the files beside a probe doc (DT-012, DT-014, DT-057) —
+  `e3b69c2`
+- Profiler: data already in `<Store>input/` is credited to an earlier run under **Provenance**,
+  never to the committed program's `pull()` (DT-004, DT-016) — `e3b69c2`
+- `run-package`: the changed rows are printed before anything else, a question included, and
+  **Asking** and the cap bullet restate it; a cap grant is spawned by step 4 after a re-derive
+  (DT-001, DT-003, DT-022) — `e3b69c2`
+
+### Fixed
+
+- Implementer: step 13 re-runs the `TODO(decision` grep after the README write and before
+  `git add`; a grep that ran before a later write does not count (DT-034) — `e3b69c2`
+- `audits/`: 31 fix attempts and 4 `wontfix` records for the ca48b249 issues — `7e37d44`
+
+
 ## [2.9.0] - 2026-10-07
 
 A section marked as a data stage says in its Sections row what it guarantees about its output,
