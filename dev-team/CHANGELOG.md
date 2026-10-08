@@ -12,6 +12,39 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [2.11.0] - 2026-10-08
+
+The cleaning of a data package is planned before it is profiled. Design:
+`site/notes/2.11-data-stages-design.md`. Evidence:
+`evals/2026-10-08-data-stages-plan-gate-and-contracts.md` (226/226 state cases, 54/54
+claims, the planted heading rename fails the sweep).
+
+### Added
+
+- Package contract item 3, **Data stages**: one row per stage in profiling order, the
+  population first, each with its question, its data and producers, the cleaning section,
+  numbered clean guarantees, the standards, and a pull costed from the vendor probes'
+  **Cost and time of a full pull** and **Rate limits and quotas**, approved through one
+  `D<n>` per stage; the architect gains a **Data stages** section on how to write it, and a
+  marked row with no heading is a change-list item (f8c7147)
+- `status.py --run-gate` fails a marked row with no **Data stages** row (and no older
+  **Package conventions** line), an empty cell, a `cleaned by` that is another section, or a
+  producer in `data` the section does not depend on; `--profile`'s `Data:` is the row as one
+  line (f8c7147)
+- The profile's **Plan** heading, after **Provenance**: the stage's row quoted, each guarantee
+  with the checks that test it or `not checkable`, the pull as planned and as done; checks and
+  kinds grouped by guarantee; the pull as its own program, `docs/sources/<token>.pull.py`,
+  recording `pull.json`; the verify run rejects a plan that leaves a guarantee untested
+  (`revise: plan`) (f8c7147)
+
+### Changed
+
+- A marked row's `responsibility` names the stage it cleans; what it guarantees is the **Data
+  stages** row's `clean means` cell (was a clause on the responsibility cell since 2.8).
+- `data-quality` reads **Plan** and orders the design's kinds table by guarantee; README,
+  `site/flow.md` and the two workflow pages describe the plan.
+
+
 ## [2.10.0] - 2026-10-08
 
 The fixes from the audit of a real `run-package data` run (session ca48b249, dev-team 2.9.0):
