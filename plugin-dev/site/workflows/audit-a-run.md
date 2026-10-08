@@ -158,7 +158,7 @@ There are two pieces, and you only ever type one of them.
 | **Runs in** | your chat, the main thread | its own fresh context, one per piece of the run |
 | **Can ask you** | yes: which session, and whether to audit more than 12 units | never. Claude Code gives subagents no way to ask |
 | **Sees** | the whole run: `run.md`, `index.json`, `flow.html`, every findings file | one piece of the run: one agent's trace, or one driver segment, or (in `cross` mode) the run table plus the others' findings. It also sees the one plugin file that defined that piece, at the version that ran |
-| **Does** | finds the session, builds the trace with `trace.py`, settles which version ran, selects units, spawns the auditors in parallel and the cross pass last, merges, spot-checks every ERROR against the trace and the plugin, checks each definition fault against HEAD, writes `report.md`, logs with `log-eval`, and tells you | checks inputs, procedure, write scope, hooks and errors, claims against tool calls, and the return's shape. Writes one findings file with a step id and a `file:line` for every finding. Returns one line |
+| **Does** | finds the session, builds the trace with `run-flow`'s `trace.py` (`skills/run-flow/scripts/`), settles which version ran, selects units, spawns the auditors in parallel and the cross pass last, merges, spot-checks every ERROR against the trace and the plugin, checks each definition fault against HEAD, writes `report.md`, logs with `log-eval`, and tells you | checks inputs, procedure, write scope, hooks and errors, claims against tool calls, and the return's shape. Writes one findings file with a step id and a `file:line` for every finding. Returns one line |
 | **Writes** | `report.md`, the eval log, and a `.gitignore` line if one is missing | its findings file, nothing else |
 
 The split is deliberate:
@@ -178,5 +178,6 @@ The split is deliberate:
 | Thing | Path | Committed |
 |---|---|---|
 | The trace, the chart, the findings, the report | `<plugin>/evals/workspace/audit/<id8>/` (`run.md`, `index.json`, `units/`, `driver/`, `flow.html`, `findings/`, `report.md`) | never. It holds the project's file contents |
+| Every agent's full record: each step's whole input and output, and its page | `<plugin>/evals/workspace/audit/<id8>/units/U*.json` and `units/U*.html`, beside the clipped `units/U*.md` the auditors read; `/plugin-dev:run-flow <id8>` serves them | never, as above |
 | The eval log, with the ERROR and WARN table | `<plugin>/evals/<date>-audit-<command>-<id8>.md` + a row in `evals/README.md` | yes, by `log-eval` |
 | The transcripts it read | `~/.claude/projects/<project>/<session>.jsonl` and `<session>/subagents/` | Claude Code's, never touched |

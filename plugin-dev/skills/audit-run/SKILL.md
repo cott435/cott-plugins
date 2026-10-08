@@ -17,7 +17,7 @@ This skill rebuilds a run from its transcripts into a trace, has `run-auditor` a
 each piece of it against the files that defined it, and reports what disagrees. It judges the
 plugin's behavior, not the project the run built.
 
-`T` below is `python3 ${CLAUDE_SKILL_DIR}/scripts/trace.py`. Run everything from the plugin's
+`T` below is `python3 ${CLAUDE_PLUGIN_ROOT}/skills/run-flow/scripts/trace.py`. Run everything from the plugin's
 own directory, the one under test.
 
 ## 1. The plugin and the session
@@ -55,7 +55,9 @@ own directory, the one under test.
 writes `run.md` (segments, a unit table, the whole main thread), `index.json`,
 `driver/seg-<n>.md` (the main thread from each typed command of **P** to the next), and
 `units/U<nn>.md` (one per spawned agent: the prompt it was sent, every step, what it handed
-back), with `units/U<nn>.system.md` holding the system prompt it ran with, and `flow.html`.
+back), with `units/U<nn>.system.md` holding the system prompt it ran with,
+`units/U<nn>.json` holding every step with its full input and output (the `.md` is the
+clipped copy auditors read), `units/U<nn>.html` as a page per unit, and `flow.html`.
 
 `flow.html` is the run as a chart, and the first thing to show the user. Time runs down.
 - **Rows:** each row is a wave, the agents one spawner started in one message. A shaded row
@@ -204,9 +206,8 @@ Invoke `log-eval` before saying anything about the results. The entry is
 
 Then tell the user, in this order and briefly:
 
-1. One line: the run, the version, the totals, and the path to `flow.html`. Offer to open it.
-   A local page opens in the browser pane only when it is served, e.g. `python3 -m http.server`
-   from the workspace.
+1. One line: the run, the version, the totals, and the path to `flow.html`. Say that
+   `/plugin-dev:run-flow <id8>` opens it in the browser pane.
 2. Each ERROR: what happened, its evidence step and its rule, as a clickable `file:line`
    into the working tree when it is still at HEAD.
 3. How many WARN and NOTE findings there are, plus the report's path.

@@ -7,7 +7,7 @@
       "name": "trace-planted-fixture",
       "kind": "mechanical",
       "baseline": "none",
-      "prompt": "python3 evals/fixtures/audit-run/make_session.py $TMP && python3 skills/audit-run/scripts/trace.py build $TMP/session/0a0d17f0-0000-4000-8000-00000000fixt.jsonl --plugin toy --out $TMP/ws",
+      "prompt": "python3 evals/fixtures/audit-run/make_session.py $TMP && python3 skills/run-flow/scripts/trace.py build $TMP/session/0a0d17f0-0000-4000-8000-00000000fixt.jsonl --plugin toy --out $TMP/ws",
       "expected_output": "The trace records every fact the five planted defects are judged from, and claims nothing the transcript does not show",
       "files": [
         "evals/fixtures/audit-run/make_session.py"
@@ -37,7 +37,7 @@
         "findings/U01.md has an ERROR for 'tests: 4 passed' contradicted by U01.S4's '1 failed, 3 passed' (P2)",
         "findings/U01.md has an ERROR for 'commit: abc1234' citing U01.S5's failed commit (pathspec) — not a WARN, since the trace itself shows the commit failed (P3)",
         "findings/U01.md has an ERROR for the return's first line 'Done.' against 'Result: done' (P4)",
-        "findings/seg-1.md has an ERROR with fault driver for the Write of out/extra.txt at D5 against ship's 'You never write a file yourself' (P5)",
+        "findings/seg-1.md has an ERROR for the Write of out/extra.txt at D5 against ship's 'You never write a file yourself' (P5), with fault driver or agent: run-auditor.md's fault table fits both for a driver segment breaking its own skill",
         "findings/seg-1.md flags that the driver printed 'shipped: abc1234' from a return whose first line was not 'Result: done' — the skill only says what to do on done or failed",
         "No ERROR cites a step or line that does not say what the finding says it does",
         "Each auditor's return is exactly one line starting 'Findings:'"
@@ -49,7 +49,7 @@
       "name": "flow-chart-fixture",
       "kind": "mechanical",
       "baseline": "none",
-      "prompt": "python3 evals/fixtures/audit-run/make_session.py $TMP && python3 skills/audit-run/scripts/trace.py build $TMP/flow-session/0a0d17f0-0000-4000-8000-0000000flow0.jsonl --plugin toy --out $TMP/fws",
+      "prompt": "python3 evals/fixtures/audit-run/make_session.py $TMP && python3 skills/run-flow/scripts/trace.py build $TMP/flow-session/0a0d17f0-0000-4000-8000-0000000flow0.jsonl --plugin toy --out $TMP/fws",
       "expected_output": "The Flow section and flow.html reproduce the fixture's known shape: what ran in parallel, what in series, the question between waves, runs and review rounds per lane, and each review's outcome",
       "files": [
         "evals/fixtures/audit-run/make_session.py"
@@ -69,7 +69,7 @@
       "name": "find-titles-and-forks",
       "kind": "mechanical",
       "baseline": "none",
-      "prompt": "python3 evals/fixtures/audit-run/make_session.py $TMP && AUDIT_RUN_PROJECTS=$TMP python3 skills/audit-run/scripts/trace.py find --plugin toy --all, then build by title words 'toy file', and build the fork by id f0a0d17f",
+      "prompt": "python3 evals/fixtures/audit-run/make_session.py $TMP && AUDIT_RUN_PROJECTS=$TMP python3 skills/run-flow/scripts/trace.py find --plugin toy --all, then build by title words 'toy file', and build the fork by id f0a0d17f",
       "expected_output": "A chat is found by the title the app shows, a fork is named as one, an ambiguous title builds nothing, and a fork's trace still finds the agents left under its original",
       "files": [
         "evals/fixtures/audit-run/make_session.py"

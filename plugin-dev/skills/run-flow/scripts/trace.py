@@ -9,6 +9,9 @@ whether it failed, every hook that blocked, every commit, and what each agent ha
 
 It judges nothing. The auditor does that; this is the evidence.
 
+It lives in plugin-dev's `skills/run-flow/scripts/`, beside `flow.py`, which draws the chart
+and the unit pages. `run-flow` and `audit-run` both run it from there.
+
 Usage:
   trace.py find --plugin NAME [--limit N]
       Sessions that used NAME's skills or agents, newest first, each with the chat's title
@@ -24,8 +27,10 @@ Usage:
       SESSION is a .jsonl path, a session id (or unique prefix), `latest`, or words from
       the chat's title (case-insensitive, must match one session that used NAME).
       Writes DIR/run.md, DIR/index.json, DIR/driver/seg-<n>.md, DIR/units/U<nn>.md and
-      DIR/units/U<nn>.system.md (the system prompt the agent actually ran with), and
-      DIR/flow.html, the run as a chart (see flow.py).
+      DIR/units/U<nn>.system.md (the system prompt the agent actually ran with),
+      DIR/units/U<nn>.json (every step with its full input and output, for the pages and
+      the narrator; the `.md` stays clipped for auditors), and DIR/flow.html, the run as a
+      chart, with DIR/units/U<nn>.html, one page per unit (see flow.py).
       --full raises every truncation limit fivefold.
 
 Step ids are stable across rebuilds of the same transcript: `D<n>` in the main thread,
@@ -415,6 +420,89 @@ def confirm(shas: list[str], written: list[str], project: str | None) -> list[st
     return out
 
 
+# ---------------------------------------------------------------- full steps, for the pages
+
+
+def commit_details(sha: str, ev: dict, project: str | None) -> dict:
+    """One commit a call made: its message and files from the project when it still exists,
+    else the message the call's own output printed and no files. Claims nothing else."""
+    bare = sha.lstrip("?")
+    out = {"sha": bare, "confirmed": not sha.startswith("?"), "message": "", "files": []}
+    if sha == "?(sha not shown)":
+        return out
+    res = ev.get("result", "")
+    for m in COMMIT_RE.finditer(res):
+        if m.group(2) == bare:
+            out["message"] = m.group(3).strip()
+    if not out["message"] and (m := ONELINE_RE.search(res)) and m.group(1) == bare:
+        out["message"] = m.group(2).strip()
+    if project and Path(project).is_dir():
+        try:
+            shown = subprocess.run(["git", "-C", project, "show", "--name-only", "--format=%s", bare],
+                                   capture_output=True, text=True, timeout=20)
+        except (OSError, subprocess.TimeoutExpired):
+            shown = None
+        if shown is not None and shown.returncode == 0 and shown.stdout.strip():
+            lines = shown.stdout.splitlines()
+            out["message"] = lines[0].strip()
+            out["files"] = [x.strip() for x in lines[1:] if x.strip()]
+    return out
+
+
+def full_step(ev: dict, hooks_by_call: dict, written: list[str], project: str | None) -> dict:
+    """One numbered event, whole: nothing here is clipped."""
+    k = ev["kind"]
+    step = {"step": ev["step"], "kind": k, "ts": ev.get("ts", ""), "summary": ev.get("summary", "")}
+    if k == "call":
+        name, inp = ev["name"], ev["input"]
+        step.update({
+            "tool": name, "input": inp, "output": ev.get("result", ""), "error": bool(ev.get("error")),
+            "hooks": [{"hook": h.get("hook"), "blocked": bool(h.get("block")), "text": h.get("text") or ""}
+                      for h in hooks_by_call.get(ev.get("id"), [])],
+            "commits": [commit_details(sha, ev, project) for sha in confirm(commits_of(ev), written, project)],
+            "write": {"path": inp.get("file_path", ""), "content": inp.get("content", "")} if name == "Write" else None,
+            "edit": ({"path": inp.get("file_path", ""), "old": inp.get("old_string", ""),
+                      "new": inp.get("new_string", "")} if name == "Edit" else None),
+        })
+        if ev.get("meta"):
+            step["meta"] = ev["meta"]
+    elif k in ("say", "think", "user", "system"):
+        step["text"] = ev.get("text", "")
+    elif k == "command":
+        step.update({"name": ev.get("name"), "args": ev.get("args", ""), "injected": bool(ev.get("injected"))})
+    elif k == "skill-body":
+        step["base"] = ev.get("base")
+    elif k == "notify":
+        step.update({"task": ev.get("task"), "status": ev.get("status"), "text": ev.get("text", "")})
+    elif k == "handback":
+        step["from"] = ev.get("frm")
+    elif k == "hook":
+        step.update({"hook": ev.get("hook"), "blocked": bool(ev.get("block")), "text": ev.get("text") or ""})
+    return step
+
+
+def unit_json(u: dict, iu: dict, project: str | None) -> dict:
+    """`units/U<nn>.json`: the unit's every step with full input and output, numbered exactly as
+    in `units/U<nn>.md`. A hook shown under its call there is in that call's `hooks` here."""
+    hooks_by_call: dict[str, list[dict]] = {}
+    for ev in u["events"]:
+        if ev["kind"] == "hook" and ev.get("under_call"):
+            hooks_by_call.setdefault(ev.get("tool"), []).append(ev)
+    steps = [full_step(ev, hooks_by_call, iu["files_written"], project)
+             for ev in u["events"] if not (ev["kind"] == "hook" and ev.get("under_call"))]
+    return {
+        "unit": iu["unit"], "agent_id": iu["agent_id"], "type": iu["type"], "description": iu["description"],
+        "spawner": iu["spawner"], "spawn_step": iu.get("spawn_step"), "segment": iu.get("segment"),
+        "background": iu["background"], "definition": iu["definition"], "version": iu["version"],
+        "models": u["facts"]["models"], "first_ts": iu["first_ts"], "last_ts": iu["last_ts"],
+        "finished": iu["finished"], "tool_calls": iu["tool_calls"], "errors": iu["errors"],
+        "hook_blocks": iu["hook_blocks"],
+        "skills": [e["input"].get("skill") for e in u["events"] if e["kind"] == "call" and e["name"] == "Skill"],
+        "files_written": iu["files_written"], "commits": iu["commits"],
+        "prompt": u["prompt"], "steps": steps, "return": u["return"], "step_count": len(steps),
+    }
+
+
 # ---------------------------------------------------------------- rendering
 
 
@@ -466,6 +554,8 @@ def render_events(events: list[dict], prefix: str, units_by_agent: dict, start: 
             body = render_call(ev, units_by_agent)
             lines.append(head + body[0])
             lines.extend("  " + b for b in body[1:])
+            ev["summary"] = body[0]
+            continue
         elif k == "say":
             lines.append(head + f"_said:_ {clip(one_line(ev['text']), 'text')}")
         elif k == "think":
@@ -491,11 +581,13 @@ def render_events(events: list[dict], prefix: str, units_by_agent: dict, start: 
         elif k == "hook":
             if ev.get("tool") and any(e.get("id") == ev["tool"] for e in events if e["kind"] == "call"):
                 n -= 1  # shown under its call
+                ev["under_call"] = True
                 continue
             verb = "blocked" if ev["block"] else "said"
             lines.append(head + f"⛔ HOOK {ev['hook']} {verb}: {clip(one_line(ev['text']), 'err')}")
         elif k == "system":
             lines.append(head + f"⚠ {ev['text']}")
+        ev["summary"] = lines[-1][len(head):]
     return lines
 
 
@@ -720,6 +812,7 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
             "unit": u["unit"], "agent_id": u["agent"], "type": u["type"], "description": u["description"],
             "spawner": u["spawner"], "background": u["background"], "definition": u["definition"], "version": u["version"],
             "forked_skill": bool(u["forked_skill"]), "trace": f"units/{u['unit']}.md",
+            "json": f"units/{u['unit']}.json",
             "tool_calls": len(calls), "errors": errors, "hook_blocks": blocks, "commits": commits,
             "files_written": written, "first_ts": u["ts"],
             "last_ts": u["events"][-1]["ts"] if u["events"] else "",
@@ -787,6 +880,13 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
                 changed = True
     for iu in index_units:
         iu["segment"] = seg_of.get(iu["unit"])
+
+    # Full steps, one JSON per unit: written last, once spawn steps and segments are known.
+    for u, iu in zip(raw_units, index_units):
+        doc = unit_json(u, iu, main_facts["cwd"])
+        iu["step_count"] = doc["step_count"]
+        (out / "units" / f"{u['unit']}.json").write_text(json.dumps(doc, indent=2, ensure_ascii=False),
+                                                         encoding="utf-8")
 
     interventions = []
     for ev in main_events:

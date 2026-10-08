@@ -2,7 +2,9 @@
 
 Reads a workspace's `index.json` (written by `trace.py build`) and, if they exist, its
 `findings/U<nn>.md` files. Writes `flow.html`: one self-contained page, no scripts, no
-network.
+network. Every box links to `units/U<nn>.html`, the unit's own page, written here from
+`units/U<nn>.json` alone (never from the clipped `.md`): its header, the prompt it was sent,
+every step with its full input and output, its commits, and what it handed back.
 
 The chart reads top to bottom:
 
@@ -70,6 +72,7 @@ def model(index: dict, out: Path | None = None) -> dict:
         u["lane"] = u.get("lane") or "(other)"
         u["mins"] = minutes(u["first_ts"], u["last_ts"])
         u["audit"] = audit_errors(out, u["unit"]) if out else None
+        u["page"] = f"units/{u['unit']}.html" if out and (out / "units" / f"{u['unit']}.json").exists() else None
 
     waves: dict[str, list[dict]] = {}
     for u in units:
@@ -186,7 +189,8 @@ def box(u: dict, x: float, y: float, w: float, color: str) -> str:
              f"{u['mins'] if u['mins'] is not None else '?'} min · {u['tool_calls']} tools · "
              f"{u['errors']} errors · {u['hook_blocks']} hook blocks\n"
              f"commits: {', '.join(u['commits']) or 'none'}\n"
-             f"returned: {u['return_first_line'] or '(still running)'}")
+             f"returned: {u['return_first_line'] or '(still running)'}"
+             + ("\nclick for every step" if u.get("page") else ""))
     parts = [f'<g class="unit"><title>{esc(title)}</title>',
              f'<rect x="{x}" y="{y}" width="{w}" height="{BH}" rx="6" class="box"/>',
              f'<rect x="{x}" y="{y}" width="5" height="{BH}" rx="2" fill="{color}"/>',
@@ -220,6 +224,8 @@ def box(u: dict, x: float, y: float, w: float, color: str) -> str:
                      f'<text x="{x + w - 2}" y="{y + 6}" class="auditn" text-anchor="middle">'
                      f'{u["audit"] if u["audit"] else "✓"}</text>')
     parts.append("</g>")
+    if u.get("page"):
+        return f'<a href="{esc(u["page"])}">' + "".join(parts) + "</a>"
     return "".join(parts)
 
 
@@ -333,7 +339,120 @@ svg text{fill:var(--fg);font-family:-apple-system,system-ui,sans-serif}
 .par{fill:#4e79a7}.ser{fill:var(--muted)}.rowp{fill:var(--rowp)}.rows{fill:transparent}.band{fill:var(--band)}
 .bandt{font-size:11.5px}.grid{stroke:var(--line)}.link{stroke:var(--muted);stroke-width:1.2;opacity:.55}
 .arrowhead{fill:var(--muted)}.audit{stroke:var(--box);stroke-width:2}.auditn{font-size:10px;font-weight:700;fill:#fff}
+a{color:inherit}svg a .box{cursor:pointer}
 """
+
+PAGE_CSS = """
+pre{white-space:pre-wrap;word-break:break-word;background:var(--box);border:1px solid var(--line);border-radius:6px;
+padding:8px 10px;margin:4px 0;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;max-width:100%;overflow:auto}
+.step{border-top:1px solid var(--line);padding:6px 0}.step:target{background:var(--rowp)}
+.sid{font:12px ui-monospace,Menlo,monospace;color:var(--muted);margin-right:8px}.kind{font-weight:600;margin-right:8px}
+.err{color:var(--bad);font-weight:600}.hook{color:var(--bad);margin:4px 0 0 16px}.lbl{font-size:12px;color:var(--muted);margin-top:6px}
+details summary{cursor:pointer;color:var(--muted);font-size:12px}.head td:first-child{color:var(--muted)}
+.top{font-size:13px}
+"""
+
+
+def plain(s: str, what: str) -> str:
+    """The `.md` summary line without its markdown, the kind or tool it starts with, or the error
+    mark, which the step block shows on their own."""
+    s = re.sub(rf"^\*\*{re.escape(what)}\*\* |^\*\*USER:\*\* |^_(said|thought):_ ", "", s or "", flags=re.I)
+    return re.sub(r"\*\*", "", s.replace("  ❌ ERROR", ""))
+
+
+def pre(s) -> str:
+    return f"<pre>{esc(s if isinstance(s, str) else json.dumps(s, indent=2, ensure_ascii=False))}</pre>"
+
+
+def step_block(s: dict, unit_of_agent: dict) -> str:
+    n = s["step"].rsplit(".S", 1)[-1]
+    what = s.get("tool") or s["kind"]
+    head = (f'<div class="step" id="S{esc(n)}"><span class="sid">{esc(s["step"])}</span>'
+            f'<span class="kind">{esc(what)}</span>{esc(plain(s.get("summary", ""), what))}')
+    if s.get("error"):
+        head += ' <span class="err">error</span>'
+    body = []
+    if s["kind"] == "call":
+        aid = (s.get("meta") or {}).get("agentId")
+        if aid and aid in unit_of_agent:
+            body.append(f'<div>spawned <a href="{esc(unit_of_agent[aid])}.html">{esc(unit_of_agent[aid])}</a></div>')
+        if s.get("write"):
+            body.append(f'<div class="lbl">wrote {esc(s["write"]["path"])}</div>{pre(s["write"]["content"])}')
+        if s.get("edit"):
+            body.append(f'<div class="lbl">edited {esc(s["edit"]["path"])} · old</div>{pre(s["edit"]["old"])}'
+                        f'<div class="lbl">new</div>{pre(s["edit"]["new"])}')
+        for c in s.get("commits") or []:
+            body.append(f'<div class="lbl">commit {esc(c["sha"])}{" (unconfirmed)" if not c["confirmed"] else ""}'
+                        f'{": " + esc(c["message"]) if c["message"] else ""}</div>')
+        for h in s.get("hooks") or []:
+            body.append(f'<div class="hook">⛔ hook {esc(h["hook"])} {"blocked" if h["blocked"] else "said"}: '
+                        f'{esc(h["text"])}</div>')
+        body.append(f'<details><summary>full input and output</summary><div class="lbl">input</div>{pre(s["input"])}'
+                    f'<div class="lbl">output</div>{pre(s.get("output") or "(no output)")}</details>')
+    elif s["kind"] == "hook":
+        head = (f'<div class="step" id="S{esc(n)}"><span class="sid">{esc(s["step"])}</span>'
+                f'<span class="kind">hook</span><span class="hook">⛔ {esc(s.get("hook"))} '
+                f'{"blocked" if s.get("blocked") else "said"}: {esc(s.get("text", ""))}</span>')
+    elif s.get("text"):
+        body.append(f'<details><summary>full text</summary>{pre(s["text"])}</details>')
+    return head + "".join(body) + "</div>"
+
+
+def unit_page(d: dict, unit_of_agent: dict) -> str:
+    """One unit's page, from its `units/U<nn>.json` only."""
+    mins = minutes(d.get("first_ts", ""), d.get("last_ts", ""))
+    spawned = f"{d.get('spawner')}" + (f" at {d['spawn_step']}" if d.get("spawn_step") else "")
+    if d.get("spawner") in unit_of_agent.values():
+        spawned = f'<a href="{esc(d["spawner"])}.html">{esc(d["spawner"])}</a>' + (
+            f" at {esc(d['spawn_step'])}" if d.get("spawn_step") else "")
+    else:
+        spawned = esc(spawned)
+    rows = [
+        ("Type", esc(d["type"])), ("Description", esc(d.get("description", ""))), ("Spawned by", spawned),
+        ("Model", esc(", ".join(d.get("models") or []) or "?")),
+        ("Start", esc((d.get("first_ts") or "")[:19].replace("T", " ") + " UTC")),
+        ("Duration", f"{mins} min" if mins is not None else "?"),
+        ("Tool calls", str(d.get("tool_calls", 0))), ("Errors", str(d.get("errors", 0))),
+        ("Hook blocks", str(d.get("hook_blocks", 0))),
+        ("Skills invoked", esc(", ".join(x for x in d.get("skills") or [] if x) or "none")),
+        ("Files written", esc(", ".join(d.get("files_written") or []) or "none")),
+        ("Definition", esc(d.get("definition") or "none")),
+        ("Steps", str(d.get("step_count", len(d.get("steps", []))))),
+        ("Finished", "yes" if d.get("finished") else "no (still running, or never handed back)"),
+    ]
+    commits = [c for s in d.get("steps", []) for c in s.get("commits") or []]
+    commit_rows = "".join(
+        f"<tr><td><code>{esc(c['sha'])}</code>{' <span class=err>unconfirmed</span>' if not c['confirmed'] else ''}</td>"
+        f"<td>{esc(c['message']) or '—'}</td><td>{esc(', '.join(c['files'])) or '—'}</td></tr>" for c in commits)
+    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(d['unit'])} {esc(d['type'])}</title>
+<style>{CSS}{PAGE_CSS}</style></head>
+<body>
+<p class="top"><a href="../flow.html">← the run's flow chart</a></p>
+<h1>{esc(d['unit'])} · {esc(d['type'])} · {esc(d.get('description', ''))}</h1>
+<table class="head">{''.join(f'<tr><td>{k}</td><td>{v}</td></tr>' for k, v in rows)}</table>
+<h2>Prompt</h2>
+{pre(d.get('prompt') or '(none recorded)')}
+<h2>Steps</h2>
+{''.join(step_block(s, unit_of_agent) for s in d.get('steps', [])) or '<p>No steps.</p>'}
+<h2>Commits</h2>
+{"<table><tr><th>Commit</th><th>Message</th><th>Files</th></tr>" + commit_rows + "</table>" if commits else "<p>None.</p>"}
+<h2>Returned</h2>
+{pre(d.get('return') or '(nothing)')}
+</body></html>"""
+
+
+def write_unit_pages(out: Path, index: dict) -> list[str]:
+    unit_of_agent = {u["agent_id"]: u["unit"] for u in index["units"]}
+    written = []
+    for u in index["units"]:
+        src = out / "units" / f"{u['unit']}.json"
+        if not src.exists():
+            continue
+        d = json.loads(src.read_text(encoding="utf-8"))
+        (out / "units" / f"{u['unit']}.html").write_text(unit_page(d, unit_of_agent), encoding="utf-8")
+        written.append(u["unit"])
+    return written
 
 
 def write_html(out: Path) -> Path:
@@ -365,6 +484,12 @@ def write_html(out: Path) -> Path:
         f"<td>{u.get('warning') if u.get('warning') is not None else '—'}</td></tr>" for u in flagged)
     audit_note = (f"{len(audited)} audited; the badge on a box is its audit ERROR count (✓ none)."
                   if audited else "No unit audited yet; run `trace.py flow` after an audit to add badges.")
+    unit_rows = "".join(
+        "<tr><td>" + (f'<a href="{esc(u["page"])}">{esc(u["unit"])}</a>' if u.get("page") else esc(u["unit"]))
+        + f"</td><td>{esc(u['type'])}</td><td>{esc(u['lane'])}</td><td>{esc(u['description'])}</td>"
+        f"<td>{esc(u['first_ts'][11:16])}</td><td>{u['mins'] if u['mins'] is not None else '?'} min</td>"
+        f"<td>{u['tool_calls']}</td><td>{u['errors']}</td><td>{esc(', '.join(u['commits']) or '—')}</td>"
+        f"<td>{esc(u['return_first_line'] or '(still running)')}</td></tr>" for u in units)
 
     page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Run flow</title><style>{CSS}</style></head>
@@ -387,9 +512,15 @@ def write_html(out: Path) -> Path:
 <h2>Flow</h2>
 <p class="legend">Down is time. A shaded row is one wave of agents started together, so they ran in parallel;
 an unshaded row ran one agent alone. Each column is one section's history, arrows joining its runs in order.
-Hover a box for its duration, tools, commits and return. {legend}</p>
+Hover a box for its duration, tools, commits and return; click it for every step the agent took. {legend}</p>
 <div class="scroll">{svg(m)}</div>
+
+<h2>Units</h2>
+<table><tr><th>Unit</th><th>Type</th><th>Section</th><th>Description</th><th>Start (UTC)</th><th>Duration</th>
+<th>Tool calls</th><th>Errors</th><th>Commits</th><th>Returned</th></tr>
+{unit_rows}</table>
 </body></html>"""
     path = out / "flow.html"
     path.write_text(page, encoding="utf-8")
+    write_unit_pages(out, index)
     return path

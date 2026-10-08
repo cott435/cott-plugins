@@ -121,7 +121,9 @@ In the Markdown body [docs]:
   [proven: evals/2026-09-21-description-xml-tag-contract.md]
 - A plugin installed everywhere (as plugin-dev is) scopes each model-invoked description to
   where it applies ("only inside a plugin's own subdirectory"), and its trigger set includes
-  the same task outside that scope as should-not-trigger queries.
+  the same task outside that scope as should-not-trigger queries. A scoped description fires
+  in scope and holds outside it: `run-flow`'s scored 1.00, with the same question asked from
+  an ordinary project at 0/3 each. [proven: evals/2026-10-07-run-flow-trigger.md]
 
 ## Writing the body
 

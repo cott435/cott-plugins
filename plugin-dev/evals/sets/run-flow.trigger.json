@@ -1,0 +1,21 @@
+[
+  {"query": "I'm in ~/dev/cott-plugins/dev-team (the plugin folder). What did the profiler do in the architecture migration chat? I want to see every step it took", "should_trigger": true},
+  {"query": "show me the run from this morning's /dev-team:run-package data chat — I'm in the dev-team plugin directory", "should_trigger": true},
+  {"query": "open the flow for session 1493ed56, plugin is dev-team (cwd has .claude-plugin/plugin.json)", "should_trigger": true},
+  {"query": "which agents ran in that run-package chat and in what order? draw it for me, I'm in cott-plugins/dev-team", "should_trigger": true},
+  {"query": "from the cott-plugins marketplace root: show what the implementer agents did in yesterday's run-package chat, --plugin dev-team", "should_trigger": true},
+  {"query": "in my plugin's folder (dev-team/): the reviewer in the 'Project architecture migration' chat rejected section data/clean twice — let me click through to exactly what it read and wrote", "should_trigger": true},
+  {"query": "I just audited session ca48b249 of dev-team from this plugin dir; rebuild its flow chart so I can browse the agents", "should_trigger": true},
+  {"query": "inside plugin-dev/ — what did the writer agent do in the 'Ship the toy file' chat? show me its prompt, its Bash outputs and what it handed back", "should_trigger": true},
+  {"query": "dev-team plugin directory: draw the latest run of our workflow as a chart, which designers ran in parallel and which ran one at a time?", "should_trigger": true},
+  {"query": "in my flask project ~/code/shop, what did the agent do in yesterday's chat? show me the steps", "should_trigger": false},
+  {"query": "I'm in ~/PycharmProjects/quant (just a python project, no plugin) — which subagents ran in the chat I had this morning?", "should_trigger": false},
+  {"query": "in my react app repo, open a page showing what Claude did in my last session", "should_trigger": false},
+  {"query": "audit yesterday's /dev-team:run-package run in the dev-team plugin dir — did each agent follow its definition?", "should_trigger": false},
+  {"query": "did the reviewer follow its rules in session 1493ed56? check it against agents/reviewer.md", "should_trigger": false},
+  {"query": "search my chat history for the conversation where we discussed the pricing page", "should_trigger": false},
+  {"query": "what did I ask you yesterday about the database migration?", "should_trigger": false},
+  {"query": "read the application logs in logs/worker.log and tell me what the job runner did overnight", "should_trigger": false},
+  {"query": "draw a flow chart of the checkout process in my e-commerce app's code", "should_trigger": false},
+  {"query": "show me the GitHub Actions run for the last push and which jobs ran in parallel", "should_trigger": false}
+]
