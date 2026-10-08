@@ -39,10 +39,11 @@
         "findings/U01.md has an ERROR for the return's first line 'Done.' against 'Result: done' (P4)",
         "findings/seg-1.md has an ERROR for the Write of out/extra.txt at D5 against ship's 'You never write a file yourself' (P5), with fault driver or agent: run-auditor.md's fault table fits both for a driver segment breaking its own skill",
         "findings/seg-1.md flags that the driver printed 'shipped: abc1234' from a return whose first line was not 'Result: done' — the skill only says what to do on done or failed",
-        "No ERROR cites a step or line that does not say what the finding says it does",
-        "Each auditor's return is exactly one line starting 'Findings:'"
+        "No ERROR cites a step or line that does not say what the finding says it does, checked against the trace and definitions the harness copies into outputs/ (outputs/trace/units/U01.md, outputs/trace/driver/seg-1.md, outputs/toy/agents/writer.md, outputs/toy/skills/ship/SKILL.md)",
+        "Each auditor's return is exactly one line starting 'Findings:', as outputs/returns.md records it verbatim"
       ],
-      "added_in": "audit-run 0.12 (the change that added it)"
+      "added_in": "audit-run 0.12 (the change that added it)",
+      "harness": "evals/sets/files/audit-run/auditors-on-fixture.md"
     },
     {
       "id": 3,
@@ -97,20 +98,23 @@
       ],
       "expectations": [
         "outputs/audits/issues/ holds at least five files named TO-<nnn>.md, and between them the five planted defects each have an issue: the write to notes/scratch.md (P1), the 'tests: 4 passed' claim against '1 failed, 3 passed' (P2), the 'commit: abc1234' claim (P3), the return starting 'Done.' instead of 'Result: done' (P4), and the driver's Write of out/extra.txt (P5)",
+        "no planted act is filed twice: for each of P1-P5 exactly one issue file's Finding reports that act (a unit's finding and a cross finding restating it are one issue). A definition NOTE's issue proposing an edit to the rule an act broke does not count as a second report of the act",
         "every file under outputs/audits/issues/ has exactly the issue template's frontmatter keys — id, plugin, title, fault, severity, check, applies_to, rule_file, rule_line, rule_quote, found_version, found_session, found_date — with plugin 'toy', found_session 0a0d17f0 and found_version 0.1.0, and the four sections Finding, Found in, Fix and Checks",
+        "every issue's fault and severity are the ones its finding carries in outputs/findings/ (the auditor's, unchanged), and its applies_to matches where it was first found: an issue whose first Found in line is U01 names agent:writer (or agent:toy:writer), one first found in seg-1 names driver:ship (or driver:toy:ship), and one first found in cross starts with cross",
         "every issue's Found in line carries a unit or segment and a step id (U01.S<n> for the writer's issues, D<n> for the driver's), one short quote, and ends with the report path audits/runs/<date>-0a0d17f0.md followed by the finding id (E<n>, W<n> or N<n>)",
         "outputs/issues-check.txt shows `issues.py check` printing 'ok: <n> issues' with exit code 0, where <n> is the number of files under outputs/audits/issues/, and outputs/audits/INDEX.md has one row per issue file, every row with Status 'open'",
-        "outputs/audits/runs/<date>-0a0d17f0.md exists, with the template's headings in order (Errors, Warnings, Notes, Prior issues, Audited, Not audited, Dropped on spot-check), and every '### E<n>' and '### W<n>' heading reads '<E|W><n> · TO-<nnn> (new) · <fault> · <one line>' with an id that is a file under outputs/audits/issues/",
-        "the report's Totals line ends 'issues: <n> new, 0 seen again · prior: 0 held, 0 recurred, 0 not exercised, 0 not testable', with <n> new equal to the number of issue files",
+        "outputs/audits/runs/<date>-0a0d17f0.md exists, with the template's headings in order (Errors, Warnings, Notes, Prior issues, Audited, Not audited, Dropped on spot-check), and every '### E<n>' and '### W<n>' heading reads '<E|W><n> · TO-<nnn> (<new | seen>) · <fault> · <one line>' with an id that is a file under outputs/audits/issues/",
+        "the report's Totals line ends 'issues: <n> new, <s> seen again · prior: 0 held, 0 recurred, 0 not exercised, 0 not testable', with <n> equal to the number of issue files",
+        "nothing is counted as seen again: the ledger was empty before this first audit, so <s> is 0 everywhere the count appears — the Totals line, every E and W heading reading '(new)', the commit message's '0 seen', the eval log's 'seen again: none' and the closing line's '0 seen again'",
         "the report's Prior issues section is the empty table followed by the line 'none: no issue had a fix in the code that ran'",
         "the report's Flow chart line names evals/workspace/audit/0a0d17f0/flow.html and says it is rebuilt with /plugin-dev:run-flow 0a0d17f0",
-        "transcript.md shows every issue created by an `issues.py new` command (and INDEX.md rendered by issues.py), with no Write, heredoc or editor step that creates or edits a file under audits/issues/ or audits/INDEX.md by hand, and no write of a report.md under evals/workspace/",
-        "outputs/git-log.txt shows exactly two commits: 'fixture' and, on top of it, one whose message is 'toy audits: 0a0d17f0 — <n> new, 0 seen, 0 checked' with the same <n> as the Totals line, and whose files are all under audits/ (the issue files, the run report and INDEX.md)",
+        "transcript.md, which the harness has list every shell command verbatim, shows one `issues.py new` command per file under outputs/audits/issues/ (and INDEX.md rendered only by issues.py), with no Write, heredoc, editor or shell redirect that creates or edits a file under audits/issues/ or audits/INDEX.md by hand, and no write of a report.md under evals/workspace/",
+        "outputs/git-log.txt shows exactly two commits: 'fixture' and, on top of it, one whose message is 'toy audits: 0a0d17f0 — <n> new, <s> seen, 0 checked' with the same <n> and <s> as the Totals line, and whose files are all under audits/ (the issue files, the run report and INDEX.md)",
         "outputs/git-log.txt and outputs/git-status.txt show nothing under agents/ or skills/ of the toy plugin changed after the fixture commit",
-        "outputs/eval-log.md has the headings Tested against, What was tested, Method, Results, Verdict; its Results names the new issue ids (new: TO-001 …), 'seen again: none' and 'prior: none'; its last line is 'Report: audits/runs/<date>-0a0d17f0.md'; and it contains no findings table (no table whose columns are id, unit, fault, finding, rule)",
-        "transcript.md's final message to the user opens with one line giving the issue counts (<n> new, 0 seen again) and the report path audits/runs/<date>-0a0d17f0.md, and names /plugin-dev:run-flow 0a0d17f0 as the way to see the chart"
+        "outputs/eval-log.md has log-eval's template parts — the Tested against field, and What was tested, Method, Results and Verdict; its Results names the new issue ids (new: TO-001 …), the seen-again ids or 'none', and 'prior: none'; its last line is 'Report: audits/runs/<date>-0a0d17f0.md'; and it contains no findings table (no table whose columns are id, unit, fault, finding, rule)",
+        "transcript.md's final message to the user opens with one line giving the issue counts (<n> new, <s> seen again, as in the Totals line) and the report path audits/runs/<date>-0a0d17f0.md, and names /plugin-dev:run-flow 0a0d17f0 as the way to see the chart"
       ],
-      "added_in": "0.16-audit-ledger phase 0, run from phase 4"
+      "added_in": "0.16-audit-ledger phase 0, run from phase 4; expectations revised in phase 4 after grading (one-issue-per-act, fault and applies_to, the seen-again count stated once, the transcript's commands)"
     },
     {
       "id": 6,

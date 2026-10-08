@@ -177,7 +177,9 @@ The split is deliberate:
 
 | Thing | Path | Committed |
 |---|---|---|
-| The trace, the chart, the findings, the report | `<plugin>/evals/workspace/audit/<id8>/` (`run.md`, `index.json`, `units/`, `driver/`, `flow.html`, `findings/`, `report.md`) | never. It holds the project's file contents |
+| The trace, the chart, the findings | `<plugin>/evals/workspace/audit/<id8>/` (`run.md`, `index.json`, `units/`, `driver/`, `flow.html`, `findings/`) | never. It holds the project's file contents |
 | Every agent's full record: each step's whole input and output, and its page | `<plugin>/evals/workspace/audit/<id8>/units/U*.json` and `units/U*.html`, beside the clipped `units/U*.md` the auditors read; `/plugin-dev:run-flow <id8>` serves them | never, as above |
+| The run report | `<plugin>/audits/runs/<date>-<id8>.md` | yes, by audit-run's own commit |
+| The issues and their index | `<plugin>/audits/issues/<ID>.md`, `<plugin>/audits/INDEX.md` | yes, same commit |
 | The eval log, with the ERROR and WARN table | `<plugin>/evals/<date>-audit-<command>-<id8>.md` + a row in `evals/README.md` | yes, by `log-eval` |
 | The transcripts it read | `~/.claude/projects/<project>/<session>.jsonl` and `<session>/subagents/` | Claude Code's, never touched |
