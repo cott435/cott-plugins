@@ -48,6 +48,8 @@ Thirteen skills, in three groups by how they start. The table is the one list of
 | `agents/run-auditor.md` | The one agent: audits one unit, one driver segment, or the whole run for cross-agent consistency, and writes a findings file. Spawned only by `audit-run`. |
 | `scripts/build_site.py` | The site builder. Fully generic — everything is discovered from the bundle. |
 | `scripts/contract_sweep.py` | The contracts checker. Its `frontmatter` check reads the allowed keys from `plugin-anatomy`'s references rather than its own copy. Shared, so a change to it gets a positive and a negative run before it is committed (this plugin's `CLAUDE.md`). |
+| `scripts/issues.py` | The audit ledger: creates and updates issue files under a plugin's `audits/issues/`, derives each issue's status, renders `audits/INDEX.md`, and checks the ledger. `audit-run`, `fix-issues` and `bump-version` write through it; nothing writes an issue file by hand. |
+| `templates/audits/` | `issue.md` and `run-report.md`: the one list of an issue file's and a run report's sections. |
 | `scripts/defaults/` | `mkdocs-base.yml` and `extra.css` used when a plugin doesn't override them. |
 | `templates/` | The files a new plugin subdirectory starts with. |
 | `templates/phases/` | The design shape `design-plugin` writes, and the overview, phase-note and ledger shapes `plan-phases` writes. |
