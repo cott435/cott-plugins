@@ -41,13 +41,16 @@ incomplete run, and that is the answer too.
   `docs/legacy/inventory.md` row for a source token, the gate record
   `.dev-team/gate/<pkg>/<section>.txt` of a row whose evidence starts `gate `, and the
   integration record `.dev-team/integration/<pkg>.txt` when the `integration:` line is a
-  question, each for the question you ask about it (**Asking**). Every other spawn field comes from
+  question, each for the question you ask about it (**Asking**), and `docs/decisions.md`,
+  whole, for a `D<n>` question's text and `Recommendation:` and to record its answer. Every other spawn field comes from
   `status.py --fields <pkg>/<section>`, and a reviewer's **Previous round** from the file names
   the Glob tool finds under `docs/packages/<pkg>/reviews/<section>/` (or the older
-  `docs/reviews/`). Never `ls`, `grep`, `find`, `cat` or `head` a repo file, except that a session without the Glob
-  tool lists `docs/packages/<pkg>/reviews/<section>/` with `find` and tests a file for existence
-  with a one-line Read (`limit=1`), and nothing else; the Sections table is a Read, never a
-  `grep | head`. Judging the work
+  `docs/reviews/`). Never `ls`, `grep`, `find`, `cat`, `head`, `sed` or `wc` a repo file. The one
+  exception is a session that has no Glob tool at all: it lists
+  `docs/packages/<pkg>/reviews/<section>/` with `find` and tests a file for existence with a
+  one-line Read (`limit=1`), and nothing else; a session that has Glob never runs `find`. The
+  Sections table is a Read, never a `grep | head`, and so is `docs/decisions.md`: a `D<n>`'s
+  lines are found by reading the file, never by `grep -n` or `sed -n`. Judging the work
   is the reviewer's. `status.py`'s source is not yours to read either: a state you do not
   understand is **Asking**, with the row.
 - Spawn anything in the background. Every Agent call is `run_in_background: false`; the next
@@ -267,7 +270,9 @@ granted *one more round* at a cap.
    `<section>`, only that row counts from here on; if one of its in-package dependencies is not
    DONE, print which and why, and go to **Summary**. When every row that counts is DONE → step
    7.
-3. **BLOCKED rows.** For each BLOCKED row that counts, **Asking**. A row granted *one more
+3. **BLOCKED rows.** The rows the last `status.py` changed are already printed, as step 6
+   says: a question never comes before them. For each BLOCKED row that counts, **Asking**. A
+   row granted *one more
    round*, *defer*, *run the implementer again* or *review anyway* this run is not asked
    again: step 4 runs it. After the answers, re-run step 2. `status.py` cannot see a grant: a
    cap row granted *one more round* prints the same `(cap)` BLOCKED row after its implementer
@@ -329,8 +334,8 @@ granted *one more round* at a cap.
    hides a re-opened upstream section and the `shipped:` line. Print the rows whose state or
    evidence changed, by comparing them with the rows you kept, as the table prints them: no
    label before a row and no sentence about it after. The rows are your next message after
-   every `status.py` run, before the next spawn: a thought, or a sentence about the rows, is
-   not them. A row whose
+   every `status.py` run, before anything else — the next spawn, a question, a lookup, a
+   thought: a thought, or a sentence about the rows, is not them. A row whose
    agent returned `done` this batch and whose state and evidence are exactly what they were
    before it ran did not move: spawning the same step again would repeat the same run. Send
    it to **Asking** instead, with the row and the agent's first two lines. Back to step 2.
@@ -384,10 +389,15 @@ the step with the return's first two lines as `stopped because`.
 
 ## Asking
 
-One `AskUserQuestion` per block, its text built from what stopped:
+The changed rows of the last `status.py` run are printed before any question (**Loop** step
+6). Then one `AskUserQuestion` per block, its text built from what stopped. A call holds at
+most four questions: a block of more than four decisions goes out four at a time, each call
+after the last was answered, every answer recorded, and **Loop** step 2 re-run once after the
+last of them, not after each:
 
 - a `D<n>` BLOCKED row, or an agent `stopped` for decisions: each `D<n>` named, its question
-  and its `Recommendation:` from `docs/decisions.md` as the recommended option;
+  and its `Recommendation:` from `docs/decisions.md`, read whole with the Read tool (never
+  `grep`, `sed` or `wc` through Bash), as the recommended option;
 - an agent `blocked` (a missing credential, a failed precondition): the return's lines, with
   *fixed, retry* and *stop here* as the options;
 - a review cap: the row's evidence, with *one more round* and *defer* as the options;
@@ -433,7 +443,9 @@ Record the answer, then re-run **Loop** step 2:
   question, `Decision:` the answer, `Status: decided` — and run the designer for the section
   in the next batch.
 - For a cap, no ledger edit: *one more round* grants the section an implementer and a `full`
-  reviewer; *defer* grants it a `defer` reviewer.
+  reviewer; *defer* grants it a `defer` reviewer. The grant is spawned by **Loop** step 4
+  after step 2 has re-run and its rows are printed — never straight from the answer: the
+  audited driver built inputs and spawned from the answer, with no `status.py` between.
 - For a profile cap, no ledger edit: *one more round* grants the section its designer, the
   headings after `open` as `Spec-change:`; *defer* grants it a profiler, whose prompt is
   `status.py --profile <pkg>/<section> --defer`, verbatim.
@@ -480,7 +492,7 @@ run-package <arguments as typed>: <done | stopped at <section> <STEP>>
 sections: <DONE>/<total> DONE; <section> · <state>, …
 agent runs: designer <n> · tester <n> · implementer <n> · reviewer <n> · researcher <n> · profiler <n> · architect <n>
 commits: <start sha>..<end sha> (<count>)
-stopped because: <the agent's first two lines, the row as it prints, the shipped: line, the integration: line, the paths: line, or the run gate's FAIL lines>
+stopped because: <the agent's first two lines, the row as it prints, the shipped: line, the integration: line, the paths: line, the run gate's FAIL lines, or user: "<the user's own words>">
 no Result: line: <role> <section>: no Result: line; state advanced, …
 uncommitted: docs/decisions.md
 next: <status.py's next line>
@@ -493,8 +505,11 @@ data: done`, `run-package data ingest: done`, `run-package data ingest --step RE
 the one step run. The first line reads `stopped at <section> BLOCKED` for a stop at a BLOCKED
 row, `stopped at the surface check` for a stop at the surface question, `stopped at the
 integration check` for a stop at an integration question, and `stopped at the paths review`
-for a stop at a paths question. `stopped because`
-is one of the things its line lists, quoted as it stands, never a reason of your own, and it
+for a stop at a paths question, and `stopped at <section> <STEP>` when the user asked to
+stop mid-run, `<STEP>` the step the stop landed between. `stopped because`
+is one of the things its line lists, quoted as it stands, never a reason of your own: a
+user's mid-run stop is `user: "<their words>"`, the message quoted as typed, and only a
+message that asks to stop is one (**Asking**, a question with no answer). It
 appears only when stopped, `no Result: line` only when a return's first line was not
 `Result:` and its row had advanced (**Loop** step 5), and `uncommitted` only when `git status
 --porcelain -- docs/decisions.md` prints a line: an agent's commit may have carried your edit,

@@ -29,7 +29,9 @@ beyond them, say so where the next reader looks rather than deciding quietly.
   and your rewrite answers (**Modes**, `delta`); and your section's decisions inbox,
   `docs/packages/<pkg>/decisions/<section>.md`, appended `## D?` stubs when you stop
   (**Return**). Never `docs/decisions.md` — a hook merges the inbox into it — and never
-  source, config, tests, or another section's design. Every file through the Write and Edit
+  source, config, tests, or another section's design. Your own memory,
+  `.claude/agent-memory/dev-team-designer/`, is the one exception (**Memory**): never staged,
+  never committed and never listed in the return. Every file through the Write and Edit
   tools: no heredoc, `sed -i`, `tee` or redirect; the Bash guard refuses them.
 - **You commit your own run** (**Commit**), whatever it ends in.
 - **Bash** is for `git` per **Commit** and read-only inspection of paths you may read. Every
@@ -100,7 +102,7 @@ as provisional.
 
 **Source probes** — one probe doc per external source your section consumes,
 `docs/sources/<source>.md`, written by a researcher that went and looked. Its title line says
-which kind it is, `api` or `dataset`, and its **Sections served** item for your section says
+which kind it is, `api`, `dataset` or `stage`, and its **Sections served** item for your section says
 which endpoints or columns you were probed for. Treat it exactly as you treat an
 `interface.md`, with one difference: **its authority is per heading.** Where the doc marks
 something `observed` it outranks the vendor's or the publisher's documentation absolutely.
@@ -127,7 +129,17 @@ the probe prescribes is the split you design: chronological or grouped is a prop
 data, and a random split over either one invents a result that will not survive contact with
 production.
 
-Either kind: every line under **Quirks** becomes handled behavior in your workflow or an entry
+On a `stage` probe — a data profile the profiler wrote on the real data a data-heavy section
+receives, in `data-profile.md`'s shape — **Observed schema**, **Duplicates and keys** and
+**Shape** are read as a `dataset`'s. **Quirks** is the kinds: one line each with its checks,
+its count, its proposed treatment and its `D<n>` or `no decision needed`, and the design
+handles every one, a handler per kind, as `data-quality` (in `Skills to invoke:`) says. A
+`D<n>` on a kind is a decision like any other: decided, designed to and cited; open, designed
+to its assumption. The files beside the profile, `<token>.profile.py` and
+`<token>.sample.json`, are the profiler's: the tester takes example rows from the second, and
+you read neither.
+
+Every kind: every line under **Quirks** becomes handled behavior in your workflow or an entry
 under **Pitfalls and risks** — never nothing, because a quirk nobody designed for is a quirk
 somebody debugs in production. Do not fetch a probed source's documentation yourself — the
 probe already did, against reality, and two readings of the docs is how a discrepancy gets
@@ -194,7 +206,13 @@ design into existence.
    existing design; in `document` mode the code at the section path. In `delta` mode every
    read here still applies — the change file or the spec-change and the existing design are
    read in addition, not instead: the audited delta designers designed from the diff alone
-   (E3).
+   (E3). And nothing else: not another section's design or ledger (its README, or the
+   contract's **Section interfaces** before it ships, is the whole of what you know about it),
+   not a dependency's source (`yahoo/profiles.py` is described by the yahoo README, which
+   already documents what it ships), and not the files beside a probe doc
+   (`<token>.sample.json`, `<token>.profile.py`: the profile is the researcher's or the
+   profiler's account of them, and it is the one you design to). A read outside this list is
+   a fact the next designer will not have, and the design then rests on it silently.
 2. **Check the contract before designing against it.** A boundary shape, a public name, a
    consumed signature or a nullable column the contracts get wrong — contradicted by a shipped
    README, an upstream `interface.md`, or an `observed` heading of a probe doc — is a
@@ -302,7 +320,11 @@ it truly does not apply, and say so in a line.
     compatible — a new optional parameter, a helper the row does not name, a step split in
     two, a new name nothing consumes yet. Anything a consumer must change for — a changed
     signature, a renamed or removed public name, a changed shape or nullability — is not a
-    deviation whatever its reason: go to **Spec-change**. The round-1 conformance reviewer
+    deviation whatever its reason: go to **Spec-change**. Nor is a frame, a vendor call or an
+    effect that a **Call paths** entry does not list, however additive it reads (§4): a path
+    the contract does not have is never a deviation, it is a `spec-change: contract`, and the
+    audited design that logged two extra calls and a write as "additive" sent its implementer
+    to build frames the contract never counted. The round-1 conformance reviewer
     applies the same test. If none, write "None". In `delta` mode the change file's
     **Contract changes** are the spec and are not listed here; this heading holds only
     departures the change file does not sanction. Each item is also a ledger entry, which is

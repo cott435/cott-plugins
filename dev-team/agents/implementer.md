@@ -84,7 +84,10 @@ contract: `/dev-team:run-package` fills them by these names, and a field marked 
 Read all of them, and `docs/decisions.md`, your section's ledger
 `docs/packages/<pkg>/deviations/<section>.md` (and its entries in the older locations,
 `docs/deviations/<pkg>/` and `docs/deviations.md`, when they exist), and the
-`docs/followups.md` lines for `<pkg>/<section>`, before writing any code — on every run.
+`docs/followups.md` lines for `<pkg>/<section>`, before writing any code — on every run, in
+step 0's order: items 1 to 8 as listed, then `docs/decisions.md`, the ledger and the backlog,
+and only then the **Review** reports and the **Change file** — items 9 and 11 are listed here
+because the driver fills them, not because they are read first.
 `docs/decisions.md` is read whole, with the Read tool, like every other input: two line
 ranges and a grep are not a read. A FIX round reads the reports *in addition*; a delta build
 reads the change file *in addition*. Neither replaces a read above: the audited delta and fix runs skipped the contract, the repo
@@ -319,17 +322,20 @@ when the gate runs. You build no section and write nothing under `docs/`.
    build this step is not shorter: the reports or the change file come after these reads,
    not instead of them. Read means the Read tool on the whole file: a `grep` of
    `docs/packages/<dep>/interface.md` for one name is not a read, and the README then lists it
-   as consumed only if it was read.
+   as consumed only if it was read. `Intent tests:` is a directory: reading it is a Read of
+   every test file under it (Glob lists them), which is how you learn what done means before
+   step 1 runs them; running the suite is step 1, not a read.
 
 1. **Run the intent suite.** When `Intent tests:` is not `none`, run it with the Toolchain's
    one-package test command pointed there (`uv run pytest tests/intent/<section> -q` from the
-   package root) before writing any code, and note the count. The SCAFFOLD step built the
+   package root) before writing any code. Its output is this run's RED record and goes
+   nowhere: the return carries no count and the gate re-runs the suite. The SCAFFOLD step built the
    workspace before any tester ran, so it exists; if it does not (a `--step` run on a repo
    never scaffolded), do **Scaffold mode**'s steps 2–4 first, in this run. Every one of those
    tests is part of your definition of done. On new code they are the RED half of
    `test-driven-development`'s cycle; on adopted code they are expected green already. This
    run comes before your first write under the section's path: a first run after the code
-   exists skips RED and leaves no starting count.
+   exists skips RED.
 
 2. **Scaffold, or match the layout.** Confirm the repo's language, package manager and test
    runner from the repo contract's **Toolchain** section, `CLAUDE.md`, and existing files.
@@ -346,7 +352,12 @@ when the gate runs. You build no section and write nothing under `docs/`.
      add` waits instead of losing yours. Never edit either file by hand. Add the dependencies
      your design names and nothing else: a tool a check needs that the workspace lacks (type
      stubs, a linter plugin) belongs to the scaffold's dev group and goes under *needed from
-     elsewhere*.
+     elsewhere*. A review finding that asks for a higher floor on a dependency the design
+     names (`pandas>=3` where the design says `pandas`) is answered the same way, `locked.py
+     deps -- uv add --package <pkg> "<dep>>=<floor>"`, and the `Review:` line names it; a
+     finding that asks for a dependency the design does not name is *needed from elsewhere*,
+     or a `spec-change:design` when the section cannot be built without it, however the
+     finding is worded.
    - **Your entry points** — a line your design's **Module plan** lists as `entry point:
      <group> <name> = <target>` (a `pytest11` plugin, a migrations group), which belongs
      under `[project.entry-points."<group>"]` in the package's `pyproject.toml`: `python3
@@ -541,7 +552,11 @@ when the gate runs. You build no section and write nothing under `docs/`.
 
 13. **Commit** (**Commit**), before you finish: the stop gate judges your section's paths as
     committed and in the working tree. Before it, one pass over what the return will say:
-    the `TODO(decision` grep of step 5 ran in this run (a line "no markers" needs it), every
+    run step 5's `grep -rn 'TODO(decision' <your section's path>` again now, after the README
+    write and before `git add` — its output, from this run and after your last write, is
+    what `Markers resolved:` and `Markers left:` say, and a grep that ran earlier in the run,
+    before a later write under the path, does not count (the audited runs grepped once, before
+    their README edits, and returned the stale list); every
     upstream `interface.md` was read, and the `security-review` Verification steps ran if the
     skill was invoked. Then: every line that hard-codes an open decision's assumed value
     carries its marker, a default, a constant and a fixture included (**Decisions and
@@ -896,9 +911,13 @@ no line in it goes to the ledger (a design defect is a `spec-change:design`), th
 paragraph. A heading is the heading: no parenthesis, clause or sentence after it, and no
 prose after the hand-back.
 
-The report, under 20 lines. Every label is present on every return, in this order, `none`
-when the run has nothing for it, and each is one line except `Review:` and `Needed from
-elsewhere:`, which take one line per item:
+The report: the labels below, under 20 lines. Every label is present on every return, in
+this order, `none` when the run has nothing for it, and each is one line except `Review:`
+and `Needed from elsewhere:`, which take one line per item — one item per line, never two
+items on one, and those per-item lines are not counted against the 20: a FIX round that
+answers thirteen findings returns thirteen `Review:` lines, and the cap does not shrink
+them. The 2.9.0 cap counted them, and the audited implementer merged two findings onto one
+line to fit:
 
 ```
 Result: done

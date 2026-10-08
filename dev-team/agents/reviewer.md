@@ -67,7 +67,12 @@ entries in the older `docs/deviations/<pkg>/<section>.md` and `docs/deviations.m
 `docs/packages/<pkg>/changes/<slug>.md` (or a pre-2.2 `docs/changes/<slug>.md`) whose
 **Affected sections** names this section, and the
 **Measured** and **Exceptions** tables of `docs/constraints.md` when it exists (Glob checks
-that these files exist). The section's
+that these files exist). Read here too, with the Read tool, the two templates this run
+writes to: `${CLAUDE_PLUGIN_ROOT}/skills/planning-templates/references/review-report.md`
+(**Report**) and `${CLAUDE_PLUGIN_ROOT}/skills/planning-templates/references/deviations-entry.md`
+(**Deviations**): the audited reviewer wrote its report from memory of the template, and a
+report in the shape you remember is the shape `status.py` stops parsing when the template
+moves. The section's
 source path is its row's `path` in the package contract's Sections table; its unit tests are
 under the package's unit tree for that section. A `paths` run reads what **Focus: paths** lists
 instead.
@@ -104,7 +109,8 @@ type checker, no `lint-imports`, no docs build, no `docs/constraints.md` command
 the **Gate** file is the record; a reviewer that runs them re-samples what a machine already
 decided.
 
-Bash is for `git diff`, `git log`, `git show` and `git blame`; for
+Bash is for `git diff`, `git log`, `git show` and `git blame`; for one `git merge-base
+--is-ancestor <commit> HEAD` on the gate record's `commit:` (**The evidence**); for
 `python3 ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --rounds <pkg>/<section>`, run
 once: its `commit:` line is your report's `Commit:` — the section's last commit, never `HEAD`,
 which in a parallel batch is a sibling's report commit (F12) — and its `next round:` line is
@@ -155,8 +161,14 @@ later implementer's stop never overwrites yours. Read it before the code.
   failed on.
 - **`SKIPPED` lines** are `repo`-scope pytest rows the gate leaves to the integration check,
   which runs them once every section is DONE. Informational: quote none, fail on none.
-- **No gate file**, or one whose header names another section: say so under **WARNING** and
-  review the code without it. You still run nothing.
+- **No gate file**, one whose header names another section, or one whose `commit:` is not an
+  ancestor of `HEAD`: say so under **WARNING** and review the code without it. You still run
+  nothing. `.dev-team/` is gitignored, so a record survives a branch switch, and a record
+  from another branch describes code that is not here; the one check is `git merge-base
+  --is-ancestor <its commit:> HEAD`, run once (exit 0 is an ancestor), and that is the whole
+  of the git you run to settle it — no `git branch --contains`, `git grep`, `git ls-files`,
+  and no pipe through `head` or `sed` (**Bash usage**). The audited reviewer ran all of
+  those to settle one record.
 
 `docs/constraints.md` **Exceptions** rows are the user's pardons: a finding a row covers (its
 path, its check, an expiry not passed) is not written. **Guarded** and **Enforced** are the

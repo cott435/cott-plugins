@@ -24,7 +24,8 @@ kinds still open to the backlog.
 ## Hard rules
 
 - Write only `docs/sources/<token>.md`, `docs/sources/<token>.profile.py`,
-  `docs/sources/<token>.sample.json`, `.dev-team/data/<token>/**` (through the program), and
+  `docs/sources/<token>.sample.json`, `.dev-team/data/<token>/**` (through the program, and
+  on a verify run `rounds/<n>/rejected.md` with the Write tool), and
   on a verify run the section's inbox `docs/packages/<pkg>/decisions/<section>.md`, and on a
   verify run at round 1 or later or a defer run the section's ledger
   `docs/packages/<pkg>/deviations/<section>.md`, and on a defer run `docs/followups.md`. Never a file under a package, a contract, a
@@ -94,9 +95,16 @@ Your prompt is a block of fields, one `<Field>: <value>` line each, printed by
 1. Read the contract row, **Data**, the dependency READMEs' **Entry points and interfaces**,
    the source probes' **Observed schema**, and invoke every skill in `Skills to invoke:`. Each
    rule a project skill states is a kind to confirm or rule out.
-2. Find the data: on disk at the location `Data:` names; else pull it through the dependency
-   entry points into `<Store>input/`, up to the cap. A `D<n>` for the cap that is still open is
-   read for its `Assumption if unanswered:`. When **Data** describes records of a population
+2. Find the data: on disk at the location `Data:` names, or already in `<Store>input/` from
+   an earlier run; else pull it through the dependency entry points into `<Store>input/`, up
+   to the cap. A `D<n>` for the cap that is still open is
+   read for its `Assumption if unanswered:`. Data found in `<Store>input/` was pulled by an
+   earlier run, on this branch or another (`.dev-team/` is gitignored and survives a branch
+   switch): **Access** says `on disk`, and **Provenance** says `pulled by an earlier run; not
+   reproduced by this program`, naming the entry points only as what a pull would call —
+   never `pull()` of the program you commit, which did not write it and may not be able to.
+   The audited profile credited its own `pull()` for input another branch's program wrote.
+   When **Data** describes records of a population
    the section itself produces (the registry's instruments, the ledger's runs) and the
    section is not built, draw the population from the dependency that feeds the section,
    and name the stand-in under **Provenance** as a gap. Neither possible →
@@ -110,10 +118,12 @@ Your prompt is a block of fields, one `<Field>: <value>` line each, printed by
 4. Run it. Group the failing rows by the set of checks they fail, largest group first, and
    examine each group with its neighbouring rows of the same key and any second source. At
    most 25 kinds a round; the rest are counted under **Unexplained**.
-5. On `Revise:`, rework only the named kinds' checks, re-run, and keep every other line. A
+5. On `Revise:`, read `<Store>rounds/<round>/rejected.md` first — the verify run's evidence,
+   one line per rejected kind: the row its check misjudged and the rule it is judged by —
+   then rework only the named kinds' checks, re-run, and keep every other line. A
    revise run still does step 1 in full (the reads and every skill in `Skills to invoke:`)
    and step 6's template read before it edits any file; it skips step 2's pull, since the
-   data is already in `<Store>input/`.
+   data is already in `<Store>input/`, so its `Data:` line ends `on disk`, never `pulled`.
 6. Invoke `planning-templates`, read `references/data-profile.md`, and write the profile:
    whole on the first run, extended after. Write `<token>.sample.json`.
 7. Append the round line: `pending verify`; or `kinds: 0 (0 to decide)` when no row fails —
@@ -132,6 +142,13 @@ Revised: K<a>, K<b> | none
 Gaps: <count of gap lines in the profile>
 Commit: <sha>
 ```
+
+`<d>` is the number of **Quirks** lines whose decision field reads `D?` — the `repair` and
+`drop` kinds awaiting the verify run's stub — counted from the profile as committed, never
+from memory: the audited revise run returned 5 for a profile that held 6, and withdrawing a
+`flag` kind cannot change the count. `Data:` ends `pulled` only when this run's step 2 pulled
+into `<Store>input/`; it ends `on disk` when the data was already there, on a revise run
+always (step 5 skips the pull), and whatever an earlier run's return said.
 
 **Round 1 and later**, on the built section, in place of the steps above:
 
@@ -170,12 +187,15 @@ Commit: <sha>
    but whose name or description its sampled rows contradict: only the revising run may
    reword its line, and only before the round closes. A kind none of whose rows you drew
    was not judged, and is not claimed as judged.
-3. Any kind rejected for the first time → append the round line `revise: K<a>, K<b>`, commit,
-   return. Nothing else is written. The return names, for each rejected kind, one row its check
-   misjudged, by its key columns, and the rule that row is judged by — the evidence the
-   revising run starts from. Nothing records the kinds that held: the next verify run judges
-   every `unverified` kind of the round again, so the return never says they will be marked
-   `verified`.
+3. Any kind rejected for the first time → write `<Store>rounds/<round>/rejected.md` with the
+   Write tool: one line per rejected kind, `K<n> — <key columns of the misjudged row> — <the
+   rule it is judged by>`, the same lines the return carries; then append the round line
+   `revise: K<a>, K<b>`, commit, return. Nothing else is written. The return names, for each
+   rejected kind, one row its check misjudged, by its key columns, and the rule that row is
+   judged by — but the driver reads a return's first line only, so the file, not the return,
+   is the evidence the revising run starts from (profile step 5). Nothing records the kinds
+   that held: the next verify run judges every `unverified` kind of the round again, so the
+   return never says they will be marked `verified`.
 4. Otherwise: a kind rejected a second time stays `unverified` and its rows are added to
    **Unexplained**; every other judged kind's line gets `verified`. For each verified kind
    whose proposal is `repair` or `drop`, append one stub to the section's inbox per
