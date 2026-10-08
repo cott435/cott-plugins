@@ -3,8 +3,10 @@
 
 | Id | Title | Fault | Severity | Status | Found | Seen | Fixed in | Last check |
 |---|---|---|---|---|---|---|---|---|
+| [DT-031](issues/DT-031.md) | Returns break their closed shape or line cap in six of seven roles | agent | ERROR | recurred | 2026-10-08 96a768ee | 2 | 2.9.0 | 2026-10-08 recurred |
+| [DT-034](issues/DT-034.md) | Implementer reports TODO(decision) markers resolved without running the sweep | agent | ERROR | recurred | 2026-10-08 96a768ee | 2 | 2.9.0 | 2026-10-08 recurred |
 | [DT-001](issues/DT-001.md) | Driver does not print changed rows after a re-derive | agent | ERROR | open | 2026-10-07 ca48b249 | 3 | — | — |
-| [DT-002](issues/DT-002.md) | Driver reads the decisions ledger with grep/sed through Bash | agent | ERROR | open | 2026-10-07 ca48b249 | 1 | — | — |
+| [DT-002](issues/DT-002.md) | Driver reads the decisions ledger with grep/sed through Bash | agent | ERROR | open | 2026-10-07 ca48b249 | 2 | — | — |
 | [DT-003](issues/DT-003.md) | Driver skips the re-derive after the cap answer | agent | ERROR | open | 2026-10-07 ca48b249 | 2 | — | — |
 | [DT-004](issues/DT-004.md) | Profile's Provenance credits a pull this run never made | agent | ERROR | open | 2026-10-07 ca48b249 | 1 | — | — |
 | [DT-005](issues/DT-005.md) | Reviewer runs Bash outside its allowlist | agent | ERROR | open | 2026-10-07 ca48b249 | 1 | — | — |
@@ -44,14 +46,18 @@
 | [DT-049](issues/DT-049.md) | Docstring citation rule is not repeated where docstrings are written | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-050](issues/DT-050.md) | Two hook traps (88 columns, import stripped before use) are not stated to the implementer | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-051](issues/DT-051.md) | Closed return lists lack forms the agents repeatedly need | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
-| [DT-028](issues/DT-028.md) | Summary says "user asked to stop" when the user only resumed | agent | ERROR | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
-| [DT-029](issues/DT-029.md) | Parallel implementers commit each other dependency lines and uv.lock | agent | ERROR | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
-| [DT-031](issues/DT-031.md) | Returns break their closed shape or line cap in six of seven roles | agent | ERROR | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
-| [DT-032](issues/DT-032.md) | Tester runs an unscoped git status --short | agent | ERROR | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
-| [DT-034](issues/DT-034.md) | Implementer reports TODO(decision) markers resolved without running the sweep | agent | ERROR | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
-| [DT-035](issues/DT-035.md) | Implementer never runs the intent suite before writing code | agent | ERROR | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
-| [DT-040](issues/DT-040.md) | Design-defect stop writes a full tree first | agent | WARN | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
-| [DT-045](issues/DT-045.md) | Several spec-change entries have no return form | definition | NOTE | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
-| [DT-046](issues/DT-046.md) | A lint-forbidden case is learned only from the format hook | definition | NOTE | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
-| [DT-048](issues/DT-048.md) | The researcher scratch directory is not named | definition | NOTE | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
-| [DT-052](issues/DT-052.md) | Implementer text says no file is shared, then stages two shared files | definition | NOTE | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
+| [DT-053](issues/DT-053.md) | Revise profile run returns Data: pulled when it pulled nothing | agent | ERROR | open | 2026-10-08 ca48b249 | 1 | — | — |
+| [DT-054](issues/DT-054.md) | Profiler tries a Bash python write to a repo file | agent | WARN | open | 2026-10-08 ca48b249 | 1 | — | — |
+| [DT-055](issues/DT-055.md) | The starting intent-suite count has nowhere to go | definition | NOTE | open | 2026-10-08 ca48b249 | 1 | — | — |
+| [DT-056](issues/DT-056.md) | A review finding that raises a dependency floor has no stated route | definition | NOTE | open | 2026-10-08 ca48b249 | 1 | — | — |
+| [DT-057](issues/DT-057.md) | The designer's reading limit does not cover probe sample files or a dependency's source | definition | NOTE | open | 2026-10-08 ca48b249 | 1 | — | — |
+| [DT-058](issues/DT-058.md) | A verify run's rejection evidence does not reach the revising run | definition | NOTE | open | 2026-10-08 ca48b249 | 1 | — | — |
+| [DT-029](issues/DT-029.md) | Parallel implementers commit each other dependency lines and uv.lock | agent | ERROR | released | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 not exercised |
+| [DT-040](issues/DT-040.md) | Design-defect stop writes a full tree first | agent | WARN | released | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 not exercised |
+| [DT-045](issues/DT-045.md) | Several spec-change entries have no return form | definition | NOTE | released | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 not exercised |
+| [DT-046](issues/DT-046.md) | A lint-forbidden case is learned only from the format hook | definition | NOTE | released | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 not exercised |
+| [DT-048](issues/DT-048.md) | The researcher scratch directory is not named | definition | NOTE | released | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 not exercised |
+| [DT-028](issues/DT-028.md) | Summary says "user asked to stop" when the user only resumed | agent | ERROR | verified | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 held |
+| [DT-032](issues/DT-032.md) | Tester runs an unscoped git status --short | agent | ERROR | verified | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 held |
+| [DT-035](issues/DT-035.md) | Implementer never runs the intent suite before writing code | agent | ERROR | verified | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 held |
+| [DT-052](issues/DT-052.md) | Implementer text says no file is shared, then stages two shared files | definition | NOTE | verified | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 held |
