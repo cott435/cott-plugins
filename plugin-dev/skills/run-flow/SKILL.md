@@ -1,7 +1,7 @@
 ---
 name: run-flow
-description: Draw what a plugin's workflow run actually did, from its session transcripts, as a page in the browser pane - the run's flow chart (waves of agents, one column per section, each review coloured by its verdict) with every agent clickable through to its full record, which is the prompt it was sent, every step with its full input and output, each Write's content and each Edit's old and new text, its commits with their files, and what it handed back. With --agent, every run of one agent type in time order, in one chat or, with --sessions or --branch, across several. Use when someone asks what a run or an agent did in some chat ("what did the profiler do in that chat?", "show me the run", "open the flow for session 1493ed56", "which agents ran in the architecture migration chat?", "list every reviewer run on that branch", "how many times did the profiler run, and what did each do?"), or to rebuild a run's chart after an audit. Use only inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), or from the marketplace repo that holds it with --plugin naming the plugin. Not for judging a run against the plugin's files (that is audit-run), and not for reading ordinary chat history or a project's own logs.
-argument-hint: "[chat title words | session-id | latest] [--plugin NAME] [--agent TYPE] [--sessions a,b | --branch GLOB]"
+description: Draw what a plugin's workflow run actually did, from its session transcripts, as a page in the browser pane - the run's flow chart (waves of agents, one column per section, each review coloured by its verdict) with every agent clickable through to its full record, which is the prompt it was sent, every step with its full input and output, each Write's content and each Edit's old and new text, its commits with their files, and what it handed back. With --agent, every run of one agent type in time order, in one chat or, with --sessions or --branch, across several. With --explain, a short plain-English account of each agent, each line linked to its steps, sits at the top of its page. Use when someone asks what a run or an agent did in some chat ("what did the profiler do in that chat?", "show me the run", "open the flow for session 1493ed56", "which agents ran in the architecture migration chat?", "list every reviewer run on that branch", "how many times did the profiler run, and what did each do?", "explain what each agent did in that run", "walk me through what the implementer did in chat 5976c083"), or to rebuild a run's chart after an audit. Use only inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), or from the marketplace repo that holds it with --plugin naming the plugin. Not for judging a run against the plugin's files (that is audit-run), and not for reading ordinary chat history or a project's own logs.
+argument-hint: "[chat title words | session-id | latest] [--plugin NAME] [--agent TYPE] [--sessions a,b | --branch GLOB] [--explain]"
 ---
 
 # Seeing a run
@@ -96,6 +96,40 @@ never ran **P**'s workflow: say so and stop. With `--agent` on one session, if n
 that type ran there (`agents/<R>.html` was not written), say so, name the types that did
 run, and serve `flow.html` instead.
 
+## 2b. Explain (with --explain)
+
+Only with `--explain`. Each finished unit gets a short account at the top of its page, written
+by one `plugin-dev:run-narrator`: five to ten plain lines (one per step for a unit of fewer
+than five), each starting with the step range it covers. It is a reading aid; the narrator
+judges nothing.
+
+1. **The units to narrate** are the finished units (`finished` in `index.json`) of the
+   session, or with `--agent` only those of that type (across sessions, those in each
+   session's workspace), that need it: `explain/U<nn>.md` is missing, or its first line's
+   `steps 1–<n>` differs from that unit's `step_count` in `index.json`. flow.html's units
+   table shows the same as its **Narrated** column, `—` or `stale`. A unit already narrated
+   for its current step count is not narrated again. None to narrate: skip to step 4.
+2. **More than 12**: ask first, with `AskUserQuestion`: `Narrate all <n>` or `Only the first
+   12` (in unit order). Each narrator is a Sonnet run of tens of thousands of tokens.
+3. **Spawn** one `plugin-dev:run-narrator` per unit, in the foreground, all in one message (a
+   session runs at most 20 subagents at once, `plugin-anatomy` `references/agents.md`; spawn
+   any past 20 when the first return). Each prompt is these four lines, every path absolute:
+
+   ```
+   Unit: U<nn>
+   Trace: <workspace>/units/U<nn>.md
+   Full: <workspace>/units/U<nn>.json
+   Output: <workspace>/explain/U<nn>.md
+   ```
+
+   A narrator's return is one line, `Explained: U<nn> · <k> lines · <Output path>`. One that
+   returns anything else is spawned once more; if the second return is not that line either,
+   skip the unit and name it in the closing lines.
+4. **Re-render** when every narrator has returned: `T flow <workspace>` (once per workspace
+   across sessions). It puts each account on its unit page under **What it did**, with every
+   range linking to its steps; it drops any line citing a step the unit does not have, and
+   marks an account out of date when the unit's step count has changed since it was written.
+
 ## 3. Serve and open
 
 A local page opens in the browser pane only when it is served:
@@ -119,6 +153,8 @@ Then tell the user, in two lines:
 2. That each box opens that agent's page, and that `/plugin-dev:audit-run` is how a run is
    judged against the plugin's files.
 
+With `--explain`, line 2 also says how many units were narrated, and names any skipped.
+
 With `--agent`, the two lines are instead:
 
 1. The agent type, and how many runs of it across which sessions (their `<id8>`s) — and the
@@ -135,5 +171,7 @@ right, is the judgment this skill does not make.
 - Judge the run, or say whether an agent followed its definition. That is `audit-run`.
 - Edit the plugin, the project or the transcripts.
 - Commit anything.
+- Narrate on its own initiative: run-narrator is spawned only with `--explain`, which Claude
+  passes when the user asks for an explanation of what the agents did.
 - Write anywhere but the workspace (across sessions, the session workspaces and `views/` under
   `evals/workspace/audit/`), plus a `.gitignore` line when one is missing.

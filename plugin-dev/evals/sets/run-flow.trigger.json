@@ -10,6 +10,8 @@
   {"query": "dev-team plugin directory: draw the latest run of our workflow as a chart, which designers ran in parallel and which ran one at a time?", "should_trigger": true},
   {"query": "in the dev-team plugin directory: list every reviewer run on the data_rebuild branch, across all its run-package chats, in order", "should_trigger": true},
   {"query": "I'm in cott-plugins/dev-team — how many times did the profiler run in session ca48b249, and what did each do?", "should_trigger": true},
+  {"query": "I'm in the dev-team plugin folder: explain what each agent did in yesterday's run-package chat, in plain English, I don't want to read 80 raw steps per agent", "should_trigger": true},
+  {"query": "cwd is cott-plugins/dev-team (has .claude-plugin/plugin.json) — walk me through what the implementer did in chat 5976c083, step by step", "should_trigger": true},
   {"query": "in my flask project ~/code/shop, what did the agent do in yesterday's chat? show me the steps", "should_trigger": false},
   {"query": "I'm in ~/PycharmProjects/quant (just a python project, no plugin) — which subagents ran in the chat I had this morning?", "should_trigger": false},
   {"query": "in my react app repo, open a page showing what Claude did in my last session", "should_trigger": false},

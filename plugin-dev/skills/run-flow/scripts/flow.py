@@ -30,6 +30,14 @@ directory passed in. For this session's `<id8>`, a Found in line on a unit marks
 (first found there), and a Checks line on a unit marks it `✓ <ID>` (held) or `✗ <ID>`
 (recurred); other verdicts are not drawn. Marks are a second badge line on the box and an
 **Issues** row on the unit page, linking to each issue file. No ledger, no marks.
+
+Narration comes from `explain/U<nn>.md`, written by run-narrator (`run-flow --explain`): a header
+`U<nn> · <type> · steps 1–<n>`, then lines that each start with a step range (`S<a>–S<b> · ` or
+`S<a> · `). It sits at the top of the unit page under **What it did**, each range linking to its
+steps. The check is mechanical: a line that names a step the unit does not have, or that starts
+with no range, is not shown, and the block says how many were dropped; a header whose `<n>` is
+not the unit's `step_count` marks the block out of date. The units table's **Narrated** column
+says `yes`, `stale`, or `—`.
 """
 
 from __future__ import annotations
@@ -130,6 +138,63 @@ def mark_label(kind: str, iid: str) -> str:
     return f"{MARK[kind][0]} {iid}"
 
 
+# ---------------------------------------------------------------- narration
+
+
+NARR_HEAD = re.compile(r"^U\d+\s*·.*·\s*steps\s+1\s*[–-]\s*(\d+)\s*$")
+NARR_LINE = re.compile(r"^S(\d+)(?:\s*[–-]\s*S?(\d+))?\s+·\s+(.*)$")
+
+
+def narration(out: Path | None, unit: str, step_count: int) -> dict | None:
+    """`explain/<unit>.md`, checked against the unit's step count; None when there is none.
+
+    Returns `written_for` (the header's `<n>`, or None when the header does not parse), `stale`,
+    the `lines` kept as (first step, last step, text), and `dropped`, the count of lines that
+    name a step the unit does not have or start with no range.
+    """
+    f = out / "explain" / f"{unit}.md" if out else None
+    if not f or not f.exists():
+        return None
+    raw = [x.strip() for x in f.read_text(encoding="utf-8", errors="replace").splitlines() if x.strip()]
+    head = NARR_HEAD.match(raw[0]) if raw else None
+    written_for = int(head.group(1)) if head else None
+    kept, dropped = [], 0
+    for line in raw[1:] if head else raw:
+        m = NARR_LINE.match(line)
+        if not m:
+            dropped += 1
+            continue
+        a = int(m.group(1))
+        b = int(m.group(2)) if m.group(2) else a
+        if not (1 <= a <= step_count and 1 <= b <= step_count):
+            dropped += 1
+            continue
+        kept.append((a, b, m.group(3)))
+    return {"written_for": written_for, "stale": written_for != step_count, "lines": kept, "dropped": dropped}
+
+
+def narration_status(n: dict | None) -> str:
+    return "—" if n is None else "stale" if n["stale"] else "yes"
+
+
+def narration_block(n: dict | None, step_count: int) -> str:
+    if n is None:
+        return ""
+    parts = ["<h2>What it did</h2>"]
+    if n["stale"]:
+        was = (f"written for {n['written_for']} steps" if n["written_for"] is not None
+               else "its header names no step count")
+        parts.append(f'<p class="warn">Narration out of date: {was}, the unit now has {step_count}.</p>')
+    items = []
+    for a, b, said in n["lines"]:
+        rng = f'<a href="#S{a}">S{a}</a>' + (f'–<a href="#S{b}">S{b}</a>' if b != a else "")
+        items.append(f"<li>{rng} · {esc(said)}</li>")
+    parts.append(f'<ul class="narr">{"".join(items)}</ul>' if items else "<p>No line of it cites this unit's steps.</p>")
+    if n["dropped"]:
+        parts.append(f'<p class="lbl">{n["dropped"]} line(s) dropped: they cite steps this unit does not have.</p>')
+    return "\n".join(parts)
+
+
 # ---------------------------------------------------------------- model
 
 
@@ -142,6 +207,7 @@ def model(index: dict, out: Path | None = None, marks: dict | None = None) -> di
         u["audit"] = audit_errors(out, u["unit"]) if out else None
         u["page"] = f"units/{u['unit']}.html" if out and (out / "units" / f"{u['unit']}.json").exists() else None
         u["marks"] = [(k, i) for k, i, _ in marks.get(u["unit"], [])]
+        u["narrated"] = narration_status(narration(out, u["unit"], u.get("step_count") or 0))
 
     waves: dict[str, list[dict]] = {}
     for u in units:
@@ -428,7 +494,7 @@ padding:8px 10px;margin:4px 0;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,m
 .sid{font:12px ui-monospace,Menlo,monospace;color:var(--muted);margin-right:8px}.kind{font-weight:600;margin-right:8px}
 .err{color:var(--bad);font-weight:600}.hook{color:var(--bad);margin:4px 0 0 16px}.lbl{font-size:12px;color:var(--muted);margin-top:6px}
 details summary{cursor:pointer;color:var(--muted);font-size:12px}.head td:first-child{color:var(--muted)}
-.top{font-size:13px}
+.top{font-size:13px}.narr{list-style:none;padding-left:0}.narr li{margin:3px 0}
 """
 
 
@@ -477,8 +543,10 @@ def step_block(s: dict, unit_of_agent: dict) -> str:
     return head + "".join(body) + "</div>"
 
 
-def unit_page(d: dict, unit_of_agent: dict, marks: list | None = None, here: Path | None = None) -> str:
-    """One unit's page, from its `units/U<nn>.json` only, plus its issue marks, if any."""
+def unit_page(d: dict, unit_of_agent: dict, marks: list | None = None, here: Path | None = None,
+              narr: dict | None = None) -> str:
+    """One unit's page, from its `units/U<nn>.json` only, plus its issue marks and its
+    narration, if any."""
     mins = minutes(d.get("first_ts", ""), d.get("last_ts", ""))
     spawned = f"{d.get('spawner')}" + (f" at {d['spawn_step']}" if d.get("spawn_step") else "")
     if d.get("spawner") in unit_of_agent.values():
@@ -518,6 +586,7 @@ def unit_page(d: dict, unit_of_agent: dict, marks: list | None = None, here: Pat
 <p class="top"><a href="../flow.html">← the run's flow chart</a></p>
 <h1>{esc(d['unit'])} · {esc(d['type'])} · {esc(d.get('description', ''))}</h1>
 <table class="head">{''.join(f'<tr><td>{k}</td><td>{v}</td></tr>' for k, v in rows)}</table>
+{narration_block(narr, d.get("step_count", len(d.get("steps", []))))}
 <h2>Prompt</h2>
 {pre(d.get('prompt') or '(none recorded)')}
 <h2>Steps</h2>
@@ -538,7 +607,9 @@ def write_unit_pages(out: Path, index: dict, marks: dict | None = None) -> list[
         if not src.exists():
             continue
         d = json.loads(src.read_text(encoding="utf-8"))
-        page = unit_page(d, unit_of_agent, marks.get(u["unit"]), (out / "units").resolve())
+        steps = d.get("step_count", len(d.get("steps", [])))
+        page = unit_page(d, unit_of_agent, marks.get(u["unit"]), (out / "units").resolve(),
+                         narration(out, u["unit"], steps))
         (out / "units" / f"{u['unit']}.html").write_text(page, encoding="utf-8")
         written.append(u["unit"])
     return written
@@ -679,7 +750,7 @@ def write_html(out: Path, issues: Path | None = None) -> Path:
         + f"</td><td>{esc(u['type'])}</td><td>{esc(u['lane'])}</td><td>{esc(u['description'])}</td>"
         f"<td>{esc(u['first_ts'][11:16])}</td><td>{u['mins'] if u['mins'] is not None else '?'} min</td>"
         f"<td>{u['tool_calls']}</td><td>{u['errors']}</td><td>{esc(', '.join(u['commits']) or '—')}</td>"
-        f"<td>{esc(u['return_first_line'] or '(still running)')}</td></tr>" for u in units)
+        f"<td>{esc(u['return_first_line'] or '(still running)')}</td><td>{esc(u['narrated'])}</td></tr>" for u in units)
 
     per_role = {r: sum(1 for u in units if u.get("role") == r) for r in m["roles"]}
     type_links = "".join(
@@ -715,7 +786,7 @@ Hover a box for its duration, tools, commits and return; click it for every step
 
 <h2>Units</h2>
 <table><tr><th>Unit</th><th>Type</th><th>Section</th><th>Description</th><th>Start (UTC)</th><th>Duration</th>
-<th>Tool calls</th><th>Errors</th><th>Commits</th><th>Returned</th></tr>
+<th>Tool calls</th><th>Errors</th><th>Commits</th><th>Returned</th><th>Narrated</th></tr>
 {unit_rows}</table>
 </body></html>"""
     path = out / "flow.html"

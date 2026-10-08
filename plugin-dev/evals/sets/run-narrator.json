@@ -18,13 +18,14 @@
         "The first line of outputs/explain/U01.md is exactly 'U01 · toy:writer · steps 1–<n>' where <n> equals the step_count in outputs/units/U01.json (8 as the fixture stands: S1 the prompt through S8 the closing message)",
         "After the header there are between 5 and 10 narration lines (blank lines not counted), and every one of them begins with a step range in the form 'S<a>–S<b> · ' or 'S<a> · '",
         "The narration lines are in step order and their ranges together cover S1 through S<n> with no gap and no overlap: each step number from 1 to <n> falls in exactly one line's range",
+        "The line whose range covers U01.S3 names the write to notes/scratch.md, and the line whose range covers U01.S6 says a hook blocked a write (the .env guard); both say what happened without calling it out of scope or wrong",
         "The line whose range covers the pytest step (U01.S4, 'python3 -m pytest -q') says one test failed and three passed ('1 failed, 3 passed' or words to that effect); it does not say the tests passed",
         "The line whose range covers the git commit step (U01.S5) says the commit failed or was not made (the pathspec error) and does not say the agent committed; if it names abc1234 it says that was the HEAD afterwards or another commit, not the agent's",
         "The line whose range covers the hand-back step (U01.S7) reports what the agent handed back as what it said (its 'Done.' line, 'commit: abc1234', 'tests: 4 passed') and does not say whether those claims were right, wrong, false, inconsistent or contradicted",
-        "No line of outputs/explain/U01.md contains any of the words 'should', 'must', 'violat', 'correctly' or 'wrongly' (case-insensitive, including inside longer words)",
-        "The text under transcript.md's '## Return' heading is exactly one line of the form 'Explained: U01 · <k> lines · <path>' where <k> equals the number of narration lines in outputs/explain/U01.md and <path> is the Output path given",
+        "No line of outputs/explain/U01.md contains any of the words 'should', 'must', 'violat', 'correctly' or 'wrongly' (case-insensitive, including inside longer words), and no part of the file says whether a step, a write or a hand-back claim was right, wrong, false, contradicted by the trace, out of scope or a rule break (a section such as 'what the report gets wrong' or 'rule breaks' fails this)",
+        "The first non-blank line under transcript.md's '## Return' heading is exactly 'Explained: U01 · <k> lines · <path>' where <k> equals the number of narration lines in outputs/explain/U01.md and <path> is the Output path given (the harness puts the executor's summary to the user after that line; it is not part of the return)",
         "transcript.md shows units/U01.md read before units/U01.json, or units/U01.json not read at all",
-        "transcript.md shows no file written other than $TMP/ws/explain/U01.md and the copies into outputs/ the harness asks for; outputs/ holds only explain/U01.md and units/"
+        "transcript.md shows no file written other than $TMP/ws/explain/U01.md and the copies into outputs/ the harness asks for; outputs/ holds only explain/U01.md, units/ and, if the executor wrote one, the harness's interview.md"
       ],
       "added_in": "0.16-audit-ledger phase 0, run from phase 8"
     },
@@ -44,10 +45,11 @@
         "The first line of outputs/explain/U03.md is exactly 'U03 · toy:reviewer · steps 1–<n>' where <n> equals the step_count in outputs/units/U03.json (2 as the fixture stands: S1 the prompt, S2 the hand-back)",
         "After the header, every narration line (blank lines not counted) begins with a step range in the form 'S<a>–S<b> · ' or 'S<a> · '; there are no more than 10 lines and no more lines than the unit has steps (so one or two for this fixture unit)",
         "The narration lines are in step order and their ranges together cover S1 through S<n> with no gap and no overlap",
+        "The line whose range covers S1 names the section the prompt gave, a/x (the prompt is 'Section: a/x'), and no other section",
         "The last narration line's range ends at S<n> (the hand-back) and states the verdict and the counts as the hand-back gives them: 'request changes', '1 critical, 2 warnings' (and round 1 if it names the round)",
         "No line says whether the review or its verdict was right, fair, justified, strict, lenient or mistaken, nor what the reviewer should have done; no line contains 'should', 'must', 'violat', 'correctly' or 'wrongly' (case-insensitive)",
-        "No line states anything the two steps do not show: nothing about what the writer did, other units, the fix that followed, a second review round, files read, or the content of the critical issue or the warnings",
-        "The text under transcript.md's '## Return' heading is exactly one line of the form 'Explained: U03 · <k> lines · <path>' where <k> equals the number of narration lines in outputs/explain/U03.md and <path> is the Output path given",
+        "No line states anything the two steps do not show: nothing about what the writer did, other units, the fix that followed, a second review round, or the content of the critical issue or the warnings, and no file read or written (saying the unit made no other tool call, read or write is allowed: the two steps show that)",
+        "The first non-blank line under transcript.md's '## Return' heading is exactly 'Explained: U03 · <k> lines · <path>' where <k> equals the number of narration lines in outputs/explain/U03.md and <path> is the Output path given (the harness puts the executor's summary to the user after that line; it is not part of the return)",
         "transcript.md shows units/U03.md read before units/U03.json, or units/U03.json not read at all"
       ],
       "added_in": "0.16-audit-ledger phase 0, run from phase 8"
