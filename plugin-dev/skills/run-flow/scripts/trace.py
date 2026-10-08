@@ -13,9 +13,9 @@ It lives in plugin-dev's `skills/run-flow/scripts/`, beside `flow.py`, which dra
 and the unit pages. `run-flow` and `audit-run` both run it from there.
 
 Usage:
-  trace.py find --plugin NAME [--limit N]
+  trace.py find --plugin NAME [--limit N] [--all]
       Sessions that used NAME's skills or agents, newest first, each with the chat's title
-      as the app shows it, its project, its span and the commands it ran.
+      as the app shows it, its project, its git branch, its span and the commands it ran.
   trace.py select DIR [--units risk|all|new|seg:N|U01,U05] [--cap N]
       Which units to audit, one per line with the reason, from DIR/index.json. `risk`
       (the default) is the first unit of each type plus every unit that stands out; `new`
@@ -32,6 +32,13 @@ Usage:
       the narrator; the `.md` stays clipped for auditors), and DIR/flow.html, the run as a
       chart, with DIR/units/U<nn>.html, one page per unit (see flow.py).
       --full raises every truncation limit fivefold.
+  trace.py view --plugin NAME --agent TYPE --root DIR (--sessions a,b | --branch GLOB)
+      Every run of one agent type across several sessions. Each session is built (or
+      rebuilt) into DIR/<id8>/ as `build` would, then DIR/views/<type>-<YYYY-MM-DD>.html lists
+      every unit of TYPE in time order, each linking to its unit page. TYPE matches a unit's
+      role (`profiler`) or its full type (`dev-team:profiler`), ignoring case. --sessions takes
+      ids, prefixes or paths; --branch takes every session of NAME, headless ones included,
+      whose git branch matches GLOB.
 
 Step ids are stable across rebuilds of the same transcript: `D<n>` in the main thread,
 `U<nn>.S<n>` inside a unit. Units are numbered by first timestamp. A rebuild while the
@@ -42,6 +49,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import fnmatch
 import json
 import os
 import re
@@ -136,7 +144,7 @@ def describe(s: dict) -> str:
         span = dt.datetime.fromtimestamp(s["mtime"]).strftime("%Y-%m-%d %H:%M")
     live = " · still active" if dt.datetime.now().timestamp() - s["mtime"] < 120 else ""
     cmds = ", ".join(dict.fromkeys(c.split(":", 1)[1] for c in s["commands"])) or "—"
-    where = s["cwd"].replace(str(Path.home()), "~")
+    where = s["cwd"].replace(str(Path.home()), "~") + (f" · {s['branch']}" if s.get("branch") else "")
     at = local(s.get("fork_at", ""))
     fork = (f"\n    fork of {s['fork_of'][:8]}: its history up to {at:%m-%d %H:%M} is a copy of that chat's"
             if s.get("fork_of") and at else "")
@@ -179,12 +187,14 @@ def sessions_for(plugin: str, include_headless: bool = False) -> list[dict]:
                               and b.get("name") in ("Agent", "Task")
                               and str((b.get("input") or {}).get("subagent_type", "")).startswith(f"{plugin}:"))
         cwd = re.search(r'"cwd":\s*"([^"]+)"', text)
+        branch = re.search(r'"gitBranch":\s*"((?:[^"\\]|\\.)*)"', text)
         stamps = TS_RE.findall(text)
         found.append(
             {
                 "path": f,
                 "id": f.stem,
                 "cwd": cwd.group(1) if cwd else "?",
+                "branch": json.loads(f'"{branch.group(1)}"') if branch else None,
                 "mtime": f.stat().st_mtime,
                 "commands": cmds,
                 "spawns": spawns,
@@ -605,6 +615,15 @@ def lane_of(prompt: str, description: str) -> str | None:
     return None
 
 
+MODE_RE = re.compile(r"^Mode:\s*(.+)$", re.M)
+
+
+def mode_of(prompt: str) -> str | None:
+    """The prompt's first `Mode:` line, when it has one."""
+    m = MODE_RE.search(prompt or "")
+    return m.group(1).strip() if m else None
+
+
 def outcome(ret: str, description: str) -> dict:
     """The `Result:` of a return and, for a review, its verdict, counts and round. Heuristic, by design."""
     first = one_line(ret).split(" ⏎ ")[0] if ret else ""
@@ -713,7 +732,7 @@ def agent_files(session_path: Path, main_events: list[dict]) -> list[Path]:
     return found
 
 
-def build(session_path: Path, plugin: str, out: Path) -> None:
+def build(session_path: Path, plugin: str, out: Path, quiet: bool = False) -> dict:
     main_records = load(session_path)
     main_events, main_facts = events_of(main_records)
     raw_units = []
@@ -822,6 +841,7 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
             "wave_key": f"{u['spawner']}:{(u['spawn_call'] or {}).get('mid') or u['agent']}",
             "lane": lane_of(u["prompt"], u["description"]),
             "role": u["type"].split(":")[-1],
+            "mode": mode_of(u["prompt"]),
             **outcome(u["return"], u["description"]),
         })
 
@@ -901,6 +921,7 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
 
     index = {
         "session": session_path.stem, "transcript": str(session_path), "plugin": plugin,
+        "title": title_of(session_path.read_text(encoding="utf-8", errors="replace")),
         "plugin_root": root, "plugin_root_exists": bool(root and Path(root).exists()), "version": version,
         "project": main_facts["cwd"], "branch": main_facts["branch"],
         "models": sorted(set(main_facts["models"]) | {m for u in raw_units for m in u["facts"]["models"]}),
@@ -940,6 +961,8 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
     run[run.index("## Driver (whole main thread)"):run.index("## Driver (whole main thread)")] = flow.text(index) + [""]
     (out / "run.md").write_text("\n".join(run), encoding="utf-8")
     flow.write_html(out)
+    if quiet:
+        return index
     print(f"trace: {out}  (flow chart: {out / 'flow.html'})")
     print(f"  plugin root: {root} (version {version}){'' if index['plugin_root_exists'] else ' — MISSING on disk'}")
     print(f"  segments: {len(index_segments)} · units: {len(index_units)} · driver steps: {len(main_events)}")
@@ -949,6 +972,32 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
     if len(versions) > 1:
         print(f"  ⚠ the run spans {plugin} versions {', '.join(versions)}: each segment's and unit's "
               f"definition in index.json points at the version it ran")
+    return index
+
+
+def view(plugin: str, agent: str, root: Path, sessions: str | None, branch: str | None) -> int:
+    """Build each session into root/<id8>/, then the cross-session page for one agent type."""
+    if sessions:
+        paths = [resolve(x.strip(), plugin) for x in sessions.split(",") if x.strip()]
+    else:
+        paths = [s["path"] for s in sessions_for(plugin, include_headless=True)
+                 if s["branch"] is not None and fnmatch.fnmatchcase(s["branch"], branch)]
+        if not paths:
+            print(f"no session of {plugin} on a branch matching {branch}")
+            return 1
+    paths = list(dict.fromkeys(paths))
+    workspaces, lines = [], []
+    for path in paths:
+        out = root / path.stem[:8]
+        index = build(path, plugin, out, quiet=True)
+        workspaces.append(out)
+        n = sum(1 for u in index["units"] if flow.is_type(u, agent))
+        lines.append(f"{path.stem[:8]} · {index['title']} · {index['branch'] or '—'} · {n} unit{'' if n == 1 else 's'} of {agent}")
+    page = flow.write_view(root, workspaces, agent, dt.date.today().isoformat())
+    print(page)
+    for line in lines:
+        print(line)
+    return 0
 
 
 def shape(first_line: str) -> str:
@@ -1021,6 +1070,13 @@ def main() -> int:
     b.add_argument("--plugin", required=True)
     b.add_argument("--out", required=True)
     b.add_argument("--full", action="store_true")
+    v = sub.add_parser("view")
+    v.add_argument("--plugin", required=True)
+    v.add_argument("--agent", required=True)
+    v.add_argument("--root", required=True)
+    which = v.add_mutually_exclusive_group(required=True)
+    which.add_argument("--sessions")
+    which.add_argument("--branch")
     a = ap.parse_args()
 
     if a.cmd == "find":
@@ -1045,6 +1101,9 @@ def main() -> int:
         print(f"selected {len(picked)} of {len(index['units'])} units"
               + (f"; still running, never selected: {', '.join(running)}" if running else ""))
         return 0
+
+    if a.cmd == "view":
+        return view(a.plugin, a.agent, Path(a.root), a.sessions, a.branch)
 
     if a.full:
         for k in LIMITS:

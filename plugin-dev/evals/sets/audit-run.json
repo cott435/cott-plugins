@@ -49,7 +49,7 @@
       "name": "flow-chart-fixture",
       "kind": "mechanical",
       "baseline": "none",
-      "prompt": "python3 evals/fixtures/audit-run/make_session.py $TMP && python3 skills/run-flow/scripts/trace.py build $TMP/flow-session/0a0d17f0-0000-4000-8000-0000000flow0.jsonl --plugin toy --out $TMP/fws",
+      "prompt": "python3 evals/fixtures/audit-run/make_session.py $TMP && python3 skills/run-flow/scripts/trace.py build $TMP/flow-session/0f10d17f-0000-4000-8000-0000000flow0.jsonl --plugin toy --out $TMP/fws",
       "expected_output": "The Flow section and flow.html reproduce the fixture's known shape: what ran in parallel, what in series, the question between waves, runs and review rounds per lane, and each review's outcome",
       "files": [
         "evals/fixtures/audit-run/make_session.py"

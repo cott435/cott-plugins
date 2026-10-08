@@ -6,6 +6,10 @@ network. Every box links to `units/U<nn>.html`, the unit's own page, written her
 `units/U<nn>.json` alone (never from the clipped `.md`): its header, the prompt it was sent,
 every step with its full input and output, its commits, and what it handed back.
 
+It also writes the agent view: `agents/<role>.html`, one page per agent type in the run, with
+one row per run of that type in time order; and, from `trace.py view`, the same table across
+several sessions' workspaces as `views/<role>-<date>.html` beside them.
+
 The chart reads top to bottom:
 
   rows     waves: the agents one spawner started in one message, so they ran in parallel.
@@ -455,6 +459,103 @@ def write_unit_pages(out: Path, index: dict) -> list[str]:
     return written
 
 
+# ---------------------------------------------------------------- the agent view
+
+
+AGENT_COLUMNS = ["Session", "Unit", "Mode", "Section", "Round", "Start", "Duration", "Tool calls", "Errors",
+                 "Files written", "Commits", "Returned"]
+
+
+def is_type(u: dict, agent: str) -> bool:
+    """`profiler` matches the role, `dev-team:profiler` the full type; case is ignored."""
+    a = agent.lower()
+    return (u.get("role") or "").lower() == a or (u.get("type") or "").lower() == a
+
+
+def slug(agent: str) -> str:
+    """The file name an agent type's pages take: its role, with nothing a URL would escape."""
+    return re.sub(r"[^\w.-]+", "-", agent.split(":")[-1]).strip("-") or "agent"
+
+
+def short_path(path: str, project: str | None) -> str:
+    if project and path.startswith(project.rstrip("/") + "/"):
+        return path[len(project.rstrip("/")) + 1:]
+    return path
+
+
+def agent_rows(entries: list[tuple[str, dict, dict]]) -> str:
+    """One row per (link prefix, index, unit), in time order. The prefix is the path from the
+    page to the unit's workspace: `../` for agents/, `../<id8>/` for views/."""
+    entries = sorted(entries, key=lambda e: (e[2].get("first_ts") or "", e[1]["session"], e[2]["unit"]))
+    rows = []
+    for prefix, index, u in entries:
+        id8 = index["session"][:8]
+        mins = minutes(u.get("first_ts", ""), u.get("last_ts", ""))
+        files = ", ".join(short_path(f, index.get("project")) for f in u.get("files_written") or [])
+        cells = [
+            f'<a href="{esc(prefix)}flow.html">{esc(id8)}</a>',
+            f'<a href="{esc(prefix)}units/{esc(u["unit"])}.html">{esc(u["unit"])}</a>',
+            esc(u.get("mode") or "—"),
+            esc(u.get("lane") or "—"),
+            esc(u.get("round") if u.get("round") is not None else "—"),
+            esc((u.get("first_ts") or "")[:16].replace("T", " ")),
+            f"{mins} min" if mins is not None else "?",
+            str(u.get("tool_calls", 0)),
+            str(u.get("errors", 0)),
+            esc(files or "—"),
+            esc(", ".join(u.get("commits") or []) or "—"),
+            esc(u.get("return_first_line") or "(still running)"),
+        ]
+        rows.append("<tr>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>")
+    return ("<table><tr>" + "".join(f"<th>{c}</th>" for c in AGENT_COLUMNS) + "</tr>" + "".join(rows) + "</table>")
+
+
+def agent_page(title: str, back: str, header: list[str], table: str, n: int) -> str:
+    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(title)}</title><style>{CSS}</style></head>
+<body>
+{back}
+<h1>{esc(title)}</h1>
+{''.join(f'<div class="sub">{line}</div>' for line in header)}
+<p>{n} run{'' if n == 1 else 's'}, in the order they started (UTC). Each unit opens that run's page: its prompt,
+every step with its full input and output, and what it handed back. Each session opens its run's flow chart.</p>
+<div class="scroll">{table}</div>
+</body></html>"""
+
+
+def write_agent_pages(out: Path, index: dict) -> list[str]:
+    """`agents/<role>.html` for every agent type in this run."""
+    roles = list(dict.fromkeys(u["role"] for u in index["units"] if u.get("role")))
+    (out / "agents").mkdir(exist_ok=True)
+    for role in roles:
+        mine = [("../", index, u) for u in index["units"] if is_type(u, role)]
+        types = ", ".join(dict.fromkeys(u["type"] for _, _, u in mine))
+        header = [f"{esc(index['session'][:8])} · {esc(index.get('title') or '(untitled)')} · "
+                  f"{esc(index.get('branch') or '—')} · {len(mine)} run{'' if len(mine) == 1 else 's'} of {esc(types)}"]
+        page = agent_page(f"{role} · every run in session {index['session'][:8]}",
+                          '<p class="top"><a href="../flow.html">← the run\'s flow chart</a></p>',
+                          header, agent_rows(mine), len(mine))
+        (out / "agents" / f"{slug(role)}.html").write_text(page, encoding="utf-8")
+    return roles
+
+
+def write_view(root: Path, workspaces: list[Path], agent_type: str, date: str) -> Path:
+    """`root/views/<role>-<date>.html`: every run of one agent type across the workspaces."""
+    entries, header = [], []
+    for ws in workspaces:
+        index = json.loads((ws / "index.json").read_text(encoding="utf-8"))
+        prefix = f"../{ws.relative_to(root).as_posix()}/" if ws.is_relative_to(root) else f"{ws.resolve().as_uri()}/"
+        mine = [(prefix, index, u) for u in index["units"] if is_type(u, agent_type)]
+        entries += mine
+        header.append(f"{esc(index['session'][:8])} · {esc(index.get('title') or '(untitled)')} · "
+                      f"{esc(index.get('branch') or '—')} · {len(mine)} run{'' if len(mine) == 1 else 's'} of {esc(agent_type)}")
+    (root / "views").mkdir(parents=True, exist_ok=True)
+    path = root / "views" / f"{slug(agent_type)}-{date}.html"
+    path.write_text(agent_page(f"{agent_type} · every run across {len(workspaces)} sessions", "", header,
+                               agent_rows(entries), len(entries)), encoding="utf-8")
+    return path
+
+
 def write_html(out: Path) -> Path:
     index = json.loads((out / "index.json").read_text(encoding="utf-8"))
     m = model(index, out)
@@ -491,6 +592,11 @@ def write_html(out: Path) -> Path:
         f"<td>{u['tool_calls']}</td><td>{u['errors']}</td><td>{esc(', '.join(u['commits']) or '—')}</td>"
         f"<td>{esc(u['return_first_line'] or '(still running)')}</td></tr>" for u in units)
 
+    per_role = {r: sum(1 for u in units if u.get("role") == r) for r in m["roles"]}
+    type_links = "".join(
+        f'<li><a href="agents/{esc(slug(r))}.html">{esc(r)}</a> · {n} run{"" if n == 1 else "s"}</li>'
+        for r, n in per_role.items()) or "<li>No agents ran.</li>"
+
     page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Run flow</title><style>{CSS}</style></head>
 <body>
@@ -515,6 +621,9 @@ an unshaded row ran one agent alone. Each column is one section's history, arrow
 Hover a box for its duration, tools, commits and return; click it for every step the agent took. {legend}</p>
 <div class="scroll">{svg(m)}</div>
 
+<h2>By agent type</h2>
+<ul>{type_links}</ul>
+
 <h2>Units</h2>
 <table><tr><th>Unit</th><th>Type</th><th>Section</th><th>Description</th><th>Start (UTC)</th><th>Duration</th>
 <th>Tool calls</th><th>Errors</th><th>Commits</th><th>Returned</th></tr>
@@ -523,4 +632,5 @@ Hover a box for its duration, tools, commits and return; click it for every step
     path = out / "flow.html"
     path.write_text(page, encoding="utf-8")
     write_unit_pages(out, index)
+    write_agent_pages(out, json.loads((out / "index.json").read_text(encoding="utf-8")))  # unmodelled
     return path

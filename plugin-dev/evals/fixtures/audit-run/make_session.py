@@ -20,8 +20,10 @@ one more typed command, and no subagents directory of its own, as Claude Code le
 or resumed chat. `trace.py find` must name the title and the fork, a title must resolve to a
 session, and a trace of the fork must still find U01's transcript under the original.
 
-A second session, OUT/flow-session/, has no defects and exists for the flow chart. Its known
-shape, which `trace.py`'s Flow section and flow.html must reproduce:
+A second session, OUT/flow-session/, has no defects and exists for the flow chart and the
+agent view. Its id begins 0f10d17f, so it gets its own workspace, and its branch is `flow`
+(the planted session's is `feature`). Its known shape, which `trace.py`'s Flow section and
+flow.html must reproduce:
   W1  ∥ 2   writer a/x and writer a/y, spawned in one message
   W2  → 1   reviewer a/x: request changes, 1 critical, 2 warnings, round 1
   band      the driver asks the user; the answer is "Fix it"
@@ -188,7 +190,7 @@ def fork_session(sess: Path, main_recs: list) -> None:
     (sess / f"{FORK}.jsonl").write_text("\n".join(json.dumps(r) for r in copied) + "\n")
 
 
-FLOW = "0a0d17f0-0000-4000-8000-0000000flow0"
+FLOW = "0f10d17f-0000-4000-8000-0000000flow0"  # its own <id8> workspace, for cross-session views
 FLOW_SPAWNS = [  # tool id, message id, agent id, type, description, prompt, return, start min, end min
     ("f1", "msg_w1", "af1", "toy:writer", "Write a/x", "Section: a/x\nTarget: out/x.txt",
      "Result: done\ncommit: 1111111\ntests: 1 passed, 0 failed", 1, 5),
@@ -208,6 +210,7 @@ def flow_session(out: Path, root: Path) -> None:
     def at(r: dict, minute: int, sec: int = 0) -> dict:
         r["timestamp"] = f"2026-09-28T11:{minute:02d}:{sec:02d}.000Z"
         r["sessionId"] = FLOW
+        r["gitBranch"] = "flow"
         return r
 
     main_recs = [
