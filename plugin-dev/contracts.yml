@@ -57,23 +57,29 @@ headings:
         cites: ['Components', 'How they fit together', 'Decisions taken', 'Build order',
                 'What must not break']
 
-  - name: audit-run names only issue-file sections the issue template defines
+  - name: audit-run, fix-issues and bump-version name only issue-file sections the issue template defines
     # templates/audits/issue.md is the one list; issues.py writes from it, and the skills
-    # name its sections when they say who writes what. fix-issues and bump-version are
-    # added as readers in phase 6 of 0.16-audit-ledger.
+    # name its sections when they say who writes what: audit-run the Finding, Found in
+    # and Checks; fix-issues the Fix attempts; bump-version only fixed_in in a Fix attempt.
     owner: templates/audits/issue.md
     owner_form: markdown
     readers:
       - file: skills/audit-run/SKILL.md
         cites: ['Finding', 'Found in', 'Checks']
+      - file: skills/fix-issues/SKILL.md
+        cites: ['Fix', 'Found in']
+      - file: skills/bump-version/SKILL.md
+        cites: ['Fix']
 
-  - name: audit-run names only run-report sections the report template defines
+  - name: audit-run and fix-issues name only run-report sections the report template defines
     owner: templates/audits/run-report.md
     owner_form: markdown
     readers:
       - file: skills/audit-run/SKILL.md
         cites: ['Errors', 'Warnings', 'Notes', 'Prior issues', 'Audited', 'Not audited',
                 'Dropped on spot-check']
+      - file: skills/fix-issues/SKILL.md
+        cites: ['Errors', 'Warnings', 'Notes']
 
 frontmatter:
   - name: every skill's frontmatter uses only documented skill fields

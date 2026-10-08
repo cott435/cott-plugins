@@ -66,3 +66,10 @@ answer you took from the sheet):
   attempts were recorded.
 - `outputs/final-message.md` — your last message to the user, as you would have said it in
   chat.
+
+## What goes in `transcript.md`
+
+Every shell command you run, in order and verbatim (with its `--verify` or `--reason` value in
+full), marked as the fixture's setup or the target's work, and every question with the answer
+you took. Several expectations are about what ran and in what order, and a prose summary
+cannot show that.

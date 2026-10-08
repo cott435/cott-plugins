@@ -237,9 +237,9 @@ Then tell the user, in this order and briefly:
 2. Each ERROR: what happened, its evidence step and its rule, as a clickable `file:line`
    into the working tree when it is still at HEAD.
 3. How many WARN and NOTE findings there are, with their issue ids.
-4. For `definition` faults still at HEAD, offer to make the edits. Do not make them unasked.
-   An edit to an agent or skill here is a change like any other: `check-contracts`,
-   `build-site`, and a re-run of the evals that cover it.
+4. Issues were filed for the findings above. Tell the user that
+   `/plugin-dev:fix-issues run:<id8>` fixes them from any chat; this skill cannot start it (a
+   typed skill is started only by a person). Do not make the edits unasked.
 
 ## What this skill never does
 

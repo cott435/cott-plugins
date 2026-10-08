@@ -22,7 +22,7 @@ rather than a copy. Installing this plugin is what makes the protocol apply.
 
 ## The skills
 
-Thirteen skills, in three groups by how they start. The table is the one list of them: a
+Fourteen skills, in three groups by how they start. The table is the one list of them: a
 `contracts.yml` claim fails when a directory under `skills/` has no row here.
 
 | Skill | Starts | What it does |
@@ -39,7 +39,8 @@ Thirteen skills, in three groups by how they start. The table is the one list of
 | `run-phases` | when you type it, in place of one `run-phase` chat per phase | Drives the plan from your chat: one fresh agent per unfinished phase, in series, each doing `run-phase` — a subagent, or a headless `claude -p` session where subagents cannot spawn (cloud sessions cap the depth at 1). Relays every review stop, question and bump proposal to you and resumes the same agent with your answer. Checks each phase's commit, clean tree and ledger row before the next. Does no phase work itself, and pushes, merges and bumps nothing. `--through N` stops after phase N. |
 | `run-flow` | on its own, when you ask what a run or an agent did; or typed | Draws a real run of the plugin's workflow from its session transcripts as a page in the browser pane: the flow chart `audit-run` draws, with every agent clickable through to its full record — the prompt it was sent, every step with full input and output, each Write's content and each Edit's old and new text, its commits and what it handed back. `scripts/trace.py` here is the trace builder `audit-run` runs too. Judges nothing. |
 | `audit-run` | when you type it, from the plugin under test | Audits a real run of the plugin's workflow from its session transcripts. `run-flow`'s `trace.py` rebuilds what ran: each agent spawned and the prompt it was sent, every tool call, hook block, commit and hand-back. One run-auditor agent per selected agent, one per driver segment, and one for cross-agent consistency then hold it against the agent and skill files at the version that ran. Every finding cites a trace step and a `file:line`, and is classed by fault: agent, driver, definition or platform. Each ERROR is spot-checked before it is reported. Also draws the run as a flow chart: waves of agents, so what ran in parallel versus in series; one column per section, showing how many runs and review rounds it took; each review coloured by its verdict; and the points where the driver stopped to ask. Writes the chart and the report under `evals/workspace/audit/` and logs the run with `log-eval`. `--units new` re-audits only newly finished agents, so it can watch a workflow still running in another chat. |
-| `bump-version` | only on your yes | Decides patch/minor/major from what changed, bumps `plugin.json` and the marketplace row, writes the CHANGELOG line, tags, pushes. Proposes itself in chat and waits. |
+| `fix-issues` | when you type it, from the plugin whose issues they are | Fixes the issues an audit filed under the plugin's `audits/issues/`: selects them (by id, by `run:<id8>`, or as open or recurred), plans one edit per issue and asks once, edits on a worktree branch, runs `check-contracts`, `build-site` and `run-evals` against the last tag, records a Fix attempt with a `Verify:` line in each issue, and proposes the merge and the bump. Never marks an issue verified: the next audit of a rerun does that. |
+| `bump-version` | only on your yes | Decides patch/minor/major from what changed, bumps `plugin.json` and the marketplace row, writes the CHANGELOG line, tags, pushes. Stamps `fixed_in` on the issues the release carries. Proposes itself in chat and waits. |
 
 ## The rest of the bundle
 

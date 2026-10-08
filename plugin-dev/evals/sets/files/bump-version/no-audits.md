@@ -86,3 +86,10 @@ The fixture copy `$R` stands in for the repo. Make the edits there, but run no `
 - `outputs/commit.md` — the commit message; the paths you would stage, one per line,
   relative to `$R`; the tag you would create; the push command(s), each as the line you
   would have run.
+
+## What goes in `transcript.md`
+
+Every shell command you run, in order and verbatim (with its `--verify` or `--reason` value in
+full), marked as the fixture's setup or the target's work, and every question with the answer
+you took. Several expectations are about what ran and in what order, and a prose summary
+cannot show that.
