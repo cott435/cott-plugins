@@ -3,9 +3,9 @@
 
 | Id | Title | Fault | Severity | Status | Found | Seen | Fixed in | Last check |
 |---|---|---|---|---|---|---|---|---|
-| [DT-001](issues/DT-001.md) | Driver does not print changed rows after a re-derive | agent | ERROR | open | 2026-10-07 ca48b249 | 1 | — | — |
+| [DT-001](issues/DT-001.md) | Driver does not print changed rows after a re-derive | agent | ERROR | open | 2026-10-07 ca48b249 | 3 | — | — |
 | [DT-002](issues/DT-002.md) | Driver reads the decisions ledger with grep/sed through Bash | agent | ERROR | open | 2026-10-07 ca48b249 | 1 | — | — |
-| [DT-003](issues/DT-003.md) | Driver skips the re-derive after the cap answer | agent | ERROR | open | 2026-10-07 ca48b249 | 1 | — | — |
+| [DT-003](issues/DT-003.md) | Driver skips the re-derive after the cap answer | agent | ERROR | open | 2026-10-07 ca48b249 | 2 | — | — |
 | [DT-004](issues/DT-004.md) | Profile's Provenance credits a pull this run never made | agent | ERROR | open | 2026-10-07 ca48b249 | 1 | — | — |
 | [DT-005](issues/DT-005.md) | Reviewer runs Bash outside its allowlist | agent | ERROR | open | 2026-10-07 ca48b249 | 1 | — | — |
 | [DT-006](issues/DT-006.md) | Reviewer writes its report without reading the template | agent | ERROR | open | 2026-10-07 ca48b249 | 1 | — | — |
@@ -23,10 +23,35 @@
 | [DT-018](issues/DT-018.md) | `<d>` is undefined in profile mode | definition | NOTE | open | 2026-10-07 ca48b249 | 1 | — | — |
 | [DT-019](issues/DT-019.md) | `docs/decisions.md` is missing from the driver's Read list | definition | NOTE | open | 2026-10-07 ca48b249 | 1 | — | — |
 | [DT-020](issues/DT-020.md) | The 4-question `AskUserQuestion` limit against "one per block" | definition | NOTE | open | 2026-10-07 ca48b249 | 1 | — | — |
-| [DT-021](issues/DT-021.md) | No `stopped because` entry for a user stop | definition | NOTE | open | 2026-10-07 ca48b249 | 1 | — | — |
+| [DT-021](issues/DT-021.md) | No `stopped because` entry for a user stop | definition | NOTE | open | 2026-10-07 ca48b249 | 2 | — | — |
 | [DT-022](issues/DT-022.md) | The print-rows rule is tied to "before the next spawn" | definition | NOTE | open | 2026-10-07 ca48b249 | 1 | — | — |
 | [DT-023](issues/DT-023.md) | The implementer's Inputs vs step-0 read order | definition | NOTE | open | 2026-10-07 ca48b249 | 1 | — | — |
 | [DT-024](issues/DT-024.md) | "Read" is undefined for a directory input | definition | NOTE | open | 2026-10-07 ca48b249 | 1 | — | — |
 | [DT-025](issues/DT-025.md) | Designer §10 is silent on call-path frames | definition | NOTE | open | 2026-10-07 ca48b249 | 1 | — | — |
 | [DT-026](issues/DT-026.md) | `stage` probe docs are not named in the designer | definition | NOTE | open | 2026-10-07 ca48b249 | 1 | — | — |
 | [DT-027](issues/DT-027.md) | The designer's Write-only list omits memory | definition | NOTE | open | 2026-10-07 ca48b249 | 1 | — | — |
+| [DT-028](issues/DT-028.md) | Summary says "user asked to stop" when the user only resumed | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-029](issues/DT-029.md) | Parallel implementers commit each other dependency lines and uv.lock | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-030](issues/DT-030.md) | A round-1 spec-change verdict with a code CRITICAL has no path to a fix | definition | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-031](issues/DT-031.md) | Returns break their closed shape or line cap in six of seven roles | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-032](issues/DT-032.md) | Tester runs an unscoped git status --short | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-033](issues/DT-033.md) | Returns and files state checks no step in the trace made | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-034](issues/DT-034.md) | Implementer reports TODO(decision) markers resolved without running the sweep | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-035](issues/DT-035.md) | Implementer never runs the intent suite before writing code | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-036](issues/DT-036.md) | Tester records a one-run fact in project memory | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-037](issues/DT-037.md) | Two commits made by amending the message after the commit | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-038](issues/DT-038.md) | Decision lines go beyond the answer the user gave | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-039](issues/DT-039.md) | Tester writes a test with noqa, then deletes the tree | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-040](issues/DT-040.md) | Design-defect stop writes a full tree first | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-041](issues/DT-041.md) | Tester lists the repo root with a bare ls | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-042](issues/DT-042.md) | Tester reads files outside its allowed set | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-043](issues/DT-043.md) | Tester shortens the Design citation to clear E501 | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-044](issues/DT-044.md) | The own: README joins the Dependency READMEs field on its own line | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-045](issues/DT-045.md) | Several spec-change entries have no return form | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-046](issues/DT-046.md) | A lint-forbidden case is learned only from the format hook | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-047](issues/DT-047.md) | No rule for a module-level helper subclass or a decision with no affected item | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-048](issues/DT-048.md) | The researcher scratch directory is not named | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-049](issues/DT-049.md) | Docstring citation rule is not repeated where docstrings are written | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-050](issues/DT-050.md) | Two hook traps (88 columns, import stripped before use) are not stated to the implementer | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-051](issues/DT-051.md) | Closed return lists lack forms the agents repeatedly need | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-052](issues/DT-052.md) | Implementer text says no file is shared, then stages two shared files | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
