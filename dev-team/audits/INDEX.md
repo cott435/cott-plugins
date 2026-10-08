@@ -30,28 +30,28 @@
 | [DT-025](issues/DT-025.md) | Designer §10 is silent on call-path frames | definition | NOTE | open | 2026-10-07 ca48b249 | 1 | — | — |
 | [DT-026](issues/DT-026.md) | `stage` probe docs are not named in the designer | definition | NOTE | open | 2026-10-07 ca48b249 | 1 | — | — |
 | [DT-027](issues/DT-027.md) | The designer's Write-only list omits memory | definition | NOTE | open | 2026-10-07 ca48b249 | 1 | — | — |
-| [DT-028](issues/DT-028.md) | Summary says "user asked to stop" when the user only resumed | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
-| [DT-029](issues/DT-029.md) | Parallel implementers commit each other dependency lines and uv.lock | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-030](issues/DT-030.md) | A round-1 spec-change verdict with a code CRITICAL has no path to a fix | definition | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
-| [DT-031](issues/DT-031.md) | Returns break their closed shape or line cap in six of seven roles | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
-| [DT-032](issues/DT-032.md) | Tester runs an unscoped git status --short | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-033](issues/DT-033.md) | Returns and files state checks no step in the trace made | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
-| [DT-034](issues/DT-034.md) | Implementer reports TODO(decision) markers resolved without running the sweep | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
-| [DT-035](issues/DT-035.md) | Implementer never runs the intent suite before writing code | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-036](issues/DT-036.md) | Tester records a one-run fact in project memory | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-037](issues/DT-037.md) | Two commits made by amending the message after the commit | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-038](issues/DT-038.md) | Decision lines go beyond the answer the user gave | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-039](issues/DT-039.md) | Tester writes a test with noqa, then deletes the tree | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
-| [DT-040](issues/DT-040.md) | Design-defect stop writes a full tree first | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-041](issues/DT-041.md) | Tester lists the repo root with a bare ls | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-042](issues/DT-042.md) | Tester reads files outside its allowed set | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-043](issues/DT-043.md) | Tester shortens the Design citation to clear E501 | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-044](issues/DT-044.md) | The own: README joins the Dependency READMEs field on its own line | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
-| [DT-045](issues/DT-045.md) | Several spec-change entries have no return form | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
-| [DT-046](issues/DT-046.md) | A lint-forbidden case is learned only from the format hook | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-047](issues/DT-047.md) | No rule for a module-level helper subclass or a decision with no affected item | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
-| [DT-048](issues/DT-048.md) | The researcher scratch directory is not named | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-049](issues/DT-049.md) | Docstring citation rule is not repeated where docstrings are written | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-050](issues/DT-050.md) | Two hook traps (88 columns, import stripped before use) are not stated to the implementer | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-051](issues/DT-051.md) | Closed return lists lack forms the agents repeatedly need | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
-| [DT-052](issues/DT-052.md) | Implementer text says no file is shared, then stages two shared files | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-028](issues/DT-028.md) | Summary says "user asked to stop" when the user only resumed | agent | ERROR | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
+| [DT-029](issues/DT-029.md) | Parallel implementers commit each other dependency lines and uv.lock | agent | ERROR | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
+| [DT-031](issues/DT-031.md) | Returns break their closed shape or line cap in six of seven roles | agent | ERROR | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
+| [DT-032](issues/DT-032.md) | Tester runs an unscoped git status --short | agent | ERROR | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
+| [DT-034](issues/DT-034.md) | Implementer reports TODO(decision) markers resolved without running the sweep | agent | ERROR | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
+| [DT-035](issues/DT-035.md) | Implementer never runs the intent suite before writing code | agent | ERROR | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
+| [DT-040](issues/DT-040.md) | Design-defect stop writes a full tree first | agent | WARN | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
+| [DT-045](issues/DT-045.md) | Several spec-change entries have no return form | definition | NOTE | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
+| [DT-046](issues/DT-046.md) | A lint-forbidden case is learned only from the format hook | definition | NOTE | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
+| [DT-048](issues/DT-048.md) | The researcher scratch directory is not named | definition | NOTE | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
+| [DT-052](issues/DT-052.md) | Implementer text says no file is shared, then stages two shared files | definition | NOTE | released | 2026-10-08 96a768ee | 1 | 2.9.0 | — |
