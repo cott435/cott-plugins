@@ -1,0 +1,20 @@
+{
+  "note": "--run-gate fails a Data stages row whose pull cell is empty (2.11)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": "empty-cell"
+    }
+  ],
+  "args": [
+    "--run-gate",
+    "data"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "run gate: FAIL",
+      "data/clean: Data stages row stage:rawtrades leaves pull empty"
+    ]
+  }
+}

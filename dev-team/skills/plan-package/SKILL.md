@@ -74,14 +74,18 @@ contract invents its own shapes and conventions, and the next package invents th
      over it, so a source missing from it is never probed. **Public surface (intent)** names a
      consumer — a downstream package or a CLI command — for every entry, and nothing without
      one. The table's last row is `surface`: path the package top level, `depends on` every
-     other section, `builds with` and `source` `—`. **Call paths** fixes every command's
-     frames and budget before any designer runs, per your **Call paths**; a path that cannot
-     fit its budget is a question for step 3, not a budget you raise.
+     other section, `builds with` and `source` `—`. A package with a marked section (`stage:<token>`)
+     gets **Data stages** before **Section interfaces**, per your **Data stages**: the stages
+     in order, the first the population, each with its question, its guarantees, its
+     producers and its pull, and one `D<n>` per stage for the pull. **Call paths** fixes
+     every command's frames and budget before any designer runs, per your **Call paths**; a
+     path that cannot fit its budget is a question for step 3, not a budget you raise.
    - **A contract exists — the change list.** The items are the change request in the
      arguments, each open `spec-change:contract` entry naming the package, whatever the repo
      contract's diff since its last archive copy under `docs/history/` changes for `$pkg`'s
-     row, boundaries or conventions, and a missing **Call paths** heading (your **Call
-     paths**). With none of the four, return `Result: done` saying the contract is current,
+     row, boundaries or conventions, a missing **Call paths** heading (your **Call paths**),
+     and a `stage:` row with no **Data stages** heading (your **Data stages**). With none of
+     the five, return `Result: done` saying the contract is current,
      and commit nothing. Otherwise classify and apply each item per your
      **Edits — the change list**: EDIT, EDIT+STALE, CHANGE, DECIDE; archive before the first
      edit. A `spec-change:contract` entry answered by an EDIT, EDIT+STALE or CHANGE outcome is

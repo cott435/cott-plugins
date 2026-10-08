@@ -105,6 +105,18 @@ STAGE_CONVENTIONS = """
 
 - `stage:rawtrades` — the trade rows ingest reads; lands at data/trades.csv; pull cap 400 rows, D1
 """
+# The `stage: true` plan since 2.11: a **Data stages** row in place of the conventions line.
+# `stage: "conventions"` writes the 2.7 line alone (an older contract, still read);
+# `"no-plan"` neither; `"empty-cell"` an empty `pull`; `"producer"` a `data` cell naming
+# `storage`, which `clean` does not depend on; `"wrong-cleaner"` `cleaned by` `ingest`.
+STAGE_PLAN = """
+## Data stages
+
+| stage | question | data | cleaned by | clean means | judged against | pull | decision |
+|---|---|---|---|---|---|---|---|
+| `stage:rawtrades` | which trade rows are one trade? | the trade rows `ingest` reads; produced by `ingest`; lands at data/trades.csv | `clean` | 1. no trade appears twice 2. rows are sorted by `ts` | brief §Scope now; docs/sources/trades.md | whole, 400 rows; ≈1 s, no quota | D1 |
+"""
+STAGE_PLAN_LINE = "the trade rows `ingest` reads; produced by `ingest`; lands at data/trades.csv"
 
 # The `profile` macro's document (2.7, phase 2): a round-0 data profile, before its round lines.
 PROFILE = """# Source probe — rawtrades — stage — 2026-09-27
@@ -323,9 +335,20 @@ def m_base(dest: Path, step: dict) -> list[tuple[dict[str, str], str]]:
             body = CALL_PATHS if cp is True else cp
             text += "\n## Call paths\n\n" + body.rstrip("\n") + "\n"
         if step.get("stage"):
-            text = text.replace(*STAGE_ROW) + STAGE_CONVENTIONS
-            if step["stage"] == "no-deps":  # 2.7, phase 4: a stage row nothing produces
+            kind = step["stage"]
+            text = text.replace(*STAGE_ROW)
+            if kind == "conventions":
+                text += STAGE_CONVENTIONS
+            elif kind != "no-plan":
+                text += STAGE_PLAN
+            if kind == "no-deps":  # 2.7, phase 4: a stage row nothing produces
                 text = text.replace("| dev-team:data-quality | ingest | stage:", "| dev-team:data-quality | — | stage:")
+            elif kind == "empty-cell":  # 2.11: the plan row leaves `pull` empty
+                text = text.replace("| whole, 400 rows; ≈1 s, no quota |", "| — |")
+            elif kind == "producer":  # 2.11: `data` names a producer `clean` does not depend on
+                text = text.replace(STAGE_PLAN_LINE, STAGE_PLAN_LINE.replace("produced by `ingest`", "produced by `ingest`, `storage`"))
+            elif kind == "wrong-cleaner":  # 2.11: `cleaned by` is another section
+                text = text.replace("| `clean` | 1. no trade", "| `ingest` | 1. no trade")
         files["docs/packages/data/contract.md"] = text
     if step.get("sources", True):
         if contract == "api":

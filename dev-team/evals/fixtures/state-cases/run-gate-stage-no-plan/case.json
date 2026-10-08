@@ -1,0 +1,20 @@
+{
+  "note": "--run-gate fails a stage: row with neither a Data stages row nor a Package conventions line (2.11)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": "no-plan"
+    }
+  ],
+  "args": [
+    "--run-gate",
+    "data"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "run gate: FAIL",
+      "data/clean: stage:rawtrades has no Data stages row; plan it with /dev-team:plan-package data"
+    ]
+  }
+}

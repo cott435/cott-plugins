@@ -1,5 +1,5 @@
 {
-  "note": "--profile prints the profiler's whole block for a round-0 run (2.7, phase 2)",
+  "note": "--profile prints the profiler's whole block for a round-0 run; Data: is the Data stages row as one line (2.7, phase 2; 2.11)",
   "steps": [
     {
       "do": "base",
@@ -18,7 +18,7 @@
     "exit": 0,
     "contains": [
       "Mode: profile\nSection: data/clean\nStage: rawtrades\nRound: 0\nRevise: none\nCommit: none\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: packages/data/src/data/ingest/README.md\n",
-      "\nSkills to invoke: none\nData: `stage:rawtrades` — the trade rows ingest reads; lands at data/trades.csv; pull cap 400 rows, D1\nProfile: docs/sources/rawtrades.md\nStore: .dev-team/data/rawtrades/\nRun: run-package data"
+      "\nSkills to invoke: none\nData: `stage:rawtrades` — question: which trade rows are one trade? · data: the trade rows `ingest` reads; produced by `ingest`; lands at data/trades.csv · cleaned by: `clean` · clean means: 1. no trade appears twice 2. rows are sorted by `ts` · judged against: brief §Scope now; docs/sources/trades.md · pull: whole, 400 rows; ≈1 s, no quota · decision: D1\nProfile: docs/sources/rawtrades.md\nStore: .dev-team/data/rawtrades/\nRun: run-package data"
     ],
     "matches": [
       "^Source probes: docs/sources/\\w+\\.md$"

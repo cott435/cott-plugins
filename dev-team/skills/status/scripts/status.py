@@ -72,7 +72,10 @@ holding `Applied:` lines, merged into `docs/decisions.md` by `hooks/sync_decisio
 script never writes it; `--run-gate` fails on an inbox holding anything the central ledger
 does not, and on a central `Applied: <pkg>/<section>, …` line the section's inbox entry for
 that `D<n>` no longer holds (the hook mirrors a section's own lines), on a `stage:` row
-whose `depends on` is empty, and on a data profile's `<token>.sample.json` over 200 KB.
+whose `depends on` is empty, has no **Data stages** row (and no older **Package conventions**
+line), leaves a cell of that row empty, is not the row's `cleaned by`, or whose row's `data`
+cell names a producer its `depends on` lacks, and on a data profile's `<token>.sample.json`
+over 200 KB.
 
 An **open spec-change** is a ledger entry `spec-change:<level>` with `Status: open`, or a
 review report of the newest round whose verdict is `spec-change`. A ledger entry whose heading
@@ -337,7 +340,9 @@ needs a run (every `stage:` source when none does), a blank line between blocks;
 10. **Source probes** — `docs/sources/<t>.md` per `api:` or `dataset:` source of each
     section in the row's `depends on`.
 11. **Skills to invoke** — the row's `builds with`, less `dev-team:data-quality`.
-12. **Data** — the contract's `## Package conventions` line for the stage.
+12. **Data** — the stage's row of the contract's `## Data stages` table, as
+    `` `stage:<token>` — question: … · data: … · cleaned by: … · clean means: … · judged against: … · pull: … · decision: … ``;
+    for a contract planned before the table, its `## Package conventions` line for the stage.
 13. **Profile** — `docs/sources/<token>.md`.
 14. **Store** — `.dev-team/data/<token>/`.
 15. **Run** — `run-package <pkg>`.
@@ -2126,16 +2131,44 @@ def run_gate(pkg: str | None) -> list[str]:
     if pkg and not contract_path(pkg).exists():
         fails.append(f"{pkg}: missing docs/packages/{pkg}/contract.md — run /dev-team:plan-package {pkg}")
     if pkg and contract_path(pkg).exists():
-        for r in sections(pkg):
+        rows = sections(pkg)
+        names = {s["section"] for s in rows}
+        for r in rows:
             stages = [t for k, t in _sources(r.get("source", "")) if k == "stage"]
-            if stages and not _names(r.get("depends on", "")):
+            deps = _names(r.get("depends on", ""))
+            if stages and not deps:
                 fails.append(f"{pkg}/{r['section']}: stage:{stages[0]} has no depends on; nothing produces its data")
+            for token in stages:
+                fails += _stage_plan_fails(pkg, r["section"], token, deps, names)
     for f in sorted((DOCS / "sources").glob("*.sample.json")):
         doc = f.with_name(f.name.removesuffix(".sample.json") + ".md")
         text = doc.read_text() if doc.exists() else ""
         if text and STAGE_TITLE.match(text.splitlines()[0]) and f.stat().st_size > 200 * 1024:
             fails.append(f"{_rel(f)}: {f.stat().st_size // 1024} KB, over 200 KB; keep five rows per kind")
     return fails
+
+
+def _stage_plan_fails(pkg: str, section: str, token: str, deps: list[str], names: set[str]) -> list[str]:
+    """Run-gate reasons for one `stage:` source's plan (2.11): the **Data stages** row exists, or
+    an older **Package conventions** line does; every cell is filled; `cleaned by` is the marked
+    section; every producer the `data` cell names in backticks is in the section's `depends on`."""
+    row = _stage_row(pkg, token)
+    if row is None:
+        if _stage_line(pkg, token) == "none":
+            return [f"{pkg}/{section}: stage:{token} has no Data stages row; plan it with /dev-team:plan-package {pkg}"]
+        return []
+    out = []
+    empty = [k for k in STAGE_CELLS if _cell(row, k).strip("`* ") in ("", "—", "-", "–")]
+    if empty:
+        out.append(f"{pkg}/{section}: Data stages row stage:{token} leaves {', '.join(empty)} empty")
+    cleaner = col(row, "cleaned by")
+    if cleaner and cleaner != section:
+        out.append(f"{pkg}/{section}: Data stages row stage:{token} says cleaned by {cleaner}, not {section}")
+    producers = [n for n in re.findall(r"`([\w.-]+)`", _cell(row, "data")) if n in names and n != section]
+    missing = [n for n in producers if n not in deps]
+    if missing:
+        out.append(f"{pkg}/{section}: Data stages row stage:{token} names producer {', '.join(missing)} not in its depends on")
+    return out
 
 
 def _dunder_all(init: Path) -> set[str] | None:
@@ -3304,8 +3337,33 @@ def implementer_inputs(pkg: str, section: str) -> list[str]:
     ]
 
 
+# The cells of a **Data stages** row after `stage`, in the template's order; every one must be filled.
+STAGE_CELLS = ("question", "data", "cleaned by", "clean means", "judged against", "pull", "decision")
+
+
+def _cell(row: dict[str, str], name: str) -> str:
+    """A cell by a loose header match, as written (backticks kept); empty when absent."""
+    return next((v.strip() for h, v in row.items() if name in h), "")
+
+
+def _stage_row(pkg: str, token: str) -> dict[str, str] | None:
+    """The stage's row of the contract's **Data stages** table (2.11), keys the header's; None
+    when the contract has no such table or no row for the token."""
+    f = contract_path(pkg)
+    body = _block(f.read_text(), "Data stages") if f.exists() else ""
+    for row in table_rows(body, ("stage", "question")):
+        if col(row, "stage").removeprefix("stage:").strip() == token:
+            return row
+    return None
+
+
 def _stage_line(pkg: str, token: str) -> str:
-    """The contract's **Package conventions** line for a stage, its leading `- ` removed; `none` without one."""
+    """The stage's plan as one line: its **Data stages** row, `` `stage:<token>` — <cell>: <value> · … ``
+    in STAGE_CELLS order; else the older **Package conventions** line for the stage, its leading
+    `- ` removed; `none` without either."""
+    row = _stage_row(pkg, token)
+    if row is not None:
+        return f"`stage:{token}` — " + " · ".join(f"{k}: {_cell(row, k)}" for k in STAGE_CELLS)
     f = contract_path(pkg)
     body = _block(f.read_text(), "Package conventions") if f.exists() else ""
     for line in body.splitlines():

@@ -185,6 +185,15 @@ Phase 7 adds two (`site/notes/2.7-data-loop-07-size-guard.md`): `--run-gate` fai
 profile's `rawtrades.sample.json` over 200 KB, and passes a researcher's api sample of the same
 size. A `files` content may be `{"repeat": ["<string>", <n>]}`, the string repeated `n` times.
 `run-gate-sample-api-over-pass` passed before the change, by construction.
+**Data stages plan (2.11, `site/notes/2.11-data-stages-design.md`).** `base` with
+`"stage": true` now ends the contract with a **Data stages** table — one row for
+`stage:rawtrades`: its question, its data (produced by `ingest`), `cleaned by` `clean`, two
+numbered guarantees, the standards, `whole, 400 rows` and `D1` — in place of the 2.7
+**Package conventions** line, which `"stage": "conventions"` still writes alone (an older
+contract). `--profile`'s `Data:` is the row as one line, cells joined by ` · `. Five
+variants pin the gate: `no-plan` (neither table nor line), `empty-cell` (an empty `pull`),
+`producer` (`data` names `storage`, which `clean` does not depend on), `wrong-cleaner`
+(`cleaned by` `ingest`) each FAIL with their reason; `conventions` passes.
 
 Every `status.py` rule and flag is exercised at least once; the rule a case pins is in its
 note. Two cases go beyond the phase note's list: `design-probe-other-section` (a new consuming
@@ -385,6 +394,11 @@ optional flag).
 | `fields-delta-profile-cap` | as `stage-cap` | `--fields data/clean` | `mode: delta` |
 | `run-gate-sample-over` | `base` (`stage: true`); `profile` `[]`; `docs/sources/rawtrades.sample.json` as `{"repeat": ["x", 210000]}` (phase 7) | `--run-gate data` | `run gate: FAIL`; `docs/sources/rawtrades.sample.json: 205 KB, over 200 KB`; exit 1 |
 | `run-gate-sample-api-over-pass` | `base`; `docs/sources/polygon.sample.json` the same size, no `— stage —` sibling (phase 7) | `--run-gate data` | `run gate: PASS`; exit 0 |
+| `run-gate-stage-conventions-line` | `base` (`stage: "conventions"`): the 2.7 line, no table (2.11) | `--run-gate data` | `run gate: PASS`; exit 0 |
+| `run-gate-stage-no-plan` | `base` (`stage: "no-plan"`): neither (2.11) | `--run-gate data` | `run gate: FAIL`; `data/clean: stage:rawtrades has no Data stages row; plan it with /dev-team:plan-package data`; exit 1 |
+| `run-gate-stage-empty-cell` | `base` (`stage: "empty-cell"`): the row's `pull` is `—` (2.11) | `--run-gate data` | `run gate: FAIL`; `Data stages row stage:rawtrades leaves pull empty`; exit 1 |
+| `run-gate-stage-producer-missing` | `base` (`stage: "producer"`): `data` names `storage` (2.11) | `--run-gate data` | `run gate: FAIL`; `names producer storage not in its depends on`; exit 1 |
+| `run-gate-stage-wrong-cleaner` | `base` (`stage: "wrong-cleaner"`): `cleaned by` `ingest` (2.11) | `--run-gate data` | `run gate: FAIL`; `says cleaned by ingest, not clean`; exit 1 |
 
 **The integration record (2.8).** A top-level `integration` key writes
 `.dev-team/integration/data.txt` (`"pass"`, or the record's text with `{HEAD}` the short sha of

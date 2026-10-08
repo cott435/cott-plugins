@@ -45,8 +45,10 @@ not run; `python3 <plugin>/hooks/sync_decisions.py --all` repairs it), or a cent
 `Applied: <pkg>/<section>, …` line that section's inbox entry no longer holds (`stale Applied:
 line`, the same repair); and, with a package, no
 `docs/packages/<pkg>/contract.md`, or a `stage:` row whose `depends on` is empty (nothing
-produces its data); and a data profile's `<token>.sample.json` over 200 KB. It is the
-check a run makes once, before its first agent.
+produces its data), or has no **Data stages** row (and no older **Package conventions** line),
+or whose row leaves a cell empty, names another section as `cleaned by`, or names a producer
+in its `data` cell that the row's `depends on` lacks; and a data profile's
+`<token>.sample.json` over 200 KB. It is the check a run makes once, before its first agent.
 
 `--rounds <pkg>/<section>` prints `rounds: <n>` — the newest review round, from the
 `-r<n>-` in the report filenames, 0 with none — `next round: <n+1>`, and `commit: <short sha>`
@@ -125,7 +127,9 @@ for the `surface` section before its siblings ship). The docstring gives each ru
 
 `--profile <pkg>/<section>` prints the profiler's spawn block for a row whose `source` names a
 `stage:<token>` — fifteen `<Field>: <value>` lines per stage, from `Mode:` (`profile`,
-`verify` or `defer`) to `Run:`, blocks separated by a blank line. Such a row is PROBE until the newest
+`verify` or `defer`) to `Run:`, blocks separated by a blank line; `Data:` is the stage's
+**Data stages** row as one line (its question, data, cleaned by, clean means, judged against,
+pull and decision cells), or the older **Package conventions** line. Such a row is PROBE until the newest
 round line under `## <pkg>/<section>` in its profile `docs/sources/<token>.md` is neither
 `pending verify` nor `revise: …`, and PROBE again once its reviewers approve it while that
 line's commit is `none` or older than the section's code: a round over the built section, at

@@ -1,0 +1,19 @@
+{
+  "note": "--run-gate passes a stage: row planned before Data stages, with its Package conventions line (2.11)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": "conventions"
+    }
+  ],
+  "args": [
+    "--run-gate",
+    "data"
+  ],
+  "expect": {
+    "exit": 0,
+    "contains": [
+      "run gate: PASS"
+    ]
+  }
+}

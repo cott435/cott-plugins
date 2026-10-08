@@ -116,8 +116,9 @@ outcome per **Edits — the change list**.
    round of work; stub when a wrong guess is a line to change later.** Ask about things that
    change the decomposition or a contract — a package or section boundary the brief does not
    settle, a project skill with no home, a technology choice with no implied default, a
-   convention (timezone, ID type, error envelope) with no default the repo already implies, and
-   every DECIDE item (**Edits**). Do not ask what the repo, the brief, `CLAUDE.md`, or a web
+   convention (timezone, ID type, error envelope) with no default the repo already implies, a
+   data stage whose question, producers or clean guarantees the brief does not settle
+   (**Data stages**), and every DECIDE item (**Edits**). Do not ask what the repo, the brief, `CLAUDE.md`, or a web
    search settles. There is no fixed number: a question earns its stub by the cost test alone.
    If you find yourself with more than a handful, the survey did not settle enough — settle
    more, ask less. Every stub is homework for the user, and a page of them stops being read.
@@ -258,7 +259,7 @@ into one that has one, or drop it.
 
 ## Call paths
 
-At package scope you fix every command's path before a designer runs: the template's item 5,
+At package scope you fix every command's path before a designer runs: the template's item 6,
 **Call paths**, read from `references/package-contract.md` with the rest. One entry per
 command in **Public surface (intent)**; per entry, one path per kind of external effect the
 command reaches, its frames numbered from the command function. Each frame is a name the
@@ -285,6 +286,41 @@ A contract that exists and has no **Call paths** heading is an item of the chang
 **Pipelines** and **Section interfaces** as above; when any section is built, the frames are
 the code's, and the item is the close's (**sync-plan**, step 8), so you write nothing for it
 and the return row reads `| Call paths | left to the close (built) |`.
+
+## Data stages
+
+At package scope, a package with a section that cleans, validates, reconciles or audits data
+its siblings produce gets the template's item 3, **Data stages**, written before any designer
+runs and before you fix **Section interfaces**: a cleaning section's signatures follow from
+what clean means, not the other way round. The table is the plan the profiler executes and
+the designer builds to, so it is where the flow is spelled out: one row per stage, in the
+order the stages are profiled, the first row the population every later stage is judged
+against — what units exist and what keys them — and then each stage of cleaning in the order
+the cleaning sections' `depends on` gives (metadata before bars, bars before facts). For each
+row you settle, from the brief's **Purpose** clauses, the project skills and the vendor
+probes:
+
+- the one question the stage answers, and the numbered guarantees that make its output
+  clean — the brief's words, never a treatment: which rows are dropped or repaired is the
+  profile's to find and the user's to decide;
+- which sections produce the data, each of them in the cleaning section's `depends on`. Add
+  the edge when it is missing: a stage drawn from a section the row does not depend on is a
+  gap the profile reports, not data it reads;
+- the pull: how much the profiler reads when nothing is on disk, and what that scope cannot
+  judge. Read the vendor probes' **Cost and time of a full pull** and **Rate limits and
+  quotas** and write the requests, the time at the documented rate and the quota into the
+  cell. `whole` where whole is cheap — a tickers map, a file listing, profiles under no quota;
+  a sample only where whole is not, drawn so a rare kind can still appear, over a window long
+  enough for the question (a delisting needs months of files, not three sessions);
+- one `D<n>` per stage for the pull, `Scope: <pkg>/<section>`, the cell as the recommendation
+  and an assumption, so the user approves vendor spend and an unanswered one does not block.
+
+A stage whose question, producers or guarantees the brief does not settle is a question under
+the interview rule. A contract that has a `stage:` row and no **Data stages** heading is an
+item of the change list, `Data stages` (**Edits**): EDIT, written from the Sections rows, the
+**Package conventions** `stage:` lines and the probes, whether or not a section is built —
+the table claims nothing about code, and a built section's profile is re-read against it at
+its next round.
 
 ## Decisions
 
@@ -358,7 +394,7 @@ that state what the item changes: a new optional parameter is a **Section interf
 not a reworded **Sections** responsibility. The skill names where the items come from — the
 argument, the brief's diff against `docs/history/brief-contracted.md`, open
 `spec-change:contract` entries in the package's ledgers (`docs/packages/<pkg>/deviations/*.md`, and the older `docs/deviations/<pkg>/*.md` and `docs/deviations.md`), and a review report's **Spec-change** line naming `contract` that no entry records, the repo contract's diff since its
-last archive copy, and a contract with no **Call paths** heading (**Call paths**). List them first, one line each, before you touch any file.
+last archive copy, a contract with no **Call paths** heading (**Call paths**), and a contract with a `stage:` row and no **Data stages** heading (**Data stages**). List them first, one line each, before you touch any file.
 
 Classify each item by the sections it touches, against the package state table in **The
 document map**, at section granularity: a section is *built* when its path has code, *shipped*
@@ -493,7 +529,7 @@ implementer's), a design, a review, or code.
    DONE, proceed for what verifies and list that section in the return.
 8. **Call paths.** When the contract has no **Call paths** heading, run `python3
    ${CLAUDE_PLUGIN_ROOT}/skills/status/scripts/status.py --paths <pkg>` once and write the
-   heading in the template's **As built** form (`references/package-contract.md`, item 5):
+   heading in the template's **As built** form (`references/package-contract.md`, item 6):
    one entry per `command:` block, `(budget 8)`, one path per effect leaf of the block —
    every frame of the tree from the command to that leaf, numbered, each `<owner>.<name>`
    with `<name>` the frame's printed name and `<owner>` the section whose path holds its file

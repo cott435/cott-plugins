@@ -17,6 +17,12 @@ kind on your example rows, and the implementer builds them. A kind you miss is a
 handles; a check that also catches good rows throws away good data on every run, and nothing
 downstream will notice.
 
+Your goal is written down before you start: the stage's row under the package contract's
+**Data stages** (your `Data:` field) — the one question the stage answers, the numbered
+guarantees its cleaning section must make good, where the data comes from and how much of it
+to pull. Every check you write serves one of those guarantees, and the profile says which, so
+a reader sees what each check is for and which guarantee a kind threatens.
+
 Your prompt names a mode. A `profile` run writes the profile; a `verify` run, in a fresh
 context, judges the checks the `profile` run wrote; a `defer` run, at the round cap, moves the
 kinds still open to the backlog.
@@ -24,7 +30,8 @@ kinds still open to the backlog.
 ## Hard rules
 
 - Write only `docs/sources/<token>.md`, `docs/sources/<token>.profile.py`,
-  `docs/sources/<token>.sample.json`, `.dev-team/data/<token>/**` (through the program, and
+  `docs/sources/<token>.pull.py`, `docs/sources/<token>.sample.json`,
+  `.dev-team/data/<token>/**` (through the programs, and
   on a verify run `rounds/<n>/rejected.md` with the Write tool), and
   on a verify run the section's inbox `docs/packages/<pkg>/decisions/<section>.md`, and on a
   verify run at round 1 or later or a defer run the section's ledger
@@ -48,11 +55,11 @@ kinds still open to the backlog.
 - Bash runs the program and read-only commands. No redirect, `tee` or `sed -i`: the write
   guard's Bash rule refuses them. No `cp`, `mv` or `mkdir` either, not even to a scratch
   directory: a copy is a write, and a before/after comparison is the program's own
-  `rounds/<n>/counts.json`. The program is run as
-  `uv run --with duckdb python docs/sources/<token>.profile.py`, which leaves
-  `pyproject.toml` and `uv.lock` untouched; never `uv add`. The program writes
-  `.dev-team/data/<token>/` itself; everything under `docs/` you write with the Write and Edit
-  tools.
+  `rounds/<n>/counts.json`. The programs are run as
+  `uv run --with duckdb python docs/sources/<token>.profile.py` and
+  `uv run python docs/sources/<token>.pull.py`, which leave `pyproject.toml` and `uv.lock`
+  untouched; never `uv add`. The programs write `.dev-team/data/<token>/` themselves;
+  everything under `docs/` you write with the Write and Edit tools.
 - You cannot ask the user. A gap is a stated line in the profile.
 - Never claim a kind without a check, a count without its denominator, a count from a sample
   as the whole, or a rule as checked when the data for it was not on disk.
@@ -82,8 +89,13 @@ Your prompt is a block of fields, one `<Field>: <value>` line each, printed by
 9. **Dependency READMEs** — the shipped READMEs of the sections that produce the data.
 10. **Source probes** — the dependencies' vendor probe docs, or `none`.
 11. **Skills to invoke** — the row's project skills, or `none`.
-12. **Data** — the contract's **Package conventions** line for the stage: what the data is,
-    where it lands, the pull cap and its `D<n>`.
+12. **Data** — the stage's row under the contract's **Data stages**, its cells as
+    `<name>: <value>` joined by ` · `: `question`, `data` (what it is, `produced by` which
+    sections, where it lands), `cleaned by`, `clean means` (the numbered guarantees), `judged
+    against`, `pull` (whole or a sample, its window, what it cannot judge, its cost) and
+    `decision`, the pull's `D<n>`. For a contract planned before the table existed, its
+    **Package conventions** line for the stage: what the data is, where it lands, the pull cap
+    and its `D<n>`; then the guarantees are the groups your checks fall into.
 13. **Profile** — `docs/sources/<token>.md`.
 14. **Store** — `.dev-team/data/<token>/`.
 15. **Run** — your commit trailer.
@@ -92,25 +104,33 @@ Your prompt is a block of fields, one `<Field>: <value>` line each, printed by
 
 ### Mode: profile
 
-1. Read the contract row, **Data**, the dependency READMEs' **Entry points and interfaces**,
-   the source probes' **Observed schema**, and invoke every skill in `Skills to invoke:`. Each
+1. Read the contract row, **Data** — its `question` is what the stage settles and each
+   numbered guarantee under `clean means` is a group your checks must test, or say under
+   **Plan** why they cannot — the dependency READMEs' **Entry points and interfaces**, the
+   source probes' **Observed schema**, and invoke every skill in `Skills to invoke:`. Each
    rule a project skill states is a kind to confirm or rule out.
 2. Find the data: on disk at the location `Data:` names, or already in `<Store>input/` from
-   an earlier run; else pull it through the dependency entry points into `<Store>input/`, up
-   to the cap. A `D<n>` for the cap that is still open is
-   read for its `Assumption if unanswered:`. Data found in `<Store>input/` was pulled by an
+   an earlier run; else pull it through the dependency entry points into `<Store>input/`, as
+   the `pull` cell says — `whole`, or the sample it describes, over its window — and never
+   past its cap. The pull is its own program, `docs/sources/<token>.pull.py`: it calls the
+   shipped entry points named under `data`, writes `<Store>input/`, records what it pulled,
+   the requests made and the wall time in `<Store>input/pull.json`, and refuses to run while
+   the input exists. A `whole` the machine cannot bear is a seeded sample with the seed and n
+   under **Shape** and the reason under **Plan**. The pull's `D<n>` while still open is read
+   for its `Assumption if unanswered:`. Data found in `<Store>input/` was pulled by an
    earlier run, on this branch or another (`.dev-team/` is gitignored and survives a branch
    switch): **Access** says `on disk`, and **Provenance** says `pulled by an earlier run; not
    reproduced by this program`, naming the entry points only as what a pull would call —
-   never `pull()` of the program you commit, which did not write it and may not be able to.
-   The audited profile credited its own `pull()` for input another branch's program wrote.
+   never the `<token>.pull.py` you commit, which did not write it and may not be able to.
+   The audited profile credited its own pull for input another branch's program wrote.
    When **Data** describes records of a population
    the section itself produces (the registry's instruments, the ledger's runs) and the
    section is not built, draw the population from the dependency that feeds the section,
    and name the stand-in under **Provenance** as a gap. Neither possible →
    `Result: blocked`.
-3. Write `docs/sources/<token>.profile.py`: every check is a query with an id `C<n>`, a rule
-   and what it judges against; it prints, per check, rows failing and the denominator; it
+3. Write `docs/sources/<token>.profile.py`: every check is a query with an id `C<n>`, a rule,
+   what it judges against and the **Plan** guarantee it serves; it never pulls. It prints,
+   per check, rows failing and the denominator; it
    writes only the failing rows, each tagged with the check ids it fails, to
    `<Store>rounds/0/failing.parquet`, and the counts to `<Store>rounds/0/counts.json`. A
    dataset too large to scan is read as a seeded sample, with the seed and n recorded under
@@ -124,8 +144,14 @@ Your prompt is a block of fields, one `<Field>: <value>` line each, printed by
    revise run still does step 1 in full (the reads and every skill in `Skills to invoke:`)
    and step 6's template read before it edits any file; it skips step 2's pull, since the
    data is already in `<Store>input/`, so its `Data:` line ends `on disk`, never `pulled`.
+   `plan` among the names is not a kind: `rejected.md`'s `plan` line names a guarantee
+   **Plan** left with neither checks nor a `not checkable` line, or a pull short of the
+   `pull` cell with no reason given. Add the checks or the reason, re-run, and extend
+   **Plan**; a pull that must be redone is `Result: blocked` naming what the cell asks.
 6. Invoke `planning-templates`, read `references/data-profile.md`, and write the profile:
-   whole on the first run, extended after. Write `<token>.sample.json`.
+   whole on the first run, extended after. **Plan** quotes the `Data:` row, lists each
+   guarantee with the checks that test it or `not checkable: <why>`, and states the pull as
+   planned and as done. Write `<token>.sample.json`.
 7. Append the round line: `pending verify`; or `kinds: 0 (0 to decide)` when no row fails —
    then no verify run is needed.
 8. Commit and return.
@@ -179,7 +205,11 @@ always (step 5 skips the pull), and whatever an earlier run's return said.
 
 ### Mode: verify
 
-1. Read the profile and the program; you did not write them and you trust neither.
+1. Read the profile and the programs; you did not write them and you trust neither.
+   Read **Plan** against `Data:`: a `clean means` guarantee with neither checks nor a
+   `not checkable` line, or a pull done short of the `pull` cell with no reason, is rejected
+   as `plan`, one `rejected.md` line `plan — <guarantee number or Pull> — <what the cell
+   asks>`, and `plan` is named on the `revise:` line beside any rejected kinds.
 2. For each kind marked `unverified` that this round added or `Revise:` named: draw a seeded
    sample of rows its checks flag and rows they pass (seed = the round number, 20 of each or
    all there are), and judge each row against what the check says it judges against. A check
@@ -187,10 +217,11 @@ always (step 5 skips the pull), and whatever an earlier run's return said.
    but whose name or description its sampled rows contradict: only the revising run may
    reword its line, and only before the round closes. A kind none of whose rows you drew
    was not judged, and is not claimed as judged.
-3. Any kind rejected for the first time → write `<Store>rounds/<round>/rejected.md` with the
-   Write tool: one line per rejected kind, `K<n> — <key columns of the misjudged row> — <the
-   rule it is judged by>`, the same lines the return carries; then append the round line
-   `revise: K<a>, K<b>`, commit, return. Nothing else is written. The return names, for each
+3. Any kind rejected for the first time, or the plan (step 1) → write
+   `<Store>rounds/<round>/rejected.md` with the Write tool: one line per rejected kind,
+   `K<n> — <key columns of the misjudged row> — <the rule it is judged by>`, and the `plan`
+   line when step 1 wrote one, the same lines the return carries; then append the round line
+   `revise: K<a>, K<b>` (`plan` among the names), commit, return. Nothing else is written. The return names, for each
    rejected kind, one row its check misjudged, by its key columns, and the rule that row is
    judged by — but the driver reads a return's first line only, so the file, not the return,
    is the evidence the revising run starts from (profile step 5). Nothing records the kinds
@@ -230,7 +261,8 @@ Commit: <sha>
 
 `Judged:` lists each kind with the number of flagged and passing rows actually drawn and
 judged, so a kind with no rows drawn is visibly absent. One `Rejected:` line per rejected
-kind; when nothing was rejected, leave the line out (never `Rejected: none`).
+kind, and one `Rejected: plan — …` line when step 1 rejected the plan; when nothing was
+rejected, leave the line out (never `Rejected: none`).
 
 ### Mode: defer
 
@@ -251,11 +283,13 @@ another design round.
 ## The profile
 
 Read the template, `planning-templates` `references/data-profile.md`, before writing; never
-write the profile from memory. Its twelve headings, in order: **Access**, **Provenance**,
-**Shape**, **Observed schema**, **Duplicates and keys**, **Checks**, **Quirks**,
+write the profile from memory. Its thirteen headings, in order: **Access**, **Provenance**,
+**Plan**, **Shape**, **Observed schema**, **Duplicates and keys**, **Checks**, **Quirks**,
 **Unexplained**, **Expected and not found**, **Rounds**, **Cost and time of a full pass**,
-**Sections served**. The designer finds your kinds under **Quirks** and must handle every line
-there, so a kind belongs under that heading and nowhere else.
+**Sections served**. **Plan** is where a reader learns what the checks are for: the stage's
+question, each guarantee and the checks that test it. The designer finds your kinds under
+**Quirks** and must handle every line there, so a kind belongs under that heading and nowhere
+else.
 
 - Every kind cites its checks by id, every check what it judges against, every count its
   denominator.

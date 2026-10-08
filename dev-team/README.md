@@ -250,16 +250,24 @@ how *one more round* is typed by hand.
 
 The architect marks, at PLAN, each section whose job is to clean, validate, reconcile or audit
 data its dependencies produce, in the Sections table where you can see and edit it:
-`stage:<token>` in the `source` cell, `dev-team:data-quality` in `builds with`, and one
-**Package conventions** line saying what the data is, where it lands, the standards it is
-judged against and its pull cap, a `D<n>` with a recommendation and an assumption. The row's
-`responsibility` ends with what the section guarantees about its output, never a treatment:
-the kinds of failing row come from the profile, and you decide each treatment.
+`stage:<token>` in the `source` cell and `dev-team:data-quality` in `builds with`. The plan
+for the data is the contract's **Data stages** table, written at the same PLAN, before any
+section is designed: one row per stage in the order they are profiled and cleaned, the first
+the population every later stage is judged against (what instruments exist, keyed how), then
+metadata, bars, facts. Each row holds the question the stage answers, what the data is and
+which sections produce it (each in the cleaning section's `depends on`), the section that
+cleans it, what clean means as numbered guarantees in the brief's words, the standards it is
+judged against, and the pull: whole or a sample, its window, what that scope cannot judge, and
+its cost in requests and minutes from the vendor probes, approved through one `D<n>` per
+stage with an assumption. A guarantee is never a treatment: the kinds of failing row come
+from the profile, and you decide each treatment. The run gate fails a marked row with no plan
+row, an empty cell, or a producer the section does not depend on.
 
 Before such a section is designed, once every section it depends on is DONE, the **profiler**
-reads the data already on disk (else pulls it through the shipped entry points, up to the
-cap), runs checks over all of it as queries, counts the rows that pass, sorts the failing rows
-into kinds and proposes a treatment for each: `repair`, `drop`, `quarantine` or `flag`. A
+reads the data already on disk (else pulls it through the shipped entry points, as the plan's
+pull cell says, with `.pull.py` beside the profile), runs checks over all of it as queries,
+each check serving one of the plan's guarantees, counts the rows that pass, sorts the failing
+rows into kinds and proposes a treatment for each: `repair`, `drop`, `quarantine` or `flag`. A
 second profiler run, `Mode: verify`, in its own context, samples each kind's check and rejects
 one that catches good rows or misses bad ones; a kind rejected twice is `unverified`. You are
 asked about every verified `repair` or `drop`, since it changes or removes data; `quarantine`
@@ -272,9 +280,11 @@ a `spec-change:design` entry. When round 2 or later still finds new kinds, the s
 BLOCKED and the driver asks *one more round* or *defer*, which moves them to
 `docs/followups.md`; `--defer` answers *defer*.
 
-The profile is `docs/sources/<token>.md`, with its program `.profile.py` and up to five example
-rows per kind in `.sample.json` (the write guard refuses one over 200 KB); the full failing
-rows stay in `.dev-team/data/<token>/`, not in git. Re-profile by hand with
+The profile is `docs/sources/<token>.md` — its **Plan** heading quotes the stage's row and
+lists each guarantee with the checks that test it, so a reader knows what every check is
+for — with its programs `.profile.py` (the checks) and `.pull.py` (the pull), and up to five
+example rows per kind in `.sample.json` (the write guard refuses one over 200 KB); the pulled
+input and the full failing rows stay in `.dev-team/data/<token>/`, not in git. Re-profile by hand with
 `/dev-team:run-package <pkg> <section> --step PROBE`. A package with no `stage:` row runs
 exactly as before.
 
@@ -645,12 +655,12 @@ docs/
 ├── sources/<source>.md              SOURCE PROBE, one `## <pkg>/<section>` entry per consumer (researcher)
 ├── sources/<source>.sample.json · .probe.py    recorded responses + re-runnable probe   (api)
 ├── sources/<source>.stats.json  · .profile.py  column statistics + re-runnable profile  (dataset)
-├── sources/<token>.md · .profile.py · .sample.json   a DATA PROFILE of a stage: source, up to five rows per kind (profiler)
+├── sources/<token>.md · .profile.py · .pull.py · .sample.json   a DATA PROFILE of a stage: source, up to five rows per kind (profiler)
 ├── api/<pkg>/index.md               the docs-site API page                         (the surface section's implementer)
 ├── index.md                         the docs-site home page                        (documenter)
 ├── packages/
 │   └── data/
-│       ├── contract.md              THE PACKAGE CONTRACT; Sections table ends with `surface`, with **Call paths** (plan-package)
+│       ├── contract.md              THE PACKAGE CONTRACT; Sections table ends with `surface`, **Data stages** for a data package, **Call paths** (plan-package)
 │       ├── design/<section>.md      one per section; first line `Mode:`            (designer)
 │       ├── interface.md             THE PUBLIC SURFACE AS SHIPPED — the surface section's README (implementer)
 │       ├── decisions/<section>.md   the section's decisions inbox: D? stubs, Applied: lines (designer, implementer)

@@ -12,6 +12,9 @@ skill is how its kinds become code: one handler, one treatment and one test per 
 
 ## Reading a profile
 
+- **Plan** — the stage's question and its numbered guarantees, each with the checks that
+  test it. The design's **Purpose and scope** states them as what the section promises, and
+  the kinds table below is ordered by the guarantee a kind's checks serve.
 - **Observed schema** — the shape to parse: columns, dtypes, nulls, ranges.
 - **Checks** — each rule `C<n>` and what it judges against. The built section runs all of them.
 - **Quirks** — the kinds: id, the checks that isolate it, its count, the proposed treatment,
@@ -30,7 +33,8 @@ Under the design's **Workflow / pipeline**, after the steps, one row per verifie
 `kind` is `K<n>` and its name; `rule` the check in the design's own words; `handler` the
 function that isolates and treats it; `treatment` one of `repair`, `drop`, `quarantine`, `flag`;
 `decided by` the `D<n>`, `D<n> (open)` for a kind quarantined while its decision waits, or `—`
-for a kind that needs none. The handlers run in the table's order.
+for a kind that needs none. Rows are grouped by **Plan** guarantee, in its order, and the
+handlers run in the table's order.
 
 ## Treatments
 

@@ -32,16 +32,13 @@ change item for `/dev-team:plan-repo`, stubbed as a `D<n>` scoped `repo` until t
    source not named here is never probed, and a kind written wrong probes the wrong thing. A
    section whose job is to clean, validate, reconcile or audit data its dependencies produce
    is marked: `stage:<token>` in `source` (the token names the data, `rawbars`, not the
-   section), `dev-team:data-quality` in `builds with`, and one **Package conventions** line,
-   `` `stage:<token>` — <what the data is>; lands at <path>; judged against <standards>; pull cap <n> <unit>, D<n> ``,
-   the cap from the vendor probes' cost and quota headings, stubbed with an assumption.
-   `<standards>` are the brief clauses, project skills and probe docs the data is held to, by
-   name. A marked row's `responsibility` ends with a clause that says what the section
-   guarantees about its output, in the brief's words from **Purpose** (`guarantees no two
-   unrelated securities share an ID, and a failed metadata lookup never removes a delisted
-   instrument`). State the guarantee and never a treatment (`repair`, `drop`): the kinds of
-   failing row come from the profile, and each treatment that changes data is the user's `D<n>`.
-   Never on a row with no `depends on`, and never on a section that only passes data through.
+   section), `dev-team:data-quality` in `builds with`, and one row under **Data stages**
+   (item 3): the stage's question, its data and producers, what clean means and its pull plan.
+   A marked row's `responsibility` names the stage it cleans (`cleans stage:rawmeta`); what
+   the section guarantees about its output is that row's `clean means` cell, a guarantee and
+   never a treatment (`repair`, `drop`): the kinds of failing row come from the profile, and
+   each treatment that changes data is the user's `D<n>`. Never on a row with no `depends
+   on`, and never on a section that only passes data through.
 
    Every section name and source token follows `project-structure` §4: one lowercase token,
    and never starting with `report`, `summary`, `findings` or `analysis`. A subagent cannot
@@ -57,18 +54,58 @@ change item for `/dev-team:plan-repo`, stubbed as a `D<n>` scoped `repo` until t
    and **Call paths** — before any sibling is built, and its code is built last, from the
    shipped READMEs; its README is `docs/packages/<pkg>/interface.md`.
 
-3. **Section interfaces** — per section, what it returns to its dependents, as signatures.
+3. **Data stages** — only in a package with a `stage:` row; omit the heading otherwise. The
+   plan for the data, written before any section is designed: one table, rows in the order
+   the stages are profiled and cleaned, which is the order their cleaning sections' `depends
+   on` gives. The first row is the population — what instruments, accounts, documents or
+   other units exist and what keys them — because every later stage is judged against it.
+
+   `| stage | question | data | cleaned by | clean means | judged against | pull | decision |`
+
+   - `stage` — `stage:<token>`, the token a Sections row's `source` carries.
+   - `question` — the one question the stage answers about the data, as a question (`which
+     (symbol, asset type) pairs in the vendor files are instruments, and which are one
+     instrument under two spellings?`).
+   - `data` — what the rows are; `produced by` the sections of this package whose entry
+     points yield them, by name in backticks, each in the cleaning section's `depends on`;
+     `lands at <path>`.
+   - `cleaned by` — the section whose `source` carries the token.
+   - `clean means` — numbered guarantees, `1. … 2. …`: what the cleaning section promises
+     about its output, in the brief's words from **Purpose** (`1. no two unrelated securities
+     share an ID 2. a failed metadata lookup never removes a delisted instrument`). The
+     profile groups its checks by these numbers. A guarantee, never a treatment.
+   - `judged against` — the brief clauses, project skills and probe docs the data is held to,
+     by name.
+   - `pull` — how much of the data the profiler reads when none is on disk: `whole`, or
+     `sample <n> <unit>, <how drawn>`; the window (`one file per month for two years plus the
+     last 30 sessions`); what the scope cannot judge (`three sessions cannot show a
+     delisting`); and the cost, from the vendor probes' **Cost and time of a full pull** and
+     **Rate limits and quotas**: requests, time at the documented rate, quota consumed
+     (`≈12,000 requests, ≈10 min at 8 req/s, no quota`).
+   - `decision` — the `D<n>` that asks the user to approve the `pull` cell, one per stage,
+     with the cell as its recommendation and an assumption, so an unanswered one does not
+     block.
+
+   The run gate fails a `stage:` row with no row here, a row with an empty cell, a `cleaned
+   by` that is not the marked section, or a `data` cell naming a producer the cleaning
+   section's `depends on` lacks. A contract written before this heading existed carries the
+   plan as a **Package conventions** line,
+   `` `stage:<token>` — <what the data is>; lands at <path>; judged against <standards>; pull cap <n> <unit>, D<n> ``,
+   still read by the gate and the profiler; adding the heading is an item of the architect's
+   change list.
+
+4. **Section interfaces** — per section, what it returns to its dependents, as signatures.
    Reference repo shapes by name; never redefine them. This is where "what each section
    returns" is fixed, so designers of dependents have something concrete. Also every function
    of the section a **Call paths** entry names below its entry point, marked `(path only)`
    after the signature when no dependent calls it: a frame on a path is a name the contract
    owns, whoever calls it.
 
-4. **Pipelines** — per pipeline: name, trigger, ordered section participation with what
+5. **Pipelines** — per pipeline: name, trigger, ordered section participation with what
    crosses at each step, failure behavior, and the CLI command that drives it. `download →
    clean → audit → store` is a pipeline; each arrow names a shape or a section interface.
 
-5. **Call paths** — one bullet per command in **Public surface (intent)**, a pipeline's
+6. **Call paths** — one bullet per command in **Public surface (intent)**, a pipeline's
    command and a one-off command alike: `` `<command>` (budget <n>): ``, then one sub-bullet
    per kind of external effect the command reaches — `vendor call`, `database write`, `file
    write`, or another kind in two words — holding the frames from the command to that effect:
@@ -111,7 +148,7 @@ change item for `/dev-team:plan-repo`, stubbed as a `D<n>` scoped `repo` until t
    past it, the command's line ends `— past budget, see
    docs/packages/<pkg>/changes/paths-<command>.md` and never carries a `D<n>`.
 
-6. **Public surface (intent)** — which repo shapes this package provides, which section
+7. **Public surface (intent)** — which repo shapes this package provides, which section
    realizes each, and which downstream package or CLI command consumes each. This is the
    list the `surface` section's design (`docs/packages/<pkg>/design/surface.md`) is checked
    against: a name with no consumer here does not become public later. Keep it short; the
@@ -120,13 +157,13 @@ change item for `/dev-team:plan-repo`, stubbed as a `D<n>` scoped `repo` until t
    backfill) belongs here too, with the command as the consumer — it will have no row under
    **Pipelines**.
 
-7. **Consumes** — table: upstream package | name | shape | status (`shipped` /
+8. **Consumes** — table: upstream package | name | shape | status (`shipped` /
    `provisional` / `stale`). The architect reads this to find planned consumers of a package
    when it classifies an edit, so list every upstream name this package will use.
 
-8. **Package conventions** — only what goes beyond the repo contract.
+9. **Package conventions** — only what goes beyond the repo contract.
 
-9. **Open decisions** — `D<n>` numbers, one line each.
+10. **Open decisions** — `D<n>` numbers, one line each.
 
 **Adopting an existing package** (`Mode: document`): every heading describes what the code
 does today. Sections come from its directories, interfaces from its code, pipelines from what

@@ -278,7 +278,7 @@ headings:
     owner_span: ['1. **Access**', null]
     readers:
       - file: agents/profiler.md
-        cites: ['Access', 'Provenance', 'Shape', 'Observed schema', 'Duplicates and keys',
+        cites: ['Access', 'Provenance', 'Plan', 'Shape', 'Observed schema', 'Duplicates and keys',
                 'Checks', 'Quirks', 'Unexplained', 'Expected and not found', 'Rounds',
                 'Cost and time of a full pass', 'Sections served']
       - file: agents/designer.md
@@ -286,7 +286,7 @@ headings:
       - file: skills/status/scripts/status.py
         cites: ['Sections served']
       - file: skills/data-quality/SKILL.md
-        cites: ['Observed schema', 'Checks', 'Quirks', 'Unexplained']
+        cites: ['Plan', 'Observed schema', 'Checks', 'Quirks', 'Unexplained']
 
   - name: section README headings its readers parse are ones the implementer writes
     owner: agents/implementer.md
@@ -456,14 +456,20 @@ headings:
     owner_span: ['1. **Purpose**', '**Adopting an existing package**']
     readers:
       - file: agents/architect.md
-        cites: ['Purpose', 'Sections', 'Section interfaces', 'Pipelines', 'Call paths',
-                'Public surface (intent)', 'Consumes', 'Open decisions']
+        cites: ['Purpose', 'Sections', 'Data stages', 'Section interfaces', 'Pipelines', 'Call paths',
+                'Public surface (intent)', 'Consumes', 'Package conventions', 'Open decisions']
       - file: agents/designer.md
         cites: ['Sections', 'Section interfaces', 'Pipelines', 'Call paths', 'Public surface (intent)', 'Consumes']
       - file: agents/reviewer.md
         cites: ['Sections', 'Section interfaces', 'Pipelines', 'Call paths', 'Public surface (intent)', 'Consumes']
+      # The profiler's Data: field is the Data stages row; status.py reads the table and the
+      # older Package conventions line; the profile template quotes the row under Plan.
+      - file: agents/profiler.md
+        cites: ['Data stages', 'Package conventions']
+      - file: skills/planning-templates/references/data-profile.md
+        cites: ['Data stages', 'Package conventions']
       - file: skills/status/scripts/status.py
-        cites: ['Public surface (intent)', 'Call paths']
+        cites: ['Public surface (intent)', 'Call paths', 'Data stages', 'Package conventions']
 
   - name: the reader's test items its readers cite are ones pipelines.md numbers
     # P3 of the paths review blocks on an item of the reader's test by name, and the designer

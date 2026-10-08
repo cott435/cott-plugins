@@ -1,0 +1,20 @@
+{
+  "note": "--run-gate fails a Data stages row whose data cell names a producer the section does not depend on (2.11)",
+  "steps": [
+    {
+      "do": "base",
+      "stage": "producer"
+    }
+  ],
+  "args": [
+    "--run-gate",
+    "data"
+  ],
+  "expect": {
+    "exit": 1,
+    "contains": [
+      "run gate: FAIL",
+      "data/clean: Data stages row stage:rawtrades names producer storage not in its depends on"
+    ]
+  }
+}

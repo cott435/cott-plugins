@@ -48,13 +48,17 @@ shipped package is consumed from that package's `interface.md`; if the name is n
 the change file carries it.
 
 A section the architect marked `stage:<token>` — one that cleans, validates, reconciles or
-audits data, with what it guarantees about its output at the end of its `responsibility` — is
-profiled on the real data before it is designed: the **profiler** runs checks
-over all of it, sorts the failing rows into kinds and proposes a treatment for each, and the
-section is designed and built with one handler and one test per kind. Once its reviewers
-approve, it is profiled again on its own output, and new kinds reopen its design. You are asked
-about each treatment that repairs or drops rows; quarantining or flagging goes ahead. The pull
-cap, how much data the profiler may fetch when none is on disk, is a decision with a default.
+audits data — has a row in the contract's **Data stages** table, the plan for the data written
+at PLAN: the stages in the order they are profiled (the population first), each with the
+question it answers, the sections that produce its data, what clean means as numbered
+guarantees, and how much to pull. Once the producing sections are DONE the section is profiled
+on the real data before it is designed: the **profiler** pulls to the plan, runs checks over
+the data, each check serving one guarantee, sorts the failing rows into kinds and proposes a
+treatment for each, and the section is designed and built with one handler and one test per
+kind. Once its reviewers approve, it is profiled again on its own output, and new kinds reopen
+its design. You are asked about each treatment that repairs or drops rows; quarantining or
+flagging goes ahead. The pull — whole or a sample, its window, its cost from the vendor
+probes — is a decision per stage with a default.
 
 When a change file names sections of a built package:
 
