@@ -1,0 +1,55 @@
+{
+  "target": "fix-issues",
+  "target_path": "skills/fix-issues/SKILL.md",
+  "evals": [
+    {
+      "id": 1,
+      "name": "open-two-issues",
+      "kind": "behavioral",
+      "baseline": "none",
+      "harness": "evals/sets/files/fix-issues/open-two-issues.md",
+      "prompt": "/plugin-dev:fix-issues open",
+      "expected_output": "A plan with one proposed edit per issue approved once before any edit, then two commits on a toy-audit-fixes-<date> branch (the ship skill edited at the quoted rule, TO-002 restated or closed wontfix with a reason), a Fix attempt with a Verify line in TO-001 and an attempt in TO-002, a clean ledger, no merge and no bump, and a final message naming the bump level.",
+      "files": [
+        "evals/fixtures/audit-run/make_session.py"
+      ],
+      "expectations": [
+        "`outputs/interview.md` records one `AskUserQuestion` approving the plan, with options `Approve the plan` and `Change it`, and `transcript.md` shows that question was asked and answered before the first Write or Edit to any file under the fixture's `toy/` (the setup in `fixture.md` excepted).",
+        "The plan shown in `outputs/interview.md` has exactly one entry per selected issue: one for TO-001 naming `skills/ship/SKILL.md` and the sentence that changes, and one for TO-002 that is either a restatement in `agents/writer.md` or `wontfix` with a reason.",
+        "`outputs/toy/skills/ship/SKILL.md` differs from the fixture's only at step 2, and that step now says what the driver prints when the writer's first line is neither `Result: done` nor `Result: failed`.",
+        "`transcript.md` shows `issues.py fix TO-001` called with a `--verify` value containing both `held when` and `recurred when`, and `outputs/toy/audits/issues/TO-001.md` has exactly one `### Attempt 1`, with `status: fixed` and that `Verify: watch driver:ship; held when …; recurred when …` line.",
+        "The `commit:` of TO-001's attempt is a sha that `outputs/git-log.txt` shows on a branch named `toy-audit-fixes-<YYYYMMDD>` (eight digits) and not on `main`; the attempt's `branch:` names that branch; and the branch carries two commits after `main`'s: the edits, then the attempts (`audits/`).",
+        "`outputs/toy/audits/issues/TO-002.md` has exactly one attempt, and it is either `status: fixed` with `files: agents/writer.md` and `agents/writer.md` in `outputs/toy/` restating the out/-only rule in the step that writes, or `status: wontfix` with a non-empty `reason:`; it is never anything else.",
+        "`outputs/toy/audits/INDEX.md` shows TO-001 with status `fixed` and TO-002 with status `fixed` or `wontfix`, no row with status `verified`, and `transcript.md` contains no `issues.py check-result` call after the fixture setup.",
+        "`outputs/check.txt` holds the output of `issues.py check` on the worktree's ledger after the attempts were recorded, and it begins with `ok`.",
+        "`transcript.md` shows, after the last edit to the toy plugin and before the first `issues.py fix` or `issues.py wontfix` call, `check-contracts`, `build-site` and `run-evals` each either invoked or stated as having nothing to run in the toy plugin (no `contracts.yml`, no `site/`, no covering set or no tag), in that order.",
+        "`outputs/git-log.txt` shows `main` still at the fixture's seed commit with no merge commit, `transcript.md` contains no `bump-version` invocation, and `outputs/toy/.claude-plugin/plugin.json` still says version `0.1.0`.",
+        "`outputs/final-message.md` names a bump level (`patch` or `minor`) for the fixes and says the bump has not been made and waits for a yes."
+      ],
+      "added_in": "0.16-audit-ledger phase 0, run from phase 6"
+    },
+    {
+      "id": 2,
+      "name": "recurred-second-attempt",
+      "kind": "behavioral",
+      "baseline": "none",
+      "harness": "evals/sets/files/fix-issues/recurred-second-attempt.md",
+      "prompt": "/plugin-dev:fix-issues TO-003",
+      "expected_output": "A selection table showing TO-003 as recurred, a plan for a second attempt on agents/writer.md approved once before any edit, then a second Fix attempt appended by issues.py fix with a Verify line naming what a trace shows, the first attempt and its Checks line untouched, and a clean ledger.",
+      "files": [
+        "evals/fixtures/audit-run/make_session.py"
+      ],
+      "expectations": [
+        "`transcript.md`, `outputs/interview.md` or `outputs/final-message.md` shows the selection as a table with exactly one row, TO-003, whose status column reads `recurred`.",
+        "The plan in `outputs/interview.md` proposes one edit to `agents/writer.md` as a second attempt for TO-003 and refers to attempt 1 or its `recurred` Checks line as the reason the issue is back; the `AskUserQuestion` approving it is answered in `transcript.md` before the first Write or Edit to any file under the fixture's `toy/` (the setup in `fixture.md` and the sheet excepted).",
+        "`outputs/toy/audits/issues/TO-003.md` has exactly two attempt headings, `### Attempt 1` then `### Attempt 2`, and `transcript.md` shows the second was added by an `issues.py fix TO-003` call, not by editing the file.",
+        "Attempt 2's `Verify:` line reads `watch agent:writer; held when …; recurred when …`, and each of its two clauses names something a trace shows: a Write path, a return line such as the `tests:` line, or a tool call and its output such as the pytest summary.",
+        "Attempt 1 in `outputs/toy/audits/issues/TO-003.md` is unchanged from the fixture: its `branch: toy-audit-fixes-20260930`, its `commit:` (the fixture's first `main` sha), `files: agents/writer.md`, `evals: evals/2026-09-30-writer-fix.md` and its `Verify:` line are all as the sheet set them, and the `## Checks` section still holds exactly the one `recurred` line.",
+        "Attempt 2's `commit:` is a sha that `outputs/git-log.txt` shows on a branch named `toy-audit-fixes-<YYYYMMDD>` (eight digits) and not on `main`.",
+        "`transcript.md` contains no `issues.py check-result` call after the fixture setup (the sheet's own `check-result` for attempt 1 excepted), and `outputs/toy/audits/INDEX.md` shows TO-003 with status `fixed` (not `verified`, not `recurred`).",
+        "`outputs/check.txt` holds the output of `issues.py check` on the worktree's ledger after the attempt was recorded, and it begins with `ok`."
+      ],
+      "added_in": "0.16-audit-ledger phase 0, run from phase 6"
+    }
+  ]
+}

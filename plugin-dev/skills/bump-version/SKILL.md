@@ -69,7 +69,12 @@ references:
 4. Update this plugin's row in the root `.claude-plugin/marketplace.json` — `version` to
    match. (A bundled, relative-path entry has no `ref` to move; that only applies to a
    plugin sourced from a separate repo.)
-5. Commit the plugin.json bump, the marketplace.json bump, and the changelog line together.
+5. If the plugin has an `audits/` directory, run `python3
+   ${CLAUDE_PLUGIN_ROOT}/scripts/issues.py stamp --version <new version>` from the plugin
+   directory: it writes `fixed_in` on the **Fix** attempt of every issue whose fix commit is
+   an ancestor of HEAD and not yet released, and re-renders `audits/INDEX.md`; stage
+   `audits/`. With no `audits/`, nothing happens. Then commit the plugin.json bump, the
+   marketplace.json bump, the changelog line and the stamps together.
 6. Tag the commit.
 7. Push: `git push` then `git push --tags` (or `git push --follow-tags` if the tag is
    annotated). Report the pushed commit and tag back in chat.

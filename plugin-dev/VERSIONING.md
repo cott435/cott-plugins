@@ -6,9 +6,14 @@ skill, shared by every plugin. This file records only what is specific to this o
 
 ## Model decisions
 
-One agent, `run-auditor` (spawned by `audit-run`), on `inherit`. An audit is judgment over a
-long trace. A cheaper model misses the claims-versus-evidence mismatches that are the point of
-the check, and the person running an audit has already chosen the session model for it.
+Two agents. `run-auditor` (spawned by `audit-run`) is on `inherit`. An audit is judgment over
+a long trace. A cheaper model misses the claims-versus-evidence mismatches that are the point
+of the check, and the person running an audit has already chosen the session model for it.
+
+`run-narrator` (spawned by `run-flow --explain`) is on `claude-sonnet-5-5`, a full id because
+an alias moves (`plugin-anatomy`, `references/agents.md`, **Model names**). It writes a reading
+aid whose every line links to the steps it cites, so a cheaper model is enough and the cost of
+a 12-unit run stays under a million tokens.
 
 `run-evals`' agents — executors, graders and comparators, all general-purpose subagents with
 no agent file — run on Sonnet 5.5 (the user's decision, 2026-09-29, first applied in dev-team

@@ -9,24 +9,43 @@ whether it failed, every hook that blocked, every commit, and what each agent ha
 
 It judges nothing. The auditor does that; this is the evidence.
 
+It lives in plugin-dev's `skills/run-flow/scripts/`, beside `flow.py`, which draws the chart
+and the unit pages. `run-flow` and `audit-run` both run it from there.
+
 Usage:
-  trace.py find --plugin NAME [--limit N]
+  trace.py find --plugin NAME [--limit N] [--all]
       Sessions that used NAME's skills or agents, newest first, each with the chat's title
-      as the app shows it, its project, its span and the commands it ran.
-  trace.py select DIR [--units risk|all|new|seg:N|U01,U05] [--cap N]
+      as the app shows it, its project, its git branch, its span and the commands it ran.
+  trace.py select DIR [--units risk|all|new|seg:N|U01,U05] [--cap N] [--cover a,b,...]
       Which units to audit, one per line with the reason, from DIR/index.json. `risk`
       (the default) is the first unit of each type plus every unit that stands out; `new`
-      is every finished unit with no DIR/findings/U<nn>.md yet.
-  trace.py flow DIR
-      Re-render DIR/flow.html from DIR/index.json, adding a badge for every unit that has a
-      findings file. `build` renders it too, before any audit.
+      is every finished unit with no DIR/findings/U<nn>.md yet. --cover widens any of these
+      so each entry is exercised: `agent:<type>` adds the first finished unit of that type
+      (reason `covers agent:<type>`) when no selected unit is one, within --cap (the rest
+      are printed on an `over cap:` line); `driver:<command>` names, on a `cover segments:`
+      line, every segment that ran /<plugin>:<command>; entries nothing matches are printed
+      on an `uncovered:` line. `cross` entries are covered by the cross audit and ignored.
+  trace.py flow DIR [--issues DIR]
+      Re-render DIR/flow.html and DIR/units/U<nn>.html from DIR/index.json, adding a badge
+      for every unit that has a findings file, and the issue marks for this session from
+      the plugin's audits/issues/ (four levels above DIR, or --issues). `build` renders it
+      too, before any audit.
   trace.py build SESSION --plugin NAME --out DIR [--full]
       SESSION is a .jsonl path, a session id (or unique prefix), `latest`, or words from
       the chat's title (case-insensitive, must match one session that used NAME).
       Writes DIR/run.md, DIR/index.json, DIR/driver/seg-<n>.md, DIR/units/U<nn>.md and
-      DIR/units/U<nn>.system.md (the system prompt the agent actually ran with), and
-      DIR/flow.html, the run as a chart (see flow.py).
+      DIR/units/U<nn>.system.md (the system prompt the agent actually ran with),
+      DIR/units/U<nn>.json (every step with its full input and output, for the pages and
+      the narrator; the `.md` stays clipped for auditors), and DIR/flow.html, the run as a
+      chart, with DIR/units/U<nn>.html, one page per unit (see flow.py).
       --full raises every truncation limit fivefold.
+  trace.py view --plugin NAME --agent TYPE --root DIR (--sessions a,b | --branch GLOB)
+      Every run of one agent type across several sessions. Each session is built (or
+      rebuilt) into DIR/<id8>/ as `build` would, then DIR/views/<type>-<YYYY-MM-DD>.html lists
+      every unit of TYPE in time order, each linking to its unit page. TYPE matches a unit's
+      role (`profiler`) or its full type (`dev-team:profiler`), ignoring case. --sessions takes
+      ids, prefixes or paths; --branch takes every session of NAME, headless ones included,
+      whose git branch matches GLOB.
 
 Step ids are stable across rebuilds of the same transcript: `D<n>` in the main thread,
 `U<nn>.S<n>` inside a unit. Units are numbered by first timestamp. A rebuild while the
@@ -37,6 +56,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import fnmatch
 import json
 import os
 import re
@@ -131,7 +151,7 @@ def describe(s: dict) -> str:
         span = dt.datetime.fromtimestamp(s["mtime"]).strftime("%Y-%m-%d %H:%M")
     live = " · still active" if dt.datetime.now().timestamp() - s["mtime"] < 120 else ""
     cmds = ", ".join(dict.fromkeys(c.split(":", 1)[1] for c in s["commands"])) or "—"
-    where = s["cwd"].replace(str(Path.home()), "~")
+    where = s["cwd"].replace(str(Path.home()), "~") + (f" · {s['branch']}" if s.get("branch") else "")
     at = local(s.get("fork_at", ""))
     fork = (f"\n    fork of {s['fork_of'][:8]}: its history up to {at:%m-%d %H:%M} is a copy of that chat's"
             if s.get("fork_of") and at else "")
@@ -174,12 +194,14 @@ def sessions_for(plugin: str, include_headless: bool = False) -> list[dict]:
                               and b.get("name") in ("Agent", "Task")
                               and str((b.get("input") or {}).get("subagent_type", "")).startswith(f"{plugin}:"))
         cwd = re.search(r'"cwd":\s*"([^"]+)"', text)
+        branch = re.search(r'"gitBranch":\s*"((?:[^"\\]|\\.)*)"', text)
         stamps = TS_RE.findall(text)
         found.append(
             {
                 "path": f,
                 "id": f.stem,
                 "cwd": cwd.group(1) if cwd else "?",
+                "branch": json.loads(f'"{branch.group(1)}"') if branch else None,
                 "mtime": f.stat().st_mtime,
                 "commands": cmds,
                 "spawns": spawns,
@@ -415,6 +437,89 @@ def confirm(shas: list[str], written: list[str], project: str | None) -> list[st
     return out
 
 
+# ---------------------------------------------------------------- full steps, for the pages
+
+
+def commit_details(sha: str, ev: dict, project: str | None) -> dict:
+    """One commit a call made: its message and files from the project when it still exists,
+    else the message the call's own output printed and no files. Claims nothing else."""
+    bare = sha.lstrip("?")
+    out = {"sha": bare, "confirmed": not sha.startswith("?"), "message": "", "files": []}
+    if sha == "?(sha not shown)":
+        return out
+    res = ev.get("result", "")
+    for m in COMMIT_RE.finditer(res):
+        if m.group(2) == bare:
+            out["message"] = m.group(3).strip()
+    if not out["message"] and (m := ONELINE_RE.search(res)) and m.group(1) == bare:
+        out["message"] = m.group(2).strip()
+    if project and Path(project).is_dir():
+        try:
+            shown = subprocess.run(["git", "-C", project, "show", "--name-only", "--format=%s", bare],
+                                   capture_output=True, text=True, timeout=20)
+        except (OSError, subprocess.TimeoutExpired):
+            shown = None
+        if shown is not None and shown.returncode == 0 and shown.stdout.strip():
+            lines = shown.stdout.splitlines()
+            out["message"] = lines[0].strip()
+            out["files"] = [x.strip() for x in lines[1:] if x.strip()]
+    return out
+
+
+def full_step(ev: dict, hooks_by_call: dict, written: list[str], project: str | None) -> dict:
+    """One numbered event, whole: nothing here is clipped."""
+    k = ev["kind"]
+    step = {"step": ev["step"], "kind": k, "ts": ev.get("ts", ""), "summary": ev.get("summary", "")}
+    if k == "call":
+        name, inp = ev["name"], ev["input"]
+        step.update({
+            "tool": name, "input": inp, "output": ev.get("result", ""), "error": bool(ev.get("error")),
+            "hooks": [{"hook": h.get("hook"), "blocked": bool(h.get("block")), "text": h.get("text") or ""}
+                      for h in hooks_by_call.get(ev.get("id"), [])],
+            "commits": [commit_details(sha, ev, project) for sha in confirm(commits_of(ev), written, project)],
+            "write": {"path": inp.get("file_path", ""), "content": inp.get("content", "")} if name == "Write" else None,
+            "edit": ({"path": inp.get("file_path", ""), "old": inp.get("old_string", ""),
+                      "new": inp.get("new_string", "")} if name == "Edit" else None),
+        })
+        if ev.get("meta"):
+            step["meta"] = ev["meta"]
+    elif k in ("say", "think", "user", "system"):
+        step["text"] = ev.get("text", "")
+    elif k == "command":
+        step.update({"name": ev.get("name"), "args": ev.get("args", ""), "injected": bool(ev.get("injected"))})
+    elif k == "skill-body":
+        step["base"] = ev.get("base")
+    elif k == "notify":
+        step.update({"task": ev.get("task"), "status": ev.get("status"), "text": ev.get("text", "")})
+    elif k == "handback":
+        step["from"] = ev.get("frm")
+    elif k == "hook":
+        step.update({"hook": ev.get("hook"), "blocked": bool(ev.get("block")), "text": ev.get("text") or ""})
+    return step
+
+
+def unit_json(u: dict, iu: dict, project: str | None) -> dict:
+    """`units/U<nn>.json`: the unit's every step with full input and output, numbered exactly as
+    in `units/U<nn>.md`. A hook shown under its call there is in that call's `hooks` here."""
+    hooks_by_call: dict[str, list[dict]] = {}
+    for ev in u["events"]:
+        if ev["kind"] == "hook" and ev.get("under_call"):
+            hooks_by_call.setdefault(ev.get("tool"), []).append(ev)
+    steps = [full_step(ev, hooks_by_call, iu["files_written"], project)
+             for ev in u["events"] if not (ev["kind"] == "hook" and ev.get("under_call"))]
+    return {
+        "unit": iu["unit"], "agent_id": iu["agent_id"], "type": iu["type"], "description": iu["description"],
+        "spawner": iu["spawner"], "spawn_step": iu.get("spawn_step"), "segment": iu.get("segment"),
+        "background": iu["background"], "definition": iu["definition"], "version": iu["version"],
+        "models": u["facts"]["models"], "first_ts": iu["first_ts"], "last_ts": iu["last_ts"],
+        "finished": iu["finished"], "tool_calls": iu["tool_calls"], "errors": iu["errors"],
+        "hook_blocks": iu["hook_blocks"],
+        "skills": [e["input"].get("skill") for e in u["events"] if e["kind"] == "call" and e["name"] == "Skill"],
+        "files_written": iu["files_written"], "commits": iu["commits"],
+        "prompt": u["prompt"], "steps": steps, "return": u["return"], "step_count": len(steps),
+    }
+
+
 # ---------------------------------------------------------------- rendering
 
 
@@ -466,6 +571,8 @@ def render_events(events: list[dict], prefix: str, units_by_agent: dict, start: 
             body = render_call(ev, units_by_agent)
             lines.append(head + body[0])
             lines.extend("  " + b for b in body[1:])
+            ev["summary"] = body[0]
+            continue
         elif k == "say":
             lines.append(head + f"_said:_ {clip(one_line(ev['text']), 'text')}")
         elif k == "think":
@@ -491,11 +598,13 @@ def render_events(events: list[dict], prefix: str, units_by_agent: dict, start: 
         elif k == "hook":
             if ev.get("tool") and any(e.get("id") == ev["tool"] for e in events if e["kind"] == "call"):
                 n -= 1  # shown under its call
+                ev["under_call"] = True
                 continue
             verb = "blocked" if ev["block"] else "said"
             lines.append(head + f"⛔ HOOK {ev['hook']} {verb}: {clip(one_line(ev['text']), 'err')}")
         elif k == "system":
             lines.append(head + f"⚠ {ev['text']}")
+        ev["summary"] = lines[-1][len(head):]
     return lines
 
 
@@ -511,6 +620,15 @@ def lane_of(prompt: str, description: str) -> str | None:
         if m := PATHLIKE_RE.search(text or ""):
             return m.group(1)
     return None
+
+
+MODE_RE = re.compile(r"^Mode:\s*(.+)$", re.M)
+
+
+def mode_of(prompt: str) -> str | None:
+    """The prompt's first `Mode:` line, when it has one."""
+    m = MODE_RE.search(prompt or "")
+    return m.group(1).strip() if m else None
 
 
 def outcome(ret: str, description: str) -> dict:
@@ -621,7 +739,7 @@ def agent_files(session_path: Path, main_events: list[dict]) -> list[Path]:
     return found
 
 
-def build(session_path: Path, plugin: str, out: Path) -> None:
+def build(session_path: Path, plugin: str, out: Path, quiet: bool = False) -> dict:
     main_records = load(session_path)
     main_events, main_facts = events_of(main_records)
     raw_units = []
@@ -720,6 +838,7 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
             "unit": u["unit"], "agent_id": u["agent"], "type": u["type"], "description": u["description"],
             "spawner": u["spawner"], "background": u["background"], "definition": u["definition"], "version": u["version"],
             "forked_skill": bool(u["forked_skill"]), "trace": f"units/{u['unit']}.md",
+            "json": f"units/{u['unit']}.json",
             "tool_calls": len(calls), "errors": errors, "hook_blocks": blocks, "commits": commits,
             "files_written": written, "first_ts": u["ts"],
             "last_ts": u["events"][-1]["ts"] if u["events"] else "",
@@ -729,6 +848,7 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
             "wave_key": f"{u['spawner']}:{(u['spawn_call'] or {}).get('mid') or u['agent']}",
             "lane": lane_of(u["prompt"], u["description"]),
             "role": u["type"].split(":")[-1],
+            "mode": mode_of(u["prompt"]),
             **outcome(u["return"], u["description"]),
         })
 
@@ -788,6 +908,13 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
     for iu in index_units:
         iu["segment"] = seg_of.get(iu["unit"])
 
+    # Full steps, one JSON per unit: written last, once spawn steps and segments are known.
+    for u, iu in zip(raw_units, index_units):
+        doc = unit_json(u, iu, main_facts["cwd"])
+        iu["step_count"] = doc["step_count"]
+        (out / "units" / f"{u['unit']}.json").write_text(json.dumps(doc, indent=2, ensure_ascii=False),
+                                                         encoding="utf-8")
+
     interventions = []
     for ev in main_events:
         if ev["kind"] == "call" and ev["name"] == "AskUserQuestion":
@@ -801,6 +928,7 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
 
     index = {
         "session": session_path.stem, "transcript": str(session_path), "plugin": plugin,
+        "title": title_of(session_path.read_text(encoding="utf-8", errors="replace")),
         "plugin_root": root, "plugin_root_exists": bool(root and Path(root).exists()), "version": version,
         "project": main_facts["cwd"], "branch": main_facts["branch"],
         "models": sorted(set(main_facts["models"]) | {m for u in raw_units for m in u["facts"]["models"]}),
@@ -840,6 +968,8 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
     run[run.index("## Driver (whole main thread)"):run.index("## Driver (whole main thread)")] = flow.text(index) + [""]
     (out / "run.md").write_text("\n".join(run), encoding="utf-8")
     flow.write_html(out)
+    if quiet:
+        return index
     print(f"trace: {out}  (flow chart: {out / 'flow.html'})")
     print(f"  plugin root: {root} (version {version}){'' if index['plugin_root_exists'] else ' — MISSING on disk'}")
     print(f"  segments: {len(index_segments)} · units: {len(index_units)} · driver steps: {len(main_events)}")
@@ -849,6 +979,32 @@ def build(session_path: Path, plugin: str, out: Path) -> None:
     if len(versions) > 1:
         print(f"  ⚠ the run spans {plugin} versions {', '.join(versions)}: each segment's and unit's "
               f"definition in index.json points at the version it ran")
+    return index
+
+
+def view(plugin: str, agent: str, root: Path, sessions: str | None, branch: str | None) -> int:
+    """Build each session into root/<id8>/, then the cross-session page for one agent type."""
+    if sessions:
+        paths = [resolve(x.strip(), plugin) for x in sessions.split(",") if x.strip()]
+    else:
+        paths = [s["path"] for s in sessions_for(plugin, include_headless=True)
+                 if s["branch"] is not None and fnmatch.fnmatchcase(s["branch"], branch)]
+        if not paths:
+            print(f"no session of {plugin} on a branch matching {branch}")
+            return 1
+    paths = list(dict.fromkeys(paths))
+    workspaces, lines = [], []
+    for path in paths:
+        out = root / path.stem[:8]
+        index = build(path, plugin, out, quiet=True)
+        workspaces.append(out)
+        n = sum(1 for u in index["units"] if flow.is_type(u, agent))
+        lines.append(f"{path.stem[:8]} · {index['title']} · {index['branch'] or '—'} · {n} unit{'' if n == 1 else 's'} of {agent}")
+    page = flow.write_view(root, workspaces, agent, dt.date.today().isoformat())
+    print(page)
+    for line in lines:
+        print(line)
+    return 0
 
 
 def shape(first_line: str) -> str:
@@ -903,6 +1059,49 @@ def select(out: Path, how: str, cap: int) -> list[tuple[str, str]]:
     return sorted(((k, "; ".join(v[1])) for k, v in ranked), key=lambda x: x[0])
 
 
+def cover(out: Path, picked: list[tuple[str, str]], entries: list[str], cap: int) -> dict:
+    """Widen a selection so every `agent:<type>` entry has a unit and name the driver segments.
+
+    Returns {"picked": the widened list, "over": entries the cap kept out, "segments": the
+    segment numbers to audit in driver mode, "uncovered": entries nothing in the run matches}.
+    """
+    index = json.loads((out / "index.json").read_text())
+    plugin = index.get("plugin", "")
+    done = [u for u in index["units"] if u["finished"]]
+    by_id = {u["unit"]: u for u in index["units"]}
+    picked = list(picked)
+    over, segs, uncovered = [], [], []
+    for entry in entries:
+        kind, _, name = entry.partition(":")
+        if kind == "cross" and not name:
+            continue
+        if kind == "agent" and name:
+            def is_it(u: dict) -> bool:
+                return name.lower() in (u.get("role", "").lower(), u.get("type", "").lower())
+            if any(is_it(by_id[k]) for k, _ in picked if k in by_id):
+                continue
+            first = next((u for u in done if is_it(u)), None)
+            if first is None:
+                uncovered.append(entry)
+            elif len(picked) >= cap:
+                over.append(f"{first['unit']} ({entry})")
+            else:
+                picked.append((first["unit"], f"covers {entry}"))
+            continue
+        if kind == "driver" and name:
+            cmd = name.lstrip("/").removeprefix(f"{plugin}:")
+            hits = [s["seg"] for s in index["segments"]
+                    if s["command"].split()[0] == f"/{plugin}:{cmd}"]
+            if hits:
+                segs += [h for h in hits if h not in segs]
+            else:
+                uncovered.append(entry)
+            continue
+        uncovered.append(entry)
+    picked.sort(key=lambda x: x[0])
+    return {"picked": picked, "over": over, "segments": sorted(segs), "uncovered": uncovered}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -912,15 +1111,25 @@ def main() -> int:
     f.add_argument("--all", action="store_true", help="include headless runs in temp dirs (eval harnesses)")
     fl = sub.add_parser("flow")
     fl.add_argument("out")
+    fl.add_argument("--issues", help="an audits/issues/ directory to mark (default: four levels above OUT)")
     se = sub.add_parser("select")
     se.add_argument("out")
     se.add_argument("--units", default="risk")
     se.add_argument("--cap", type=int, default=12)
+    se.add_argument("--cover", default="",
+                    help="comma-separated agent:<type>, driver:<command> or cross entries the selection must cover")
     b = sub.add_parser("build")
     b.add_argument("session")
     b.add_argument("--plugin", required=True)
     b.add_argument("--out", required=True)
     b.add_argument("--full", action="store_true")
+    v = sub.add_parser("view")
+    v.add_argument("--plugin", required=True)
+    v.add_argument("--agent", required=True)
+    v.add_argument("--root", required=True)
+    which = v.add_mutually_exclusive_group(required=True)
+    which.add_argument("--sessions")
+    which.add_argument("--branch")
     a = ap.parse_args()
 
     if a.cmd == "find":
@@ -933,18 +1142,31 @@ def main() -> int:
         return 0
 
     if a.cmd == "flow":
-        print(flow.write_html(Path(a.out)))
+        print(flow.write_html(Path(a.out), Path(a.issues) if a.issues else None))
         return 0
 
     if a.cmd == "select":
         index = json.loads((Path(a.out) / "index.json").read_text())
         running = [u["unit"] for u in index["units"] if not u["finished"]]
         picked = select(Path(a.out), a.units, a.cap)
+        entries = [x.strip() for x in a.cover.split(",") if x.strip()]
+        widened = cover(Path(a.out), picked, entries, a.cap) if entries else None
+        if widened:
+            picked = widened["picked"]
         for unit, why in picked:
             print(f"{unit}  {why}")
         print(f"selected {len(picked)} of {len(index['units'])} units"
               + (f"; still running, never selected: {', '.join(running)}" if running else ""))
+        if widened:
+            if widened["over"]:
+                print(f"over cap: {', '.join(widened['over'])}")
+            print("cover segments: " + (", ".join(f"seg-{n}" for n in widened["segments"]) or "none"))
+            if widened["uncovered"]:
+                print(f"uncovered: {', '.join(widened['uncovered'])}")
         return 0
+
+    if a.cmd == "view":
+        return view(a.plugin, a.agent, Path(a.root), a.sessions, a.branch)
 
     if a.full:
         for k in LIMITS:

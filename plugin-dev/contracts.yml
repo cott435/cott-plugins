@@ -57,6 +57,42 @@ headings:
         cites: ['Components', 'How they fit together', 'Decisions taken', 'Build order',
                 'What must not break']
 
+  - name: audit-run, fix-issues and bump-version name only issue-file sections the issue template defines
+    # templates/audits/issue.md is the one list; issues.py writes from it, and the skills
+    # name its sections when they say who writes what: audit-run the Finding, Found in
+    # and Checks; fix-issues the Fix attempts; bump-version only fixed_in in a Fix attempt.
+    owner: templates/audits/issue.md
+    owner_form: markdown
+    readers:
+      - file: skills/audit-run/SKILL.md
+        cites: ['Finding', 'Found in', 'Checks']
+      - file: skills/fix-issues/SKILL.md
+        cites: ['Fix', 'Found in']
+      - file: skills/bump-version/SKILL.md
+        cites: ['Fix']
+
+  - name: audit-run and fix-issues name only run-report sections the report template defines
+    owner: templates/audits/run-report.md
+    owner_form: markdown
+    readers:
+      - file: skills/audit-run/SKILL.md
+        cites: ['Errors', 'Warnings', 'Notes', 'Prior issues', 'Audited', 'Not audited',
+                'Dropped on spot-check']
+      - file: skills/fix-issues/SKILL.md
+        cites: ['Errors', 'Warnings', 'Notes']
+
+  - name: audit-run and fix-issues use only the prior-issue verdicts run-auditor defines
+    # run-auditor writes the P lines; its numbered list under "## Prior issues" is the one
+    # list of held / recurred / not exercised. `not testable` is audit-run's own word for an
+    # issue no auditor was given, and is defined there.
+    owner: agents/run-auditor.md
+    owner_span: ['## Prior issues', '## Severity and fault']
+    readers:
+      - file: skills/audit-run/SKILL.md
+        cites: ['held', 'recurred', 'not exercised']
+      - file: skills/fix-issues/SKILL.md
+        cites: ['held', 'recurred']
+
 frontmatter:
   - name: every skill's frontmatter uses only documented skill fields
     # The allowed keys are plugin-anatomy's references/skills.md block, read by the checker.
