@@ -6,6 +6,11 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [1.1.1] - 2026-10-09
+
+### Fixed
+- With a design and an edit list in one plan, `plan-phases` writes a gap answer into the edit list's **Decisions taken** (next `D-` id, its items in the Items cell), so `edits.py show` prints it beside those items; the design's table stays as approved. 1.1.0 said "the spec's" and left which one open (a4bb688).
+
 ## [1.1.0] - 2026-10-09
 
 A second way into a phased change, for one that starts from evidence rather than an idea, and
