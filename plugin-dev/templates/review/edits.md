@@ -22,7 +22,8 @@ tell each one holds.>
 
 <One row per choice the reconcile unit could not make on the findings alone: the user's.
 REC writes the rows with Chosen `open`; review-plugin asks them and fills Chosen and Why.
-plan-phases may add rows with Origin *planning* for a gap it asked about.>
+plan-phases adds a row with Origin *planning* for every gap it asks about, here and not in a
+design read beside this list, which keeps its table as approved.>
 
 | ID | Decision | Chosen | Alternatives | Why | Items | Origin |
 |---|---|---|---|---|---|---|

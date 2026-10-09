@@ -77,7 +77,8 @@ flowchart TB
 ## Decisions taken
 
 <Every decision from the discussion. Origin: asked, or suggested and accepted; plan-phases adds
-planning for a gap it asked about.>
+planning for a gap it asked about, unless an edit list sits beside this design, which then
+takes the answer.>
 
 | Decision | Chosen | Alternatives | Why | Origin |
 |---|---|---|---|---|

@@ -89,9 +89,11 @@ without a decision that is the user's? What it could not sorts into two kinds:
   name. `run-phase` settles these in the note; that is its job.
 - **A decision the spec did not take.** A horizon, a default, who reads a file, what an
   evaluator does on its second rejection. Ask about all of them in one `AskUserQuestion`
-  round, with the recommended option first, and write each answer into the spec's
-  **Decisions taken** with Origin *planning* (an edit list's row also gets the next `D-`
-  id, and the items it touches in its Items cell). If an answer would change a chart, a loop
+  round, with the recommended option first, and write each answer into one **Decisions
+  taken** table with Origin *planning*: the edit list's when there is one, even with a
+  design beside it, under the next `D-` id with the items it touches in its Items cell, so
+  `edits.py show` prints it beside those items; otherwise the design's. A design read beside
+  an edit list keeps its table as approved. If an answer would change a chart, a loop
   or a file where loops meet, stop instead: say the design needs reopening, name what, and
   leave it to the user. This skill does not redraw an approved chart.
 
