@@ -22,6 +22,7 @@ Authored, and committed, in the consuming repo:
     <bundle>/site/flow.md         optional hand-written orientation page
     <bundle>/site/workflows/*.md  one page per pipeline
     <bundle>/site/notes/*.md      design docs and decision records
+    <bundle>/site/notes/<slug>/   one plan's notes; only <slug>-00-overview.md is rendered
     <bundle>/site/mkdocs-base.yml optional theme override; the kit default is used if absent
     <bundle>/site/extra.css       optional CSS override; likewise
 
@@ -406,13 +407,20 @@ def main() -> None:
             f"# {p.name}\n\n*Source: `{rel}`*\n\n```{lang}\n{p.read_text()}\n```\n")
         rules_config.append((p.name, f"config/{p.stem}.md"))
 
-    # Notes: anything dropped in site/notes/
+    # Notes: every loose file in site/notes/, and from each plan's folder (site/notes/<slug>/)
+    # its overview only. The design, the phase notes, the ledger and anything else in the
+    # folder stay in the repo and out of the site.
     notes: list[tuple[str, str]] = []
     notes_dir = site / "notes"
     if notes_dir.exists():
         for n in sorted(notes_dir.glob("*.md")):
             (docs / f"note-{n.name}").write_text(normalize_lists(n.read_text()))
             notes.append((n.stem.replace("-", " "), f"note-{n.name}"))
+        for plan in sorted(p for p in notes_dir.iterdir() if p.is_dir()):
+            for n in sorted(plan.glob("*-00-overview.md")):
+                page = f"note-{plan.name}-{n.name}"
+                (docs / page).write_text(normalize_lists(n.read_text()))
+                notes.append((f"{plan.name} overview", page))
 
     # Evals, if given
     has_evals = False

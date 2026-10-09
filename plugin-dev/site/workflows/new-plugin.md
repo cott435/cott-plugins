@@ -69,14 +69,14 @@ waits for your yes and redraws after any change you ask for. Then the writeup, w
 a planner needs: what each output must say, what each workflow costs cold and warm, the
 decisions, the platform facts, the build order and the non-goals. Nothing exists in the repo
 before the second yes. Then it creates the branch `<name>-0.1`, invokes `new-plugin` for the
-scaffold, commits `site/notes/0.1-design.md`, and prints the line the next chat starts with.
+scaffold, commits `site/notes/0.1/0.1-design.md`, and prints the line the next chat starts with.
 
 **Chat 1 — `plan-phases 0.1`.** A fresh chat, on purpose: it reads the design and nothing of
 the discussion, so anything the design failed to decide surfaces as a question instead of
 being filled from memory. The answers go into the design's decisions. Frontmatter and each
 component's tests come from `plugin-anatomy`'s references, not the design's paraphrase. It
 shows the split into phases as a table and waits for your yes. Then it writes
-`site/notes/0.1-00-overview.md`, one note per phase each with its own **Evals** table, and
+`site/notes/0.1/0.1-00-overview.md`, one note per phase each with its own **Evals** table, and
 `0.1-progress.md`, and spawns one writer per behavioral target, in parallel, to write
 `evals/sets/<target>.json`. It checks each set, then commits all of it as phase 0.
 
@@ -106,7 +106,7 @@ tag. `bump-version` tags `0.1.0` — the version the scaffold already carries �
 ├── evals/README.md · evals/sets/<target>.json   the phases' behavioral evals
 └── site/
     ├── site.yml
-    └── notes/
+    └── notes/0.1/
         ├── 0.1-design.md
         ├── 0.1-00-overview.md
         ├── 0.1-01-<first phase>.md

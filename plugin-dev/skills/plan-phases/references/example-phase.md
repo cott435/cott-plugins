@@ -10,8 +10,9 @@ it.
 added `run-evals` to plugin-dev. It is installed with the plugin, so it is readable from any
 session. It was written before the phase-note structure had a name, so its Evals table sits
 under `### Evals` inside **Steps**; a new note puts it at `## Evals`, between **Steps** and
-**Done when**. Its `## Deviations` is the part `run-phase` appended when the note met the
-real files.
+**Done when**. It also predates the folder per plan, so it sits flat under `site/notes/`; a new
+plan's notes go in `site/notes/<slug>/`. Its `## Deviations` is the part `run-phase` appended
+when the note met the real files.
 
 ## Section by section
 

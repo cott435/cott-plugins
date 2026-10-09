@@ -29,7 +29,7 @@ Platform facts it rests on (`plugin-anatomy`):
 ## Before the first phase
 
 1. Confirm this is a plugin subdirectory (`.claude-plugin/plugin.json` exists).
-2. Find the ledger the way `run-phase` does: `site/notes/<slug>-progress.md`. With no slug
+2. Find the ledger the way `run-phase` does: `site/notes/<slug>/<slug>-progress.md`. With no slug
    and exactly one ledger, use it. With several, ask which. With none, stop: `plan-phases`
    has not run.
 3. Check the branch and the tree the way `run-phase` does. `git branch --show-current` must
@@ -50,7 +50,7 @@ rules**:
 > of waiting: the review of a behavioral row, a Deviation that asks whether to commit, a
 > question the plan does not answer, and a release the note says to propose. Commit nothing
 > before the reply, which comes back to you in this conversation. For a review, write the
-> viewer with `--static` and give its path. Also read any `CLAUDE.md` in `site/notes/` before
+> viewer with `--static` and give its path. Also read any `CLAUDE.md` in `site/notes/<slug>/` before
 > the plan's files: a chat started there would have loaded it. End every turn with exactly
 > this form, and nothing after it:
 >

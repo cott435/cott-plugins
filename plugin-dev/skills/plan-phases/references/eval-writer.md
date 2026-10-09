@@ -15,7 +15,7 @@ said, and the writer reports it instead of inventing it.
 > Plugin directory: `<plugin dir>`. Mode for this target: `<new target | changed target>`.
 >
 > Read, in this order and nothing else:
-> 1. `<plugin dir>/site/notes/<slug>-design.md`, the approved design.
+> 1. `<plugin dir>/site/notes/<slug>/<slug>-design.md`, the approved design.
 > 2. The phase notes whose `## Evals` table names this target: `<note paths>`. The rows for
 >    this target name these eval IDs: `<IDs, with each row's phase, baseline and pass bar>`.
 > 3. `<plugin-dev>/skills/run-evals/references/eval-kinds.md`, for what a behavioral eval is.

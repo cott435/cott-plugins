@@ -1,6 +1,6 @@
 ---
 name: plan-phases
-description: Split an approved design - site/notes/{slug}-design.md, written by design-plugin - into phases, each sized for one Claude Code chat. Reads the design and nothing of the discussion behind it, asks about any gap the design leaves, proposes the phase split for approval, then writes an overview, one note per phase with its own evals table, the eval sets (one writer subagent per target, in parallel) and a progress ledger that run-phase reads. Commits them as phase 0. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), in a fresh chat on the branch design-plugin created.
+description: Split an approved design - site/notes/{slug}/{slug}-design.md, written by design-plugin - into phases, each sized for one Claude Code chat. Reads the design and nothing of the discussion behind it, asks about any gap the design leaves, proposes the phase split for approval, then writes an overview, one note per phase with its own evals table, the eval sets (one writer subagent per target, in parallel) and a progress ledger that run-phase reads. Commits them as phase 0. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), in a fresh chat on the branch design-plugin created.
 argument-hint: "<slug>"
 disable-model-invocation: true
 ---
@@ -12,7 +12,7 @@ leaving the plugin in a working state. This skill writes the split down before a
 starts: notes a fresh chat can read cold, eval sets that prove each phase, and a ledger that
 says which phase is next. `run-phase` does the phases, one per chat.
 
-It starts from the design `design-plugin` committed, `site/notes/<slug>-design.md`, and
+It starts from the design `design-plugin` committed, `site/notes/<slug>/<slug>-design.md`, and
 deliberately from nothing else. The discussion that produced the design is long; a planner
 that reads it plans from half-remembered turns. A planner that reads only the design plans
 from what was approved. When it cannot write a phase note without guessing, the design has a
@@ -24,7 +24,7 @@ by the user and never pushes.
 ## Find the design
 
 1. Confirm this is a plugin subdirectory (`.claude-plugin/plugin.json` exists).
-2. Read `site/notes/<slug>-design.md`. With no slug and exactly one `*-design.md` that has no
+2. Read `site/notes/<slug>/<slug>-design.md`. With no slug and exactly one `*-design.md` that has no
    `<slug>-progress.md` beside it, use that one. With none, stop: `design-plugin` has not run.
 3. Confirm the branch: `git branch --show-current` equals the branch the design names. If not,
    stop and say so; never switch branches on the user's behalf.
@@ -128,7 +128,7 @@ that.
 
 ## What is written
 
-All under `site/notes/`, so the site builder renders them under Notes, beside the design:
+All under `site/notes/<slug>/`, so the site builder renders them under Notes, beside the design:
 
 | File | From template | Holds |
 |---|---|---|
@@ -204,7 +204,7 @@ appropriate" is a decision not taken: take it, or ask it as a gap.
    no platform-fact evals, otherwise `in progress` with their IDs under Notes; every other row
    `todo`.
 5. Write the eval sets through the writers and check them, per **The evals**.
-6. If the plugin has a `contracts.yml`, run `check-contracts`. `site/notes/` is in its scope,
+6. If the plugin has a `contracts.yml`, run `check-contracts`. `site/notes/<slug>/` is in its scope,
    so a note that quotes a forbidden pattern must scope the pattern with `files:` or be
    reworded. Fix the note, not the claim.
 7. Commit the notes, the eval sets, the ledger and any gap answers added to the design:

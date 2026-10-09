@@ -15,7 +15,7 @@ summary of this one.
 ## Find the work
 
 1. Confirm this is a plugin subdirectory (`.claude-plugin/plugin.json` exists).
-2. Locate the ledger: `site/notes/<slug>-progress.md`. With no slug argument and exactly one
+2. Locate the ledger: `site/notes/<slug>/<slug>-progress.md`. With no slug argument and exactly one
    ledger, use it; with several, ask which. With none, stop — `plan-phases` has not run.
 3. Confirm the branch: `git branch --show-current` equals the branch the ledger names. If
    not, stop and say so; never switch branches on the user's behalf.
@@ -26,17 +26,17 @@ summary of this one.
 
 ## Read, in this order, and nothing else up front
 
-1. `site/notes/<slug>-design.md` — the why: the workflows and their charts, the decisions,
+1. `site/notes/<slug>/<slug>-design.md` — the why: the workflows and their charts, the decisions,
    the non-goals, as approved. Plans written before `design-plugin` existed have none; their
    overview carries it.
-2. `site/notes/<slug>-00-overview.md` — what the design turns into: the contents tree, the
+2. `site/notes/<slug>/<slug>-00-overview.md` — what the design turns into: the contents tree, the
    files other files parse, the phases table, the breaking changes.
-3. `site/notes/<slug>-progress.md` — the first row whose status is not `done` is this
+3. `site/notes/<slug>/<slug>-progress.md` — the first row whose status is not `done` is this
    chat's phase. `in progress` means a previous chat stopped mid-way: read its Notes cell
    and `git status`, and finish rather than restart. Phase 0 is the exception: `plan-phases`
    leaves it `in progress` on purpose when it has platform-fact evals, listed in its Notes
    cell. Running those evals is this chat's phase; the overview is its note.
-4. That phase's note, `site/notes/<slug>-NN-<name>.md`.
+4. That phase's note, `site/notes/<slug>/<slug>-NN-<name>.md`.
 
 The note names every plugin file to open; open those as the steps reach them. Do not read
 the other phase notes, the evals of other phases, or any earlier conversation — the design

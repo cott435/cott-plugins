@@ -13,7 +13,7 @@ flowchart TD
   K -->|changes| K
   K -->|your yes| W["writeup"]
   W -->|changes| W
-  W -->|your yes| G["design commit on branch plugin-slug:<br/>site/notes/slug-design.md"]
+  W -->|your yes| G["design commit on branch plugin-slug:<br/>site/notes/slug/slug-design.md"]
   G --> P["/plugin-dev:plan-phases slug<br/>(fresh chat; reads the design only)"]
   P -->|your yes to the split| Z["phase 0 commit:<br/>slug-00-overview.md · slug-NN-*.md · eval sets · slug-progress.md"]
   Z --> R["/plugin-dev:run-phase slug<br/>(fresh chat; reads design → overview → ledger → one note)"]
@@ -46,7 +46,7 @@ and the components table below. Second, the writeup: the charts plus what every 
 say, the cost of each workflow, the decisions, the platform facts, the build order, what must
 not break, and the non-goals. Each gate waits for your yes, and a requested change means
 discussion and a republished page. Nothing is written before the second yes. Then it creates
-the branch `<plugin>-<slug>` and commits `site/notes/<slug>-design.md`.
+the branch `<plugin>-<slug>` and commits `site/notes/<slug>/<slug>-design.md`.
 
 ## Chat 1 — `plan-phases <slug>`
 
@@ -58,9 +58,9 @@ reopening. Then it shows the phase split as a table and waits for your yes. Then
 
 | File | Holds |
 |---|---|
-| `site/notes/<slug>-00-overview.md` | what changes; the contents tree with `+`/`~`; the files other files parse; the phases table with dependencies; breaking changes |
-| `site/notes/<slug>-NN-<name>.md` | one per phase: purpose, decisions, files, the exact spec (frontmatter, headings, contract entries), steps, evals with pass conditions, done-when |
-| `site/notes/<slug>-progress.md` | the ledger: one row per phase — status, commit, eval logs, notes for the next chat |
+| `site/notes/<slug>/<slug>-00-overview.md` | what changes; the contents tree with `+`/`~`; the files other files parse; the phases table with dependencies; breaking changes |
+| `site/notes/<slug>/<slug>-NN-<name>.md` | one per phase: purpose, decisions, files, the exact spec (frontmatter, headings, contract entries), steps, evals with pass conditions, done-when |
+| `site/notes/<slug>/<slug>-progress.md` | the ledger: one row per phase — status, commit, eval logs, notes for the next chat |
 | `evals/sets/<target>.json` | one per behavioral target, written by one writer subagent each, in parallel, and checked before the commit |
 
 and commits them as phase 0. The split obeys four rules: every phase is mergeable on its own;
@@ -120,7 +120,8 @@ phase, each with its evals beside it.
 
 ## The reference run
 
-plugin-dev's own `0.9-evals` plan, under `site/notes/0.9-evals-*.md`, is a complete set of
+plugin-dev's own `0.9-evals` plan, under `site/notes/0.9-evals-*.md` (flat: it predates the
+folder per plan), is a complete set of
 phase notes and a ledger as `run-phase` ran them, Deviations included: the worked example of
 what phase notes look like when the bar is "nothing left for the next chat to guess". It
 predates `design-plugin`, so it has no design file and its overview carries the why. For the

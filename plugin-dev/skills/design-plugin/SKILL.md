@@ -1,6 +1,6 @@
 ---
 name: design-plugin
-description: Turn an idea for a new plugin, or a large change to one, into an approved design through discussion. Interviews the user in rounds, composes the jobs into loops (each loop's unit of work, what makes that unit strong, where its inputs come from, the files where loops meet), shows one flow chart per workflow plus a system chart for approval, then writes the design up for approval. Commits the approved writeup as site/notes/{slug}-design.md, which plan-phases reads in a fresh chat. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json) for a change that touches several agents or skills, or from the marketplace repo root with --new to start a plugin that will have more than a skill or two.
+description: Turn an idea for a new plugin, or a large change to one, into an approved design through discussion. Interviews the user in rounds, composes the jobs into loops (each loop's unit of work, what makes that unit strong, where its inputs come from, the files where loops meet), shows one flow chart per workflow plus a system chart for approval, then writes the design up for approval. Commits the approved writeup as site/notes/{slug}/{slug}-design.md, which plan-phases reads in a fresh chat. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json) for a change that touches several agents or skills, or from the marketplace repo root with --new to start a plugin that will have more than a skill or two.
 argument-hint: "<slug> [what the change is]  |  --new <plugin-name> [what it does]"
 disable-model-invocation: true
 ---
@@ -141,9 +141,11 @@ Only after the writeup is approved:
    Work from there.
 2. **new only:** invoke `new-plugin` and complete its scaffold and marketplace steps, so the
    design lands in a directory that already builds.
-3. Write the approved writeup to `<plugin>/site/notes/<slug>-design.md`, exactly as approved.
-4. If the plugin has a `contracts.yml`, run `check-contracts`. `site/notes/` is in its scope, so
-   a design that quotes a forbidden pattern must reword it. Fix the design, not the claim.
+3. Write the approved writeup to `<plugin>/site/notes/<slug>/<slug>-design.md`, exactly as
+   approved. The folder is this plan's: `plan-phases` writes its notes beside the design.
+4. If the plugin has a `contracts.yml`, run `check-contracts`. `site/notes/<slug>/` is in its
+   scope, so a design that quotes a forbidden pattern must reword it. Fix the design, not the
+   claim.
 5. Commit the design (**new**: and the scaffold and marketplace row): `<plugin> <slug>
    (design): <what>`. This is the only commit this skill makes, and it pushes nothing.
 6. Print, for the user to start the next chat with:
