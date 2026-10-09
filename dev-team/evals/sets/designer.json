@@ -422,6 +422,61 @@
       ],
       "added_in": "2.6-spine phase 0, run from phase 4",
       "note": "Phase note 04, row 4.3. Runs in the `repo-planned` tree of eval 11 with one substitution: eval-13-contract.md is that tree's data contract with a fourth frame, `storage.open_store`, inserted below `storage.write_bars` and `storage.recorded_run` on the `data-ingest` database-write and ledger-write paths, and no Section interfaces entry for it — the architect named a frame below the entry point without listing it `(path only)`, the case the phase-1 template's item 3 exists for. The 2.6 designer's Spec-change paragraph names this case outright (`a frame it names that Section interfaces does not define`) with `Clause:` the command's Call paths line, so the outcome is one `spec-change:contract` entry and no design. What the baseline (the 2.5.0 designer) fails: expectations 1 and 10 for certain, since it knows no Call paths rule and designs storage as any new section, returning `Result: done`; expectation 4 as well, since its `Clause:` parenthesis knows only a contract row or heading. The harness says the user does not know which names the contract lists where, so an interview cannot resolve the gap."
+    },
+    {
+      "id": 14,
+      "name": "clean-small-section-folds-modules",
+      "kind": "behavioral",
+      "baseline": "0f99e7b",
+      "harness": "evals/sets/files/designer/eval-14-clean-small.md",
+      "prompt": "Repo root for this run: evals/sets/files/designer/repo-planned (every path below is relative to it).\n\nSection: data/clean\nMode: new\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: none\nUpstream interfaces: none\nSource probes: none\nChange file: none\nSpec-change: none\nDesign-gap: none\nSkills to invoke: none\nWrite to: docs/packages/data/design/clean.md\nRun: run-package data",
+      "expected_output": "A design for data/clean whose Module plan keeps the small section in one or two logic modules beside errors.py, with any file under about 100 lines either a definitions or config file or given a stated reason to stand alone.",
+      "files": [
+        "evals/sets/files/designer/repo-planned/docs/architecture.md",
+        "evals/sets/files/designer/repo-planned/docs/decisions.md",
+        "evals/sets/files/designer/repo-planned/docs/packages/data/contract.md"
+      ],
+      "expectations": [
+        "outputs/docs/packages/data/design/clean.md exists, its first line is exactly `Mode: new`, and it has a `Module plan` under the Data model / internal contracts heading listing files under packages/data/src/data/clean/",
+        "The Module plan lists at most two modules besides `errors.py`, `configs.py` and `__init__.py`; the checks and the duplicate rule are not each a file of their own",
+        "The Module plan keeps `errors.py` as its own file (the package convention puts each section's error class there) and lists no `configs.py`, because the section has no setting of its own",
+        "Every Module plan file other than `errors.py`, `configs.py` and `__init__.py` states or implies an expected size of about 100 lines or more, or gives a reason it stands alone (on its line or in the sentence beside the plan); a plan that estimates a logic module at ~60-70 lines with no reason fails",
+        "Each Module plan line still names the Interfaces rows it defines, and `clean_bars` is defined by exactly one file",
+        "No file in the Module plan is named `utils.py`, `helpers.py`, `common.py` or `misc.py`",
+        "outputs/commit.txt exists and contains a first line `data/clean: design` and a trailer line `Dev-Team-Run: run-package data`",
+        "No file exists under outputs/ other than docs/packages/data/design/clean.md, commit.txt, docs/packages/data/deviations/clean.md (only when every entry in it is a `deviation` headed `## data/clean — <YYYY-MM-DD> — deviation — <k>` with `Status: proposed`) and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/ or .claude/agent-memory/dev-team-designer/; in particular outputs/docs/decisions.md does not exist and the return is not `stopped`"
+      ],
+      "added_in": "module-size floor, run before the 2.12 bump",
+      "note": "Baseline is the commit before the floor, 0f99e7b: `previous` would be HEAD, which already carries the change. The baseline is expected to plan a file per check; with_skill is expected to fold.",
+      "note_floor": "Graders' critique, iteration 2: with_skill's 90-line `cleaning.py` was a marginal pass on the 'about 100' wording, its reason sitting in the paragraph under the table; the wording now says so. Expectation 8's memory path accepted `dev-team-designer/` after both graders found agents write there."
+    },
+    {
+      "id": 15,
+      "name": "storage-large-section-stays-split",
+      "kind": "behavioral",
+      "baseline": "0f99e7b",
+      "harness": "evals/sets/files/designer/eval-15-storage-sized.md",
+      "prompt": "Repo root for this run: evals/sets/files/designer/repo-planned (every path below is relative to it).\n\nSection: data/storage\nMode: new\nContract: docs/packages/data/contract.md\nRepo contract: docs/architecture.md\nDependency READMEs: none\nUpstream interfaces: none\nSource probes: none\nChange file: none\nSpec-change: none\nDesign-gap: none\nSkills to invoke: none\nWrite to: docs/packages/data/design/storage.md\nRun: run-package data",
+      "expected_output": "A design for data/storage whose Module plan is not collapsed by the floor: separate modules for distinct responsibilities, each sized for its real contents, plus errors.py and configs.py.",
+      "files": [
+        "evals/sets/files/designer/repo-planned/docs/architecture.md",
+        "evals/sets/files/designer/repo-planned/docs/decisions.md",
+        "evals/sets/files/designer/repo-planned/docs/packages/data/contract.md"
+      ],
+      "expectations": [
+        "outputs/docs/packages/data/design/storage.md exists, its first line is exactly `Mode: new`, and it has a `Module plan` listing files under packages/data/src/data/storage/",
+        "The Module plan lists at least three modules besides `errors.py`, `configs.py` and `__init__.py`; the run ledger (`recorded_run`) and the bar write/query are not in the same file",
+        "The Module plan keeps `errors.py` and `configs.py` as their own files, `configs.py` holding `DATA_DB_PATH`, and neither is merged into a logic module",
+        "No Module plan line merges two responsibilities that share no state or caller to avoid a small file",
+        "Every Module plan file other than `errors.py`, `configs.py` and `__init__.py` is estimated at about 100 lines or more",
+        "Each Module plan line names the Interfaces rows it defines, and `query_bars`, `write_bars` and `recorded_run` are each defined by exactly one file",
+        "No file in the Module plan is named `utils.py`, `helpers.py`, `common.py` or `misc.py`",
+        "outputs/commit.txt exists and contains a first line `data/storage: design` and a trailer line `Dev-Team-Run: run-package data`",
+        "No file exists under outputs/ other than docs/packages/data/design/storage.md, commit.txt, docs/packages/data/deviations/storage.md (only when every entry in it is a `deviation` headed `## data/storage — <YYYY-MM-DD> — deviation — <k>` with `Status: proposed`) and, if present, interview.md and the designer's own memory under .claude/agent-memory/designer/ or .claude/agent-memory/dev-team-designer/; in particular outputs/docs/decisions.md does not exist and the return is not `stopped`"
+      ],
+      "added_in": "module-size floor, run before the 2.12 bump",
+      "note": "Guard for eval 14: the floor must not collapse a section whose responsibilities are distinct. Baseline 0f99e7b, as in eval 14.",
+      "note_floor": "Iteration 2: both configurations passed all eight, so this eval is a guard, not a discriminator; the baseline preferred on design quality in the blind comparison. The size expectation above was added after the graders asked for one; the iteration-2 plans meet it (with_skill 130/200/180, baseline 110/170/170) but no grader scored it. The memory path in the last expectation accepts `dev-team-designer/`."
     }
   ]
 }

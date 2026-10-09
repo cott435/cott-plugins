@@ -12,6 +12,30 @@ described by what it looks like, not by the generation that produced it. The one
 of the name is the **dev_team v4 Flow** artifact in the gallery, which is a title.
 
 
+## [2.12.0] - 2026-10-09
+
+A soft 100-line floor on module size, so a small section stops coming back as a directory
+of 60-line files. A nudge, not a limit: nothing enforces it. Evidence:
+`evals/2026-10-09-designer-module-size-floor.md` (designer evals 14 and 15; 100% vs 94%,
+blind 1/2, the loss on design quality; the implementer and reviewer halves are untested).
+
+### Added
+
+- `project-structure` §2, **A small module is a nudge, not a limit**: a module expected well
+  under about 100 lines is merged into the sibling it overlaps, unless it is a definitions
+  file, `configs.py`, an entry point or `__init__.py`, owns a responsibility no sibling
+  shares, or merging would cross a seam or push the sibling past its soft limit (8895dcf)
+- Designer evals 14 (`clean`, a small section folds) and 15 (`storage`, a large one stays
+  split) in `evals/sets/designer.json`
+
+### Changed
+
+- The designer sizes the **Module plan** from below as well as above, folding a file expected
+  under about 100 lines into the sibling it overlaps (8895dcf)
+- The implementer notes a module that came out under about 100 lines in the README's
+  **Implementation notes** and does not merge it, because the intent tests import from the
+  file the Module plan names; the reviewer raises it at no severity (8895dcf)
+
 ## [2.11.0] - 2026-10-08
 
 The cleaning of a data package is planned before it is profiled. Design:
