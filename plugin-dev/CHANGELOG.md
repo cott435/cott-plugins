@@ -6,6 +6,23 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [1.1.0] - 2026-10-09
+
+A second way into a phased change, for one that starts from evidence rather than an idea, and
+phase notes written when their phase starts. Minor: a new skill and script; a plan that
+already has its notes runs as before.
+
+### Added
+- **`review-plugin`** (b78f708): reviews a whole plugin for what is wrong with it. Agrees the goal and the units with you from the plugin's shape, runs waves of unit agents that each read one role whole and write findings, and one reconcile agent that writes the edit list `site/notes/<slug>/<slug>-edits.md`; asks the decisions the findings leave open and commits. The orchestrating chat reads only script output. Templates under `templates/review/`; a workflow page, `site/workflows/review-sweep.md`.
+- **`scripts/edits.py`** (b78f708): checks findings files and an edit list (fields, dependency cycles, open decisions, every finding cited), prints an index of one line per item and one phase's items whole, and checks coverage: every item in exactly one phase, dependencies respected.
+
+### Changed
+- **`plan-phases` plans from a design, an edit list, or both, and writes no phase note** (b78f708). The overview carries each phase's items, what it must not touch, the files other files parse and a new **Evals by phase** table; the eval sets are still written up front. An edit list is read through `edits.py`, never whole.
+- **`run-phase` writes its phase's note when the phase starts** (b78f708), from the overview's row and the files as they are, finding each edit-list item's cited line where earlier phases moved it. A plan whose notes already exist reads them as before.
+- `design-plugin` sends evidence-driven sweeps to `review-plugin` and designs only an edit list's **Needs a design** items, on the review's branch (b78f708).
+- The overview template's Phases table gains Items and Must not touch columns; four `contracts.yml` claims bind the new templates to their readers (b78f708).
+- Eval fixtures moved into per-plan folders; a toy review plan, `site/notes/fix/`, added; `evals/2026-10-09-review-plugin-and-notes-at-phase-start.md` (b78f708).
+
 ## [1.0.0] - 2026-10-09
 
 1.0.0 because a path every typed skill reads has moved: a plan whose notes are still flat is no
