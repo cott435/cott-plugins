@@ -6,6 +6,22 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [1.0.0] - 2026-10-09
+
+1.0.0 because a path every typed skill reads has moved: a plan whose notes are still flat is no
+longer found by `run-phase` or `run-phases`.
+
+### Changed
+- **Breaking: a plan's notes live in a folder per plan, `site/notes/<slug>/`** (735da32).
+  `design-plugin` writes `site/notes/<slug>/<slug>-design.md`; `plan-phases`, `run-phase` and
+  `run-phases` read and write the overview, the phase notes and the ledger beside it. A plan
+  already in flight moves its `site/notes/<slug>-*.md` files into `site/notes/<slug>/`. The
+  README, `site/flow.md`, the workflow pages and `build-site` follow.
+- `build_site.py` renders only a plan folder's `<slug>-00-overview.md` under Notes, labelled
+  `<slug> overview`; the design, phase notes and ledger stay out of the site. Loose files in
+  `site/notes/` render as before (735da32). Rebuilding `dev-team` adds one page, the overview of
+  its `remake_2.0` folder; `evals/2026-10-09-notes-folder-layout-mechanical.md`.
+
 ## [0.16.0] - 2026-10-08
 
 ### Added
