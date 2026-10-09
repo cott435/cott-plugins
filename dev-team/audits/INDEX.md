@@ -3,10 +3,14 @@
 
 | Id | Title | Fault | Severity | Status | Found | Seen | Fixed in | Last check |
 |---|---|---|---|---|---|---|---|---|
+| [DT-001](issues/DT-001.md) | Driver does not print changed rows after a re-derive | agent | ERROR | recurred | 2026-10-07 ca48b249 | 4 | 2.10.0 | 2026-10-09 recurred |
+| [DT-002](issues/DT-002.md) | Driver reads the decisions ledger with grep/sed through Bash | agent | ERROR | recurred | 2026-10-07 ca48b249 | 3 | 2.10.0 | 2026-10-09 recurred |
+| [DT-019](issues/DT-019.md) | `docs/decisions.md` is missing from the driver's Read list | definition | NOTE | recurred | 2026-10-07 ca48b249 | 2 | 2.10.0 | 2026-10-09 recurred |
+| [DT-022](issues/DT-022.md) | The print-rows rule is tied to "before the next spawn" | definition | NOTE | recurred | 2026-10-07 ca48b249 | 2 | 2.10.0 | 2026-10-09 recurred |
 | [DT-030](issues/DT-030.md) | A round-1 spec-change verdict with a code CRITICAL has no path to a fix | definition | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-033](issues/DT-033.md) | Returns and files state checks no step in the trace made | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
-| [DT-036](issues/DT-036.md) | Tester records a one-run fact in project memory | agent | ERROR | open | 2026-10-08 96a768ee | 1 | — | — |
-| [DT-037](issues/DT-037.md) | Two commits made by amending the message after the commit | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-036](issues/DT-036.md) | Tester records a one-run fact in project memory | agent | ERROR | open | 2026-10-08 96a768ee | 2 | — | — |
+| [DT-037](issues/DT-037.md) | Two commits made by amending the message after the commit | agent | WARN | open | 2026-10-08 96a768ee | 2 | — | — |
 | [DT-038](issues/DT-038.md) | Decision lines go beyond the answer the user gave | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-039](issues/DT-039.md) | Tester writes a test with noqa, then deletes the tree | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-041](issues/DT-041.md) | Tester lists the repo root with a bare ls | agent | WARN | open | 2026-10-08 96a768ee | 1 | — | — |
@@ -15,48 +19,64 @@
 | [DT-044](issues/DT-044.md) | The own: README joins the Dependency READMEs field on its own line | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-047](issues/DT-047.md) | No rule for a module-level helper subclass or a decision with no affected item | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
 | [DT-049](issues/DT-049.md) | Docstring citation rule is not repeated where docstrings are written | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
-| [DT-050](issues/DT-050.md) | Two hook traps (88 columns, import stripped before use) are not stated to the implementer | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
+| [DT-050](issues/DT-050.md) | Two hook traps (88 columns, import stripped before use) are not stated to the implementer | definition | NOTE | open | 2026-10-08 96a768ee | 2 | — | — |
 | [DT-051](issues/DT-051.md) | Closed return lists lack forms the agents repeatedly need | definition | NOTE | open | 2026-10-08 96a768ee | 1 | — | — |
-| [DT-001](issues/DT-001.md) | Driver does not print changed rows after a re-derive | agent | ERROR | released | 2026-10-07 ca48b249 | 3 | 2.10.0 | — |
-| [DT-002](issues/DT-002.md) | Driver reads the decisions ledger with grep/sed through Bash | agent | ERROR | released | 2026-10-07 ca48b249 | 2 | 2.10.0 | — |
-| [DT-003](issues/DT-003.md) | Driver skips the re-derive after the cap answer | agent | ERROR | released | 2026-10-07 ca48b249 | 2 | 2.10.0 | — |
-| [DT-004](issues/DT-004.md) | Profile's Provenance credits a pull this run never made | agent | ERROR | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-005](issues/DT-005.md) | Reviewer runs Bash outside its allowlist | agent | ERROR | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-006](issues/DT-006.md) | Reviewer writes its report without reading the template | agent | ERROR | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-008](issues/DT-008.md) | The implementer's 20-line return cap cannot be met on a large FIX round | definition | ERROR | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-009](issues/DT-009.md) | Implementer merges two review items onto one `Review:` line | agent | ERROR | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-010](issues/DT-010.md) | Implementer's step-0 reads are out of order | agent | ERROR | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-011](issues/DT-011.md) | Designer adds frames instead of raising a spec-change | agent | ERROR | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-012](issues/DT-012.md) | Designer reads another section's design | agent | ERROR | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-013](issues/DT-013.md) | Profiler's revise run misreports `to decide` | agent | ERROR | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-014](issues/DT-014.md) | The designer reads a dependency's source | agent | WARN | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-016](issues/DT-016.md) | Artifacts from another branch are treated as this branch's | definition | NOTE | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-018](issues/DT-018.md) | `<d>` is undefined in profile mode | definition | NOTE | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-019](issues/DT-019.md) | `docs/decisions.md` is missing from the driver's Read list | definition | NOTE | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-020](issues/DT-020.md) | The 4-question `AskUserQuestion` limit against "one per block" | definition | NOTE | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-021](issues/DT-021.md) | No `stopped because` entry for a user stop | definition | NOTE | released | 2026-10-07 ca48b249 | 2 | 2.10.0 | — |
-| [DT-022](issues/DT-022.md) | The print-rows rule is tied to "before the next spawn" | definition | NOTE | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-023](issues/DT-023.md) | The implementer's Inputs vs step-0 read order | definition | NOTE | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-024](issues/DT-024.md) | "Read" is undefined for a directory input | definition | NOTE | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-025](issues/DT-025.md) | Designer §10 is silent on call-path frames | definition | NOTE | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-026](issues/DT-026.md) | `stage` probe docs are not named in the designer | definition | NOTE | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-027](issues/DT-027.md) | The designer's Write-only list omits memory | definition | NOTE | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | — |
-| [DT-029](issues/DT-029.md) | Parallel implementers commit each other dependency lines and uv.lock | agent | ERROR | released | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 not exercised |
-| [DT-031](issues/DT-031.md) | Returns break their closed shape or line cap in six of seven roles | agent | ERROR | released | 2026-10-08 96a768ee | 2 | 2.10.0 | 2026-10-08 recurred |
-| [DT-034](issues/DT-034.md) | Implementer reports TODO(decision) markers resolved without running the sweep | agent | ERROR | released | 2026-10-08 96a768ee | 2 | 2.10.0 | 2026-10-08 recurred |
-| [DT-040](issues/DT-040.md) | Design-defect stop writes a full tree first | agent | WARN | released | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 not exercised |
-| [DT-045](issues/DT-045.md) | Several spec-change entries have no return form | definition | NOTE | released | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 not exercised |
-| [DT-046](issues/DT-046.md) | A lint-forbidden case is learned only from the format hook | definition | NOTE | released | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 not exercised |
-| [DT-048](issues/DT-048.md) | The researcher scratch directory is not named | definition | NOTE | released | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 not exercised |
-| [DT-053](issues/DT-053.md) | Revise profile run returns Data: pulled when it pulled nothing | agent | ERROR | released | 2026-10-08 ca48b249 | 1 | 2.10.0 | — |
-| [DT-055](issues/DT-055.md) | The starting intent-suite count has nowhere to go | definition | NOTE | released | 2026-10-08 ca48b249 | 1 | 2.10.0 | — |
-| [DT-056](issues/DT-056.md) | A review finding that raises a dependency floor has no stated route | definition | NOTE | released | 2026-10-08 ca48b249 | 1 | 2.10.0 | — |
-| [DT-057](issues/DT-057.md) | The designer's reading limit does not cover probe sample files or a dependency's source | definition | NOTE | released | 2026-10-08 ca48b249 | 1 | 2.10.0 | — |
-| [DT-058](issues/DT-058.md) | A verify run's rejection evidence does not reach the revising run | definition | NOTE | released | 2026-10-08 ca48b249 | 1 | 2.10.0 | — |
-| [DT-028](issues/DT-028.md) | Summary says "user asked to stop" when the user only resumed | agent | ERROR | verified | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 held |
-| [DT-032](issues/DT-032.md) | Tester runs an unscoped git status --short | agent | ERROR | verified | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 held |
-| [DT-035](issues/DT-035.md) | Implementer never runs the intent suite before writing code | agent | ERROR | verified | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 held |
-| [DT-052](issues/DT-052.md) | Implementer text says no file is shared, then stages two shared files | definition | NOTE | verified | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-08 held |
+| [DT-059](issues/DT-059.md) | Profiler copies 1.4 GB of exploration tables to the scratchpad with DuckDB COPY | agent | ERROR | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-060](issues/DT-060.md) | Tester rewrites eleven test docstrings with sed -i | agent | ERROR | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-061](issues/DT-061.md) | Architect return carries a Files: list and four prose lines | agent | ERROR | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-062](issues/DT-062.md) | Agents write memory notes that break their own Memory rules, five different ways | definition | WARN | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-063](issues/DT-063.md) | Shell writes slip past the Bash guard and agents try them anyway | definition | WARN | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-064](issues/DT-064.md) | The architect's repo-contract follow-up never reaches the driver or the user | definition | WARN | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-065](issues/DT-065.md) | Two verify runs report K1's judged counts differently, 20/20 and 20/2 | agent | WARN | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-066](issues/DT-066.md) | The verify profiler's block was piped through head -6 before it was sent | agent | WARN | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-067](issues/DT-067.md) | Profiler pulls into input/whole/ instead of treating the existing input as on disk | agent | WARN | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-068](issues/DT-068.md) | Reviewer skips decisions.md, the design and constraints reads | agent | WARN | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-069](issues/DT-069.md) | README reports bandit and ruff results that no step shows | agent | WARN | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-070](issues/DT-070.md) | Architect never enumerates project skills in its survey | agent | WARN | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-071](issues/DT-071.md) | No step for input that holds an earlier, smaller pull | definition | NOTE | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-072](issues/DT-072.md) | Profiler Hard rules name no scratch location for analysis tables | definition | NOTE | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-073](issues/DT-073.md) | Reviewer definition reads the deviations template unconditionally in one place and conditionally in another | definition | NOTE | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-074](issues/DT-074.md) | Floor rule says "a dependency the design names" when the design names none | definition | NOTE | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-075](issues/DT-075.md) | Architect stop return has no place for the spec-change and Commit lines or the run-package continue command | definition | NOTE | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-076](issues/DT-076.md) | Commit rule is silent on a path that also holds the user's uncommitted edits | definition | NOTE | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-077](issues/DT-077.md) | Resolved by has three forms across the architect and its template | definition | NOTE | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-078](issues/DT-078.md) | Architect tests "built" per package in one place and per section in another | definition | NOTE | open | 2026-10-09 a6c2f6c2 | 1 | — | — |
+| [DT-003](issues/DT-003.md) | Driver skips the re-derive after the cap answer | agent | ERROR | released | 2026-10-07 ca48b249 | 2 | 2.10.0 | 2026-10-09 not exercised |
+| [DT-004](issues/DT-004.md) | Profile's Provenance credits a pull this run never made | agent | ERROR | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 not exercised |
+| [DT-006](issues/DT-006.md) | Reviewer writes its report without reading the template | agent | ERROR | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 not exercised |
+| [DT-012](issues/DT-012.md) | Designer reads another section's design | agent | ERROR | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 not exercised |
+| [DT-026](issues/DT-026.md) | `stage` probe docs are not named in the designer | definition | NOTE | released | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 not exercised |
+| [DT-029](issues/DT-029.md) | Parallel implementers commit each other dependency lines and uv.lock | agent | ERROR | released | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-09 not exercised |
+| [DT-040](issues/DT-040.md) | Design-defect stop writes a full tree first | agent | WARN | released | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-09 not exercised |
+| [DT-046](issues/DT-046.md) | A lint-forbidden case is learned only from the format hook | definition | NOTE | released | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-09 not exercised |
+| [DT-048](issues/DT-048.md) | The researcher scratch directory is not named | definition | NOTE | released | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-09 not exercised |
+| [DT-053](issues/DT-053.md) | Revise profile run returns Data: pulled when it pulled nothing | agent | ERROR | released | 2026-10-08 ca48b249 | 1 | 2.10.0 | 2026-10-09 not exercised |
+| [DT-005](issues/DT-005.md) | Reviewer runs Bash outside its allowlist | agent | ERROR | verified | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 held |
+| [DT-008](issues/DT-008.md) | The implementer's 20-line return cap cannot be met on a large FIX round | definition | ERROR | verified | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 held |
+| [DT-009](issues/DT-009.md) | Implementer merges two review items onto one `Review:` line | agent | ERROR | verified | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 held |
+| [DT-010](issues/DT-010.md) | Implementer's step-0 reads are out of order | agent | ERROR | verified | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 held |
+| [DT-011](issues/DT-011.md) | Designer adds frames instead of raising a spec-change | agent | ERROR | verified | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 held |
+| [DT-013](issues/DT-013.md) | Profiler's revise run misreports `to decide` | agent | ERROR | verified | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 held |
+| [DT-014](issues/DT-014.md) | The designer reads a dependency's source | agent | WARN | verified | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 held |
+| [DT-016](issues/DT-016.md) | Artifacts from another branch are treated as this branch's | definition | NOTE | verified | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 held |
+| [DT-018](issues/DT-018.md) | `<d>` is undefined in profile mode | definition | NOTE | verified | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 held |
+| [DT-020](issues/DT-020.md) | The 4-question `AskUserQuestion` limit against "one per block" | definition | NOTE | verified | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 held |
+| [DT-021](issues/DT-021.md) | No `stopped because` entry for a user stop | definition | NOTE | verified | 2026-10-07 ca48b249 | 2 | 2.10.0 | 2026-10-09 held |
+| [DT-023](issues/DT-023.md) | The implementer's Inputs vs step-0 read order | definition | NOTE | verified | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 held |
+| [DT-024](issues/DT-024.md) | "Read" is undefined for a directory input | definition | NOTE | verified | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 held |
+| [DT-025](issues/DT-025.md) | Designer §10 is silent on call-path frames | definition | NOTE | verified | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 held |
+| [DT-027](issues/DT-027.md) | The designer's Write-only list omits memory | definition | NOTE | verified | 2026-10-07 ca48b249 | 1 | 2.10.0 | 2026-10-09 held |
+| [DT-028](issues/DT-028.md) | Summary says "user asked to stop" when the user only resumed | agent | ERROR | verified | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-09 held |
+| [DT-031](issues/DT-031.md) | Returns break their closed shape or line cap in six of seven roles | agent | ERROR | verified | 2026-10-08 96a768ee | 2 | 2.10.0 | 2026-10-09 held |
+| [DT-032](issues/DT-032.md) | Tester runs an unscoped git status --short | agent | ERROR | verified | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-09 held |
+| [DT-034](issues/DT-034.md) | Implementer reports TODO(decision) markers resolved without running the sweep | agent | ERROR | verified | 2026-10-08 96a768ee | 2 | 2.10.0 | 2026-10-09 held |
+| [DT-035](issues/DT-035.md) | Implementer never runs the intent suite before writing code | agent | ERROR | verified | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-09 not exercised |
+| [DT-045](issues/DT-045.md) | Several spec-change entries have no return form | definition | NOTE | verified | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-09 held |
+| [DT-052](issues/DT-052.md) | Implementer text says no file is shared, then stages two shared files | definition | NOTE | verified | 2026-10-08 96a768ee | 1 | 2.9.0 | 2026-10-09 held |
+| [DT-055](issues/DT-055.md) | The starting intent-suite count has nowhere to go | definition | NOTE | verified | 2026-10-08 ca48b249 | 1 | 2.10.0 | 2026-10-09 held |
+| [DT-056](issues/DT-056.md) | A review finding that raises a dependency floor has no stated route | definition | NOTE | verified | 2026-10-08 ca48b249 | 1 | 2.10.0 | 2026-10-09 held |
+| [DT-057](issues/DT-057.md) | The designer's reading limit does not cover probe sample files or a dependency's source | definition | NOTE | verified | 2026-10-08 ca48b249 | 2 | 2.10.0 | 2026-10-09 held |
+| [DT-058](issues/DT-058.md) | A verify run's rejection evidence does not reach the revising run | definition | NOTE | verified | 2026-10-08 ca48b249 | 1 | 2.10.0 | 2026-10-09 held |
 | [DT-007](issues/DT-007.md) | Reviewer's return CRITICAL line is a paraphrase | agent | ERROR | wontfix | 2026-10-07 ca48b249 | 1 | — | — |
 | [DT-015](issues/DT-015.md) | The design runs 413 lines against a 100–250 target | agent | WARN | wontfix | 2026-10-07 ca48b249 | 1 | — | — |
 | [DT-017](issues/DT-017.md) | Shell-read bans are enforced in prose only | definition | NOTE | wontfix | 2026-10-07 ca48b249 | 1 | — | — |
