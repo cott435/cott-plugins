@@ -6,6 +6,11 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [1.1.2] - 2026-10-09
+
+### Fixed
+- One rule for when a review item needs a design (2e9efd9): a fix that adds a new workflow, a new agent with its own loop, or a new file two workflows meet at goes under **Needs a design** and through `design-plugin`; a hook, a script flag or a record file inside an existing loop stays an edit with its exact behavior and a fixture. The README, `review-plugin`, its reconcile prompt, the edit-list template, `design-plugin` and the review-sweep page now say the same, and an empty section means `plan-phases` is next. The README no longer offers `design-plugin` for any "change too big for one chat".
+
 ## [1.1.1] - 2026-10-09
 
 ### Fixed
