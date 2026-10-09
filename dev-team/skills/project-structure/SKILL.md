@@ -123,16 +123,30 @@ positional cap becomes keyword-only (after `*`), which the cap does not count. A
 bag, a tuple packed to carry two parameters as one, and a helper that only moves three
 statements out of sight all pass the linter and cost the reader more than the limit saved.
 
+**A small module is a nudge, not a limit.** There is no hard floor and nothing enforces one.
+The soft floor is about 100 lines: a module the design expects to land well under it, whose
+responsibility overlaps a sibling's or whose only caller is one sibling, is merged into that
+sibling, because a directory of twelve 60-line files costs the reader more jumps than it
+saves. The floor yields freely. A module stays small when it is a definitions file (models,
+schemas, constants, exceptions, types), `configs.py`, an entry point or `__init__.py`; when it
+owns one responsibility no sibling shares; or when merging would cross a seam
+(`python-implementation` §1) or push the sibling past its own soft limit. A small module with
+a reason needs no note. Merging is a design-time choice: the tester imports each name from the
+module the **Module plan** gives it, so a built section is not merged afterwards.
+
 Who uses these, and how:
 
 - **Architect** — a section whose responsibility clearly exceeds these limits is two sections.
 - **Designer** — the **Module plan** lists files sized to the *soft* limits, never one module
-  that will obviously blow past them.
+  that will obviously blow past them, and folds a module expected under about 100 lines into
+  an overlapping sibling unless one of the exceptions above applies.
 - **Implementer** — the plan will sometimes be wrong. Check real sizes before finishing: past a
   hard limit, split now (invoke `python-implementation`); past a soft limit, note it in the
-  return.
+  return. A module that came out under about 100 lines with no exception is noted in the
+  README's **Implementation notes**, not merged: the tests already import from it.
 - **Reviewer** — anything past a soft limit without a note, or past a hard limit at all, is a
-  finding.
+  finding. A module under about 100 lines is not a finding at any severity: the floor is
+  the designer's to apply and the implementer's to note, and a fix round does not merge files.
 - **Paths reviewer** — a command past its **Call paths** budget (the hard **Main-path depth**
   without one) is a CRITICAL; past the soft limit, a WARNING. The count is `status.py
   --paths`' `depth to first effect`.

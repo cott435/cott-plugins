@@ -254,7 +254,10 @@ it truly does not apply, and say so in a line.
    so a package left off it is a document they never see.
 3. **Data model / internal contracts** — tables, schemas, classes, state living inside this
    section. Include a **Module plan**: the files this section will consist of under its path,
-   one line each, sized to the soft limits in `project-structure` §2, plus which settings go
+   one line each, sized to the soft limits in `project-structure` §2 — and from below too: fold
+   a file you expect under about 100 lines into the sibling it overlaps, unless it is a
+   definitions or config file, an entry point, or the only owner of its responsibility —
+   plus which settings go
    in the section's `configs.py` per its §3. An entry point the section owns — a line under
    `[project.entry-points."<group>"]` in the package `pyproject.toml`, such as a `pytest11`
    plugin or a migrations group — is one line of the plan, exactly `entry point: <group>

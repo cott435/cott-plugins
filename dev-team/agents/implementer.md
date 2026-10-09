@@ -527,7 +527,10 @@ when the gate runs. You build no section and write nothing under `docs/`.
     gate fails a trivial single-use helper and an options bag your run added. A promotion to a
     package changes internal call sites and is not a local edit: invoke
     `python-implementation` for the procedure. Note anything past a soft limit in the README's
-    **Implementation notes**; the return has no line for it.
+    **Implementation notes**; the return has no line for it. A module that came out under
+    about 100 lines is noted there too, unless it is a definitions or config file, an entry
+    point, or owns a responsibility no sibling shares; do not merge it, the intent tests
+    import from the file the Module plan names.
 
 11. **Record what you applied.** For each `D<n>` you implemented this run — including
     entries scoped `repo` or to your whole package — append to your inbox
