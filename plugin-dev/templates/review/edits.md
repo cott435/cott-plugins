@@ -52,7 +52,9 @@ allowed between blocks. Two findings about one rule are one item citing both.>
 <Items whose chosen fix adds a new workflow, a new agent with its own loop, or a new file two
 workflows meet at. They are not under Edits: they go through `design-plugin <slug>` on this
 branch, which reads this section as the change it designs, and `plan-phases` plans the design
-and this list together. "None" when every fix changes what exists.>
+and this list together. A hook, a script flag or a record file inside a loop that already
+exists is an edit, not a design: its item gives the exact behavior and a fixture. "None" when
+every fix changes or adds to what exists, which is the usual case.>
 
 ## Conflicts
 

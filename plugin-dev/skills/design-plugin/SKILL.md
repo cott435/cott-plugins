@@ -27,8 +27,9 @@ Nothing is written in the repo before the second gate: no branch, no scaffold, n
 This skill is for changes that start from an idea of what should exist. A change that starts
 from evidence of what is wrong (recurring audits, contradictions, a context budget) across a
 plugin too big to read in one chat is `review-plugin`'s: its edit list is the spec, and it
-needs no charts. When its decisions add a new workflow, agent loop or shared file, it lists
-those items under **Needs a design**, and this skill designs just them on the review's branch
+needs no charts. When its decisions add a new workflow, a new agent with its own loop, or a new
+file two workflows meet at, it lists those items under **Needs a design**, and this skill
+designs just them on the review's branch
 (see **From a review**).
 
 ## Two modes

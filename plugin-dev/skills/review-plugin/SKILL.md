@@ -128,7 +128,9 @@ Write each answer into its row: Chosen, and Why in the user's terms. Then, for e
 
 - When the chosen fix adds a new workflow, a new agent with its own loop, or a new file two
   workflows meet at, move the items it covers from **Edits** to **Needs a design**, whole.
-  That piece is designed, not just edited.
+  That piece is designed, not just edited. A hook, a script flag or a record file inside a
+  loop that already exists is not one of these: it stays an edit, whose item gives its exact
+  behavior and a fixture. Most reviews leave the section empty.
 - When it makes an item moot (the user chose to keep things as they are), the item stays,
   and its `edit:` says so in one line, so `plan-phases` still sees it and its evals.
 

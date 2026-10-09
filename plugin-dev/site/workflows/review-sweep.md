@@ -53,14 +53,19 @@ rerun and, for a script, its fixture. `edits.py check --findings` refuses a list
 finding without saying why.
 
 Last, the decisions REC left open: the chat reads only the **Decisions taken** table and asks
-them in rounds, recommended option first. An answer that adds a new workflow, agent loop or
-shared file moves its items to **Needs a design**. Then one commit, and the next command.
+them in rounds, recommended option first. An answer that adds a new workflow, a new agent with
+its own loop, or a new file two workflows meet at moves its items to **Needs a design**. A hook,
+a script flag or a record file inside a loop that already exists does not: it stays an edit,
+whose item gives its exact behavior and a fixture. Then one commit, and the next command.
 
 The orchestrating chat never opens an agent file, a findings file, or the edit list whole.
 What it knows of them is the units' returns and `edits.py`'s output, which is why it stays
 small however big the plugin is.
 
 ## Chat 1 — `plan-phases <slug>`
+
+When **Needs a design** says None, which is the usual case, this is the next chat. Otherwise
+`design-plugin <slug>` runs first, in a chat of its own, and designs only those items; then this.
 
 The same skill as for a design, reading the edit list the way a large plan should be read:
 `edits.py index` gives every item on one line, and the planner opens an item only when its

@@ -33,7 +33,9 @@ REC does not carry is lost; `edits.py check --findings` makes that visible.
 >   Chosen `open`, the recommended alternative first, and the item's `decide:` naming it.
 >   A choice the findings settle is not a decision: make it, under **Conflicts**.
 > - **Needs a design**: items whose fix adds a new workflow, a new agent with its own loop,
->   or a new file two workflows meet at, whole, in the item format. Not under Edits.
+>   or a new file two workflows meet at, whole, in the item format. Not under Edits. A hook,
+>   a script flag or a record file inside a loop that already exists is an edit: give it its
+>   exact behavior and a fixture under Edits.
 > - **Build order**: layers bottom-up as lines of E-ids, each saying what it proves, then the
 >   smallest slice that works end to end.
 > - **Issues**: every open, recurred and wontfix id in the audit index, with its item or
