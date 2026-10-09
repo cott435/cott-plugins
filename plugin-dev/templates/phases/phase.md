@@ -1,7 +1,7 @@
 # NN — <name>
 
 Phase NN. <One paragraph: what this phase adds or changes, and the gap it closes. Written
-for a chat that has read only the design, the overview, the ledger, and this note.>
+for a chat that has read only the spec, the overview, the ledger, and this note.>
 
 ## Decisions
 
@@ -35,8 +35,9 @@ readers — that is the `contracts.yml` entry.>
 
 ## Evals
 
-<!-- Kind is one of run-evals' kinds: mechanical · load · behavioral · trigger · platform-fact.
-     A behavioral row names its set file and eval IDs; the prompts are in that set already. -->
+<!-- This phase's rows from the overview's Evals by phase, copied; a pass bar is never
+     loosened here. Kind is one of run-evals' kinds: mechanical · load · behavioral · trigger ·
+     platform-fact. A behavioral row names its set file and eval IDs. -->
 
 | ID | Kind | Target | Baseline | Set evals | Pass bar |
 |---|---|---|---|---|---|
@@ -47,5 +48,6 @@ readers — that is the `contracts.yml` entry.>
 <Conditions a reader can check without judgment: a command's output, a file's presence,
 a count, a logged eval's verdict.>
 
-<!-- run-phase appends `## Deviations` below when the note could not be followed as
-written: what the note said, what was done, why. plan-phases leaves it absent. -->
+<!-- run-phase writes this note when the phase starts, from the overview's row and the
+files as they are, and appends `## Deviations` below when it could not be followed as
+written: what the note said, what was done, why. A new note has no Deviations section. -->

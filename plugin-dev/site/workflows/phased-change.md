@@ -1,9 +1,12 @@
 # A large change, in phases
 
-A change that touches several agents or skills, or needs evals that would not fit in the
-chat that makes the edits. The design is worked out once, in discussion, by a chat that reads
-everything. The phases are planned by a second chat that reads only the design, and done by
-chats that each read four files.
+A change that adds or redraws a workflow across several agents or skills, or needs evals
+that would not fit in the chat that makes the edits. The design is worked out once, in
+discussion, by a chat that reads everything. The phases are planned by a second chat that
+reads only the design, and done by chats that each read three files and write their own
+note. A change that fixes what is wrong across a whole plugin, rather than adding something,
+starts from a review instead of a design: see [A review sweep](review-sweep.md). From
+`plan-phases` on, the two are the same.
 
 ```mermaid
 flowchart TD
@@ -15,9 +18,10 @@ flowchart TD
   W -->|changes| W
   W -->|your yes| G["design commit on branch plugin-slug:<br/>site/notes/slug/slug-design.md"]
   G --> P["/plugin-dev:plan-phases slug<br/>(fresh chat; reads the design only)"]
-  P -->|your yes to the split| Z["phase 0 commit:<br/>slug-00-overview.md · slug-NN-*.md · eval sets · slug-progress.md"]
-  Z --> R["/plugin-dev:run-phase slug<br/>(fresh chat; reads design → overview → ledger → one note)"]
-  R --> E["edits · plugin's own rules · check-contracts · build-site"]
+  P -->|your yes to the split| Z["phase 0 commit:<br/>slug-00-overview.md · eval sets · slug-progress.md"]
+  Z --> R["/plugin-dev:run-phase slug<br/>(fresh chat; reads design → overview → ledger)"]
+  R --> N["writes slug-NN-name.md from its row<br/>and the files as they are now"]
+  N --> E["edits · plugin's own rules · check-contracts · build-site"]
   E --> X["run-evals on the note's Evals table<br/>(sets in evals/sets/, graded against the baseline)"]
   X --> Y["your review of the viewer"]
   Y --> C["logged with log-eval · one commit · ledger row · stop"]
@@ -50,16 +54,16 @@ the branch `<plugin>-<slug>` and commits `site/notes/<slug>/<slug>-design.md`.
 
 ## Chat 1 — `plan-phases <slug>`
 
-A fresh chat, reading the design, the files it names and the `plugin-anatomy` reference for
-each kind of component it touches, and none of the discussion. It first
+A fresh chat, reading the design, the headings of the files other files parse and the
+`plugin-anatomy` reference for each kind of component it touches, and none of the discussion.
+It first
 looks for decisions the design did not take, asks about them in one round, and writes the
 answers into the design; if an answer would change a chart, it stops and says the design needs
 reopening. Then it shows the phase split as a table and waits for your yes. Then it writes:
 
 | File | Holds |
 |---|---|
-| `site/notes/<slug>/<slug>-00-overview.md` | what changes; the contents tree with `+`/`~`; the files other files parse; the phases table with dependencies; breaking changes |
-| `site/notes/<slug>/<slug>-NN-<name>.md` | one per phase: purpose, decisions, files, the exact spec (frontmatter, headings, contract entries), steps, evals with pass conditions, done-when |
+| `site/notes/<slug>/<slug>-00-overview.md` | what changes; the contents tree with `+`/`~`; the files other files parse, named exactly; the phases table: each phase's scope, what it must not touch, its dependencies; every phase's eval rows with pass conditions; breaking changes |
 | `site/notes/<slug>/<slug>-progress.md` | the ledger: one row per phase — status, commit, eval logs, notes for the next chat |
 | `evals/sets/<target>.json` | one per behavioral target, written by one writer subagent each, in parallel, and checked before the commit |
 
@@ -67,11 +71,20 @@ and commits them as phase 0. The split obeys four rules: every phase is mergeabl
 every phase fits one chat; foundations first; every phase has an eval. The last phase is
 always the end-to-end eval, the docs and the bump proposal.
 
+It writes no phase note. A note names exact lines, and a note written now for a late phase
+would cite lines the earlier phases move; one chat writing every note of a large plan also
+runs out of room. What crosses phases (the headings one writes and another reads, each
+phase's scope, every eval) is fixed in the overview now; the rest waits for the phase.
+
 ## Chats 2…N — `run-phase <slug>`
 
 Each chat opens with that line and nothing else. The skill confirms the branch and a clean
-tree, reads the design, the overview, the ledger and the first note whose row is not
-`done`, and does exactly that note: its edits (each component's `plugin-anatomy` reference
+tree, reads the design, the overview and the ledger, and finds the first row that is not
+`done`. It writes that phase's note from the template (purpose, decisions, files, the exact
+spec, steps, the overview's eval rows copied, done-when) against the files as they are now,
+asking you only a decision the design did not take. A plan written before notes moved here
+already has its notes, and then the chat reads its note instead. Then it does exactly that
+note: its edits (each component's `plugin-anatomy` reference
 read first), the plugin's own rules for added or removed files,
 `check-contracts`, `build-site`, then the note's **Evals** table — one row per eval, each
 naming its kind, its target, the baseline to compare against, which evals of that target's
@@ -98,7 +111,7 @@ listed and commits nothing of the phase; the next chat finishes it.
 
 The same phases, without typing one chat per phase. `run-phases` stays in your chat and
 does no phase work itself. For each row not `done` it starts one fresh agent, one at a time,
-whose context is as clean as a new chat's: the design, the overview, the ledger and one note.
+whose context is as clean as a new chat's: the design, the overview, the ledger and the note it writes.
 The agent is a subagent that reads `run-phase`'s file and follows it, since a typed skill
 cannot be invoked by an agent. Where subagents cannot spawn their own (a cloud session caps
 `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` at 1), the agent is instead a headless `claude -p`
@@ -124,6 +137,7 @@ plugin-dev's own `0.9-evals` plan, under `site/notes/0.9-evals-*.md` (flat: it p
 folder per plan), is a complete set of
 phase notes and a ledger as `run-phase` ran them, Deviations included: the worked example of
 what phase notes look like when the bar is "nothing left for the next chat to guess". It
-predates `design-plugin`, so it has no design file and its overview carries the why. For the
+predates `design-plugin`, so it has no design file and its overview carries the why, and its
+notes were written at planning time, before `run-phase` wrote them. For the
 shape of a design file, `evals/fixtures/trading-agents/site/notes/0.1-design.md` is a complete
 one, written as a test fixture.

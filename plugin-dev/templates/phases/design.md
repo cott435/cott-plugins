@@ -3,8 +3,8 @@
 Approved <date>. Mode: <new | change>. Branch `<plugin>-<slug>`.
 
 Written by `design-plugin` from the discussion, and approved in two gates: the charts, then
-this writeup. `plan-phases` reads it, in a chat that has seen nothing else, to write the phase
-notes and their evals. `run-phase` reads it for the why. Anything decided in the discussion and
+this writeup. `plan-phases` reads it, in a chat that has seen nothing else, to split the phases
+and write their evals. `run-phase` reads it to write each phase's note, and for the why. Anything decided in the discussion and
 not written here is lost.
 
 <!-- This template is the one list of the design's sections: keep every `##` heading, in this

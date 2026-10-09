@@ -9,25 +9,27 @@
       "baseline": "none",
       "harness": "evals/sets/files/plan-phases/from-design.md",
       "prompt": "/plugin-dev:plan-phases 0.1",
-      "expected_output": "From the design alone: the split shown in chat and approved, then an overview that points to the design, one note per phase with a complete Evals table, a ledger, and one eval set per behavioral target written by parallel writer subagents",
+      "expected_output": "From the design alone: the split shown in chat and approved, then an overview that points to the design and carries every phase's scope and eval rows, a ledger, one eval set per behavioral target written by parallel writer subagents, and no phase note",
       "files": [],
       "expectations": [
         "The transcript shows the design file read, and no read of any conversation, earlier plan's notes, or file outside the fixture and plugin-dev",
-        "The split was shown in chat as a table with the columns Phase, What it adds, Depends on, Evals, May pair with, and approved before any note was written",
-        "outputs/trading-agents/site/notes/0.1-00-overview.md exists, names 0.1-design.md, and has no Why, Decisions taken, The flow or Non-goals section",
-        "Phase 1 is the design's smallest end-to-end slice: the phase-1 note builds the filing reader, its checker or the status layer, and a deep-dive stopping at the status file, and no comparison, news or thesis",
+        "The split was shown in chat as a table with the columns Phase, What it adds, Components, Depends on, Evals, May pair with (or the same columns in a close wording), and approved before any file was written",
+        "outputs/trading-agents/site/notes/0.1/0.1-00-overview.md exists, names 0.1-design.md, and has no Why, Decisions taken, The flow or Non-goals section",
+        "The overview's Phases table has the columns Phase, Note, What it adds, Items, Must not touch, Depends on",
+        "Phase 1 is the design's smallest end-to-end slice: the overview's phase-1 row builds the filing reader, its checker or the status layer, and a deep-dive stopping at the status file, and no comparison, news or thesis",
         "The filing-checker ships in the same phase as filing-reader or the phase right after it, never later",
         "thesis-critic is in its own phase or an optional addition to one, and no other phase depends on it",
-        "The phase-1 note has the sections, in order: a purpose paragraph, Decisions, Files, Specification, Steps, Evals, Done when",
-        "Every phase note's '## Evals' table has exactly the columns ID, Kind, Target, Baseline, Set evals, Pass bar, and every Kind is one of: mechanical, load, behavioral, trigger, platform-fact",
-        "The design's two assumed platform facts appear as platform-fact rows in phase 0 or the ledger's phase-0 row",
+        "No phase note was written: no file outputs/trading-agents/site/notes/0.1/0.1-0N-*.md exists for any N from 1 up",
+        "The overview has a '## Evals by phase' table with exactly the columns Phase, ID, Kind, Target, Baseline, Set evals, Pass bar; every Kind is one of: mechanical, load, behavioral, trigger, platform-fact; and every phase from 1 in the Phases table has at least one row",
+        "The overview has a '## Files other files parse' table naming at least one file or heading that one phase writes and another reads",
+        "The design's two assumed platform facts appear as platform-fact rows for phase 0 in the Evals by phase table, or in the ledger's phase-0 row",
         "The transcript shows one subagent per behavioral target spawned in a single message, each given the eval-writer prompt",
         "Every behavioral row names a set file under evals/sets/ and eval IDs that exist in that set in outputs/, and each set has id, name, kind, baseline, prompt, expected_output and a non-empty expectations list per eval",
         "Every harness file a set names under evals/sets/files/ was also written",
-        "outputs/trading-agents/site/notes/0.1-progress.md has phase 0 'in progress' and every other row 'todo'",
+        "outputs/trading-agents/site/notes/0.1/0.1-progress.md has phase 0 'in progress' and every other row 'todo'",
         "outputs/chat.md gives the line to run /plugin-dev:run-phase 0.1 and the number of phases"
       ],
-      "added_in": "design-plugin split (replaces the old eval 4, trading-through-phase-notes)"
+      "added_in": "design-plugin split (replaces the old eval 4, trading-through-phase-notes); rewritten in review-plugin for notes written by run-phase"
     },
     {
       "id": 2,
@@ -39,13 +41,37 @@
       "expected_output": "The design no longer states how far back filings go; the skill asks rather than picking a horizon, writes the answer into the design with Origin planning, and the notes use the answer",
       "files": [],
       "expectations": [
-        "outputs/interview.md contains a question about how far back the filings go (the horizon, number of quarters or filings) asked before any phase note was written",
+        "outputs/interview.md contains a question about how far back the filings go (the horizon, number of quarters or filings) asked before any file was written",
         "The design copy's Decisions taken table has a new row for the filing horizon with Origin 'planning' and the answer 'last 8 quarterly filings and the latest 10-K'",
-        "Every phase note that states a filing horizon states the one from the answer, and no phase note states any other horizon",
+        "Every file written under outputs/trading-agents/ that states a filing horizon (the overview, an eval set) states the one from the answer, and none states any other horizon",
         "The skill did not redraw or edit any mermaid chart in the design copy",
-        "The split was shown in chat and approved before any note was written"
+        "The split was shown in chat and approved before any file was written"
       ],
       "added_in": "design-plugin split"
+    },
+    {
+      "id": 3,
+      "name": "toy-fix-from-edit-list",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/plan-phases/from-edit-list.md",
+      "prompt": "/plugin-dev:plan-phases fix",
+      "expected_output": "From the edit list alone, read through edits.py and never whole: the split shown with each phase's items and approved, then an overview whose Phases table puts every item in exactly one phase with E-002 after E-001, its eval rows, a ledger, and no phase note",
+      "files": [],
+      "expectations": [
+        "The transcript shows `edits.py check` run with `--decided` on fix-edits.md, and `edits.py index` run on it, before the split was shown",
+        "fix-edits.md was never printed whole: the transcript has no Read call on it without an offset or limit, and no cat of the whole file",
+        "The split was shown in chat as a table with an Items column naming E-ids, and approved before any file was written",
+        "outputs/toy-plugin/site/notes/fix/fix-00-overview.md exists, names fix-edits.md, and its Phases table has the columns Phase, Note, What it adds, Items, Must not touch, Depends on",
+        "Every one of E-001, E-002 and E-003 appears in exactly one row's Items cell, and no other id appears",
+        "The phase holding E-002 is E-001's phase, or one whose Depends on cell reaches E-001's phase",
+        "The transcript shows `edits.py coverage` run on the edit list and the written overview, and its last run printed a line starting 'ok'",
+        "The overview has a '## Evals by phase' table with at least one row for every phase that holds an item",
+        "No phase note was written: no file matching outputs/toy-plugin/site/notes/fix/fix-0N-*.md exists for any N from 1 up",
+        "outputs/toy-plugin/site/notes/fix/fix-progress.md has phase 0 'done' and every other row 'todo'",
+        "outputs/chat.md gives the line to run /plugin-dev:run-phase fix"
+      ],
+      "added_in": "review-plugin; harness resets greet to the reviewed state after iteration 1"
     }
   ]
 }

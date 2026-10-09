@@ -4,10 +4,12 @@ Copy evals/fixtures/toy-plugin/ to a fresh temporary directory OUTSIDE the repo 
 the copy's .claude-plugin/plugin.json.fixture to plugin.json. Before the first commit, give
 the plan a second phase:
 
-- Write `site/notes/0.2-02-wave.md` with exactly the note between the `~~~` lines below.
-- In `site/notes/0.2-progress.md`, add the row `| 2 | 02 | todo | | | |` after phase 1's row.
-- In `site/notes/0.2-00-overview.md`'s phases table, add the row
-  `| 2 | 02 | \`skills/wave/SKILL.md\` | 1 |` after phase 1's row.
+- Write `site/notes/0.2/0.2-02-wave.md` with exactly the note between the `~~~` lines below.
+- In `site/notes/0.2/0.2-progress.md`, add the row `| 2 | 02 | todo | | | |` after phase 1's row.
+- In `site/notes/0.2/0.2-00-overview.md`'s phases table, add the row
+  `| 2 | 02-wave | \`skills/wave/SKILL.md\`, verbatim in its note | the \`wave\` skill | \`skills/greet/\` | 1 |`
+  after phase 1's row, and in its Evals by phase table the row
+  `| 2 | T2-M1 | mechanical | \`wave\` | — | — | \`skills/wave/SKILL.md\`'s frontmatter parses as YAML with \`name: wave\` and a non-empty \`description:\`. |`.
 
 Then `git init` the copy, commit everything as "fixture", create and check out branch
 `toy-0.2`, and run the target from inside that copy's root (the directory holding

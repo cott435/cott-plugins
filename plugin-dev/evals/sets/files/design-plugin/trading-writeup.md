@@ -9,5 +9,5 @@ shown.
 # Harness override for this eval only
 After the writeup is approved, do not create a branch or worktree, run new-plugin, commit, or
 write in the repo. Write the file the skill would commit into outputs/ instead, at
-outputs/trading-agents/site/notes/0.1-design.md, and write the skill's final chat message to
+outputs/trading-agents/site/notes/0.1/0.1-design.md, and write the skill's final chat message to
 outputs/chat.md. Stop there.

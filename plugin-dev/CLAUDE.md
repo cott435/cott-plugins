@@ -22,19 +22,26 @@ care when editing it:
 - **This bundle has its own `contracts.yml`.** The README's **The skills** table is the one
   list of skills and `site/site.yml` the run order of the typed ones; adding a skill means a
   row in the first and, if it is typed, a line in the second, in the same commit.
-  `check-contracts` fails otherwise. `site/workflows/` holds the four workflow pages the
+  `check-contracts` fails otherwise. `site/workflows/` holds the five workflow pages the
   README summarizes; a change to how work reaches a plugin is a change to both.
 - **`scripts/build_site.py` is shared.** A change to it changes every plugin's site at once.
   Before committing one, rebuild at least `dev-team` and diff the output — its site is
   the reference the builder was verified against.
 - **`run-evals` is shared.** Its `references/eval-kinds.md` is the one list of eval kinds;
-  `plan-phases` and its eval writers write notes and sets against it, and `run-phase` runs
-  them through it. A kind added or renamed there is a change to all three, and
+  `plan-phases` and its eval writers write the overview's eval rows and the sets against it,
+  and `run-phase` runs them through it. A kind added or renamed there is a change to all three, and
   `check-contracts`' eval-kinds claim fails until they agree. Eval sets under `evals/sets/`
   are committed; `evals/workspace/` never is.
 - **`templates/phases/design.md` is the one list of the design's sections**, as its `##`
   headings. `design-plugin` writes from it and `plan-phases` reads the design by those names.
   Renaming a section is a change to both, and `check-contracts` fails until they agree.
+- **`templates/review/edits.md` is the one list of the edit list's sections**, the same way
+  for `review-plugin`'s spec: `review-plugin` writes from it, `plan-phases` and `run-phase`
+  read it by those names, and `check-contracts` fails until they agree. Its item fields and
+  the findings file's fields (`templates/review/findings.md`) are parsed by
+  `scripts/edits.py`; a field renamed in a template is a change to the script, and the
+  script is run against the real `dev-team/site/notes/determinism/` review before it is
+  committed.
 - **`plugin-anatomy` is the source of truth for platform facts.** A fact about how a plugin
   component behaves is stated there once, with its source and its status (`[docs]`,
   `[proven: …]`, `[unconfirmed]`), and cited from everywhere else. When the docs or an eval

@@ -1,8 +1,9 @@
 # A worked phase note
 
-What `### The phase note` in `SKILL.md` describes, shown on a note that was actually run.
-Read the note itself alongside this; nothing here copies it, so nothing here can drift from
-it.
+What **Write the note** in `run-phase`'s `SKILL.md` describes, shown on a note that was
+actually run. Read the note itself alongside this; nothing here copies it, so nothing here can
+drift from it. That note was written by `plan-phases` at planning time, before notes moved to
+the start of each phase; the sections are the same.
 
 ## Where it is
 
@@ -40,6 +41,6 @@ when the note met the real files.
 - **Done when.** A checklist of commands and files — `check-contracts` prints all PASS, the
   planted defect failed, a path is ignored, named logs exist, the ledger row says `done`.
   Nothing on it needs judgment.
-- **Deviations.** Absent when `plan-phases` writes the note. This one shows what `run-phase`
+- **Deviations.** Absent when the note is written. This one shows what `run-phase`
   appends when a step cannot be followed as written — what the note said, what was done,
   why — including a limit a later phase inherits.

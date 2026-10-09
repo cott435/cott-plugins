@@ -115,10 +115,10 @@
       "baseline": "none",
       "harness": "evals/sets/files/design-plugin/trading-writeup.md",
       "prompt": "/plugin-dev:design-plugin --new trading-agents a plugin for stock research agents",
-      "expected_output": "After both approvals, outputs/trading-agents/site/notes/0.1-design.md holds the full writeup in the template's order, complete enough for a planner that saw no discussion; the chat points to plan-phases in a new chat",
+      "expected_output": "After both approvals, outputs/trading-agents/site/notes/0.1/0.1-design.md holds the full writeup in the template's order, complete enough for a planner that saw no discussion; the chat points to plan-phases in a new chat",
       "files": [],
       "expectations": [
-        "outputs/trading-agents/site/notes/0.1-design.md exists",
+        "outputs/trading-agents/site/notes/0.1/0.1-design.md exists",
         "It has these ## headings, in this order: The idea, Workflows, How they fit together, Components, Outputs, Cost, Decisions taken, Platform facts, Build order, Non-goals (What must not break absent or deleted, since the mode is new)",
         "Under Workflows, every workflow has its own ### heading, a mermaid chart, a Unit line, a Strengthened by line, and an Input | Supplied by table",
         "How they fit together has a mermaid system chart and a table with the columns File, Written by, Read by, Fields read, Stale when, with at least one file read by two workflows",

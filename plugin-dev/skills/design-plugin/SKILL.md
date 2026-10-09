@@ -1,6 +1,6 @@
 ---
 name: design-plugin
-description: Turn an idea for a new plugin, or a large change to one, into an approved design through discussion. Interviews the user in rounds, composes the jobs into loops (each loop's unit of work, what makes that unit strong, where its inputs come from, the files where loops meet), shows one flow chart per workflow plus a system chart for approval, then writes the design up for approval. Commits the approved writeup as site/notes/{slug}/{slug}-design.md, which plan-phases reads in a fresh chat. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json) for a change that touches several agents or skills, or from the marketplace repo root with --new to start a plugin that will have more than a skill or two.
+description: Turn an idea for a new plugin, or a large change to one, into an approved design through discussion. Interviews the user in rounds, composes the jobs into loops (each loop's unit of work, what makes that unit strong, where its inputs come from, the files where loops meet), shows one flow chart per workflow plus a system chart for approval, then writes the design up for approval. Commits the approved writeup as site/notes/{slug}/{slug}-design.md, which plan-phases reads in a fresh chat. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json) for a change that adds or redraws a workflow across several agents or skills, or from the marketplace repo root with --new to start a plugin that will have more than a skill or two. A sweep of what is wrong across an existing plugin is review-plugin's, not this skill's.
 argument-hint: "<slug> [what the change is]  |  --new <plugin-name> [what it does]"
 disable-model-invocation: true
 ---
@@ -24,6 +24,13 @@ until it is right:
 
 Nothing is written in the repo before the second gate: no branch, no scaffold, no file.
 
+This skill is for changes that start from an idea of what should exist. A change that starts
+from evidence of what is wrong (recurring audits, contradictions, a context budget) across a
+plugin too big to read in one chat is `review-plugin`'s: its edit list is the spec, and it
+needs no charts. When its decisions add a new workflow, agent loop or shared file, it lists
+those items under **Needs a design**, and this skill designs just them on the review's branch
+(see **From a review**).
+
 ## Two modes
 
 | | **change** | **new** |
@@ -44,6 +51,11 @@ A question a file could have answered wastes a round, so reading comes first.
 - **change:** read every agent and skill file the change could touch, the plugin's `CLAUDE.md`
   for its own rules, and its `contracts.yml`. Quote heading names, frontmatter fields and
   line-level rules from the files, not from memory.
+- **From a review**, when `site/notes/<slug>/<slug>-edits.md` exists on the branch: its
+  **Needs a design** section is the change to design, and nothing else in it. Its **Goal**
+  is theme 1's answer and its **Decisions taken** are settled, not re-asked. Read the other
+  items only through `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/edits.py index`, to see what the
+  rest of the change already does to the files this design touches.
 - **new:** read the most similar plugin in this repo end to end (its README, one agent, one
   workflow skill, one knowledge skill, its `contracts.yml`), so the new one follows the same
   shapes: agents as roles with fixed tools, workflow skills as typed entry points with
@@ -121,8 +133,8 @@ dashed styling; rejected ones are deleted and remembered for **Non-goals**.
 Draft the writeup from `${CLAUDE_PLUGIN_ROOT}/templates/phases/design.md` in the session
 scratchpad. The template is the one list of its sections, in order, and each section's
 placeholder says what it holds; keep every heading. The writeup is for a reader who was not in
-this conversation: `plan-phases` reads it to write every phase note and eval, and `run-phase`
-reads it for the why. Anything decided here and not written down is lost.
+this conversation: `plan-phases` reads it to split the phases and write every eval, and
+`run-phase` reads it to write each phase's note and for the why. Anything decided here and not written down is lost.
 
 Write every section or delete it with a line saying why. A sentence that starts "consider" or
 "if appropriate" is a decision not taken: take it, or ask it.
@@ -138,11 +150,11 @@ Only after the writeup is approved:
 1. Create the branch from the default branch: `<plugin>-<slug>` (**new**: `<name>-0.1`). Put it
    where the repo's `CLAUDE.md` says branch work goes. In this marketplace that is a worktree:
    `git worktree add ../cott-plugins-worktrees/<plugin>_<branch> -b <branch> <default branch>`.
-   Work from there.
+   Work from there. **From a review**, the branch and worktree exist already: use them.
 2. **new only:** invoke `new-plugin` and complete its scaffold and marketplace steps, so the
    design lands in a directory that already builds.
 3. Write the approved writeup to `<plugin>/site/notes/<slug>/<slug>-design.md`, exactly as
-   approved. The folder is this plan's: `plan-phases` writes its notes beside the design.
+   approved. The folder is this plan's: `plan-phases` writes its overview beside the design.
 4. If the plugin has a `contracts.yml`, run `check-contracts`. `site/notes/<slug>/` is in its
    scope, so a design that quotes a forbidden pattern must reword it. Fix the design, not the
    claim.

@@ -16,9 +16,9 @@
       "expectations": [
         "The transcript shows run-evals invoked for target farewell, and an iteration directory created under the temp copy's evals/workspace/farewell/",
         "The target stopped for review on its own initiative: neither the fixture's ledger nor its note asks for a review stop, so outputs/interview.md holding a review question about the eval results is attributable to the target alone. FAIL if no review question was asked.",
-        "The stop came before the commit: outputs/git-log-at-review.txt exists (the harness wrote it at the moment the review question was asked) and contains no 'toy 0.2 (phase 1)' commit \u2014 only 'fixture'. FAIL if the file is absent, or if the phase commit already appears in it.",
+        "The stop came before the commit: outputs/git-log-at-review.txt exists (the harness wrote it at the moment the review question was asked) and contains no 'toy 0.2 (phase 1)' commit — only 'fixture'. FAIL if the file is absent, or if the phase commit already appears in it.",
         "Exactly one new commit exists after 'fixture', with the message 'toy 0.2 (phase 1): farewell' or starting 'toy 0.2 (phase 1):'",
-        "That commit contains skills/farewell/SKILL.md, an eval log under evals/, and the updated site/notes/0.2-progress.md",
+        "That commit contains skills/farewell/SKILL.md, an eval log under evals/, and the updated site/notes/0.2/0.2-progress.md",
         "The committed ledger row for phase 1 is 'done' and its Eval log(s) cell names the log file",
         "Nothing was pushed and no tag was created",
         "evals/workspace/ does not appear in the commit"
@@ -44,6 +44,51 @@
         "Nothing was pushed and no tag was created"
       ],
       "added_in": "0.9-evals phase 0, run from phase 4"
+    },
+    {
+      "id": 3,
+      "name": "toy-phase-writes-its-note",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/run-phase/note-written.md",
+      "prompt": "/plugin-dev:run-phase 0.2",
+      "expected_output": "With no phase-1 note in the plan, run-phase writes site/notes/0.2/0.2-01-farewell.md from the overview's row and the template before any edit, does exactly that note, and commits the note with the phase",
+      "files": [
+        "evals/fixtures/toy-plugin/"
+      ],
+      "expectations": [
+        "The commit contains a new file site/notes/0.2/0.2-01-farewell.md",
+        "That note has these sections, in order: a '# 01 — ' title with a purpose paragraph, Decisions, Files, Specification, Steps, Evals, Done when; and no Deviations section unless the phase deviated",
+        "The note's Evals table has the row T1-M1 with the same Kind, Target and Pass bar as the overview's Evals by phase row, and no row the overview does not have for phase 1",
+        "The transcript shows the note written before skills/farewell/SKILL.md was created",
+        "The note's Files table has a row for skills/farewell/SKILL.md and no row for anything under skills/greet/ (a 'must not touch' line outside the table's rows is allowed)",
+        "Exactly one new commit exists after 'fixture', with a message starting 'toy 0.2 (phase 1):', containing skills/farewell/SKILL.md, the note, an eval log under evals/, and site/notes/0.2/0.2-progress.md",
+        "The committed ledger row for phase 1 is 'done'",
+        "Nothing was pushed and no tag was created"
+      ],
+      "added_in": "review-plugin; expectation 5 reworded and the harness's hint removed after iteration 1"
+    },
+    {
+      "id": 4,
+      "name": "toy-review-phase-finds-moved-lines",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "harness": "evals/sets/files/run-phase/review-moved-lines.md",
+      "prompt": "/plugin-dev:run-phase fix",
+      "expected_output": "In a plan from an edit list, run-phase prints only phase 2's items through edits.py, finds E-002's line where it is now (14, not the reviewed 8), writes the note citing the current line, makes only E-002's edit, and commits once",
+      "files": [
+        "evals/fixtures/toy-plugin/"
+      ],
+      "expectations": [
+        "The transcript shows `edits.py show` run with `--phase 2` and the overview, and no Read of fix-edits.md without an offset or limit",
+        "The committed note site/notes/fix/fix-02-no-name.md (or another fix-02-*.md) cites skills/greet/SKILL.md at line 14 for the Write line, and does not give 8 as that line's current number",
+        "In the committed skills/greet/SKILL.md, the line 'With no name in the request, write `Hello.` instead.' comes directly after the line holding 'Write `outputs/greeting.txt`'",
+        "The committed skills/greet/SKILL.md's description line is unchanged: it does not contain 'or hi' (E-003 is phase 3's)",
+        "Exactly one new commit exists after 'fixture', with a message starting 'toy fix (phase 2):', containing skills/greet/SKILL.md, the note, and site/notes/fix/fix-progress.md",
+        "The committed ledger row for phase 2 is 'done' and phase 3's is still 'todo'",
+        "Nothing was pushed and no tag was created"
+      ],
+      "added_in": "review-plugin; the harness's moved-line hint removed after iteration 1"
     }
   ]
 }

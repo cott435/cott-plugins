@@ -38,7 +38,7 @@ flowchart LR
   D --> P["/plugin-dev:plan-phases 0.1<br/>(fresh chat, reads the design only)"]
   P -->|a decision the design did not take| Q["asked, written into the design"]
   Q --> P
-  P -->|your yes to the split| B["phase 0 commit:<br/>overview · phase notes · eval sets · ledger"]
+  P -->|your yes to the split| B["phase 0 commit:<br/>overview · eval sets · ledger"]
   B --> C["/plugin-dev:run-phase 0.1<br/>(from name/, one chat per phase)"]
   C -->|phase 1| E1["smallest bundle that loads"]
   E1 --> C
@@ -76,13 +76,14 @@ the discussion, so anything the design failed to decide surfaces as a question i
 being filled from memory. The answers go into the design's decisions. Frontmatter and each
 component's tests come from `plugin-anatomy`'s references, not the design's paraphrase. It
 shows the split into phases as a table and waits for your yes. Then it writes
-`site/notes/0.1/0.1-00-overview.md`, one note per phase each with its own **Evals** table, and
-`0.1-progress.md`, and spawns one writer per behavioral target, in parallel, to write
-`evals/sets/<target>.json`. It checks each set, then commits all of it as phase 0.
+`site/notes/0.1/0.1-00-overview.md`, with every phase's scope, the files one phase writes and
+another reads, and every phase's **Evals** rows, and `0.1-progress.md`, and spawns one writer
+per behavioral target, in parallel, to write `evals/sets/<target>.json`. It checks each set,
+then commits all of it as phase 0. It writes no phase note.
 
-**Chats 2…N — `run-phase 0.1`.** Each reads four files — the design, the overview, the
-ledger, the next note — and does that phase only, reading a component's `plugin-anatomy`
-reference before it writes one. Phase 0's platform-fact evals run first, and each result is
+**Chats 2…N — `run-phase 0.1`.** Each reads three files — the design, the overview, the
+ledger — writes the next phase's note from its row and the files as they are, and does that
+phase only, reading a component's `plugin-anatomy` reference before it writes one. Phase 0's platform-fact evals run first, and each result is
 written back to `plugin-anatomy` so the next design finds it settled. Phase 1 is deliberately
 the smallest thing that is a working plugin: the one loop and the thinnest workflow that uses
 it, a README that describes only what exists, the plugin's `CLAUDE.md`, and a
@@ -109,11 +110,9 @@ tag. `bump-version` tags `0.1.0` — the version the scaffold already carries �
     └── notes/0.1/
         ├── 0.1-design.md
         ├── 0.1-00-overview.md
-        ├── 0.1-01-<first phase>.md
-        ├── …
-        └── 0.1-progress.md
+        └── 0.1-progress.md       each phase's note is added by its run-phase chat
 ```
 
 plus the new row in the root `marketplace.json`. Nothing under `agents/` or `skills/` yet:
 that is phase 1's job, and the point of the split is that it is done by a chat that has
-read the design and its phase note and nothing else.
+read the design, the overview and the ledger and nothing else, and writes its own note.

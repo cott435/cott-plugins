@@ -54,8 +54,56 @@ headings:
     owner_form: markdown
     readers:
       - file: skills/plan-phases/SKILL.md
-        cites: ['Components', 'How they fit together', 'Decisions taken', 'Build order',
-                'What must not break']
+        cites: ['Decisions taken', 'Build order', 'What must not break']
+
+  - name: review-plugin's edit list is read only by the sections its template defines
+    # templates/review/edits.md is the one list of the edit list's sections; the reconcile
+    # agent writes from it, review-plugin asks into Decisions taken and moves items to Needs
+    # a design, plan-phases and run-phase print sections by name with sed, design-plugin
+    # designs Needs a design, and scripts/edits.py parses Edits, Decisions taken and Build
+    # order. A section renamed in the template is a change to every one of them.
+    owner: templates/review/edits.md
+    owner_form: markdown
+    readers:
+      - file: skills/review-plugin/SKILL.md
+        cites: ['Decisions taken', 'Edits', 'Needs a design', 'Issues']
+      - file: skills/review-plugin/references/reconcile-prompt.md
+        cites: ['Edits', 'Decisions taken', 'Needs a design', 'Build order', 'Issues',
+                'Conflicts', 'Non-goals']
+      - file: skills/plan-phases/SKILL.md
+        cites: ['Goal', 'Decisions taken', 'Platform facts', 'Build order',
+                'What must not break', 'Needs a design']
+      - file: skills/run-phase/SKILL.md
+        cites: ['Goal', 'Decisions taken', 'What must not break']
+      - file: skills/design-plugin/SKILL.md
+        cites: ['Needs a design', 'Goal', 'Decisions taken']
+      - file: scripts/edits.py
+        cites: ['Edits', 'Decisions taken', 'Build order']
+
+  - name: edits.py checks only findings-file sections the findings template defines
+    owner: templates/review/findings.md
+    owner_form: markdown
+    readers:
+      - file: scripts/edits.py
+        cites: ['Findings', 'Checked, no finding']
+
+  - name: the phase note run-phase writes has only sections the phase template defines
+    owner: templates/phases/phase.md
+    owner_form: markdown
+    readers:
+      - file: skills/run-phase/SKILL.md
+        cites: ['Decisions', 'Files', 'Specification', 'Steps', 'Evals', 'Done when']
+
+  - name: plan-phases and run-phase name only overview sections the overview template defines
+    owner: templates/phases/overview.md
+    owner_form: markdown
+    readers:
+      - file: skills/plan-phases/SKILL.md
+        cites: ['Phases', 'Files other files parse', 'Evals by phase']
+      - file: skills/run-phase/SKILL.md
+        cites: ['Files other files parse', 'Evals by phase']
+      - file: scripts/edits.py
+        cites: ['Phases']
 
   - name: audit-run, fix-issues and bump-version name only issue-file sections the issue template defines
     # templates/audits/issue.md is the one list; issues.py writes from it, and the skills

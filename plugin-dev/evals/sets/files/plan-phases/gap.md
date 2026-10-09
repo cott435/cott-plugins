@@ -3,7 +3,7 @@
 
 # Setup
 Copy `evals/fixtures/trading-agents/` to `outputs/trading-agents/` before starting, then make
-two edits in the copy's `site/notes/0.1-design.md`, and nothing else:
+two edits in the copy's `site/notes/0.1/0.1-design.md`, and nothing else:
 1. In the **Cost** table, delete the Horizon column (its header, its separator cell, and its
    cell in every row).
 2. In the Deep dive's Input table, change the "Which filings" row's supplier to:

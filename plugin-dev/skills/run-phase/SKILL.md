@@ -1,16 +1,23 @@
 ---
 name: run-phase
-description: Do the next unfinished phase of a plan written by plan-phases - a change to a plugin or a new plugin being built up - read the design, the overview, the progress ledger and that phase's note, make exactly its edits, run the plugin's checks and the phase's evals, log them, commit once, update the ledger, and stop. Use only inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), one phase per Claude Code chat, typed by the user.
+description: Do the next unfinished phase of a plan written by plan-phases - a change to a plugin, a new plugin being built up, or a reviewed plugin's edit list - read the spec, the overview and the progress ledger, write that phase's note from its scope and the files as they are now (or read the note when the plan already has one), make exactly its edits, run the plugin's checks and the phase's evals, log them, commit once, update the ledger, and stop. Use only inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), one phase per Claude Code chat, typed by the user.
 argument-hint: "[slug]"
 disable-model-invocation: true
 ---
 
 # Running one phase
 
-A phase is one chat's worth of work, specified in a note a previous chat wrote. This chat
-reads four files, does what the note says, proves it with the note's evals, commits once,
-records where things stand, and stops — the next chat starts from the ledger, not from a
-summary of this one.
+A phase is one chat's worth of work. `plan-phases` fixed what it owns, what it may not
+touch and how it is proved, in the overview; this chat turns that into a note against the
+files as they are now, does what the note says, proves it with the overview's evals for the
+phase, commits once, records where things stand, and stops. The next chat starts from the
+ledger, not from a summary of this one.
+
+The note is written here rather than at planning time because a note names exact lines, and
+the earlier phases of a plan move them. A plan written before notes moved here already has
+every note; then this chat reads its note instead of writing one.
+
+`E` below is `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/edits.py`.
 
 ## Find the work
 
@@ -26,23 +33,72 @@ summary of this one.
 
 ## Read, in this order, and nothing else up front
 
-1. `site/notes/<slug>/<slug>-design.md` — the why: the workflows and their charts, the decisions,
-   the non-goals, as approved. Plans written before `design-plugin` existed have none; their
-   overview carries it.
-2. `site/notes/<slug>/<slug>-00-overview.md` — what the design turns into: the contents tree, the
-   files other files parse, the phases table, the breaking changes.
+1. The spec, for the why:
+   - `site/notes/<slug>/<slug>-design.md` when there is one: the workflows and their charts,
+     the decisions, the non-goals, as approved. Plans written before `design-plugin` existed
+     have none; their overview carries it.
+   - `site/notes/<slug>/<slug>-edits.md` when there is one, never whole: its **Goal**,
+     **Decisions taken** and **What must not break** sections
+     (`sed -n '/^## <name>/,/^## /p'`).
+2. `site/notes/<slug>/<slug>-00-overview.md` — what the spec turns into: the contents tree,
+   the files other files parse, the phases table, the eval rows by phase, the breaking
+   changes.
 3. `site/notes/<slug>/<slug>-progress.md` — the first row whose status is not `done` is this
    chat's phase. `in progress` means a previous chat stopped mid-way: read its Notes cell
    and `git status`, and finish rather than restart. Phase 0 is the exception: `plan-phases`
    leaves it `in progress` on purpose when it has platform-fact evals, listed in its Notes
    cell. Running those evals is this chat's phase; the overview is its note.
-4. That phase's note, `site/notes/<slug>/<slug>-NN-<name>.md`.
+4. That phase's note, `site/notes/<slug>/<slug>-NN-<name>.md`, if it exists. If it does not,
+   this phase's items, when the spec is an edit list:
+   `E show site/notes/<slug>/<slug>-edits.md --phase <N> --overview site/notes/<slug>/<slug>-00-overview.md`,
+   which prints the items the overview gives this phase and the decisions they cite. Then
+   write the note, per **Write the note**.
 
-The note names every plugin file to open; open those as the steps reach them. Do not read
-the other phase notes, the evals of other phases, or any earlier conversation — the design
-and the overview carry what they concluded, and a later phase's note is not this chat's job.
-A phase never edits the design: where the note and the design disagree, the note is what
-was planned, and the disagreement is a Deviation.
+Open plugin files as the note's steps reach them. Do not read other phases' notes or items,
+the evals of other phases, findings files, or any earlier conversation: the spec and the
+overview carry what they concluded, and another phase's work is not this chat's job. A
+phase never edits the spec or the overview: where the note cannot follow them, the
+disagreement is a Deviation.
+
+## Write the note
+
+Only when the phase has no note yet. The note is the plan for this chat's edits, written
+before any of them, and it rides in the phase's commit, so the next reader sees what was
+planned beside what was done.
+
+Write it from `${CLAUDE_PLUGIN_ROOT}/templates/phases/phase.md`, at
+`site/notes/<slug>/<slug>-NN-<name>.md` with the name the overview's Phases row gives. Its
+sections, in order:
+
+- **`# NN — <name>`**, then a purpose paragraph: what the phase adds and the gap it closes,
+  from the overview's row and the spec.
+- **`## Decisions`**: anything settled here rather than in the spec, each with its reason:
+  a name, a placement, the order of two edits. A decision that is the user's (a default
+  that changes behavior, a choice between two designs the spec did not take) is not
+  settled here: stop and ask it, with the recommended option first, and write the answer
+  here.
+- **`## Files`**: a Path · Change table, one row per file, naming the section each edit
+  lands in: the files the phase's items or components name, plus what the plugin's own
+  rules require for an added or removed file. Nothing the overview says this phase must
+  not touch.
+- **`## Specification`**: the exact content. Frontmatter, heading names, rules,
+  `contracts.yml` entries, and any prompt another model will be given, verbatim. Frontmatter
+  uses only the keys in the component's `plugin-anatomy` reference, and the note names that
+  reference beside each new component. Every name in the overview's **Files other files
+  parse** is used exactly as the overview gives it.
+- **`## Steps`**: ordered so the bundle is consistent after each one.
+- **`## Evals`**: this phase's rows from the overview's **Evals by phase**, copied, columns
+  `| ID | Kind | Target | Baseline | Set evals | Pass bar |`. A pass bar is never loosened
+  here.
+- **`## Done when`**: conditions checkable without judgment.
+
+Against an edit list, each item's lines are where the review found them, and earlier phases
+have moved them since. For every `path:line` an item cites, find the quoted text in the file
+as it is now (`grep -nF`), and cite the line where it is. When the text is gone because an
+earlier phase already made the change, say so under Decisions and drop that edit; when it is
+gone for any other reason, the item cannot be followed as written, which is a Deviation.
+
+`references/example-phase.md` walks through a real note.
 
 ## Do the phase
 
@@ -92,10 +148,12 @@ Follow the note's **Steps** in order. Whatever the note says, these always apply
 - **Deviations are written down.** Where the note could not be followed as written — a
   heading did not exist, a platform fact came out differently, a step was wrong — append a
   `## Deviations` section to the note (what the note said, what was done, why) and, if a
-  later note's assumption is now false, one line in the ledger's Notes cell for that later
-  phase. Never silently do something other than the note.
-- **One commit.** All of the phase's edits, the eval logs, the note's Deviations section,
-  and the ledger row, staged by explicit path. Message from the note, in the form
+  later phase's assumption is now false (a heading in the overview's **Files other files
+  parse** came out differently, an item a later phase owns was already made), one line in
+  the ledger's Notes cell for that later phase. Never silently do something other than the
+  note.
+- **One commit.** All of the phase's edits, the eval logs, the note (written here, or its
+  Deviations section), and the ledger row, staged by explicit path. Message from the note, in the form
   `<plugin> <slug> (phase N): <what>`. Nothing is pushed.
 - **Never bump, never tag.** If the note says to propose a release — a bump at some level
   for a change, or tagging `0.1.0` as scaffolded for a new plugin — say so in chat with what

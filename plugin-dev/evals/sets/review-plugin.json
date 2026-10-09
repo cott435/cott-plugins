@@ -1,0 +1,31 @@
+{
+  "target": "review-plugin",
+  "target_path": "skills/review-plugin/SKILL.md",
+  "evals": [
+    {
+      "id": 1,
+      "name": "toy-sweep-finds-planted-contradiction",
+      "kind": "behavioral",
+      "baseline": "none",
+      "harness": "evals/sets/files/review-plugin/toy-sweep.md",
+      "prompt": "/plugin-dev:review-plugin rev every skill should agree with CLAUDE.md",
+      "expected_output": "The review plan is agreed and committed, unit agents write findings that edits.py accepts, one reconcile agent writes an edit list that edits.py check --decided --findings accepts with an item for wave's second output file, and the orchestrating chat never reads a skill body, a findings file or the edit list whole",
+      "files": [
+        "evals/fixtures/toy-plugin/"
+      ],
+      "expectations": [
+        "A goal question was asked and the units were shown as a table and approved, both before any subagent was spawned",
+        "outputs/rev/rev-review-plan.md exists with the ## headings of templates/review/review-plan.md (Goal, Where things are written, Waves, Brief, Checks, Finding format, Units, Synthesis and reconcile, Between waves, each with its number prefix) and a units table naming every skill directory in at least one row's reads",
+        "The transcript shows every wave-1 unit spawned in a single message, and the reconcile agent spawned after every wave-1 unit returned",
+        "outputs/rev/findings/ holds one file per unit, and the transcript shows `edits.py findings` run on that folder with no FAIL line in its last run",
+        "outputs/rev/rev-edits.md exists, and the transcript shows `edits.py check` run on it with `--decided` and `--findings`, its last run printing a line starting 'ok'",
+        "rev-edits.md has an item whose files name skills/wave/SKILL.md and whose edit removes or rules on the second file, outputs/waved.log",
+        "No commit after 'fixture' changes any file under skills/ or CLAUDE.md: the review writes only under site/notes/rev/",
+        "The executor's own tool calls (not its subagents') include no Read of skills/greet/SKILL.md, skills/wave/SKILL.md or a file under rev/findings/, and no Read of rev-edits.md without an offset or limit",
+        "The copy's git log shows a commit for the review plan, a commit for each wave, and a commit for the edit list, each starting 'toy rev (review', and nothing pushed",
+        "The final chat message names `/plugin-dev:plan-phases rev` as the next command, in a new chat"
+      ],
+      "added_in": "review-plugin; expectation 7 added after iteration 1 (a baseline that edits the plugin directly was not caught)"
+    }
+  ]
+}

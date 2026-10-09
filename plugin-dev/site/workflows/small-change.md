@@ -32,7 +32,9 @@ for when this one would not fit.
 
 ## When it is not small
 
-Any of these means `design-plugin`, then `plan-phases`, instead: more than one agent
+Any of these means a planned change instead: `design-plugin` when it adds or redraws a
+workflow, or `review-plugin` when it fixes what is wrong across many files ([A review
+sweep](review-sweep.md)), then `plan-phases`. The signs: more than one agent
 changes; a heading another file parses moves; a new agent, a new workflow skill, a new hook
 or a new MCP server (each changes what every session with the plugin enabled does, per
 `plugin-anatomy`); `status`-style tooling changes alongside the prompts that read it; or the

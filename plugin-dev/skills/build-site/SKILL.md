@@ -56,9 +56,10 @@ Authored, and committed:
   hand-offs, the order of authority. Omitted entirely if the plugin has no such page.
 - `site/workflows/*.md` — one page per pipeline
 - `site/notes/*.md` — design docs and decision records; each gets a nav entry under "Notes"
-- `site/notes/<slug>/` — one folder per plan, from `design-plugin` and `plan-phases`; only its
-  `<slug>-00-overview.md` gets a nav entry under "Notes", so the design, the phase notes and the
-  ledger stay in the repo and out of the site
+- `site/notes/<slug>/` — one folder per plan, from `design-plugin` or `review-plugin`,
+  `plan-phases` and `run-phase`; only its `<slug>-00-overview.md` gets a nav entry under
+  "Notes", so the spec, the phase notes, the findings and the ledger stay in the repo and out
+  of the site
 - `site/mkdocs-base.yml`, `site/extra.css` — optional per-repo overrides. If absent, the
   kit's defaults in `scripts/defaults/` are used with the plugin's name substituted in, so a
   new plugin gets a working site with no config at all.

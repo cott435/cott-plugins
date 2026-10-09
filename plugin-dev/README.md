@@ -22,7 +22,7 @@ rather than a copy. Installing this plugin is what makes the protocol apply.
 
 ## The skills
 
-Fourteen skills, in three groups by how they start. The table is the one list of them: a
+Fifteen skills, in three groups by how they start. The table is the one list of them: a
 `contracts.yml` claim fails when a directory under `skills/` has no row here.
 
 | Skill | Starts | What it does |
@@ -34,8 +34,9 @@ Fourteen skills, in three groups by how they start. The table is the one list of
 | `plugin-anatomy` | on its own, when a plugin's components are designed, written or reviewed | The source of truth for plugin components: which one a responsibility belongs in (skill, agent, hook, MCP server, script, config), how skills and agents combine, every documented frontmatter field, and the edge cases that fail silently. Each fact is marked documented, proven by an eval, or unconfirmed. `design-plugin`, `plan-phases` and `run-phase` read it, and the frontmatter check in `check-contracts` enforces its key lists. |
 | `new-plugin` | on its own, when a plugin is started | Scaffolds a plugin subdirectory from `templates/` and adds its row to the marketplace. |
 | `design-plugin` | when you type it | Turns an idea for a new plugin, or a change too big for one chat, into an approved design through discussion. Interviews you in rounds and composes the jobs into loops: each loop's unit of work, what makes that unit's output trustworthy, where every input it needs comes from (you, a file, or another cheaper loop), and the files where loops meet. Shows one flow chart per workflow plus a system chart for your approval, then the full writeup for your approval, and commits it as `site/notes/<slug>/<slug>-design.md` on a new branch. |
-| `plan-phases` | when you type it, in a fresh chat | Splits the approved design into phases from the design file alone, without the discussion behind it. Asks about any decision the design did not take, shows the split for your yes, then writes an overview, one note per phase with its own evals table, and a progress ledger under `site/notes/<slug>/`, and has one writer subagent per target write the eval sets in parallel. Commits all of it as phase 0. |
-| `run-phase` | when you type it, once per chat | Does the next unfinished phase: reads the design, the overview, the ledger and that one note; reads each component's `plugin-anatomy` reference before writing it; makes exactly the note's edits; runs the plugin's rules, `check-contracts`, `build-site` and the phase's evals; logs them and writes any proven platform fact back to `plugin-anatomy`; commits once; updates the ledger; stops. |
+| `review-plugin` | when you type it | Reviews a whole existing plugin for what is wrong with it, for a sweep too big for one chat to read. Agrees the goal and the units with you from the plugin's shape (frontmatter, line counts, the audit index), then runs waves of agents that each read one role or one set of scripts whole and write findings, and one reconcile agent that turns every finding into one deduplicated edit list, `site/notes/<slug>/<slug>-edits.md`: each item with its files and lines, mechanism, dependencies, the issues it closes and the evals that prove it. Asks the decisions the findings leave open, and commits the list on a worktree branch. The orchestrating chat reads only `scripts/edits.py`'s output, never the plugin's files or the findings. Items that need a new workflow go to `design-plugin`. |
+| `plan-phases` | when you type it, in a fresh chat | Splits an approved spec into phases: a design, an edit list (read through `scripts/edits.py`, never whole), or both, without the discussion behind it. Asks about any decision the spec did not take, shows the split for your yes, then writes an overview (each phase's scope and items, what it must not touch, the headings one phase writes and another reads, every phase's eval rows) and a progress ledger under `site/notes/<slug>/`, and has one writer subagent per target write the eval sets in parallel. Writes no phase note. Commits all of it as phase 0. |
+| `run-phase` | when you type it, once per chat | Does the next unfinished phase: reads the spec, the overview and the ledger; writes that phase's note from its row and the files as they are now (or reads the note, in a plan that already has one); reads each component's `plugin-anatomy` reference before writing it; makes exactly the note's edits; runs the plugin's rules, `check-contracts`, `build-site` and the phase's evals; logs them and writes any proven platform fact back to `plugin-anatomy`; commits once; updates the ledger; stops. |
 | `run-phases` | when you type it, in place of one `run-phase` chat per phase | Drives the plan from your chat: one fresh agent per unfinished phase, in series, each doing `run-phase` — a subagent, or a headless `claude -p` session where subagents cannot spawn (cloud sessions cap the depth at 1). Relays every review stop, question and bump proposal to you and resumes the same agent with your answer. Checks each phase's commit, clean tree and ledger row before the next. Does no phase work itself, and pushes, merges and bumps nothing. `--through N` stops after phase N. |
 | `run-flow` | on its own, when you ask what a run or an agent did; or typed | Draws a real run of the plugin's workflow from its session transcripts as a page in the browser pane: the flow chart `audit-run` draws, with every agent clickable through to its full record — the prompt it was sent, every step with full input and output, each Write's content and each Edit's old and new text, its commits and what it handed back. After an audit, each box also shows the issues found there and the prior fixes that held or recurred there. `--agent <type>` lists every run of one agent type in time order, in one chat or, with `--sessions` or `--branch`, across several. `--explain` puts a short plain account at the top of each agent's page, written by the run-narrator agent, each line linked to its steps. `scripts/trace.py` here is the trace builder `audit-run` runs too. Judges nothing. |
 | `audit-run` | when you type it, from the plugin under test | Audits a real run of the plugin's workflow from its session transcripts. `run-flow`'s `trace.py` rebuilds what ran: each agent spawned and the prompt it was sent, every tool call, hook block, commit and hand-back. One run-auditor agent per selected agent, one per driver segment, and one for cross-agent consistency then hold it against the agent and skill files at the version that ran. Every finding cites a trace step and a `file:line`, and is classed by fault: agent, driver, definition or platform. Each ERROR is spot-checked before it is reported. Files every ERROR and WARN (and each definition NOTE) as an issue under the plugin's committed `audits/issues/`, matched to an existing issue by its quoted rule so an id stays the same from one audit to the next, writes the run report to `audits/runs/<date>-<id8>.md`, and commits `audits/` in one commit of its own. On a rerun it also checks every fixed issue whose fix was in the code that ran: it widens the selection so each one is exercised, gives each auditor the issues that apply to its piece, spot-checks every verdict, and records each issue as held, recurred, not exercised or not testable. Also draws the run as a flow chart: waves of agents, so what ran in parallel versus in series; one column per section, showing how many runs and review rounds it took; each review coloured by its verdict; and the points where the driver stopped to ask. Logs the run with `log-eval`, briefly: the issue ids by outcome and a link to the report. `--units new` re-audits only newly finished agents, so it can watch a workflow still running in another chat. |
@@ -51,18 +52,20 @@ Fourteen skills, in three groups by how they start. The table is the one list of
 | `audits/` (in each audited plugin) | The committed ledger an audit writes: `issues/<ID>.md`, `INDEX.md`, `runs/<date>-<id8>.md`. Written only through `scripts/issues.py`. |
 | `scripts/build_site.py` | The site builder. Fully generic — everything is discovered from the bundle. |
 | `scripts/contract_sweep.py` | The contracts checker. Its `frontmatter` check reads the allowed keys from `plugin-anatomy`'s references rather than its own copy. Shared, so a change to it gets a positive and a negative run before it is committed (this plugin's `CLAUDE.md`). |
+| `scripts/edits.py` | A review's findings files and edit list, read and checked without a model: the shape of every findings file, the edit list's items and decisions, an index of one line per item, one phase's items printed whole, and coverage (every item in exactly one phase, dependencies respected). `review-plugin`, `plan-phases` and `run-phase` read the list through it. |
 | `scripts/issues.py` | The audit ledger: creates and updates issue files under a plugin's `audits/issues/`, derives each issue's status, renders `audits/INDEX.md`, and checks the ledger. `audit-run`, `fix-issues` and `bump-version` write through it; nothing writes an issue file by hand. |
 | `templates/audits/` | `issue.md` and `run-report.md`: the one list of an issue file's and a run report's sections. |
 | `scripts/defaults/` | `mkdocs-base.yml` and `extra.css` used when a plugin doesn't override them. |
 | `templates/` | The files a new plugin subdirectory starts with. |
-| `templates/phases/` | The design shape `design-plugin` writes, and the overview, phase-note and ledger shapes `plan-phases` writes. |
-| `site/workflows/` | The four workflows below, one page each, rendered on the reading site. |
+| `templates/phases/` | The design shape `design-plugin` writes, the overview and ledger shapes `plan-phases` writes, and the phase-note shape `run-phase` writes. |
+| `templates/review/` | The review plan, findings-file and edit-list shapes `review-plugin` and its agents write. |
+| `site/workflows/` | The five workflows below, one page each, rendered on the reading site. |
 | `evals/sets/` | Every skill's committed eval set, and trigger set for the model-invoked ones, that `run-evals` runs. |
 | `evals/fixtures/` | What those sets run against: a toy plugin for `run-phase`, a written design for `plan-phases`. |
 
 ## Workflows
 
-Three ways work reaches a plugin, and one way to check what a plugin did once it ran. Each is
+Four ways work reaches a plugin, and one way to check what a plugin did once it ran. Each is
 a page under `site/workflows/`; the summaries here say which skills run, in what order, and
 which of them wait for you.
 
@@ -92,11 +95,19 @@ shows the changed workflows as charts (new, changed and suggested components mar
 the writeup, each waiting for your yes, and commits the design on a new branch. Then, in a fresh
 chat, `/plugin-dev:plan-phases <slug>` splits the design into phases, with every behavioral
 eval's prompts and expectations written into `evals/sets/`, and commits phase 0. Then one fresh
-chat per phase, each opened with nothing but `/plugin-dev:run-phase <slug>`, which runs that
-phase's evals through `run-evals` and stops for your review of the viewer before it commits,
-until the ledger's last row is `done` and the last phase has proposed the bump. Or one chat,
-`/plugin-dev:run-phases <slug>`, which runs a fresh agent per phase in series and brings each
-review back to you.
+chat per phase, each opened with nothing but `/plugin-dev:run-phase <slug>`, which writes
+that phase's note against the files as they are, runs its evals through `run-evals` and stops
+for your review of the viewer before it commits, until the ledger's last row is `done` and the
+last phase has proposed the bump. Or one chat, `/plugin-dev:run-phases <slug>`, which runs a
+fresh agent per phase in series and brings each review back to you.
+
+**[A review sweep](site/workflows/review-sweep.md).** For fixing what is wrong across a plugin
+too big for one chat to read, rather than adding something. Inside the plugin,
+`/plugin-dev:review-plugin <slug>`: it agrees the goal and the review units with you, runs
+waves of agents that each read one role whole and write findings, has one agent reconcile them
+into an edit list, asks you the decisions it leaves open, and commits the list on a new
+branch. From there the path is the large change's: `plan-phases`, then `run-phase` per phase.
+Items whose fix needs a new workflow go through `design-plugin` first.
 
 **[Checking a run, fixing it, and checking the fix](site/workflows/audit-a-run.md).** A workflow ran in some project's chat,
 maybe for hours, and you want to know whether it did what the plugin says. Open a fresh chat
@@ -114,7 +125,7 @@ records how a rerun will show each fix; the next `/plugin-dev:audit-run` of a re
 each one held, recurred, not exercised or not testable, and `/plugin-dev:run-flow` draws any
 run with every agent one click from its full record.
 
-What is the same in the three that change a plugin: which component a responsibility belongs in, and every
+What is the same in the four that change a plugin: which component a responsibility belongs in, and every
 platform fact a design relies on, come from `plugin-anatomy`, and a fact proven by an eval is
 written back to it; every eval is a file before it is a sentence in chat; evals
 run through `run-evals` from committed sets in `evals/sets/`; the site is rebuilt after
