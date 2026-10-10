@@ -24,8 +24,8 @@ Writes, all generated and safe to gitignore:
                             sphinxcontrib-mermaid)
 
 Authored, and committed, in the consuming repo: `site/site.yml`, `site/flow.md`,
-`site/workflows/*.md`, `site/notes/*.md` (and `site/notes/<slug>/`, of which only
-`<slug>-00-overview.md` is rendered) and an optional `site/extra.css`.
+`site/workflows/*.md`, `site/reference/*.md`, `site/notes/*.md` (and `site/notes/<slug>/`,
+of which only `<slug>-00-overview.md` is rendered) and an optional `site/extra.css`.
 
 The flow page has the same parts in every plugin. `site/flow.md` holds the prose and one
 marker line per generated part, and this script fills each from the bundle and the `flow:`
@@ -42,8 +42,8 @@ A plugin with agents and no `site/flow.md` gets a flow page of just those parts.
 
 Nav shape (a section is omitted entirely when it has nothing in it):
 
-    Start (README, the flow) -> Workflows -> Agents -> Commands -> Workflow skills ->
-    Knowledge skills -> Scripts -> Rules and config -> Notes -> Evals
+    Start (README, the flow) -> Workflows -> Reference -> Agents -> Commands ->
+    Workflow skills -> Knowledge skills -> Scripts -> Rules and config -> Notes -> Evals
 """
 
 from __future__ import annotations
@@ -710,6 +710,17 @@ def main() -> None:
             h1 = next((l[2:].strip() for l in text.splitlines() if l.startswith("# ")), stem)
             workflows.append(add(Page(f"workflows/{p.name}", h1, text, p), p))
 
+    # Reference: what a reader looks up rather than follows (states, record formats, gotchas).
+    reference: list[Page] = []
+    ref_dir = site / "reference"
+    if ref_dir.exists():
+        files = {p.stem: p for p in ref_dir.glob("*.md")}
+        for stem in ordered(files, cfg.get("reference_order") or []):
+            p = files[stem]
+            text = p.read_text()
+            h1 = next((l[2:].strip() for l in text.splitlines() if l.startswith("# ")), stem)
+            reference.append(add(Page(f"reference/{p.name}", h1, text, p), p))
+
     # Agents and commands
     agents, commands = [], []
     preloaded: dict[str, list[str]] = {}    # agent -> the skills its frontmatter preloads
@@ -875,7 +886,8 @@ def main() -> None:
 
     top = [p for p in (home, flow_page) if p]
     index = f"# {title}\n\nReading site for the `{name}` plugin.\n\n" + toc("Start", top) \
-        + toc("Workflows", workflows) + toc("Agents", agents) + toc("Commands", commands) \
+        + toc("Workflows", workflows) + toc("Reference", reference) \
+        + toc("Agents", agents) + toc("Commands", commands) \
         + toc("Workflow skills", wf_pages) + toc("Knowledge skills", knowledge) \
         + toc("Scripts", scripts) + toc("Rules and config", rules_config) \
         + toc("Notes", notes) + toc("Evals", [evals_page] if evals_page else [])
@@ -889,6 +901,7 @@ def main() -> None:
 
     print(f"{name}: wrote {len(pages) + 1} pages under {out}")
     print(f"  {len(agents)} agents, {len(commands)} commands, {len(workflows)} workflows, "
+          f"{len(reference)} reference, "
           f"{len(wf_pages)} workflow skills, {len(knowledge)} knowledge skills, "
           f"{len(scripts)} scripts, {len(rules_config)} rules/config, {len(notes)} notes")
 

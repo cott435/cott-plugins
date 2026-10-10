@@ -11,20 +11,23 @@ holds only what's specific to this plugin.
 every agent on `inherit`, with the overrides considered and why none is applied — and nothing
 else. The policy itself is `plugin-dev`'s `bump-version`.
 
-## Adding a skill means updating two files
+## Adding a skill
 
-A new skill here — workflow or knowledge — is added, in the same change, to:
+A new workflow skill (one with `disable-model-invocation: true`) is added, in the same
+change, to `site/site.yml`'s `workflow_skills_order`; a skill removed comes out of it.
+`plugin-dev`'s `check-contracts` fails in both directions, so run it after any change under
+`skills/`. A knowledge skill is listed nowhere by hand: the site finds it, and the flow
+page's table shows which agents use it once an agent's file names it (below). At run time
+the architect derives the plugin's own skill names with `ls ${CLAUDE_PLUGIN_ROOT}/skills`.
 
-1. `README.md`'s **Contents** tree, and its knowledge-scope table if it is a knowledge skill;
-2. `site/site.yml`'s `workflow_skills_order`, if it is a workflow skill.
+## The README holds no reference
 
-A skill *removed* comes out of both. `plugin-dev`'s `check-contracts` fails on both, in both
-directions — a skill missing from a list, and a name in a list with no such skill — so run it
-after any change under `skills/`. It is the rule's enforcement, not a reminder of it: the two
-claims are `contracts.yml`'s two `names_listed` entries. Item 2 covers the workflow skills
-only, selected by `disable-model-invocation: true` rather than by a second list. The plugin's
-own skill names are never listed anywhere else: at run time the architect derives them with
-`ls ${CLAUDE_PLUGIN_ROOT}/skills`.
+`README.md` says what the plugin is for, how it runs and why, where you are asked, and how
+to install it and build the site. What a reader looks up is under `site/reference/`: running
+a package and the states, the records, the hooks, code conventions, the `docs/` layout,
+gotchas and upgrade notes. A change to any of those is an edit to its reference page, and an
+upgrade note is a bullet in `site/reference/gotchas.md`. `contracts.yml` sweeps those pages
+wherever it sweeps the README.
 
 ## The flow page is drawn from `site/site.yml`
 

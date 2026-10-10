@@ -59,7 +59,7 @@ forbid:
     pattern: "(?:pytest|row) (?:is|are) CI's|SKIPPED`?: CI's|leaves to CI\\b"
     # The notes under site/notes/ are the record of what each release decided, 2.2's included,
     # and are not rewritten; every file that describes the plugin as it is now is in scope.
-    files: ['agents/*.md', 'skills/**/*.md', 'skills/**/*.py', 'hooks/*.py', 'README.md', 'site/*.md', 'site/workflows/*.md']
+    files: ['agents/*.md', 'skills/**/*.md', 'skills/**/*.py', 'hooks/*.py', 'README.md', 'site/reference/*.md', 'site/*.md', 'site/workflows/*.md']
 
   - name: no agent or skill stages everything
     # §Project convention stages by explicit path, so a run never commits a file it did not
@@ -99,7 +99,7 @@ forbid:
     # design set, which discusses the rename) out of scope; the one exemption is the vendored
     # reference's Provenance line stating the rename.
     pattern: 'CONSTRAINTS\.md'
-    files: ['agents/*.md', 'skills/**/*.md', 'README.md']
+    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/reference/*.md']
     unless: ['upstream writes `CONSTRAINTS.md`']
 
   - name: run-package spawns every agent by its plugin-prefixed name
@@ -162,38 +162,38 @@ forbid:
     pattern: 'docs/deviations/<pkg>/<section>\.md|docs/deviations/\$pkg/|docs/deviations/<pkg>/\*'
     near: 90
     unless: ['older', 'still read', 'pre-2.2', '2.0 ', 'edited in place', 'where it is']
-    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/flow.md', 'site/site.yml', 'site/workflows/*.md']
+    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/reference/*.md', 'site/flow.md', 'site/site.yml', 'site/workflows/*.md']
 
   - name: no file writes a review report to docs/reviews/
     # Reports are docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<letter>.md since 2.2.
     pattern: 'docs/reviews/<date>|docs/reviews/\*-<pkg>|Write to `docs/reviews/'
     near: 90
     unless: ['older', 'still read', 'pre-2.2', '2.0 ']
-    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/flow.md', 'site/site.yml', 'site/workflows/*.md']
+    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/reference/*.md', 'site/flow.md', 'site/site.yml', 'site/workflows/*.md']
 
   - name: no file writes a change file to docs/changes/
     # Change files are docs/packages/<pkg>/changes/<slug>.md, one per affected package.
     pattern: 'docs/changes/<slug>\.md|docs/changes/\*'
     near: 90
     unless: ['older', 'still read', 'pre-2.2', '2.0 ']
-    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/flow.md', 'site/site.yml', 'site/workflows/*.md']
+    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/reference/*.md', 'site/flow.md', 'site/site.yml', 'site/workflows/*.md']
 
   - name: the stop marker is per section
     # .dev-team/stop/<pkg>/<section>; a bare .dev-team/stop is 2.1's and a sibling's marker
     # under parallel implementers.
     pattern: '\.dev-team/stop\b(?!/)'
-    files: ['agents/*.md', 'skills/**/*.md', 'hooks/*.py', 'README.md', 'site/flow.md', 'site/site.yml', 'site/workflows/*.md']
+    files: ['agents/*.md', 'skills/**/*.md', 'hooks/*.py', 'README.md', 'site/reference/*.md', 'site/flow.md', 'site/site.yml', 'site/workflows/*.md']
 
   - name: the tester's mode field is Design mode
     # 2.1's `Adopted code:` spawn field is `Design mode: new | document | delta` since 2.2.
     pattern: 'Adopted code'
-    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/flow.md', 'site/site.yml', 'site/workflows/*.md']
+    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/reference/*.md', 'site/flow.md', 'site/site.yml', 'site/workflows/*.md']
 
   - name: nothing says implementers run one at a time except to describe --serial
     pattern: '[Ii]mplementers? (run )?(one at a time|never run in parallel|×1, sequential)|one implementer at a time'
     near: 120
     unless: ['--serial']
-    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/flow.md', 'site/site.yml', 'site/workflows/*.md']
+    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/reference/*.md', 'site/flow.md', 'site/site.yml', 'site/workflows/*.md']
   - name: no prompt names the argument-count rule the lint block dropped
     # 2.5 caps positional parameters (PLR0917, max-positional-args). PLR0913 counted
     # keyword-only ones too, which is what pushed implementers into options bags. A prompt
@@ -218,7 +218,7 @@ forbid:
     pattern: 'designed last|from (?:every|the) (?:sibling|shipped) READMEs?'
     near: 60
     unless: ['built last', 'built, last', 'IMPLEMENT']
-    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/flow.md', 'site/site.yml', 'site/workflows/*.md']
+    files: ['agents/*.md', 'skills/**/*.md', 'README.md', 'site/reference/*.md', 'site/flow.md', 'site/site.yml', 'site/workflows/*.md']
 
   - name: no driver prompt field sends intent tests at the repo root
     # Intent tests live under the package root (`packages/<pkg>/tests/intent/<section>/` in a
@@ -506,14 +506,15 @@ headings:
   - name: the driver's state names are the ones status.py derives
     # run-package branches on the state column of status.py's rows. A renamed or dropped state
     # leaves the driver's ready-set rule naming a state no row ever shows, and the section
-    # sits there. The owner is the module docstring's numbered rule list. The README's
-    # **The states** table is the one copy outside the script, for the user.
+    # sits there. The owner is the module docstring's numbered rule list. The site's
+    # **The states** table, in site/reference/running-a-package.md, is the one copy outside
+    # the script, for the user.
     owner: skills/status/scripts/status.py
     owner_span: ['1. **BLOCKED**', 'Ready:']
     readers:
       - file: skills/run-package/SKILL.md
         cites: ['BLOCKED', 'PLAN', 'PROBE', 'DESIGN', 'TEST', 'IMPLEMENT', 'REVIEW', 'FIX n', 'DONE']
-      - file: README.md
+      - file: site/reference/running-a-package.md
         span: ['## The states', 'A package is **shipped**']
 
   - name: gate record lines and result values their readers parse are ones the gate writes
@@ -624,17 +625,8 @@ frontmatter:
 
 # A list of names that goes stale when the directory it describes changes.
 names_listed:
-  - name: README's Contents tree names every skill this plugin ships
-    # Item 1 of the two-file rule in CLAUDE.md. The tree is the only place a reader learns
-    # what the plugin contains, and it is a fenced code block, so names appear as branches
-    # rather than in backticks.
-    dirs: 'skills/*'
-    form: tree
-    file: README.md
-    span: ['└── skills/', 'site/                         the authored parts']
-
   - name: every workflow skill is in site.yml's run order
-    # Item 2 of the same rule. A workflow skill is one the model may not invoke on its own —
+    # The rule in CLAUDE.md. A workflow skill is one the model may not invoke on its own —
     # the user types it — which is exactly what the site orders by run sequence. Unlisted
     # files are appended alphabetically, which is the one thing this list exists to prevent.
     dirs: 'skills/*'

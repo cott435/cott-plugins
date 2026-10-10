@@ -40,7 +40,7 @@ from pathlib import Path
 # Authored files only. Generated mirrors (site/docs/) would double every finding, and a
 # finding there is fixed in the source anyway.
 DEFAULT_FILES = ["agents/*.md", "skills/**/*.md", "rules/*.md", "README.md", "CLAUDE.md",
-                 "site/*.md", "site/workflows/*.md", "site/notes/*.md", "skills/**/*.py"]
+                 "site/*.md", "site/workflows/*.md", "site/reference/*.md", "site/notes/*.md", "skills/**/*.py"]
 
 
 def authored(bundle: Path, globs: list[str]) -> list[Path]:

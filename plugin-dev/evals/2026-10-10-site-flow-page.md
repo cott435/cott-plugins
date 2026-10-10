@@ -1,7 +1,7 @@
 # The flow page drawn by the builder: agents × skills, who writes and reads what, how the drivers run
 
 **Tested against:** uncommitted — see working-tree diff on branch `plugin-dev-planning-routes` over `1069a0f` (`scripts/build_site.py`, `site/site.yml`, `site/flow.md`, `README.md`, `contracts.yml`, `skills/build-site/SKILL.md`, `templates/site/`, `templates/README.md`; in `dev-team`: `site/site.yml`, `site/flow.md`, `contracts.yml`) · model: none, every case is mechanical or read in a browser · 2026-10-10
-**Set:** `evals/fixtures/flow/check.py` (16 cases) for the `flow` claim; none for the builder's layout · **Baseline:** `build_site.py` at `1069a0f`, run on the same two bundles · **Pass rate:** 13/13 cases
+**Set:** `evals/fixtures/flow/check.py` (16 cases) for the `flow` claim; none for the builder's layout · **Baseline:** `build_site.py` at `1069a0f`, run on the same two bundles · **Pass rate:** 17/17 cases
 
 ## What was tested
 
@@ -85,9 +85,23 @@ carried over from `dev-team`'s old `docs/` map:
   `plan-phases` can write an eval set, and `run-phase` does not write issue files itself (a
   plan's last phase does, from its note).
 
+## A Reference section, and `dev-team`'s README (added the same day, over `172e41d`)
+
+`build_site.py` renders `site/reference/*.md` under a **Reference** heading after Workflows,
+ordered by `reference_order`. `dev-team`'s README went from 801 lines to 111 (what it is
+for, how it runs and why, where you are asked, install, the site); its reference sections
+moved, text unchanged but for cross-references, to six pages under `site/reference/`.
+
+| # | Case | Result |
+|---|---|---|
+| 14 | `dev-team` builds: 130 pages, 6 reference, no Sphinx warning on `reference/`, `readme` or `flow` | pass |
+| 15 | `plugin-dev`, which has no `site/reference/`, builds as before: 70 pages, no Reference heading | pass |
+| 16 | `dev-team` contracts, with every claim that swept the README now sweeping `site/reference/*.md` too, the states claim reading the moved table, and the README's Contents-tree claim removed | 54/54 |
+| 17 | every README section is in a reference page, the new README, a workflow page that already held it, or the flow page's generated parts | pass: Contents and the role-by-skill table are the site's own pages and the flow table; Which skill to run is the flow page's **Which route**; Pairing is its workflow page |
+
 ## Verdict
 
-Pass, 13/13. The builder's change is confined to the flow page, both plugins' pages render
+Pass, 17/17. The builder's change is confined to the flow page, both plugins' pages render
 as designed, and the block they are drawn from now fails `check-contracts` when it and the
 files disagree. Not tested: a real phone, Safari and Firefox (the charts use `orient="auto"`
 markers and CSS variables with fallbacks, nothing newer), and a plugin with more than about

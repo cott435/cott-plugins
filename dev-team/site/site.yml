@@ -13,6 +13,15 @@ workflows_order:
   - adopt-existing-repo
   - pair-on-a-section
 
+# Reading order for the pages in site/reference/: what you look up rather than follow.
+reference_order:
+  - running-a-package
+  - decisions-deviations-reviews
+  - hooks
+  - code-conventions
+  - docs-layout
+  - gotchas
+
 # Reading order for the workflow skills: the order you actually run them, not alphabetical.
 workflow_skills_order:
   - shape-brief

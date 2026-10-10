@@ -12,6 +12,10 @@
 # workflows_order:
 #   - new-repo
 
+# Reading order for the pages in site/reference/ (states, record formats, gotchas). Same rule.
+# reference_order:
+#   - the-states
+
 # Reading order for workflow skills (frontmatter `context: fork`). Same rule.
 # workflow_skills_order:
 #   - plan-repo

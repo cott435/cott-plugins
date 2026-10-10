@@ -46,7 +46,8 @@ shipped (a README, an `interface.md`, a probe doc), never as its plan.
 section's state from the documents, the code, git and the gate records on every call, so a
 re-run after a crash, a hand edit or a week away behaves as the uninterrupted run would
 have. The driver holds the ready set `status.py` prints, each return's first line, and your
-answers.
+answers. [Running a package](reference/running-a-package.md) has every step, cap and
+question.
 
 <!-- flow:drivers -->
 

@@ -62,6 +62,9 @@ Authored, and committed:
   parts alone.
 - `README.md` — the home page. See **The README**, below.
 - `site/workflows/*.md` — one page per pipeline
+- `site/reference/*.md` — what a reader looks up rather than follows: the states a run moves
+  through, the format of each record, what each hook checks, conventions, gotchas. This is
+  where the detail a README used to carry goes. Ordered by `reference_order` in `site.yml`
 - `site/notes/*.md` — design docs and decision records; each gets a nav entry under "Notes"
 - `site/notes/<slug>/` — one folder per plan, from `design-plugin` or `revise-plugin`,
   `plan-phases` and `run-phase`; only its `<slug>-00-overview.md` gets a nav entry under
@@ -140,9 +143,9 @@ itself warns when the block has a part and `flow.md` has no marker for it.
 The README is the site's home page and the plugin's page on GitHub, and it holds what the
 generated pages cannot: what the plugin is for, how its workflows are driven and why they
 are built that way, how to install it, how to build this site, and any overview a reader
-needs before the rest. It carries no table of skills or agents and no workflow
-walk-throughs: the site lists the first from the bundle, and `site/workflows/` holds the
-second. `templates/README.md` is the starting shape.
+needs before the rest. It carries no table of skills or agents, no workflow walk-throughs
+and no reference detail: the site lists the first from the bundle, `site/workflows/` holds
+the second and `site/reference/` the third. `templates/README.md` is the starting shape.
 
 ## Pages and links
 
@@ -170,8 +173,8 @@ counts the way its author wrote it.
 
 Fixed shape, and a section with nothing in it is omitted rather than left empty:
 
-    Start (README, the flow) -> Workflows -> Agents -> Commands -> Workflow skills ->
-    Knowledge skills -> Scripts -> Rules and config -> Notes -> Evals
+    Start (README, the flow) -> Workflows -> Reference -> Agents -> Commands ->
+    Workflow skills -> Knowledge skills -> Scripts -> Rules and config -> Notes -> Evals
 
 Everything is discovered from the bundle, so adding a skill, a `references/` file, a script, a
 command or a rule needs no edit anywhere — re-run the script and it appears. The only reason

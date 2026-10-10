@@ -54,7 +54,8 @@ Every plugin's site has the same shape, drawn by `plugin-dev/scripts/build_site.
   and each driver's loop with its ledger. Everything but the routes is drawn from the agents'
   frontmatter and the `flow:` block of `site/site.yml`, and a `flow` claim in the plugin's
   `contracts.yml` holds that block to the agent and skill files.
-- **`site/workflows/`** has one page per workflow.
+- **`site/workflows/`** has one page per workflow, and **`site/reference/`** holds what a
+  reader looks up: states, record formats, what each hook checks, gotchas.
 
 ## Working across branches
 
