@@ -30,6 +30,7 @@ cp "${CLAUDE_PLUGIN_ROOT}/templates/VERSIONING.md"    <name>/VERSIONING.md
 cp "${CLAUDE_PLUGIN_ROOT}/templates/CHANGELOG.md"     <name>/CHANGELOG.md
 cp "${CLAUDE_PLUGIN_ROOT}/templates/evals/README.md"  <name>/evals/README.md
 cp "${CLAUDE_PLUGIN_ROOT}/templates/site/site.yml"    <name>/site/site.yml
+cp "${CLAUDE_PLUGIN_ROOT}/templates/site/flow.md"     <name>/site/flow.md
 cp "${CLAUDE_PLUGIN_ROOT}/templates/README.md"        <name>/README.md
 touch <name>/site/notes/.gitkeep
 ```
@@ -70,7 +71,8 @@ wants it: `git pull`, then `/plugin marketplace update cott-plugins`, then
 
 Build the site to confirm the scaffold is discoverable
 (`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/build_site.py" <name>`). A zero-config plugin builds
-fine: `site.yml` only controls reading order, and every key in it is optional.
+fine: every key in `site.yml` is optional. Its `flow:` block and `site/flow.md` are filled
+in as the plugin gains agents, documents and a driver (`build-site`, **The flow page**).
 
 A plugin that will have agents, or more than a couple of skills, is not written in the same
 chat as its scaffold: `design-plugin --new <name>` runs this skill's steps once its design is

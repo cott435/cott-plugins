@@ -107,8 +107,8 @@ says.
 
 ## The end
 
-The last phase reruns every set end to end, writes the docs (`README.md`, `site/flow.md`,
-`site/workflows/`, the CHANGELOG), and with an audit ledger records a Fix attempt for every
+The last phase reruns every set end to end, writes the docs (`README.md`, `site/flow.md` and the `flow:` block
+of `site/site.yml`, `site/workflows/`, the CHANGELOG), and with an audit ledger records a Fix attempt for every
 issue an edit-list item closed. It proposes the bump in chat (a new plugin's first tag is
 `0.1.0`), and `bump-version` bumps, tags and pushes on your yes. The branch merges with one
 commit per phase, each with its evals beside it.

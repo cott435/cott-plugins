@@ -1,125 +1,79 @@
 # plugin-dev
 
-The shared kit every other plugin is built with. It covers how a plugin is designed and
-planned in phases, which component each piece of it should be, how it is tested and how a
-test run is recorded, how its cross-file claims are checked, how its reading site is
-generated, and how it is versioned. One copy, installed as a plugin, instead of the same
-conventions drifting apart across repos.
+The kit every other plugin in this repo is built with. It holds one protocol for what a
+plugin is, and the skills that design one, change one, test it, check a real run of it, and
+release it. It is installed as a plugin so there is one copy of the protocol, and it applies
+wherever a plugin is being worked on.
 
-## Why this is a plugin and not a folder
+## The protocol: a workflow that runs itself
 
-The things being shared are two different kinds of thing, and only one of them is code.
+A plugin exists to run a workflow on its own, for minutes or for hours, and get the same
+result each time. So every workflow in every plugin here has the same six parts:
 
-The site builder is code, so it lives in `scripts/` and is invoked with a path. But the
-versioning policy and the eval convention are *instructions for Claude* — the reason the eval
-protocol works at all is that something tells Claude to write the file every time. A shared
-folder can't do that; a `CLAUDE.md` copied into every repo can, but then there are N copies
-to keep in sync, which is the problem being solved.
-
-A skill is exactly an instruction that travels. So the policy is a set of skills, the builder
-rides along in the same bundle, and every plugin repo keeps a `CLAUDE.md` that is a pointer
-rather than a copy. Installing this plugin is what makes the protocol apply.
-
-## The skills
-
-Fifteen skills, in three groups by how they start. The table is the one list of them: a
-`contracts.yml` claim fails when a directory under `skills/` has no row here.
-
-| Skill | Starts | What it does |
+| Part | What it is | What it does |
 |---|---|---|
-| `log-eval` | on its own, every test run | Records a test against a plugin's own skills or agents as a dated file under `evals/` with the commit and model it ran against, plus an index row. A clean pass exactly like a failure. |
-| `build-site` | on its own, after any agent or skill edit | Rebuilds the Sphinx site (`site/docs/`, HTML in `site/_build/`) from the bundle. |
-| `check-contracts` | on its own, beside `build-site` and before any bump | Runs the cross-file claims in a bundle's `contracts.yml`: a heading one file parses and another owns, a pattern no file may contain, a list of names that goes stale, and frontmatter keys the platform does not document or ignores in plugins (checked against `plugin-anatomy`). A `FAIL` names the `file:line`. |
-| `run-evals` | on its own, whenever a phase or change calls for evals | Runs one skill's or agent's evals from its committed set in `evals/sets/`: mechanical checks, a load check, behavioral runs graded assertion by assertion with skill-creator's grader. A script starts the runs as headless sessions and hands back one report, so the chat that asked reads a table, not every run. The baseline runs once per ref and is reused after; a regression row runs the working tree only. Stops for your review in skill-creator's viewer, then records the result with `log-eval`. |
-| `plugin-anatomy` | on its own, when a plugin's components are designed, written or reviewed | The source of truth for plugin components: the shape every workflow takes (a thin driver in the main chat that spawns agents, kept on track by scripts, hooks and a ledger), which component a responsibility belongs in (skill, agent, hook, MCP server, script, config), how skills attach to agents, every documented frontmatter field, and the edge cases that fail silently. Each fact is marked documented, proven by an eval, or unconfirmed. `design-plugin`, `plan-phases` and `run-phase` read it, and the frontmatter check in `check-contracts` enforces its key lists. |
-| `new-plugin` | on its own, when a plugin is started | Scaffolds a plugin subdirectory from `templates/` and adds its row to the marketplace. |
-| `design-plugin` | when you type it | Turns an idea for a new plugin, or for a workflow to add or redraw, into an approved design through discussion. It works by workflow, each designed from its driver down. Beside an edit list it designs only the list's **Needs a design** items, which are usually none. Interviews you in rounds and composes the jobs into loops: each workflow's driver, the script and ledger that say where a run stands, each loop's unit of work, what makes that unit's output trustworthy, where every input it needs comes from (you, a file, or another cheaper loop), and the files where loops meet. Shows one flow chart per workflow plus a system chart for your approval, then the full writeup for your approval, and commits it as `site/notes/<slug>/<slug>-design.md` on a new branch. |
-| `revise-plugin` | when you type it | Plans a change across a whole existing plugin from facts about it (audited issues, eval results, contradictions, a context budget, a rule every agent and skill must now meet), agent by agent and skill by skill, for a plugin too big for one chat to read. Agrees the goal and the units with you from the plugin's shape (frontmatter, line counts, the audit index), then runs waves of agents that each read one role or one set of scripts whole and write findings, and one reconcile agent that turns every finding into one deduplicated edit list, `site/notes/<slug>/<slug>-edits.md`: each item with its files and lines, mechanism, dependencies, the issues it closes and the evals that prove it. Asks the decisions the findings leave open, and commits the list on a worktree branch. The orchestrating chat reads only `scripts/edits.py`'s output, never the plugin's files or the findings. Items that need a new workflow go to `design-plugin`. |
-| `plan-phases` | when you type it, in a fresh chat | Splits an approved spec into phases: a design, an edit list (read through `scripts/edits.py`, never whole), or both, without the discussion behind it. Asks about any decision the spec did not take, shows the split for your yes, then writes an overview (each phase's scope and items, what it must not touch, the headings one phase writes and another reads, every phase's eval rows) and a progress ledger under `site/notes/<slug>/`, and has one writer subagent per target write the eval sets in parallel. Writes no phase note. Commits all of it as phase 0. |
-| `run-phase` | when you type it, once per chat | Does the next unfinished phase: reads the spec, the overview and the ledger; writes that phase's note from its row and the files as they are now (or reads the note, in a plan that already has one); reads each component's `plugin-anatomy` reference before writing it; makes exactly the note's edits; runs the plugin's rules, `check-contracts`, `build-site` and the phase's evals; logs them and writes any proven platform fact back to `plugin-anatomy`; commits once; updates the ledger; stops. |
-| `run-phases` | when you type it, in place of one `run-phase` chat per phase | Drives the plan from your chat: one fresh agent per unfinished phase, in series, each doing `run-phase` — a subagent, or a headless `claude -p` session where subagents cannot spawn (cloud sessions cap the depth at 1). Relays every review stop, question and bump proposal to you and resumes the same agent with your answer. Checks each phase's commit, clean tree and ledger row before the next. Does no phase work itself, and pushes, merges and bumps nothing. `--through N` stops after phase N. Phase agents run on Sonnet 5.5; `--model inherit` keeps your chat's model. |
-| `run-flow` | on its own, when you ask what a run or an agent did; or typed | Draws a real run of the plugin's workflow from its session transcripts as a page in the browser pane: the flow chart `audit-run` draws, with every agent clickable through to its full record — the prompt it was sent, every step with full input and output, each Write's content and each Edit's old and new text, its commits and what it handed back. After an audit, each box also shows the issues found there and the prior fixes that held or recurred there. `--agent <type>` lists every run of one agent type in time order, in one chat or, with `--sessions` or `--branch`, across several. `--explain` puts a short plain account at the top of each agent's page, written by the run-narrator agent, each line linked to its steps. `scripts/trace.py` here is the trace builder `audit-run` runs too. Judges nothing. |
-| `audit-run` | when you type it, from the plugin under test | Audits a real run of the plugin's workflow from its session transcripts. `run-flow`'s `trace.py` rebuilds what ran: each agent spawned and the prompt it was sent, every tool call, hook block, commit and hand-back. One run-auditor agent per selected agent, one per driver segment, and one for cross-agent consistency then hold it against the agent and skill files at the version that ran. Every finding cites a trace step and a `file:line`, and is classed by fault: agent, driver, definition or platform. Each ERROR is spot-checked before it is reported. Files every ERROR and WARN (and each definition NOTE) as an issue under the plugin's committed `runs/audits/issues/`, matched to an existing issue by its quoted rule so an id stays the same from one audit to the next, writes the run report to `runs/audits/reports/<date>-<id8>.md`, and commits `runs/audits/` in one commit of its own. On a rerun it also checks every fixed issue whose fix was in the code that ran: it widens the selection so each one is exercised, gives each auditor the issues that apply to its piece, spot-checks every verdict, and records each issue as held, recurred, not exercised or not testable. Also draws the run as a flow chart: waves of agents, so what ran in parallel versus in series; one column per section, showing how many runs and review rounds it took; each review coloured by its verdict; and the points where the driver stopped to ask. Logs the run with `log-eval`, briefly: the issue ids by outcome and a link to the report. `--units new` re-audits only newly finished agents, so it can watch a workflow still running in another chat. |
-| `fix-issues` | when you type it, from the plugin whose issues they are | Fixes a few of the issues an audit filed under the plugin's `runs/audits/issues/`, the small end of the route `revise-plugin` is the large end of: selects them (by id, by `run:<id8>`, or as open or recurred), stops and names `revise-plugin` when `issues.py route` says the selection is more than one chat should plan (more than six issues, more than three issues across more than three roles, or an issue that recurred after two fixes; `--here` overrides), plans one edit per issue and asks once, edits on a worktree branch, runs `check-contracts`, `build-site` and `run-evals` against the last tag, records a Fix attempt with a `Verify:` line in each issue, and proposes the merge and the bump. Never marks an issue verified: the next audit of a rerun does that. |
-| `bump-version` | only on your yes | Decides patch/minor/major from what changed, bumps `plugin.json` and the marketplace row, writes the CHANGELOG line, tags, pushes. Stamps `fixed_in` on the issues the release carries. Proposes itself in chat and waits. |
+| **Driver** | a skill you type, running in your chat | Asks a script what is next, spawns the agent for that step, acts on what comes back. Does none of the work itself |
+| **Agents** | fresh contexts the driver spawns | Each does one unit of work and returns a short fixed form: a status and the paths it wrote |
+| **Scripts** | plain code | Print the next step and the slice of a file an agent needs, check a step, write its record. A model never decides what a script can decide |
+| **Hooks** | checks the harness runs | Hold anything that must be true before an agent stops or a file is written |
+| **Ledger** | a file on disk, or state derived from the work's own files | Says what is done and what is next. One writer, and it is a script |
+| **Knowledge skills** | reference an agent loads | The conventions a step needs, loaded by the role that needs them |
 
-## The rest of the bundle
+Three rules follow, and they are the point of doing it this way:
 
-| Path | What it is |
+- **The driver stays thin.** Its context grows with every turn of a long run, so it holds
+  only what its script prints, what each agent returns and your answers. It never reads the
+  plan, the ledger or an agent's output whole.
+- **Deterministic wherever it can be.** What is next, whether a step passed and what gets
+  recorded are answered by a script or a hook, not by a model reading prose. A rule that
+  matters is a check that fails, not a sentence an agent may skip.
+- **The run lives in files.** Every hand-off is a file, so a run can stop, crash or change
+  chats and pick up from the ledger, and a finished run can be audited against the plugin's
+  own files from its transcripts.
+
+`plugin-anatomy` is the full statement: which component each responsibility belongs in, how
+skills attach to agents, every documented frontmatter field, and the edge cases that fail
+silently, each fact marked documented, proven by an eval, or unconfirmed.
+
+## How a change reaches a plugin
+
+By where it starts. An idea for a new plugin or a workflow is designed, one workflow at a
+time, from its driver down. Facts about a plugin as it is (audited issues, eval results, a
+rule every agent must now meet) are fixed in one chat when they are few, and turned into an
+edit list when they are many. Both routes hand a spec to the same phases, each sized for one
+chat and committed with its evals. A run of the finished workflow is then audited against
+the plugin's files, and what the audit files as issues is the next set of facts.
+
+The site's **The flow** page has the table that says which command to type, which role uses
+which skill, who writes and reads each document, and how each driver runs. Each route has a
+page under **Workflows**.
+
+## One file answers each question
+
+When two files disagree, the one named here wins and the other is fixed.
+
+| Question | The truth |
 |---|---|
-| `agents/run-auditor.md` | One of the two agents: audits one unit, one driver segment, or the whole run for cross-agent consistency, and writes a findings file. On a rerun it is also given the prior issues that apply to its piece and reports each held, recurred or not exercised, with the step. Spawned only by `audit-run`. |
-| `agents/run-narrator.md` | The second agent: with `run-flow --explain`, writes a short account of one unit, each line citing its steps. Never judges. |
-| `runs/` (in each audited plugin) | Everything a run of the plugin leaves behind. `runs/<project>/<command> <title>/<id8>/` is one audited session's trace, chart and findings (gitignored: it holds the project's files). `runs/audits/` is the one committed part, the ledger every project's audits share: `issues/<ID>.md`, `INDEX.md` and `reports/<date>-<id8>.md`, written only through `scripts/issues.py` and `audit-run`. |
-| `scripts/build_site.py` | The site builder (Sphinx, MyST, Furo). Fully generic — everything is discovered from the bundle. |
-| `scripts/contract_sweep.py` | The contracts checker. Its `frontmatter` check reads the allowed keys from `plugin-anatomy`'s references rather than its own copy. Shared, so a change to it gets a positive and a negative run before it is committed (this plugin's `CLAUDE.md`). |
-| `scripts/edits.py` | A review's findings files and edit list, read and checked without a model: the shape of every findings file, the edit list's items and decisions, an index of one line per item, one phase's items printed whole, and coverage (every item in exactly one phase, dependencies respected). `revise-plugin`, `plan-phases` and `run-phase` read the list through it. |
-| `scripts/phases.py` | A phased plan, read and advanced without a model: the next phase and whether anything stops it, the slice of the overview and ledger one phase needs, the phase's items with the lines they cite carried to where they are now, the phase's mechanical checks in one call (the site built once, at the last phase), the ledger row and the commit that close a phase, the check that a phase stands, a status line per phase with eval pass counts and tokens, each eval target's last-touch phase, and the plan's eval rows against the checkpoint rule. `run-phases`, `run-phase` and `plan-phases` call it and never read the overview or the ledger whole. |
-| `hooks/` | Two hooks, both silent unless they apply. `guard_agent.py` refuses an eval executor or grader spawned through the Agent tool for an iteration the runner should run. `gate_stop.py` checks a phase that was committed without `phases.py finish` before its chat stops. |
-| `scripts/issues.py` | The audit ledger: creates and updates issue files under a plugin's `runs/audits/issues/`, derives each issue's status, renders `runs/audits/INDEX.md`, checks the ledger, and says which skill a selection of issues belongs to (`route`: exit 0 `fix-issues`, exit 3 `revise-plugin`). `audit-run`, `fix-issues` and `bump-version` write through it; nothing writes an issue file by hand. |
-| `templates/audits/` | `issue.md` and `run-report.md`: the one list of an issue file's and a run report's sections. |
-| `scripts/defaults/` | `extra.css` used when a plugin doesn't override it. |
-| `templates/` | The files a new plugin subdirectory starts with. |
-| `templates/phases/` | The design shape `design-plugin` writes, the overview and ledger shapes `plan-phases` writes, and the phase-note shape `run-phase` writes. |
-| `templates/review/` | The review plan, findings-file and edit-list shapes `revise-plugin` and its agents write. |
-| `site/workflows/` | The four workflows below, one page each, rendered on the reading site. |
-| `evals/sets/` | Every skill's committed eval set, and trigger set for the model-invoked ones, that `run-evals` runs. |
-| `evals/fixtures/` | What those sets run against: a toy plugin for `run-phase`, a written design for `plan-phases`. Also the two checks that need no model: `run-evals-runner/check.py` for `eval_workspace.py`, `phases/check.py` for `phases.py` and the hooks. |
+| How does a plugin component behave? | the Claude Code docs, then `plugin-anatomy`'s references. Every other skill cites them and restates nothing |
+| What is being built, and why? | the approved spec in `site/notes/<slug>/`: a design (from an idea) or an edit list (from facts) |
+| What crosses phases, and where does the plan stand? | the overview and the ledger beside the spec, read and written through `scripts/phases.py` |
+| Do two files still agree? | the plugin's `contracts.yml`, run by `check-contracts`. A `FAIL` is fixed in the file, not by relaxing the claim |
+| Does it work? | a committed eval set in `evals/sets/`, run by `run-evals`, and its dated log in `evals/`. A clean pass is logged exactly like a failure |
+| What went wrong in a real run? | the issues under `runs/audits/`, written only through `scripts/issues.py`, each with an id that stays |
+| What version is installed? | `plugin.json`, its marketplace row, the CHANGELOG line and the tag, moved together by `bump-version` |
 
-## Workflows
+## Where you are asked
 
-A plugin exists to run workflows on their own: a thin driver in the main chat, the agents it
-spawns, and the scripts, hooks and ledger that keep a run on track. A change to one reaches
-the plugin by where it starts, from an idea or from facts, and both routes hand a spec to the
-same phases. Each of the four is a page under `site/workflows/`; `site/flow.md` opens with
-the table that says which to take.
+Nothing that commits, publishes or decides for you happens without a stop.
 
-**[Designing a plugin or a workflow](site/workflows/design-a-workflow.md).** From an idea: a
-new plugin (`/plugin-dev:design-plugin --new <name>`, at the repo root) or a workflow added or
-redrawn (`/plugin-dev:design-plugin <slug>`, inside the plugin). It reads first, interviews
-you in rounds, and composes each workflow from its driver down: the script and ledger that
-say where a run stands, each agent's return form, the hooks that hold a step, the unit of
-work and what makes it trustworthy. It waits for your yes twice, on the charts and on the
-writeup, and only then creates the branch (and, for a new plugin, the scaffold) and commits
-`site/notes/<slug>/<slug>-design.md`. A plugin of one or two skills, or one agent edited in
-place, needs no design.
-
-**[Changing a plugin from facts](site/workflows/revise-from-facts.md).** From what is known
-about the plugin: audited issues, evals, contradictions, a rule every agent and skill must
-now meet. `issues.py route` says which size it is. A few issues go to
-`/plugin-dev:fix-issues`: one planned edit per issue, your yes, a worktree branch, the checks
-and evals, a Fix attempt in each issue. More than six issues, more than three across more
-than three roles, or an issue that recurred after two fixes goes to
-`/plugin-dev:revise-plugin <slug>`: waves of agents each read one role whole and write
-findings, one agent reconciles them into an edit list, and you answer the decisions it
-leaves open. `design-plugin` comes in only for the list's **Needs a design** items, which
-are usually none.
-
-**[Planning and running the phases](site/workflows/plan-and-run-phases.md).** What both
-routes hand to. In a new chat, `/plugin-dev:plan-phases <slug>` reads the spec and none of
-the discussion, asks any decision it did not take, shows the split for your yes, and commits
-the overview, the ledger and every eval set as phase 0. Then `/plugin-dev:run-phases <slug>`
-drives the plan from one chat, a fresh agent per phase, or `/plugin-dev:run-phase <slug>`
-does one phase per chat. Each phase writes its own note against the files as they are, and
-`scripts/phases.py` says what is next, runs the checks, and writes the ledger row and the
-commit. Behavioral evals run at checkpoints and stop for your review. The last phase
-proposes the bump.
-
-**[Checking a run, and checking the fix](site/workflows/audit-a-run.md).** A workflow ran in
-some project's chat and you want to know whether it did what the plugin says. In a new chat
-on the plugin, `/plugin-dev:audit-run` with words from that chat's title rebuilds the run
-from the transcripts on disk, draws it, and has one `run-auditor` agent judge each selected
-agent's trace in a fresh context, then one more across them. What it finds is filed as
-issues under `runs/audits/` with ids that stay, and it prints which skill takes them. After
-the fix and a rerun, the next audit reports each fix held, recurred, not exercised or not
-testable; an issue that has held in three sessions is settled and no longer checked.
-`/plugin-dev:run-flow` draws any run, with every agent one click from its full record.
-
-The same in all of them: which component a responsibility belongs in, and every platform
-fact a design relies on, come from `plugin-anatomy`, and a fact proven by an eval is written
-back to it; every eval is a file before it is a sentence in chat; evals run through
-`run-evals` from committed sets in `evals/sets/`; the site is rebuilt after every agent or
-skill edit; contracts are checked before every commit that touches one; and nothing is
-bumped, tagged or pushed without a yes.
+1. `design-plugin` waits twice, for the charts and then the writeup. `revise-plugin` waits
+   for the goal and the units before any agent runs, then asks the decisions left open.
+2. `plan-phases` asks any decision the spec did not take, then waits for your yes to the
+   split.
+3. `run-evals` stops on every behavioral run until you have looked at the outputs.
+4. `fix-issues` shows one planned edit per issue and edits nothing before your yes.
+5. `bump-version` names a level in chat and does nothing until you say yes. The same holds
+   for every merge and push.
 
 ## Install
 
@@ -128,92 +82,46 @@ bumped, tagged or pushed without a yes.
 /plugin install plugin-dev@cott-plugins
 ```
 
-Install this one on every machine — the point is that its skills apply to whatever else
-lives in this repo.
-
-## The repo layout, and why
-
-This plugin lives inside `cott-plugins`, one directory among several:
-
-```
-cott-plugins/
-├── .claude-plugin/marketplace.json   the catalog — every plugin below, by relative path
-├── plugin-dev/                       this kit
-├── dev-team/                  a plugin
-└── <next plugin>/                    a plugin
-```
-
-One repo, one clone, one push/pull. `marketplace.json` still lets you `/plugin install` each
-plugin independently on whatever machine wants it — bundling only means the *source* of every
-plugin is on disk everywhere the repo is cloned, not that every plugin is *installed*
-everywhere. For a repo of markdown and small scripts, carrying the source of a plugin you
-haven't installed costs nothing.
-
-The trade-off, honestly: a single repo can't version or tag one plugin without touching the
-tag namespace of the others, and a change to `dev-team` shows up in `plugin-dev`'s git
-log even though nothing in `plugin-dev` changed. `bump-version` still works — see below — it
-just tags the whole repo rather than one plugin's own history. If a plugin ever needs to be
-shared outside this account, or versioned on a schedule independent of everything else here,
-that's the point to split it back out into its own repo and point `marketplace.json` at
-`{"source": "github", "repo": "...", "ref": "..."}` instead of a relative path — both are
-valid `source` shapes, and moving between them later doesn't require rewriting anything else.
-
-## A new machine
-
-```
-git clone git@github.com:cott435/cott-plugins.git ~/dev/cott-plugins
-```
-
-One clone gets the catalog and every plugin's source. Then add the marketplace and install
-what that machine actually needs — the marketplace file is already on disk, so `marketplace
-add` just points Claude Code at the local clone:
-
-```
-/plugin marketplace add ~/dev/cott-plugins
-/plugin install plugin-dev@cott-plugins
-```
-
-(Or `/plugin marketplace add cott435/cott-plugins` to have Claude Code manage its own clone
-instead of using yours — either works; using your own clone means one copy on disk instead of
-two.)
-
-## Working on a plugin with two machines
-
-Ordinary git: push from one, pull on the other, same as any repo. A release still needs a
-version bump and a tag — `bump-version` below — the only difference from a multi-repo layout
-is that the tag names the whole repo's state, not one plugin in isolation, so tag messages
-should say which plugin the release is actually about.
+Install this one on every machine: its skills apply to whatever else lives in this repo.
+After a `git pull`, `/plugin marketplace update cott-plugins` picks up the change.
 
 ## The reading site
 
+Every agent, skill, script and workflow of a plugin as a browsable site, built from the
+bundle by one shared builder. From any plugin's directory:
+
 ```
-python3 ~/dev/cott-plugins/plugin-dev/scripts/build_site.py --build   # from any plugin subdirectory
-python3 -m http.server --directory site/_build 8000                # http://127.0.0.1:8000
+python3 ~/dev/cott-plugins/plugin-dev/scripts/build_site.py --build
+python3 -m http.server --directory site/_build 8000      # http://127.0.0.1:8000
 ```
 
-Without `--build` the script writes only the Sphinx source tree (`site/docs/`). The built
-site is plain static HTML, so any static server works; `open site/_build/index.html` also
-works for everything but search.
-
-Requires, once per machine (Python 3.10+):
+Once per machine (Python 3.10+):
 
 ```
 pip install sphinx myst-parser furo sphinxcontrib-mermaid pyyaml
 ```
 
-`--build` names what is missing if one of them isn't installed. The nav is generated from what the script finds, so a new agent, skill, command,
-rule, script or `references/` file appears without editing any config:
+Every plugin's site has the same shape. This README is the home page. **The flow** is the
+map: the routes, a table of which role uses which skill, a chart of who writes each
+document and one of who reads it, and each driver's loop with its ledger. The last four
+are drawn by the builder from the agents' frontmatter and the `flow:` block of
+`site/site.yml`, so they cannot drift from each other. After them come one page per
+workflow, then a page for every agent, skill, reference and script, found without any
+config.
 
-    Start (README, the flow) -> Workflows -> Agents -> Commands -> Workflow skills ->
-    Knowledge skills -> Scripts -> Rules and config -> Notes -> Evals
+`site/site.yml`, `site/flow.md`, `site/workflows/` and `site/notes/` are authored and
+committed; `site/docs/` and `site/_build/` are generated and gitignored. The `build-site`
+skill has the full contract.
 
-A section with nothing in it is omitted. A skill is a **workflow skill** when its frontmatter
-says `context: fork` or `disable-model-invocation: true`, and a **knowledge skill** otherwise.
-A skill's `references/` pages are its children in the nav. Each script under `scripts/` and
-`skills/*/scripts/` gets a page (docstring, `--help` for every subcommand, functions, source),
-and a backticked mention of one anywhere links to it. `site/docs/` and `site/_build/`
-are generated and gitignored in every plugin repo; `site/site.yml`, `site/flow.md`,
-`site/workflows/` and `site/notes/` are authored and committed. Every key in `site.yml` is
-optional — a plugin with no site config at all still builds.
+## What's here
 
-See `skills/build-site/SKILL.md` for the full contract.
+| Path | What it is |
+|---|---|
+| `skills/` | The skills, one directory each |
+| `agents/` | `run-auditor` and `run-narrator`, which `audit-run` and `run-flow` spawn |
+| `scripts/` | The site builder, the contracts checker, and the three ledger scripts: `phases.py`, `edits.py`, `issues.py` |
+| `hooks/` | Two hooks that hold a phased run and an eval run, silent everywhere else |
+| `templates/` | What a new plugin starts with, and the shape of every spec, plan and issue file |
+| `evals/` | The committed eval sets, the fixtures they run against, and every run's log |
+| `site/` | The authored parts of this plugin's own site |
+| `contracts.yml` | The cross-file claims this bundle makes about itself |

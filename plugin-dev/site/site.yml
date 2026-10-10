@@ -18,3 +18,183 @@ workflow_skills_order:
   - run-phases
   - audit-run
   - fix-issues
+
+# The flow page (site/flow.md). Its markers are filled from this block: who uses which
+# skill, who writes and reads which document, and how each driver runs.
+flow:
+  # The roles, left to right in the charts. A name that is an agent or a skill links to its
+  # page; any other needs a label. Anyone else a document names (a script, you) is shown in
+  # the documents table only.
+  roles:
+    - {id: design-plugin, note: driver}
+    - {id: revise-plugin, note: driver}
+    - {id: unit-agent, label: unit agent, note: of revise-plugin}
+    - {id: reconcile-agent, label: reconcile agent, note: of revise-plugin}
+    - {id: plan-phases, note: driver}
+    - {id: eval-writer, label: eval writer, note: of plan-phases}
+    - {id: run-phases, note: driver}
+    - {id: run-phase, note: one phase}
+    - {id: run-evals, note: runner}
+    - {id: fix-issues, note: driver}
+    - {id: audit-run, note: driver}
+    - run-auditor
+    - {id: run-flow, note: driver}
+    - run-narrator
+    - {id: bump-version, note: on your yes}
+
+  # Skills a role runs. An agent's own `skills:` frontmatter is read from its file.
+  uses:
+    design-plugin:
+      always: [plugin-anatomy]
+      sometimes:
+        - new-plugin: a new plugin, once the writeup is approved
+        - check-contracts: the plugin has a `contracts.yml`
+    revise-plugin:
+      sometimes:
+        - check-contracts: the plugin has a `contracts.yml`
+    plan-phases:
+      always: [plugin-anatomy]
+    eval-writer:
+      always: [plugin-anatomy]
+    run-phase:
+      always: [plugin-anatomy, check-contracts]
+      sometimes:
+        - build-site: the last phase
+        - run-evals: the phase is a checkpoint
+    run-evals:
+      always: [log-eval]
+    fix-issues:
+      always: [plugin-anatomy, check-contracts, build-site]
+      sometimes:
+        - run-evals: a set covers a file the fix touched
+    audit-run:
+      always: [log-eval]
+
+  documents:
+    - name: the design
+      path: site/notes/<slug>/<slug>-design.md
+      writes: [design-plugin]
+      reads: [plan-phases, eval-writer, {run-phase: for the why}]
+    - name: review plan
+      path: site/notes/<slug>/<slug>-review-plan.md
+      writes: [revise-plugin]
+      reads: [unit-agent, reconcile-agent]
+    - name: unit findings
+      path: site/notes/<slug>/findings/<UNIT>.md
+      writes: [unit-agent]
+      reads: [reconcile-agent, {unit-agent: "a synthesis unit, by kind"}]
+    - name: the edit list
+      path: site/notes/<slug>/<slug>-edits.md
+      writes: [reconcile-agent, {revise-plugin: the decisions you answer}]
+      reads:
+        - plan-phases: "`edits.py index`"
+        - run-phase: "`edits.py show --phase`"
+        - design-plugin: its Needs a design items
+        - eval-writer
+    - name: the overview
+      path: site/notes/<slug>/<slug>-00-overview.md
+      writes: [plan-phases]
+      reads: [{run-phase: "`phases.py brief`"}]
+    - name: the phase ledger
+      path: site/notes/<slug>/<slug>-progress.md
+      writes: [{plan-phases: the empty rows}, {run-phase: "`phases.py finish`"}]
+      reads: [{run-phases: "`phases.py next`, `check`"}, {run-phase: "`phases.py brief`"}]
+    - name: eval sets
+      path: evals/sets/<target>.json
+      writes: [eval-writer]
+      reads: [run-evals]
+    - name: phase note
+      path: site/notes/<slug>/<slug>-NN-<name>.md
+      writes: [run-phase]
+      reads: [{run-phase: a phase picked up in progress}]
+    - name: the plugin's files
+      path: agents/ · skills/ · hooks/ · scripts/
+      writes: [run-phase, fix-issues]
+      reads:
+        - design-plugin: what the change touches
+        - unit-agent: one role, whole
+        - run-evals: the target
+        - run-auditor: at the version that ran
+    - name: platform facts
+      path: skills/plugin-anatomy/references/
+      writes: [{run-phase: a fact an eval proved}]
+      reads: [design-plugin, plan-phases, eval-writer, run-phase, fix-issues]
+    - name: eval workspace
+      path: evals/workspace/<target>/iteration-N/
+      writes: [run-evals]
+      reads: [{you: in the viewer}]
+    - name: eval log
+      path: evals/<date>-<subject>.md
+      writes: [{run-evals: through `log-eval`}, {audit-run: through `log-eval`}]
+      reads: [{run-phase: "`phases.py finish` wants one per eval row"}, fix-issues]
+    - name: the run's trace
+      path: runs/<project>/<command> <title>/<id8>/
+      writes: [{audit-run: "`trace.py`"}, {run-flow: "`trace.py`"}]
+      reads: [{run-auditor: its one piece}, {run-narrator: one unit}]
+    - name: auditor findings
+      path: runs/…/<id8>/findings/
+      writes: [run-auditor]
+      reads: [{audit-run: "merges, spot-checks"}, {run-auditor: the cross pass}]
+    - name: issues
+      path: runs/audits/issues/<ID>.md
+      writes:
+        - audit-run: new, seen, verdicts
+        - fix-issues: a Fix attempt
+        - run-phase: "the last phase, per issue closed"
+        - bump-version: "`fixed_in`"
+      reads:
+        - audit-run: fixes to check
+        - run-auditor: those on its piece
+        - fix-issues
+        - revise-plugin: "`issues.py list`"
+        - reconcile-agent: the index
+    - name: run report
+      path: runs/audits/reports/<date>-<id8>.md
+      writes: [audit-run]
+      reads: [fix-issues]
+    - name: agent account
+      path: runs/…/<id8>/explain/U<nn>.md
+      writes: [run-narrator]
+      reads: [run-flow]
+    - name: the release
+      path: plugin.json · marketplace row · CHANGELOG.md · tag
+      writes: [bump-version]
+      reads: [whoever installs the plugin]
+
+  # One entry per driver: what tells it the next step, the ledger behind that, what it
+  # spawns, what writes the ledger, and the hooks that hold a step.
+  drivers:
+    - skill: run-phases
+      ledger: "`<slug>-progress.md`, one row per phase"
+      next: "`phases.py next`"
+      spawns: one fresh agent per phase, following run-phase
+      returns: "Status: committed | review | question | proposal | blocked"
+      writer: "`phases.py finish`: the row and the commit"
+      held: "`gate_stop.py`, on `Stop` and `SubagentStop`: a phase committed without `phases.py finish` is checked before its chat stops"
+    - skill: revise-plugin
+      ledger: "`findings/<UNIT>.md`, one per unit, then `<slug>-edits.md`"
+      next: "`edits.py findings`, then `edits.py check`"
+      spawns: a wave of unit agents, twelve at most, then one reconcile agent
+      returns: three lines, the file's path first
+      writer: each agent writes its one file
+      held: "no hook: `edits.py` refuses a findings file out of shape and an edit list that drops a finding; one commit per wave"
+    - skill: audit-run
+      ledger: "`findings/` in the run's workspace; across runs, `runs/audits/issues/`"
+      next: "`trace.py select`"
+      spawns: one run-auditor per unit and per driver segment, then one across them
+      returns: its findings file
+      writer: each auditor writes its one file
+      held: "no hook: every ERROR and verdict is spot-checked at its trace step, and `issues.py check` must print `ok` before the commit"
+    - skill: run-evals
+      ledger: "`evals/workspace/<target>/iteration-N/`"
+      next: "`eval_workspace.py run`"
+      spawns: headless sessions, executors then graders
+      returns: one report
+      writer: the runner script
+      writer_in: driver
+      held: "`guard_agent.py`, on `PreToolUse` of `Agent`: refuses an executor or grader started one spawn at a time for an iteration the runner should run"
+    - skill: fix-issues
+      ledger: "`runs/audits/issues/<ID>.md`"
+      next: "`issues.py route`, then `issues.py list`"
+      writer: "`issues.py`: a Fix attempt per issue"
+      held: "no hook: nothing is edited before your yes to the plan"

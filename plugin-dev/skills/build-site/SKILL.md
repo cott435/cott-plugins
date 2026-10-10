@@ -54,10 +54,13 @@ are overwritten:
 Authored, and committed:
 
 - `site/site.yml` — the only per-plugin config, and every key in it is optional. Reading
-  order for workflow pages and workflow skills, the home-page title, the command prefix, and
-  any extra config files to render. See `templates/site/site.yml` in this kit.
-- `site/flow.md` — the hand-written orientation page: where truth comes from, the loop, the
-  hand-offs, the order of authority. Omitted entirely if the plugin has no such page.
+  order for workflow pages and workflow skills, the home-page title, the command prefix, any
+  extra config files to render, and the `flow:` block the flow page is drawn from. See
+  `templates/site/site.yml` in this kit.
+- `site/flow.md` — the map of the plugin, with the same parts in every plugin. See **The
+  flow page**, below. A plugin with agents and no such file gets a page of the generated
+  parts alone.
+- `README.md` — the home page. See **The README**, below.
 - `site/workflows/*.md` — one page per pipeline
 - `site/notes/*.md` — design docs and decision records; each gets a nav entry under "Notes"
 - `site/notes/<slug>/` — one folder per plan, from `design-plugin` or `revise-plugin`,
@@ -69,6 +72,69 @@ Authored, and committed:
   is an edit to `scripts/build_site.py`, which every plugin shares.
 
 Any change requiring a rebuild that touches what is written in any of the above authored file requires an edit to that file to update it.
+
+## The flow page
+
+`site/flow.md` holds the prose and one marker line where each generated part goes. The
+builder fills a marker from the bundle and from `flow:` in `site/site.yml`, so the table and
+the charts are one set of facts drawn four ways and cannot disagree with each other.
+
+| In `site/flow.md` | Drawn from | Shows |
+|---|---|---|
+| **Which route**, written by hand | — | which command to type for which kind of work, and the workflow page for each |
+| `<!-- flow:agents-skills -->` | every agent's `skills:` frontmatter, plus `flow.uses` | a table of roles against skills: ● always, ○ only on a condition, and the conditions |
+| `<!-- flow:writes -->` | `flow.documents[].writes` | the roles in one row; above each, the documents only it writes; below the row, the documents several write, an arrow from each writer |
+| `<!-- flow:reads -->` | `flow.documents[].reads` | the same chart for reading, the arrows pointing from the document to the role |
+| `<!-- flow:documents -->` | `flow.documents` | the table behind both charts: path, written by, read by, and `stale` when given |
+| `<!-- flow:drivers -->` | `flow.drivers` | one row per driver: the ledger, the script that prints the next step, what it spawns, what comes back, the ledger's one writer; then a table of the hooks that hold it |
+
+The `flow:` block:
+
+```yaml
+flow:
+  roles:            # left to right in the charts. Default: every agent, alphabetically.
+    - run-package                                   # an agent or a skill, by name
+    - {id: you, label: You, note: main chat}        # anything else, with a label
+  uses:             # beyond what an agent's frontmatter preloads
+    implementer:
+      always: [project-structure]
+      sometimes:
+        - security-review: a trigger in its description matches
+  documents:
+    - name: the design                              # the label in the charts: keep it short
+      path: docs/packages/<pkg>/design/<section>.md
+      writes: [designer]                            # a role, or {role: a note for the table}
+      reads: [tester, implementer, {reviewer: round 1}]
+      stale: its contract row changed               # optional column
+  drivers:
+    - skill: run-package
+      ledger: derived from disk by `status.py`
+      next: "`status.py`"
+      spawns: every ready section's next agent, in one message
+      returns: "Result: done | blocked | spec-change"
+      writer: each agent's own files, and the stop gate's record
+      held: "`gate_on_stop.py` on `SubagentStop`"
+```
+
+A name in `writes` or `reads` that is not a role (a script, a hook, you) appears in the
+documents table as written and in neither chart; the build prints those names, which is
+where a misspelled role shows up. `all` means every role and moves the document from the
+chart to its caption. A document one role writes is drawn above that role, and one several
+write is drawn below the row, so the charts need no layout config.
+
+Keep the block true in the same commit as the change it describes: a role that starts
+running a skill, a document that gains a writer or a reader, a driver that changes its
+ledger or its hooks. The build warns when the block has a part and `flow.md` has no marker
+for it.
+
+## The README
+
+The README is the site's home page and the plugin's page on GitHub, and it holds what the
+generated pages cannot: what the plugin is for, how its workflows are driven and why they
+are built that way, how to install it, how to build this site, and any overview a reader
+needs before the rest. It carries no table of skills or agents and no workflow
+walk-throughs: the site lists the first from the bundle, and `site/workflows/` holds the
+second. `templates/README.md` is the starting shape.
 
 ## Pages and links
 

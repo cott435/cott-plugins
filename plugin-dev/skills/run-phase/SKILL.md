@@ -140,8 +140,8 @@ Follow the note's **Steps** in order. Whatever the note says, these always apply
   lines under it. `build-site` is not part of a phase: `site/docs/` is not committed, so
   `checks` builds the site once, at the plan's last phase, and a phase before it never runs
   `build-site` on its own, whatever an older overview's rows say. A phase that changes how
-  work flows still edits the hand-written `site/workflows/` page it changes, as one of its
-  files. `P brief` names what it runs
+  work flows still edits the hand-written `site/workflows/` page it changes, and the `flow:`
+  block of `site/site.yml` when a role, a document or a driver changes, as its files. `P brief` names what it runs
   here. Run it once, when the edits are done and before the evals, as one foreground Bash
   call with `timeout: 600000`, so a failed contract is fixed in the file rather than
   discovered by an eval. A plan's suite can run for minutes, and a call left at the default

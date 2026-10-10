@@ -27,6 +27,19 @@ Authored, and committed, in the consuming repo: `site/site.yml`, `site/flow.md`,
 `site/workflows/*.md`, `site/notes/*.md` (and `site/notes/<slug>/`, of which only
 `<slug>-00-overview.md` is rendered) and an optional `site/extra.css`.
 
+The flow page has the same parts in every plugin. `site/flow.md` holds the prose and one
+marker line per generated part, and this script fills each from the bundle and the `flow:`
+block of `site/site.yml`:
+
+    <!-- flow:agents-skills -->   which role uses which skill: always, or on a condition
+    <!-- flow:writes -->          the roles in a row, the documents each alone writes above
+                                  it, the documents several write below it
+    <!-- flow:reads -->           the same chart for what each role reads
+    <!-- flow:documents -->       the table behind both charts
+    <!-- flow:drivers -->         each driver, what tells it the next step, its ledger
+
+A plugin with agents and no `site/flow.md` gets a flow page of just those parts.
+
 Nav shape (a section is omitted entirely when it has nothing in it):
 
     Start (README, the flow) -> Workflows -> Agents -> Commands -> Workflow skills ->
@@ -37,6 +50,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import html
 import importlib.util
 import json
 import os
@@ -241,6 +255,394 @@ def script_page(path: Path, bundle: Path, rel: str) -> Page:
     return p
 
 
+# --------------------------------------------------------------------------- the flow page
+
+FLOW_MARK = re.compile(r"^[ \t]*<!--\s*flow:([a-z-]+)\s*-->[ \t]*$", re.M)
+FLOW_PARTS = ("agents-skills", "writes", "reads", "documents", "drivers")
+DEFAULT_FLOW = """# The flow
+
+## Agents and skills
+
+<!-- flow:agents-skills -->
+
+## Who writes what
+
+<!-- flow:writes -->
+
+## Who reads what
+
+<!-- flow:reads -->
+
+<!-- flow:documents -->
+
+## How the drivers run
+
+<!-- flow:drivers -->
+"""
+PALETTE = ["#00897b", "#1e88e5", "#8e5bd0", "#d23f7a", "#e07b1a", "#7a9a1e", "#1aa3b8", "#d9463d"]
+CHART_CSS = (
+    ".df-role{fill:var(--color-background-secondary,#f8f9fb);stroke-width:2}"
+    ".df-doc{fill:var(--color-background-primary,#fff);stroke:var(--color-foreground-border,#878787)}"
+    ".df-sep{stroke:var(--color-background-border,#ddd)}"
+    ".df-t{font:600 11.5px sans-serif;fill:var(--color-foreground-primary,#000);text-anchor:middle}"
+    ".df-n{font:9.5px sans-serif;fill:var(--color-foreground-muted,#646776);text-anchor:middle}"
+    ".df-d{font:10.5px sans-serif;fill:var(--color-foreground-primary,#000);text-anchor:middle}"
+    ".df-e{fill:none;stroke-width:1.4;opacity:.9}"
+    ".docflow a,.driverflow a{text-decoration:none}"
+)
+# A chart wider than the text column takes the room to the window's right edge before it scrolls.
+CHART_FIT = (
+    "(function(){function fit(){document.querySelectorAll('.docflow').forEach(function(d){"
+    "d.style.width='';var r=d.getBoundingClientRect(),need=+d.firstElementChild.getAttribute('width'),"
+    "room=document.documentElement.clientWidth-r.left-16;"
+    "if(need>r.width&&room>r.width)d.style.width=Math.min(need,room)+'px';});}"
+    "if(!window.docflowFit){window.docflowFit=fit;addEventListener('resize',fit);}fit();})();"
+)
+
+
+class Role:
+    """One actor on the flow page: an agent, a skill, or a name site.yml gives a label."""
+
+    def __init__(self, rid: str, label: str, note: str, rel: str | None):
+        self.id, self.label, self.note, self.rel = rid, label, note, rel
+
+
+def actors(value) -> list[tuple[str, str]]:
+    """[(name, note)] from a name, a list of names, or `{name: note}` mappings in either."""
+    if not value:
+        return []
+    out: list[tuple[str, str]] = []
+    for v in value if isinstance(value, list) else [value]:
+        if isinstance(v, dict):
+            out += [(str(k), str(n or "")) for k, n in v.items()]
+        else:
+            out.append((str(v), ""))
+    return out
+
+
+def flow_roles(flow: dict, agents: dict[str, Page], skills: dict[str, tuple[Page, bool]]) -> list[Role]:
+    """The flow page's roles, left to right: `flow.roles` when site.yml lists them, otherwise
+    every agent. A name that is an agent or a skill links to its page."""
+    def make(entry) -> Role:
+        e = entry if isinstance(entry, dict) else {"id": entry}
+        rid = str(e["id"])
+        if rid in agents:
+            page, note = agents[rid], "agent"
+        elif rid in skills:
+            page, note = skills[rid][0], "typed skill" if skills[rid][1] else "skill"
+        else:
+            page, note = None, ""
+        return Role(rid, str(e.get("label", rid)), str(e.get("note", note)), page.rel if page else None)
+    return [make(e) for e in flow.get("roles") or list(agents)]
+
+
+def cell(text) -> str:
+    return str(text).replace("|", "\\|").replace("\n", " ")
+
+
+def linked(label: str, rel: str | None) -> str:
+    return f"[{label}]({rel})" if rel else label
+
+
+def uses_table(roles: list[Role], flow: dict, preloaded: dict[str, list[str]],
+               skills: dict[str, tuple[Page, bool]]) -> str:
+    """Which role uses which skill. A skill in an agent's `skills:` frontmatter is always
+    used; `flow.uses.<role>.always` and `.sometimes` in site.yml add the ones a body invokes."""
+    marks: dict[tuple[str, str], str] = {}
+    when: list[tuple[Role, str, str]] = []
+    for r in roles:
+        use = (flow.get("uses") or {}).get(r.id) or {}
+        for s, why in actors(use.get("sometimes")):
+            marks[(r.id, s)] = "○"
+            if why:
+                when.append((r, s, why))
+        for s in preloaded.get(r.id, []) + [s for s, _ in actors(use.get("always"))]:
+            marks[(r.id, s)] = "●"
+    if not marks:
+        return "*No role here uses a skill.*\n"
+    used = [r for r in roles if any(k[0] == r.id for k in marks)]
+    names = sorted({k[1] for k in marks})
+
+    def skill(s: str) -> str:
+        return linked(f"`{s}`", skills[s][0].rel if s in skills else None)
+
+    across = sum(len(r.label) for r in used) <= sum(len(s) for s in names)
+    cols = [linked(r.label, r.rel) for r in used] if across else [skill(s) for s in names]
+    lines = ["| | " + " | ".join(cols) + " |", "|---|" + ":-:|" * len(cols)]
+    if across:
+        lines += [f"| {skill(s)} | " + " | ".join(marks.get((r.id, s), "") for r in used) + " |" for s in names]
+    else:
+        lines += [f"| {linked(r.label, r.rel)} | " + " | ".join(marks.get((r.id, s), "") for s in names) + " |"
+                  for r in used]
+    out = "\n".join(lines) + "\n\n● always: preloaded by the agent's `skills:` frontmatter, or run every time. " \
+                             "○ only on a condition.\n"
+    if when:
+        out += "\n| | Uses | When |\n|---|---|---|\n" + "\n".join(
+            f"| {linked(r.label, r.rel)} | {skill(s)} | {cell(why)} |" for r, s, why in when) + "\n"
+    idle = [linked(r.label, r.rel) for r in roles if r not in used]
+    if idle:
+        out += "\nNo skill: " + ", ".join(idle) + ".\n"
+    return out
+
+
+def wrap(text: str, width: int) -> list[str]:
+    lines, cur = [], ""
+    for word in str(text).split():
+        if cur and len(cur) + 1 + len(word) > width:
+            lines.append(cur)
+            cur = word
+        else:
+            cur = f"{cur} {word}".strip()
+    return lines + [cur] if cur or not lines else lines
+
+
+def doc_chart(roles: list[Role], docs: list[dict], mode: str) -> tuple[str, list[dict]]:
+    """One document chart, as inline SVG, and the documents every role touches.
+
+    The roles sit in one row. Above each is the list of documents only it writes (`mode`
+    "writes") or only it reads ("reads"); below the row are the documents several roles
+    share, each joined to its roles by an arrow that points the way the content moves. A
+    document marked `all` is returned for the caption instead of drawn."""
+    esc = html.escape
+    own: dict[str, list[dict]] = {r.id: [] for r in roles}
+    shared: list[tuple[dict, list[str]]] = []
+    everyone: list[dict] = []
+    for d in docs:
+        named = list(dict.fromkeys(a for a, _ in actors(d.get(mode))))
+        if "all" in named:
+            everyone.append(d)
+            continue
+        hit = [a for a in named if a in own]
+        if len(hit) == 1:
+            own[hit[0]].append(d)
+        elif hit:
+            shared.append((d, hit))
+    shown = [r for r in roles if own[r.id] or any(r.id in hit for _, hit in shared)]
+    if not shown:
+        return "", everyone
+
+    cw, gx, pad, lh, role_h, sw = 108, 8, 10, 13, 36, 128
+    width = pad * 2 + len(shown) * (cw + gx) - gx
+    left = {r.id: pad + i * (cw + gx) for i, r in enumerate(shown)}
+    cx = {rid: x + cw / 2 for rid, x in left.items()}
+    colour = {r.id: PALETTE[i % len(PALETTE)] for i, r in enumerate(shown)}
+    uid = f"df{mode[0]}"
+
+    stacks = {rid: [wrap(d["name"], 17) for d in ds] for rid, ds in own.items() if ds}
+    stack_h = {rid: 12 + sum(len(ls) * lh for ls in blocks) + 9 * (len(blocks) - 1)
+               for rid, blocks in stacks.items()}
+    top = max(stack_h.values(), default=0)
+    y_role = pad + top + 24 if top else pad
+    y_low = y_role + role_h
+
+    # Shared documents: each under the mean of its roles, the most shared first so they sit
+    # nearest the row; one that finds no free place close enough starts a row further down.
+    placed: list[tuple[dict, list[str], float, int, list[str]]] = []
+    rows: list[list[tuple[float, float]]] = []
+    for d, hit in sorted(shared, key=lambda t: (-len(t[1]), sum(cx[h] for h in t[1]) / len(t[1]), t[0]["name"])):
+        lo, hi = pad, max(pad, width - pad - sw)
+        want = min(max(sum(cx[h] for h in hit) / len(hit) - sw / 2, lo), hi)
+        for n, taken in enumerate(rows):
+            spots = [want] + [a - sw - 10 for a, _ in taken] + [b + 10 for _, b in taken]
+            free = [x for x in spots if lo <= x <= hi and all(x + sw + 10 <= a or x >= b + 10 for a, b in taken)]
+            if free and abs(min(free, key=lambda x: abs(x - want)) - want) <= sw * 1.2:
+                x = min(free, key=lambda x: abs(x - want))
+                break
+        else:
+            n, x = len(rows), want
+            rows.append([])
+        rows[n].append((x, x + sw))
+        placed.append((d, hit, x, n, wrap(d["name"], 20)))
+    row_h = [max((12 + len(ls) * lh for _, _, _, n, ls in placed if n == i), default=0) for i in range(len(rows))]
+    row_y, y = [], y_low + 58
+    for h in row_h:
+        row_y.append(y)
+        y += h + 30
+    height = (row_y[-1] + row_h[-1] if rows else y_low) + pad
+
+    out = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height:.0f}" width="{width}" '
+           f'role="img" style="display:block;width:100%;height:auto;min-width:{width * 0.85:.0f}px;'
+           f'max-width:{width}px"><style>{CHART_CSS}</style><defs>']
+    for rid, c in colour.items():
+        out.append(f'<marker id="{uid}-{shown.index(next(r for r in shown if r.id == rid))}" viewBox="0 0 8 8" '
+                   f'refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">'
+                   f'<path d="M0 0L8 4L0 8z" fill="{c}"/></marker>')
+    out.append("</defs>")
+    index = {r.id: i for i, r in enumerate(shown)}
+
+    def arrow(points: str, rid: str) -> str:
+        return (f'<path class="df-e" d="{points}" stroke="{colour[rid]}" '
+                f'marker-end="url(#{uid}-{index[rid]})"/>')
+
+    # Arrows first, so a box drawn later hides the part of a line that passes behind it.
+    ports_r = {r.id: sorted((x + sw / 2, i) for i, (_, hit, x, _, _) in enumerate(placed) if r.id in hit)
+               for r in shown}
+    for i, (d, hit, x, n, ls) in enumerate(placed):
+        ends = sorted(hit, key=lambda h: cx[h])
+        for j, rid in enumerate(ends):
+            k = len(ports_r[rid])
+            sx = cx[rid] + (ports_r[rid].index((x + sw / 2, i)) - (k - 1) / 2) * min(12, (cw - 30) / max(k - 1, 1))
+            ex = x + sw / 2 + (j - (len(ends) - 1) / 2) * min(14, (sw - 30) / max(len(ends) - 1, 1))
+            ey, bend = row_y[n], max(26, (row_y[n] - y_low) * 0.45)
+            if mode == "writes":
+                out.append(arrow(f"M{sx:.1f} {y_low}C{sx:.1f} {y_low + bend:.1f} {ex:.1f} {ey - bend:.1f} {ex:.1f} {ey}", rid))
+            else:
+                out.append(arrow(f"M{ex:.1f} {ey}C{ex:.1f} {ey - bend:.1f} {sx:.1f} {y_low + bend:.1f} {sx:.1f} {y_low}", rid))
+    for rid in stacks:
+        a, b = (y_role, pad + top) if mode == "writes" else (pad + top, y_role)
+        out.append(arrow(f"M{cx[rid]} {a}L{cx[rid]} {b}", rid))
+
+    def doc_lines(d: dict, lines: list[str], x: float, y: float) -> float:
+        out.append(f'<g><title>{esc(str(d.get("path", d["name"])))}</title>')
+        for line in lines:
+            y += lh
+            out.append(f'<text class="df-d" x="{x:.1f}" y="{y:.1f}">{esc(line)}</text>')
+        out.append("</g>")
+        return y
+
+    for rid, blocks in stacks.items():
+        y0 = pad + top - stack_h[rid]
+        out.append(f'<rect class="df-doc" x="{left[rid]}" y="{y0}" width="{cw}" height="{stack_h[rid]}" rx="3" '
+                   f'style="stroke:{colour[rid]}"/>')
+        y = y0 + 2
+        for n, (d, lines) in enumerate(zip(own[rid], blocks)):
+            if n:
+                out.append(f'<line class="df-sep" x1="{left[rid] + 8}" x2="{left[rid] + cw - 8}" '
+                           f'y1="{y + 8.5}" y2="{y + 8.5}"/>')
+                y += 9
+            y = doc_lines(d, lines, cx[rid], y)
+    for r in shown:
+        box = (f'<rect class="df-role" x="{left[r.id]}" y="{y_role}" width="{cw}" height="{role_h}" rx="6" '
+               f'stroke="{colour[r.id]}"/>'
+               f'<text class="df-t" x="{cx[r.id]}" y="{y_role + (16 if r.note else 23)}">{esc(r.label)}</text>')
+        if r.note:
+            box += f'<text class="df-n" x="{cx[r.id]}" y="{y_role + 30}">{esc(r.note)}</text>'
+        out.append(f'<a href="{esc(r.rel[:-3])}.html">{box}</a>' if r.rel else box)
+    for d, hit, x, n, lines in placed:
+        out.append(f'<rect class="df-doc" x="{x:.1f}" y="{row_y[n]}" width="{sw}" '
+                   f'height="{12 + len(lines) * lh}" rx="3"/>')
+        doc_lines(d, lines, x + sw / 2, row_y[n] + 2)
+    out.append("</svg>")
+    return ('```{raw} html\n<div class="docflow" style="overflow-x:auto;margin:1em 0;position:relative;'
+            'z-index:60;background:var(--color-background-primary,#fff)">\n'
+            + "\n".join(out) + f"\n</div>\n<script>{CHART_FIT}</script>\n```\n"), everyone
+
+
+def chart_section(roles: list[Role], docs: list[dict], mode: str) -> str:
+    svg, everyone = doc_chart(roles, docs, mode)
+    if not svg and not everyone:
+        return ""
+    verb = "writes" if mode == "writes" else "reads"
+    text = svg + (f"\nAbove each role, the documents only it {verb}; below the row, the documents "
+                  f"more than one role {verb}. Hover a document for its path.\n" if svg else "")
+    if everyone:
+        text += f"\nEvery role {verb}: " + ", ".join(
+            f"{d['name']} (`{d['path']}`)" if d.get("path") else d["name"] for d in everyone) + ".\n"
+    return text
+
+
+def documents_table(roles: list[Role], docs: list[dict]) -> str:
+    """The table behind both charts: every document, its path, who writes and who reads it.
+    A name that is not a role (a script, a hook, you) is shown as written."""
+    by_id = {r.id: r for r in roles}
+
+    def who(value) -> str:
+        parts = []
+        for rid, note in actors(value):
+            r = by_id.get(rid)
+            name = "every role" if rid == "all" else linked(r.label, r.rel) if r else rid
+            parts.append(f"{name} ({note})" if note else name)
+        return cell(", ".join(parts)) or "—"
+
+    stale = any(d.get("stale") for d in docs)
+    lines = ["| Document | Written by | Read by |" + (" Stale when |" if stale else ""),
+             "|---|---|---|" + ("---|" if stale else "")]
+    for d in docs:
+        path = ('<br><code class="docutils literal notranslate" style="display:inline-block;min-width:15em;white-space:normal;overflow-wrap:anywhere">'
+                + html.escape(cell(d["path"])) + "</code>") if d.get("path") else ""
+        lines.append(f"| **{cell(d['name'])}**{path} | {who(d.get('writes'))} | {who(d.get('reads'))} |"
+                     + (f" {cell(d.get('stale') or '—')} |" if stale else ""))
+    return "\n".join(lines) + "\n"
+
+
+def drivers_section(drivers: list[dict], skills: dict[str, tuple[Page, bool]], prefix: str) -> str:
+    """Each driver as one loop, drawn as a row, and a table of its ledger and what holds it.
+
+    A row reads left to right and back: the ledger tells the driver the next step through a
+    script, the driver spawns, the agent returns (dashed), and the step's writer puts the
+    result back in the ledger along the bottom. A driver that spawns nothing writes it itself."""
+    esc = html.escape
+    lw, dw, aw, gap, pad, lh = 200, 150, 200, 124, 10, 13
+    lx, dx = pad, pad + lw + gap
+    ax = dx + dw + gap
+    width = ax + aw + pad
+    out: list[str] = []
+    table = ["| Driver | The ledger | Held by |", "|---|---|---|"]
+
+    def plain(text) -> str:
+        return str(text).replace("`", "")
+
+    def text(lines: list[str], x: float, y: float, cls: str = "df-d") -> None:
+        for n, line in enumerate(lines):
+            out.append(f'<text class="{cls}" x="{x:.1f}" y="{y + n * lh:.1f}">{esc(line)}</text>')
+
+    y = pad
+    for i, d in enumerate(drivers):
+        sid, c = str(d["skill"]), PALETTE[i % len(PALETTE)]
+        page, typed = skills.get(sid, (None, False))
+        name = f"/{prefix}:{sid}" if typed else sid
+        ledger = wrap(plain(d.get("ledger", "the ledger")), 34)
+        spawns = wrap(plain(d["spawns"]), 34) if d.get("spawns") else []
+        nxt = wrap(plain(d.get("next", "")), 21)
+        back = wrap(plain(d.get("returns", "")), 21) if spawns else []
+        writer = wrap(plain(d.get("writer", "")), 60)
+        by_agent = bool(spawns) and d.get("writer_in", "agent") == "agent"
+        box = max(40, 14 + lh * max(len(ledger), len(spawns), 2))
+        top = y + max(0, lh * len(nxt) + 12 - box // 2)        # room for the label over the arrow
+        mid, low = top + box / 2, top + box
+        under = max(low, mid + 12 + lh * len(back) + 4) + 20 + lh * (len(writer) - 1 if writer else 0)
+
+        def arrow(path: str, dashed: bool = False) -> None:
+            out.append(f'<path class="df-e" d="{path}" stroke="{c}" marker-end="url(#dr-{i})"'
+                       + (' stroke-dasharray="4 3"' if dashed else "") + "/>")
+
+        out.append(f'<defs><marker id="dr-{i}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" '
+                   f'markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="{c}"/></marker></defs>')
+        arrow(f"M{lx + lw} {mid - 5}L{dx} {mid - 5}")
+        text(nxt, lx + lw + gap / 2, mid - 11 - lh * (len(nxt) - 1))
+        if spawns:
+            arrow(f"M{dx + dw} {mid - 5}L{ax} {mid - 5}")
+            text(["spawns"], dx + dw + gap / 2, mid - 11)
+            if back:
+                arrow(f"M{ax} {mid + 7}L{dx + dw} {mid + 7}", dashed=True)
+                text(back, dx + dw + gap / 2, mid + 7 + lh)
+        if writer:
+            sx = ax + aw / 2 if by_agent else dx + dw / 2
+            arrow(f"M{sx} {low}L{sx} {under}L{lx + lw / 2} {under}L{lx + lw / 2} {low}")
+            text(writer, (lx + lw / 2 + dx + dw / 2) / 2, under - 6 - lh * (len(writer) - 1))
+        out.append(f'<rect class="df-doc" x="{lx}" y="{top}" width="{lw}" height="{box}" rx="3"/>')
+        text(ledger, lx + lw / 2, mid + 4 - lh * (len(ledger) - 1) / 2)
+        drv = (f'<rect class="df-role" x="{dx}" y="{top}" width="{dw}" height="{box}" rx="6" stroke="{c}"/>'
+               f'<text class="df-t" x="{dx + dw / 2}" y="{mid - 2}">{esc(sid)}</text>'
+               f'<text class="df-n" x="{dx + dw / 2}" y="{mid + 12}">driver, main chat</text>')
+        out.append(f'<a href="{esc(page.rel[:-3])}.html">{drv}</a>' if page else drv)
+        if spawns:
+            out.append(f'<rect class="df-role" x="{ax}" y="{top}" width="{aw}" height="{box}" rx="6" '
+                       f'stroke="{c}" stroke-dasharray="5 3"/>')
+            text(spawns, ax + aw / 2, mid + 4 - lh * (len(spawns) - 1) / 2)
+        y = (under if writer else low) + 26
+        table.append(f"| {linked(f'`{name}`', page.rel if page else None)} | {cell(d.get('ledger', '—'))} | "
+                     f"{cell(d.get('held', '—'))} |")
+    height = y - 26 + pad
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height:.0f}" role="img" '
+           f'style="display:block;width:100%;height:auto;max-width:{width}px"><style>{CHART_CSS}</style>'
+           + "\n".join(out) + "</svg>")
+    return ('```{raw} html\n<div class="driverflow" style="overflow-x:auto;margin:1em 0">\n' + svg
+            + "\n</div>\n```\n\nIn each row the ledger is on the left, the driver in the middle and what it "
+              "spawns on the right; the dashed arrow is the agent's return, and the arrow along the bottom "
+              "is the one writer of the ledger.\n\n" + "\n".join(table) + "\n")
+
+
 # --------------------------------------------------------------------------- build
 
 def relpath(frm: str, to: str) -> str:
@@ -294,6 +696,7 @@ def main() -> None:
         home = add(Page("readme.md", "Home (README)",
                         f"# {title}\n\n*Source: `README.md`*\n\n{demote(body)}", readme), readme)
     flow = site / "flow.md"
+    flow_cfg = cfg.get("flow") or {}
     flow_page = add(Page("flow.md", "The flow", flow.read_text(), flow), flow) if flow.exists() else None
 
     # Workflows
@@ -309,8 +712,10 @@ def main() -> None:
 
     # Agents and commands
     agents, commands = [], []
+    preloaded: dict[str, list[str]] = {}    # agent -> the skills its frontmatter preloads
     for p in sorted((bundle / "agents").glob("*.md")):
         fm, body = split_frontmatter(p.read_text())
+        preloaded[p.stem] = [x for x in re.split(r"[,\s\[\]]+", fm.get("skills", "")) if x]
         agents.append(add(Page(f"agents/{p.stem}.md", p.stem,
                                head(f"agent: {p.stem}", f"agents/{p.name}", fm) + demote(body), p), p))
     for p in sorted((bundle / "commands").glob("*.md")):
@@ -321,6 +726,7 @@ def main() -> None:
     # Skills: SKILL.md is the page, references/ are its children.
     wf_skills: dict[str, Page] = {}
     knowledge: list[Page] = []
+    skill_pages: dict[str, tuple[Page, bool]] = {}   # skill -> (its page, whether a person types it)
     for p in sorted((bundle / "skills").glob("*/SKILL.md")):
         fm, body = split_frontmatter(p.read_text())
         skill = p.parent.name
@@ -337,6 +743,7 @@ def main() -> None:
                 head(f"{skill} / {r.stem}", f"skills/{skill}/references/{r.name}") + demote(r.read_text()),
                 r), r))
         (wf_skills.__setitem__(skill, page) if user_run else knowledge.append(page))
+        skill_pages[skill] = (page, user_run)
     wf_pages = [wf_skills[n] for n in ordered(wf_skills, cfg.get("workflow_skills_order") or [])]
 
     # Scripts
@@ -413,6 +820,34 @@ def main() -> None:
                 return m.group(0)
             return f"]({relpath(page.rel, hit.rel)}{m.group(2) or ''})"
         page.text = LINK.sub(fix, text)
+
+    # ---- the flow page's generated parts, filled where its markers are.
+    if flow_page is None and (agents or flow_cfg):
+        flow_page = add(Page("flow.md", "The flow", DEFAULT_FLOW))
+    if flow_page is not None:
+        roles = flow_roles(flow_cfg, {a.title: a for a in agents}, skill_pages)
+        docs = flow_cfg.get("documents") or []
+        parts = {
+            "agents-skills": uses_table(roles, flow_cfg, preloaded, skill_pages),
+            "writes": chart_section(roles, docs, "writes"),
+            "reads": chart_section(roles, docs, "reads"),
+            "documents": documents_table(roles, docs) if docs else "",
+            "drivers": drivers_section(flow_cfg["drivers"], skill_pages, prefix) if flow_cfg.get("drivers") else "",
+        }
+        marked = set(FLOW_MARK.findall(flow_page.text))
+        for part in marked - set(FLOW_PARTS):
+            print(f"  ! site/flow.md: <!-- flow:{part} --> is not a part this builder fills")
+        for part in FLOW_PARTS:
+            if parts[part] and part not in marked and (part != "agents-skills" or agents):
+                print(f"  ! site/flow.md has no <!-- flow:{part} --> line, so that part is not on the page")
+        flow_page.text = FLOW_MARK.sub(
+            lambda m: parts.get(m.group(1)) or (m.group(0) if m.group(1) not in parts else
+                                               f"*Nothing under `flow:` in `site/site.yml` for this part yet.*\n"),
+            flow_page.text)
+        known = {r.id for r in roles} | {"all"}
+        others = sorted({a for d in docs for k in ("writes", "reads") for a, _ in actors(d.get(k))} - known)
+        if others:
+            print(f"  flow: in the documents table only, not a role in the charts: {', '.join(others)}")
 
     for s in scripts:
         links = ""

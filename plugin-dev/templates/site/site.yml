@@ -19,3 +19,27 @@
 # Extra files rendered verbatim as code pages under "Rules and config".
 # config_files:
 #   - pyproject-lint-config.toml
+
+# The flow page (site/flow.md) is drawn from this block and from the agents' frontmatter.
+# See `build-site`, "The flow page", for every field.
+# flow:
+#   roles:                    # left to right in the charts; default: every agent
+#     - my-driver
+#     - my-agent
+#   uses:                     # beyond what an agent's `skills:` frontmatter preloads
+#     my-agent:
+#       sometimes:
+#         - my-skill: when it applies
+#   documents:
+#     - name: the plan
+#       path: docs/plan.md
+#       writes: [my-agent]
+#       reads: [my-driver]
+#   drivers:
+#     - skill: my-driver
+#       ledger: "`docs/progress.md`"
+#       next: "`progress.py next`"
+#       spawns: one my-agent per step
+#       returns: "Status: done | blocked"
+#       writer: "`progress.py finish`"
+#       held: "`gate.py` on `SubagentStop`"

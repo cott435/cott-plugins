@@ -129,8 +129,8 @@ smallest end-to-end slice is phase 1.
   written `done`. When it assumes any, the row is `in progress` with the evals listed under
   Notes, and the first `run-phase` chat runs them and marks it `done`.
 - **The last phase is always** the end-to-end eval, the last checkpoint (below),
-  the docs (`README.md`, `site/flow.md`,
-  `site/workflows/`, `CHANGELOG.md`'s unreleased section), and the release *proposal*: a bump
+  the docs (`README.md`, `site/flow.md` and the `flow:` block of `site/site.yml` it is drawn
+  from, `site/workflows/`, `CHANGELOG.md`'s unreleased section), and the release *proposal*: a bump
   at the level **What must not break** implies, or, for a new plugin, tagging `0.1.0` as
   scaffolded. `bump-version` decides on a yes; never this skill or `run-phase`.
   **review**, when the plugin has an audit ledger: the last phase also records a Fix attempt

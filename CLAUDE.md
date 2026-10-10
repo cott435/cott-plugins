@@ -23,7 +23,7 @@ matches, because none of them commit or push anything on their own:
   in `evals/README.md`. Every time, including a clean pass, and written *before* reporting
   results back — a test that exists only in a conversation is a test nobody can check later.
 - **`build-site`** — rebuilds `<plugin>/site/docs/` (a Sphinx source tree) and, on request, `<plugin>/site/_build/`. Re-run
-  after editing any agent or skill in a plugin that has a `site/`; inside a phased plan, once, at its last phase (`phases.py checks` does it there), not after every phase. Always check the workflows affected by the adits and update them accordingly.
+  after editing any agent or skill in a plugin that has a `site/`; inside a phased plan, once, at its last phase (`phases.py checks` does it there), not after every phase. Always check the workflows affected by the adits and update them accordingly, and the `flow:` block of `site/site.yml` when a role starts using a skill, a document gains a writer or a reader, or a driver changes.
 - **`check-contracts`** — runs the cross-file claims a plugin declares in its own
   `contracts.yml`: a heading one prompt parses against the template another owns, a rule one
   file states and another contradicts, a list of names that goes stale when a directory
@@ -40,6 +40,20 @@ chat and names the level it would pick, then waits. Only a reply along the lines
 
 All four are still a judgment call, not a guarantee — if the automatic three don't fire when
 you expect, or `bump-version` doesn't speak up when you think it should, ask for it directly.
+
+## Every plugin's README and site
+
+Every plugin's site has the same shape, drawn by `plugin-dev/scripts/build_site.py`; the
+`build-site` skill is the contract.
+
+- **`README.md`** is the home page: what the plugin is for, how its workflows are driven and
+  why they are built that way, install, how to build the site, and any overview a reader
+  needs first. No table of skills or agents and no workflow walk-throughs; the site has both.
+- **`site/flow.md`** is the map: which route to take, a table of which role uses which skill
+  (always, or on a condition), a chart of who writes each document and one of who reads it,
+  and each driver's loop with its ledger. Everything but the routes is drawn from the agents'
+  frontmatter and the `flow:` block of `site/site.yml`.
+- **`site/workflows/`** has one page per workflow.
 
 ## Working across branches
 
