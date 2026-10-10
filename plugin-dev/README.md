@@ -201,11 +201,20 @@ should say which plugin the release is actually about.
 
 ```
 python3 ~/dev/cott-plugins/plugin-dev/scripts/build_site.py --build   # from any plugin subdirectory
-open site/_build/index.html
+python3 -m http.server --directory site/_build 8000                # http://127.0.0.1:8000
 ```
 
-Requires `pip install sphinx myst-parser furo sphinxcontrib-mermaid pyyaml` once per
-machine. The nav is generated from what the script finds, so a new agent, skill, command,
+Without `--build` the script writes only the Sphinx source tree (`site/docs/`). The built
+site is plain static HTML, so any static server works; `open site/_build/index.html` also
+works for everything but search.
+
+Requires, once per machine (Python 3.10+):
+
+```
+pip install sphinx myst-parser furo sphinxcontrib-mermaid pyyaml
+```
+
+`--build` names what is missing if one of them isn't installed. The nav is generated from what the script finds, so a new agent, skill, command,
 rule, script or `references/` file appears without editing any config:
 
     Start (README, the flow) -> Workflows -> Agents -> Commands -> Workflow skills ->

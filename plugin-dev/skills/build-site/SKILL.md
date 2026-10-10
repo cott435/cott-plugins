@@ -28,7 +28,11 @@ python3 ../plugin-dev/scripts/build_site.py --build
 The bundle defaults to the current directory. Pass a path to build a different repo, and
 `--evals evals.json` to add an Evals page. Without `--build` the script writes the source tree
 only (`site/docs/`); with it, Sphinx renders HTML into `site/_build/` and the entry page is
-`site/_build/index.html`.
+`site/_build/index.html`. To read it, serve the folder:
+
+```
+python3 -m http.server --directory site/_build 8000      # http://127.0.0.1:8000
+```
 
 `sphinx`, `myst-parser`, `furo`, `sphinxcontrib-mermaid` and `pyyaml` must be installed once
 per machine: `pip install sphinx myst-parser furo sphinxcontrib-mermaid pyyaml`. The script

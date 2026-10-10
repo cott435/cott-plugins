@@ -1,7 +1,7 @@
 {
     "name": "plugin-dev",
-    "description": "Shared protocol and tooling for building Claude Code plugins: versioning policy, eval logging, and the MkDocs reading site",
-    "version": "1.2.0",
+    "description": "Shared protocol and tooling for building Claude Code plugins: versioning policy, eval logging, and the Sphinx reading site",
+    "version": "2.0.0",
     "author": {
         "name": "Connor Ott"
     }

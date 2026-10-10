@@ -26,9 +26,10 @@ Every agent, command, skill and rule rendered as a browsable Sphinx site:
 
 ```
 python3 ~/dev/cott-plugins/plugin-dev/scripts/build_site.py --build   # from this repo root
-open site/_build/index.html
+python3 -m http.server --directory site/_build 8000   # http://127.0.0.1:8000
 ```
 
+Needs `pip install sphinx myst-parser furo sphinxcontrib-mermaid pyyaml` once per machine.
 Or ask Claude — the `build-site` skill from `plugin-dev` does the same thing. `site/docs/`
 and `site/_build/` are generated and gitignored; `site/site.yml`, `site/flow.md`,
 `site/workflows/` and `site/notes/` are authored and committed.

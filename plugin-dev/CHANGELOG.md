@@ -5,6 +5,36 @@ how model and eval versioning relate to it — is in the `plugin-dev` plugin's `
 skill. This repo's own decisions are in `VERSIONING.md`.
 
 
+## [2.0.0] - 2026-10-10
+
+The reading site is built with Sphinx, MyST and Furo instead of MkDocs, so skills nest their
+references, scripts get pages, and lists render the way GitHub reads them. Breaking: every
+plugin repo that builds its site now needs `sphinx myst-parser furo sphinxcontrib-mermaid
+pyyaml` instead of `mkdocs mkdocs-material pymdown-extensions`, and the generated output
+moved.
+
+### Changed
+
+- `scripts/build_site.py` is the Sphinx builder: generated sources stay in `site/docs/`,
+  HTML goes to `site/_build/` with `--build`. `site/mkdocs.yml` and `site/_site/` are no
+  longer written, and a per-repo `site/mkdocs-base.yml` is no longer read.
+- A skill's `references/` are its children in the nav (`skills/<name>/index.html`), not a
+  flat list.
+- `scripts/defaults/extra.css` is written for Furo.
+- `build-site` skill, README and templates describe the new build and how to serve it.
+
+### Added
+
+- A **Scripts** section: each `scripts/*.py` and `skills/*/scripts/*.py` has a page with its
+  docstring, `--help` for every subcommand, its public functions and its source. A backticked
+  mention of a script in any page links to it, and the script lists what links back.
+- Relative `.md` links are rewritten to the generated layout; one that resolves to a page the
+  site does not render is a Sphinx warning.
+
+### Removed
+
+- The MkDocs builder, `scripts/defaults/mkdocs-base.yml`, and the list re-indent pass that
+  existed only for Python-Markdown.
 
 ## [1.2.0] - 2026-10-10
 
