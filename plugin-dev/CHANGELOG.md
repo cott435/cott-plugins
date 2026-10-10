@@ -6,6 +6,29 @@ skill. This repo's own decisions are in `VERSIONING.md`.
 
 
 
+## [1.2.0] - 2026-10-10
+
+What a phased plan costs to run. Nineteen phases of one plan spawned 1,174 agents and read
+about 2.0B cached tokens: half of it the phase chats re-reading their own context once per
+finished eval agent, and much of the rest evals rerun on files a later phase edited again.
+Minor: a new script, two new hooks and new flags; a plan already under way runs as before,
+and its behavioral rows run wherever its overview has them.
+
+### Added
+- **`eval_workspace.py run`** (892e3b6): executes and grades every run an iteration owes as headless `claude -p` sessions and prints one report (pass counts per eval and side, each failed expectation with its evidence and the baseline's verdict, the graders' remarks, the cost). An errored run, or one that named a file its expectations are in, is run once more; a second `run` retries what was not run. Its sessions bill the account the CLI is logged into.
+- **Baselines are reused** (892e3b6): `init` copies in a baseline run an earlier iteration finished at the same ref, model and inputs, and regrades it without rerunning it when only the expectations changed. `init --working-tree-only` starts no baseline; `--quiet` prints the counts and warnings only; `--by-hand` marks an iteration whose runs are spawned through the Agent tool.
+- **`scripts/phases.py`** (dcfa250, 253266a): `next`, `brief`, `finish`, `check`, `status`, `touch`, `plan-check`. The chats that run a plan read the overview and ledger through it and never whole; `brief` prints the exact `init` command for each behavioral row; `finish` checks a phase is whole (its note, its logs, each row's ids laid out in the row's mode, contracts), writes its ledger row and makes its commit.
+- **Two hooks** (dcfa250): `guard_agent.py` refuses an eval executor or grader spawned through the Agent tool for an iteration not laid out `--by-hand`; `gate_stop.py` checks a phase committed without `phases.py finish` before its chat stops. Both exit 0 at once unless they apply, and fail open.
+- `skills/run-evals/references/prompts.md`: the one copy of the executor and grader prompts (892e3b6).
+- `plugin-anatomy`, `references/composition.md`: the rules for a workflow that runs for a long time — the state of the run in files a script reads, a driver that holds the script's lines, each agent's return and the user's answers (dcfa250).
+
+### Changed
+- **A phase runs its mechanical checks; a target's behavioral evals run once, after its last edit** (dcfa250): at the first checkpoint at or after the last phase that touches it, new evals compared, existing ones working tree only. `plan-phases` names the checkpoints in the overview (`**Checkpoints:**`) and shows the split with its cost; `phases.py plan-check` fails a behavioral row anywhere else.
+- **`run-phase` and `run-phases` call `phases.py`** (dcfa250) for the next phase, the phase's slice of the plan, the commit and the check that it stands. `run-phases` starts phase agents on Sonnet 5.5; `--model inherit` keeps the chat's model (892e3b6).
+- **Blind comparison runs only when a row says `blind`** (892e3b6), no longer whenever the two pass rates are close.
+- `eval-kinds.md`: **When behavioral evals run**, and a cost table from measured sessions (892e3b6, dcfa250).
+- Evals: `evals/2026-10-10-run-evals-runner-mechanical.md`, `evals/2026-10-10-phases-script-and-hooks-mechanical.md`.
+
 ## [1.1.2] - 2026-10-09
 
 ### Fixed
