@@ -5,6 +5,63 @@ how model and eval versioning relate to it — is in the `plugin-dev` plugin's `
 skill. This repo's own decisions are in `VERSIONING.md`.
 
 
+## [3.0.0] - 2026-10-10
+
+A change reaches a plugin by one of two routes, and every plugin's site has one shape. Major
+because a typed command was renamed: `/plugin-dev:review-plugin` is now
+`/plugin-dev:revise-plugin`.
+
+### Changed
+
+- **`review-plugin` is `revise-plugin`** (`c48c9df`). It plans a change across a whole
+  plugin from facts about it, agent by agent and skill by skill, and takes
+  `<slug> issues <selection>` for audited issues. The files it leaves keep their names
+  (`<slug>-review-plan.md`, `templates/review/`, `Mode: review`), so a plan in flight is
+  untouched; only the command you type changes.
+- `design-plugin` is for an idea: a new plugin, or a workflow added or redrawn, each designed
+  from its driver down. Typed for a change with no workflow in it, it names `revise-plugin`
+  or `fix-issues` before asking anything. Its design template names each workflow's driver,
+  where the run stands, each agent's returns and what holds it (`c48c9df`).
+- `fix-issues` stops and names `revise-plugin` when `issues.py route` says the selection is
+  more than one chat should plan; `--here` overrides. `audit-run` prints the route for what
+  it just filed (`c48c9df`).
+- The site's workflow pages are four, by where a change starts: designing a plugin or a
+  workflow, changing a plugin from facts, planning and running the phases, checking a run
+  (`1069a0f`).
+- The README states the protocol and why, and lists nothing the site lists: no skills table,
+  no bundle table, no workflow summaries. `contracts.yml` no longer requires the skills
+  table (`4559643`).
+- `site/flow.md` is the routes plus four parts the builder draws; the hand-written loop
+  chart and hand-offs table are gone (`4559643`).
+
+### Added
+
+- `scripts/issues.py route [ids | --status | --session]`: exit 0 for `fix-issues`, exit 3
+  for `revise-plugin` (more than six issues, more than three across more than three roles,
+  or an issue that recurred after two fixes) (`c48c9df`).
+- `scripts/build_site.py` fills five markers in `site/flow.md` from each agent's `skills:`
+  frontmatter and a `flow:` block in `site/site.yml`: a table of which role uses which skill
+  (always, or on a condition), a chart of who writes each document and one of who reads it,
+  the documents table behind them, and one loop per driver with its ledger. A plugin with
+  agents and no `site/flow.md` gets a page of those parts (`4559643`).
+- `scripts/build_site.py` renders `site/reference/*.md` as a **Reference** section after
+  Workflows, ordered by `reference_order` (`77eed6e`).
+- `scripts/contract_sweep.py`: a fifth claim kind, `flow`, holds the `flow:` block to the
+  files. It fails when a role's file names a skill or a document the block does not place,
+  when the block lists one the file never names, when an agent is no role, and when a hook
+  is wired and no driver names it (`172e41d`).
+- `evals/fixtures/flow/check.py`: the `flow` claim and the flow page on a toy plugin, one
+  planted disagreement per rule, no model (`172e41d`).
+- `templates/site/flow.md`, a `flow:` example in `templates/site/site.yml`, and a README
+  template in the new shape; `new-plugin` copies the flow page (`4559643`).
+
+### Upgrading
+
+- Type `/plugin-dev:revise-plugin` where you typed `/plugin-dev:review-plugin`.
+- A plugin's `site/flow.md` keeps building as it is. To get the drawn parts, add a `flow:`
+  block to `site/site.yml` and the marker lines to `flow.md` (`build-site`, **The flow
+  page**), then a `flow:` claim to `contracts.yml`.
+
 ## [2.3.0] - 2026-10-10
 
 `plugin-anatomy` starts from the driver: a workflow is a thin driver in the main chat, the
