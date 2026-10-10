@@ -211,12 +211,13 @@ It audits the rerun as above, and also checks every issue whose latest fix could
 - **Each verdict is spot-checked** at its step. One whose step does not show it is dropped to
   not exercised and listed under **Dropped on spot-check**.
 
-The run report gains a **Prior issues** table, one row per issue, and each issue gets a Checks
-line:
+The run report gains a **Prior issues** table, one row per issue. An issue that held or
+recurred also gets a Checks line; one that was not exercised or not testable gets only its
+row in the report:
 
 | Verdict | Meaning |
 |---|---|
-| held | an audited agent did the thing the fix is about, and the step shows the `held when` half of its `Verify:` line. The issue is now `verified` |
+| held | an audited agent did the thing the fix is about, and the step shows the `held when` half of its `Verify:` line. The issue is now `verified`, and `settled` once it has held in three sessions and has not been found again since, after which audits stop handing it to auditors and `INDEX.md` shows it as one line |
 | recurred | the step shows the `recurred when` half. The issue is open again, and `/plugin-dev:fix-issues recurred` takes it. It is counted once, as a recurrence, never also as a new finding |
 | not exercised | no audited agent reached the behavior the fix is about, or nothing in this run is of the type it names. Never counted as held |
 | not testable | the fix was not in the code that ran: the plugin cache was stale, or the fix was not yet released to the version that ran. Update the plugin and rerun |

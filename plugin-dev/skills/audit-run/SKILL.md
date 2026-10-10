@@ -126,11 +126,16 @@ last step is the driver's summary after every unit returned.
 every fix is exercised. With no `runs/audits/issues/` in the plugin, skip this: every block in §4
 says `Prior issues: none`.
 
-1. **Which issues.** `I list --status fixed,released,verified --format json`, each with its
-   latest attempt (the last of its `attempts`). A `recurred` issue's fix already failed and
-   its next attempt is what gets checked; a `wontfix` or `open` one has nothing to check.
-2. **Once per session.** Skip an issue that already has a Checks line for this `<id8>` (a
-   re-pass with `--units new`).
+1. **Which issues.** `I list --status fixed,released,verified --format brief`: one line per
+   issue, `<ID> · attempt <n> · commit <sha> · fixed_in <v | —> · watch <applies_to> · held
+   when <…> · recurred when <…>`, the latest attempt's, which is all this skill needs of an
+   issue. A `recurred` issue's fix already failed and its next attempt is what gets checked; an
+   `open` or `wontfix` one has nothing to check, and a `settled` one (held in three sessions,
+   not found again since) is no longer checked at all: `issues.py` leaves it out of this list
+   and `INDEX.md` shows it as one line. Never load an issue's full record to do this.
+2. **Once per session.** Skip an issue that already has a `held` or `recurred` Checks line for
+   this `<id8>`, or a row in the Prior issues table of this session's run report
+   (`runs/audits/reports/*-<id8>.md`), if it exists (a re-pass with `--units new`).
 3. **Was the fix in the code that ran?** Per issue, with `index.json`'s `plugin_root` and
    `version`:
    - when `git -C <plugin_root> rev-parse --git-dir` succeeds, the root is a git checkout:
@@ -138,11 +143,11 @@ says `Prior issues: none`.
    - otherwise, by version: testable when the attempt's `fixed_in` is set and `version` ≥
      `fixed_in`, compared as dotted integers (`0.10.0` is above `0.9.0`).
 
-   An issue that is not testable is given to no auditor. §5 writes its Checks line as **not
-   testable**, with `—` for the unit and the step and evidence that says why: `fix <commit>
-   not an ancestor of <plugin_root> HEAD <sha>`, `fixed_in blank`, or `run version <v> below
-   fixed_in <w>`. *not testable* is this skill's own word, for an issue no auditor was given;
-   every other verdict is one run-auditor defines.
+   An issue that is not testable is given to no auditor. §5 puts it in the report's Prior
+   issues table as **not testable**, with `—` for the unit and the step and evidence that says
+   why: `fix <commit> not an ancestor of <plugin_root> HEAD <sha>`, `fixed_in blank`, or `run
+   version <v> below fixed_in <w>`; it has no Checks line. *not testable* is this skill's own
+   word, for an issue no auditor was given; every other verdict is one run-auditor defines.
 4. **Coverage.** Run the selection as `T select <workspace> --units <how> --cover <entries>`,
    where `<entries>` is every `applies_to` entry of the testable issues, comma-separated,
    once each. It adds the first finished unit of each `agent:<type>` the selection lacks
@@ -221,11 +226,13 @@ lines: each box then also shows the issues first found there and the prior issue
    - **Combine** per issue: **recurred** if any auditor said so and the spot-check held; else
      **held** if any did; else **not exercised**. Keep the unit and step of the line whose
      verdict you keep.
-   - **Write** one Checks line per issue §3 took, from the plugin's own directory: `I
-     check-result <ID> --attempt <n> --verdict <held | recurred | not exercised | not
-     testable> --session <id8> --version <version> --date <today> [--unit <U<nn> | seg-<n> |
-     cross> --step <step>] --evidence "<short quote, or why not>"`. That includes every
-     **not testable** issue and every issue no auditor reached.
+   - **Write** a Checks line for each issue whose combined verdict is **held** or
+     **recurred**, from the plugin's own directory: `I check-result <ID> --attempt <n>
+     --verdict <held | recurred> --session <id8> --version <version> --date <today> --unit
+     <U<nn> | seg-<n> | cross> --step <step> --evidence "<short quote>"`. A **not exercised**
+     or **not testable** issue gets no line: it changes no status, and it is the run report's
+     Prior issues table that records it. Held lines are what settle an issue: three, from three
+     sessions, and `issues.py` stops handing it to auditors.
    - A **recurred** issue also gets `I seen <ID>` with the same unit and step, `--report
      runs/audits/reports/<date>-<id8>.md` and `--finding-id P`, since it has no F finding. File no new
      issue for it in the next step: if an auditor wrote an F finding for the same act as well,
@@ -272,8 +279,8 @@ lines: each box then also shows the issues first found there and the prior issue
    - **Totals:** `<n> ERROR · <n> WARN · <n> NOTE · issues: <n> new, <n> seen again · prior:
      <n> held, <n> recurred, <n> not exercised, <n> not testable`, the prior counts from
      step 4.
-   - **Prior issues:** the template's table, one row per issue step 4 wrote a Checks line
-     for, **not testable** ones included: `| <ID> | <title> | <attempt> | <verdict> | <unit> ·
+   - **Prior issues:** the template's table, one row per issue §3 took, **not exercised**
+     and **not testable** ones included: `| <ID> | <title> | <attempt> | <verdict> | <unit> ·
      <step>, or — | <evidence, or why not> |`. With none, the empty table and then the line
      `none: no fixed issue to check`.
    - **Flow chart:** the template's line, naming the workspace's `flow.html` and
@@ -281,7 +288,7 @@ lines: each box then also shows the issues first found there and the prior issue
 7. **Commit the ledger.** `I check` must print `ok`; if it does not, fix what it names
    through `issues.py` and run it again. Then `git add audits && git commit -m "<P> audits:
    <id8> — <n> new, <n> seen, <n> checked" -- audits`, where `<n> checked` is the number of
-   Checks lines step 4 wrote, staging nothing outside `runs/audits/`
+   issues step 4 reached (the rows of the Prior issues table), staging nothing outside `runs/audits/`
    because the checkout may hold other work. This is the one commit this skill makes
    itself. When the plugin directory is not in a git checkout (a cache copy, a fixture), the
    files are still the record: print the message you would have used and say the commit was

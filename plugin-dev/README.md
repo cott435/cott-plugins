@@ -124,7 +124,8 @@ more checks consistency across them. The run report is committed under the plugi
 `--units new` watches a run that is still going. What it finds is filed as issues under the
 plugin's `runs/audits/`, with ids that stay. `/plugin-dev:fix-issues` fixes them from any chat and
 records how a rerun will show each fix; the next `/plugin-dev:audit-run` of a rerun reports
-each one held, recurred, not exercised or not testable, and `/plugin-dev:run-flow` draws any
+each one held, recurred, not exercised or not testable (an issue that has held in three
+sessions is settled and no longer checked), and `/plugin-dev:run-flow` draws any
 run with every agent one click from its full record.
 
 What is the same in the four that change a plugin: which component a responsibility belongs in, and every

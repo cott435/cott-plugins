@@ -123,7 +123,7 @@
       "baseline": "previous",
       "harness": "evals/sets/files/audit-run/ledger-prior-issues.md",
       "prompt": "/plugin-dev:audit-run 0a0d17f0",
-      "expected_output": "Auditing the planted session with a ledger that already holds TO-001 (fixed and released for the write outside out/, so testable by version) and TO-002 (fixed but unreleased, so not testable), the audit gives the writer's auditor TO-001 as a prior issue, reports it recurred at U01.S3 and TO-002 not testable, writes both Checks lines, files no second issue for the same rule, and counts them in Totals, the log and the commit message",
+      "expected_output": "Auditing the planted session with a ledger that already holds TO-001 (fixed and released for the write outside out/, so testable by version) and TO-002 (fixed but unreleased, so not testable), the audit gives the writer's auditor TO-001 as a prior issue, reports it recurred at U01.S3 and TO-002 not testable, writes a Checks line for TO-001 only (a not-testable issue is recorded in the report's Prior issues table, not in the ledger), files no second issue for the same rule, and counts them in Totals, the log and the commit message",
       "files": [
         "evals/fixtures/audit-run/make_session.py"
       ],
@@ -135,10 +135,10 @@
         "the report's Totals line ends 'prior: 0 held, 1 recurred, 0 not exercised, 1 not testable'",
         "the report's Errors section has no heading for the write to notes/scratch.md: that sighting appears only in the Prior issues table (a recurrence is a P line, not an F finding)",
         "outputs/runs/audits/issues/TO-001.md's Checks section has exactly one line, '<date> · 0a0d17f0 · 0.1.0 · attempt 1 · recurred · U01 · U01.S3 — \"…\"', and its Found in section has gained a second line for 0a0d17f0 · 0.1.0 · U01 · U01.S3 ending with runs/audits/reports/<date>-0a0d17f0.md; its Fix section is unchanged",
-        "outputs/runs/audits/issues/TO-002.md's Checks section has exactly one line, '<date> · 0a0d17f0 · 0.1.0 · attempt 1 · not testable · — · — — \"…\"', whose evidence names the blank fixed_in; its Fix section is unchanged",
+        "outputs/runs/audits/issues/TO-002.md's Checks section is empty (no `not testable` line is written; the report's Prior issues row for TO-002 names the blank fixed_in as its evidence); its Fix section is unchanged",
         "outputs/runs/audits/issues/ holds at least one issue file besides TO-001.md and TO-002.md, and none of them has rule_file agents/writer.md with a rule_quote about writing only under out/, and no new issue file's Finding is about the write to notes/scratch.md",
         "outputs/runs/audits/issues/ holds new issues TO-003 onward for the other planted defects — the 'tests: 4 passed' claim, the 'commit: abc1234' claim, the 'Done.' first line and the driver's Write of out/extra.txt — each created by an `issues.py new` command in transcript.md",
-        "outputs/issues-check.txt shows `issues.py check` printing 'ok: <n> issues' with exit code 0; in outputs/runs/audits/INDEX.md the TO-001 row is first with Status 'recurred' and the TO-002 row has Status 'fixed' and Last check '<date> not testable'",
+        "outputs/issues-check.txt shows `issues.py check` printing 'ok: <n> issues' with exit code 0; in outputs/runs/audits/INDEX.md the TO-001 row is first with Status 'recurred' and the TO-002 row has Status 'fixed' and Last check '—'",
         "outputs/commit-message.txt (and transcript.md) carry the commit message 'toy audits: 0a0d17f0 — <n> new, <n> seen, 2 checked', and the audit made no commit (outputs/plugin-diff.txt is empty and transcript.md shows no git init or git commit in $TMP/toy)",
         "outputs/eval-log.md's Results names the new issue ids and reads 'prior: held none, recurred TO-001, not exercised none, not testable TO-002'; its last line is 'Report: runs/audits/reports/<date>-0a0d17f0.md'; it contains no findings table",
         "transcript.md's final message to the user gives the counts including '1 recurred' and '1 not testable', the report path, /plugin-dev:run-flow 0a0d17f0 for the chart, and tells the user to type /plugin-dev:fix-issues (run:0a0d17f0 or recurred) to fix what it found"

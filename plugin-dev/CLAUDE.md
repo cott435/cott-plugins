@@ -41,6 +41,11 @@ care when editing it:
   `templates/phases/` writes them. A column renamed in a
   template is a change to the script, and `python3 evals/fixtures/phases/check.py` (no
   model) is run before either is committed.
+- **`scripts/issues.py` owns the ledger's layout and the settling rule.** The ledger is
+  `runs/audits/`; an issue derives `settled` after `SETTLE_HOLDS` held checks from
+  `SETTLE_SESSIONS` sessions, and `audit-run` stops handing it to auditors. A change to either
+  is a change to `skills/audit-run/SKILL.md` §3 and §5, and
+  `python3 evals/fixtures/issues/check.py` (no model) is run before it is committed.
 - **This plugin has hooks, and they run in every session on every machine.** Each exits 0
   before doing anything unless its event names a run-evals iteration or the plugin directory
   has a phase in flight, and each exits 0 with the reason on stderr when it crashes. Keep
