@@ -11,7 +11,7 @@ disagree, the one higher in its row wins, and the lower one is fixed.
 | Question | The truth | Below it, and what happens when they disagree |
 |---|---|---|
 | How does a plugin component behave? | the Claude Code docs, then `plugin-anatomy`'s references, which record each fact as `[docs]`, `[proven: evals/…]` or `[unconfirmed]` | every other skill cites `plugin-anatomy` instead of restating a fact. When the docs change or an eval settles a fact, `plugin-anatomy` is corrected and nothing else needs editing |
-| What is being built, and why? | the approved spec: the design, `site/notes/<slug>/<slug>-design.md`, for a change that starts from an idea; the edit list, `site/notes/<slug>/<slug>-edits.md`, for one that starts from a review | the overview turns it into phases, and each phase's note into files and steps. A phase that cannot follow its note records a Deviation; it never edits the spec. A gap `plan-phases` finds is answered by you and written into the spec |
+| What is being built, and why? | the approved spec: the design, `site/notes/<slug>/<slug>-design.md`, for a change that starts from an idea and adds or redraws a workflow; the edit list, `site/notes/<slug>/<slug>-edits.md`, for one that starts from facts about the plugin and runs across its agents and skills | the overview turns it into phases, and each phase's note into files and steps. A phase that cannot follow its note records a Deviation; it never edits the spec. A gap `plan-phases` finds is answered by you and written into the spec |
 | What crosses phases? | the overview, `site/notes/<slug>/<slug>-00-overview.md` | each phase's scope, what it must not touch, the headings one phase writes and another reads, and every eval row. A note may not rename what the overview names |
 | What does this phase do? | its phase note, written by `run-phase` when the phase starts | the note names every file the phase may touch; anything else is a *noticed* line in the ledger |
 | Where does the plan stand? | the ledger, `site/notes/<slug>/<slug>-progress.md` | the next chat starts from the ledger, never from a summary of the last chat |
@@ -29,7 +29,7 @@ flowchart LR
   PA -- "before each component" --> RP["run-phase"]
   PA -- "key lists" --> CC["check-contracts"]
   DP --> D[("slug-design.md")]
-  RV["review-plugin"] --> EL[("slug-edits.md")]
+  RV["revise-plugin"] --> EL[("slug-edits.md")]
   EL -- "Needs a design" --> DP
   D --> PP
   EL -- "edits.py index" --> PP
@@ -43,13 +43,15 @@ flowchart LR
 ## The loop
 
 A change too big for one chat, or a new plugin, runs as a sequence of chats, each starting
-from files rather than from the chat before it. It starts from a design when it adds
-something, and from a review when it fixes what is wrong across the bundle.
+from files rather than from the chat before it. It starts from a design when an idea adds
+or redraws a workflow, and from an edit list when facts about the plugin change many of its
+agents and skills. A few audited issues need neither: `fix-issues` plans and fixes them in
+one chat, and `issues.py route` says when a selection is too large for that.
 
 ```mermaid
 flowchart TD
   A["/plugin-dev:design-plugin<br/>chat 0: discussion, charts, writeup"] --> D[("site/notes/slug/slug-design.md")]
-  R["/plugin-dev:review-plugin<br/>chat 0: unit agents, reconcile, decisions"] --> L[("site/notes/slug/slug-edits.md")]
+  R["/plugin-dev:revise-plugin<br/>chat 0: unit agents, reconcile, decisions"] --> L[("site/notes/slug/slug-edits.md")]
   D --> B["/plugin-dev:plan-phases<br/>chat 1: fresh, reads the spec only"]
   L --> B
   B --> N[("overview · ledger · evals/sets/")]
@@ -71,7 +73,7 @@ change is the same loop with the design and planning chats left out; see
 | From | Writes | Read by |
 |---|---|---|
 | `design-plugin` | `site/notes/<slug>/<slug>-design.md`, on a new branch | `plan-phases`; `run-phase`, for the why |
-| `review-plugin` | on a new branch, in `site/notes/<slug>/`: `<slug>-review-plan.md`, `findings/<UNIT>.md` (one per unit agent), `<slug>-edits.md` (the reconcile agent) | `plan-phases` and `run-phase`, through `scripts/edits.py`; `design-plugin`, for its **Needs a design** items |
+| `revise-plugin` | on a new branch, in `site/notes/<slug>/`: `<slug>-review-plan.md`, `findings/<UNIT>.md` (one per unit agent), `<slug>-edits.md` (the reconcile agent) | `plan-phases` and `run-phase`, through `scripts/edits.py`; `design-plugin`, for its **Needs a design** items |
 | `plan-phases` | beside the spec in `site/notes/<slug>/`: `<slug>-00-overview.md`, `<slug>-progress.md` | `run-phase` |
 | `run-phase` | its phase's note, `<slug>-NN-<name>.md`, written when the phase starts | the record of what was planned beside what was done |
 | `plan-phases`' eval writers (one per target) | `evals/sets/<target>.json` and its harness sheets | `run-evals` |
@@ -86,7 +88,7 @@ change is the same loop with the design and planning chats left out; see
 Nothing that commits, publishes, or decides for you happens without a stop:
 
 1. `design-plugin` waits twice: for the charts, then for the writeup. Nothing is written in
-   the repo before the second yes. `review-plugin` waits for the goal and the units before
+   the repo before the second yes. `revise-plugin` waits for the goal and the units before
    any agent runs, and asks the decisions its reconcile agent leaves open.
 2. `plan-phases` asks about any decision the spec did not take, then waits for your yes to
    the phase split. `run-phase` asks a decision only when writing its note meets one the spec
@@ -101,7 +103,10 @@ Once a plugin's workflow has run in some project, a second loop starts from its 
 rather than from a design. `/plugin-dev:audit-run` holds the run against the plugin's files
 and files each ERROR and WARN, and each `definition` NOTE, as an issue under the plugin's
 committed `runs/audits/issues/`, with an id that stays the same from one audit to the next, plus a
-run report under `runs/audits/reports/`. `/plugin-dev:fix-issues`, from any chat, plans one edit per
+run report under `runs/audits/reports/`. `scripts/issues.py route` says which skill takes them: a
+selection of more than six issues, more than three across more than three roles, or one
+that recurred after two fixes is `/plugin-dev:revise-plugin`'s, and goes through an edit
+list and phases. Otherwise `/plugin-dev:fix-issues`, from any chat, plans one edit per
 issue, waits for your yes, makes the edits on a worktree branch, runs the checks and evals,
 and records in each issue a Fix attempt whose `Verify:` line says what a rerun's trace will
 show if the fix held. You merge, bump, update the plugin and rerun the workflow; the next

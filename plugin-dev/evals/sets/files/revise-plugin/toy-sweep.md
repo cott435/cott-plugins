@@ -1,5 +1,5 @@
 # Seed
-/plugin-dev:review-plugin rev every skill should agree with CLAUDE.md
+/plugin-dev:revise-plugin rev every skill should agree with CLAUDE.md
 
 # Setup (the executor does this before anything else)
 Copy evals/fixtures/toy-plugin/ to a fresh temporary directory OUTSIDE the repo and rename the

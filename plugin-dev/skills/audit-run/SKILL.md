@@ -322,10 +322,18 @@ Then tell the user, in this order and briefly:
 2. Each ERROR: what happened, its evidence step and its rule, as a clickable `file:line`
    into the working tree when it is still at HEAD.
 3. How many WARN and NOTE findings there are, with their issue ids.
-4. Issues were filed for the findings above. Tell the user that
-   `/plugin-dev:fix-issues run:<id8>` fixes them from any chat, and, when any prior issue
-   recurred, that `/plugin-dev:fix-issues recurred` takes those; this skill cannot start it
-   (a typed skill is started only by a person). Do not make the edits unasked.
+4. Issues were filed for the findings above. Which skill takes them is `issues.py`'s
+   answer, not a judgment: `I route --session <id8>`, and with any prior issue recurred,
+   `I route --status recurred` too. Print each line it gives, then the command for it:
+   - `route: fix-issues` (exit 0): `/plugin-dev:fix-issues run:<id8>` (or
+     `/plugin-dev:fix-issues recurred`) fixes them from any chat.
+   - `route: revise-plugin` (exit 3): the selection is more than one chat should plan an
+     edit at a time, for the reason on the line. `/plugin-dev:revise-plugin <slug> issues
+     run:<id8>`, in a new chat, reads each role these issues name whole and writes one edit
+     list for `plan-phases`. `/plugin-dev:fix-issues <ids>` still takes a few of them by id.
+
+   This skill cannot start either (a typed skill is started only by a person). Do not make
+   the edits unasked.
 
 ## What this skill never does
 

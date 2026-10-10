@@ -1,12 +1,13 @@
 # A large change, in phases
 
-A change that adds or redraws a workflow across several agents or skills, or needs evals
-that would not fit in the chat that makes the edits. The design is worked out once, in
+A change that starts from an idea and adds or redraws a workflow, designed from its driver
+down, or needs evals that would not fit in the chat that makes the edits. The design is worked out once, in
 discussion, by a chat that reads everything. The phases are planned by a second chat that
 reads only the design, and done by chats that each read three files and write their own
-note. A change that fixes what is wrong across a whole plugin, rather than adding something,
-starts from a review instead of a design: see [A review sweep](review-sweep.md). From
-`plan-phases` on, the two are the same.
+note. A change that starts from facts about the plugin and runs across many of its agents
+and skills, rather than adding or redrawing a workflow, starts from an edit list instead of
+a design: see [A plugin-wide revision](plugin-revision.md). From `plan-phases` on, the two
+are the same.
 
 ```mermaid
 flowchart TD

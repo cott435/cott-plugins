@@ -45,7 +45,11 @@ care when editing it:
   `runs/audits/`; an issue derives `settled` after `SETTLE_HOLDS` held checks from
   `SETTLE_SESSIONS` sessions, and `audit-run` stops handing it to auditors. A change to either
   is a change to `skills/audit-run/SKILL.md` §3 and §5, and
-  `python3 evals/fixtures/issues/check.py` (no model) is run before it is committed.
+  `python3 evals/fixtures/issues/check.py` (no model) is run before it is committed. It also
+  owns the line between `fix-issues` and `revise-plugin`: `route` exits 3 past
+  `ROUTE_MAX_ISSUES`, `ROUTE_MAX_ROLES` or `ROUTE_MAX_FIXES`, and `fix-issues` §1, `audit-run`'s
+  last step, `revise-plugin`'s table, the README and `site/workflows/` state the same numbers
+  in words. A changed constant is a change to all of them.
 - **This plugin has hooks, and they run in every session on every machine.** Each exits 0
   before doing anything unless its event names a run-evals iteration or the plugin directory
   has a phase in flight, and each exits 0 with the reason on stderr when it crashes. Keep
@@ -54,7 +58,7 @@ care when editing it:
   headings. `design-plugin` writes from it and `plan-phases` reads the design by those names.
   Renaming a section is a change to both, and `check-contracts` fails until they agree.
 - **`templates/review/edits.md` is the one list of the edit list's sections**, the same way
-  for `review-plugin`'s spec: `review-plugin` writes from it, `plan-phases` and `run-phase`
+  for `revise-plugin`'s spec: `revise-plugin` writes from it, `plan-phases` and `run-phase`
   read it by those names, and `check-contracts` fails until they agree. Its item fields and
   the findings file's fields (`templates/review/findings.md`) are parsed by
   `scripts/edits.py`, which also reads the commit the list's opening paragraph names, to
@@ -62,6 +66,12 @@ care when editing it:
   in a template is a change to the script, and the
   script is run against the real `dev-team/site/notes/determinism/` review before it is
   committed.
+- **Two routes reach `plan-phases`, and they are told apart the same way in every file.**
+  `design-plugin` starts from an idea and works by workflow, from the driver down;
+  `revise-plugin` starts from facts about the plugin and works by agent and skill;
+  `fix-issues` is the small end of the second. The files `revise-plugin` leaves keep the word
+  review (`<slug>-review-plan.md`, `templates/review/`, `Mode: review`, plan-phases' **review**
+  mode), because plans in flight have them.
 - **`plugin-anatomy` is the source of truth for platform facts.** A fact about how a plugin
   component behaves is stated there once, with its source and its status (`[docs]`,
   `[proven: …]`, `[unconfirmed]`), and cited from everywhere else. When the docs or an eval

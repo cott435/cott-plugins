@@ -28,8 +28,16 @@ created on the first write. Every writing command re-renders `runs/audits/INDEX.
 
 Usage:  python3 issues.py <command> [--dir DIR] ...   (`--help` on any command for its flags)
 
-Commands: new, candidates, seen, check-result, fix, wontfix, stamp, list, status, index, check.
-Exit 0 on success; 1 with one line per problem on stderr otherwise.
+Commands: new, candidates, seen, check-result, fix, wontfix, stamp, list, route, status, index,
+check. Exit 0 on success; 1 with one line per problem on stderr otherwise.
+
+`route` says which skill a selection of issues belongs to, and is the one command with a
+third exit code: 0 when `fix-issues` takes it, 3 when it is `revise-plugin`'s. A selection is
+`revise-plugin`'s when it has more than ROUTE_MAX_ISSUES issues, or more than ROUTE_MAX_ROLES
+issues that between them name more than ROUTE_MAX_ROLES roles, or an issue that has recurred
+after ROUTE_MAX_FIXES fixes: a change that size is found by reading each role whole and
+landed in phases, not planned one edit per issue in one chat. One issue that names many
+roles is still one edit, so roles count only once the issues do.
 
 Standard library only.
 """
@@ -48,6 +56,10 @@ TEMPLATE = Path(__file__).resolve().parent.parent / "templates" / "audits" / "is
 STATUS_ORDER = ["recurred", "open", "fixed", "released", "verified", "settled", "wontfix"]
 SETTLE_HOLDS = 3
 SETTLE_SESSIONS = 3
+ROUTE_MAX_ISSUES = 6
+ROUTE_MAX_ROLES = 3
+ROUTE_MAX_FIXES = 2
+ROUTE_REVISE = 3  # the exit code of `route` when the selection is revise-plugin's
 DASH = "—"
 SEP = " · "
 
@@ -574,6 +586,33 @@ def cmd_list(a, root, name, t) -> list[str]:
     return lines or ["none"]
 
 
+def cmd_route(a, root, name, t) -> list[str]:
+    """Which skill this selection belongs to, on one line, and as the exit code."""
+    v = t["verdicts"]
+    if a.ids:
+        issues = [get_issue(root, i) for i in dict.fromkeys(a.ids)]
+    else:
+        issues = selected(a, root, t)
+    if not issues:
+        return ["route: none" + SEP + "0 issues"]
+    roles = sorted({agent_role(r) for i in issues for r in i.applies_to()} - {"cross"})
+    unheld = [f"{i.id} recurred after {n} fixes" for i in issues
+              if i.status(v) == "recurred"
+              and (n := sum(1 for x in i.attempts() if x.get("status") != "wontfix")) >= ROUTE_MAX_FIXES]
+    over = []
+    if len(issues) > ROUTE_MAX_ISSUES:
+        over.append(f"{len(issues)} issues (fix-issues takes {ROUTE_MAX_ISSUES})")
+    if len(roles) > ROUTE_MAX_ROLES and len(issues) > ROUTE_MAX_ROLES:
+        over.append(f"{len(issues)} issues across {len(roles)} roles (fix-issues takes "
+                    f"{ROUTE_MAX_ROLES}): {', '.join(roles)}")
+    over += unheld
+    if over:
+        a.exit_code = ROUTE_REVISE
+        return [SEP.join(["route: revise-plugin"] + over)]
+    return [SEP.join(["route: fix-issues", f"{len(issues)} issue{'s' if len(issues) != 1 else ''}",
+                      f"{len(roles)} role{'s' if len(roles) != 1 else ''}"])]
+
+
 def cmd_candidates(a, root, name, t) -> list[str]:
     v = t["verdicts"]
     out = []
@@ -716,6 +755,12 @@ def build_parser() -> Parser:
     s.add_argument("--session")
     s.add_argument("--format", choices=["text", "json", "brief"], default="text")
 
+    s = cmd("route", "which skill a selection belongs to: exit 0 fix-issues, 3 revise-plugin")
+    s.add_argument("ids", nargs="*", help="issue ids; with none, the filters below select")
+    s.add_argument("--status")
+    s.add_argument("--applies-to")
+    s.add_argument("--session")
+
     s = cmd("status", "print an issue's derived status")
     s.add_argument("id")
 
@@ -726,7 +771,7 @@ def build_parser() -> Parser:
 
 COMMANDS = {"new": cmd_new, "candidates": cmd_candidates, "seen": cmd_seen,
             "check-result": cmd_check_result, "fix": cmd_fix, "wontfix": cmd_wontfix,
-            "stamp": cmd_stamp, "list": cmd_list, "status": cmd_status, "index": cmd_index,
+            "stamp": cmd_stamp, "list": cmd_list, "route": cmd_route, "status": cmd_status, "index": cmd_index,
             "check": cmd_check}
 
 
@@ -745,7 +790,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     for line in output:
         print(line)
-    return 0
+    return getattr(args, "exit_code", 0)
 
 
 if __name__ == "__main__":

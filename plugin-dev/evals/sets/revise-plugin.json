@@ -1,20 +1,20 @@
 {
-  "target": "review-plugin",
-  "target_path": "skills/review-plugin/SKILL.md",
+  "target": "revise-plugin",
+  "target_path": "skills/revise-plugin/SKILL.md",
   "evals": [
     {
       "id": 1,
       "name": "toy-sweep-finds-planted-contradiction",
       "kind": "behavioral",
       "baseline": "none",
-      "harness": "evals/sets/files/review-plugin/toy-sweep.md",
-      "prompt": "/plugin-dev:review-plugin rev every skill should agree with CLAUDE.md",
+      "harness": "evals/sets/files/revise-plugin/toy-sweep.md",
+      "prompt": "/plugin-dev:revise-plugin rev every skill should agree with CLAUDE.md",
       "expected_output": "The review plan is agreed and committed, unit agents write findings that edits.py accepts, one reconcile agent writes an edit list that edits.py check --decided --findings accepts with an item for wave's second output file, and the orchestrating chat never reads a skill body, a findings file or the edit list whole",
       "files": [
         "evals/fixtures/toy-plugin/"
       ],
       "expectations": [
-        "A goal question was asked and the units were shown as a table and approved, both before any subagent was spawned",
+        "`outputs/interview.md` records a goal question and a units-approval question, each with the answer taken from the sheet, the transcript places both before the first subagent spawn, and the Units section of `outputs/rev/rev-review-plan.md` holds the approved units as a table whose goal matches the sheet's answers",
         "outputs/rev/rev-review-plan.md exists with the ## headings of templates/review/review-plan.md (Goal, Where things are written, Waves, Brief, Checks, Finding format, Units, Synthesis and reconcile, Between waves, each with its number prefix) and a units table naming every skill directory in at least one row's reads",
         "The transcript shows every wave-1 unit spawned in a single message, and the reconcile agent spawned after every wave-1 unit returned",
         "outputs/rev/findings/ holds one file per unit, and the transcript shows `edits.py findings` run on that folder with no FAIL line in its last run",
@@ -25,7 +25,7 @@
         "The copy's git log shows a commit for the review plan, a commit for each wave, and a commit for the edit list, each starting 'toy rev (review', and nothing pushed",
         "The final chat message names `/plugin-dev:plan-phases rev` as the next command, in a new chat"
       ],
-      "added_in": "review-plugin; expectation 7 added after iteration 1 (a baseline that edits the plugin directly was not caught)"
+      "added_in": "revise-plugin; expectation 7 added after iteration 1 (a baseline that edits the plugin directly was not caught)"
     }
   ]
 }

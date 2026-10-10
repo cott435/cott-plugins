@@ -66,7 +66,7 @@
         "The committed ledger row for phase 1 is 'done'",
         "Nothing was pushed and no tag was created"
       ],
-      "added_in": "review-plugin; expectation 5 reworded and the harness's hint removed after iteration 1"
+      "added_in": "revise-plugin; expectation 5 reworded and the harness's hint removed after iteration 1"
     },
     {
       "id": 4,
@@ -88,7 +88,7 @@
         "The committed ledger row for phase 2 is 'done' and phase 3's is still 'todo'",
         "Nothing was pushed and no tag was created"
       ],
-      "added_in": "review-plugin; the harness's moved-line hint removed after iteration 1"
+      "added_in": "revise-plugin; the harness's moved-line hint removed after iteration 1"
     }
   ]
 }

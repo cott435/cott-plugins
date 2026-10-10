@@ -1,18 +1,26 @@
-# A review sweep
+# A plugin-wide revision
 
-A change that starts from evidence rather than an idea: audits that keep recurring, prompts
-that contradict each other, rules prose does not hold, a context budget gone too far. Spread
-across a plugin too big for one chat to read. Nothing new needs designing; what is needed is
-every defect found, deduplicated and ordered, and a few decisions only you can take.
+A change that starts from facts about the plugin rather than an idea: audits that keep
+recurring, eval results, prompts that contradict each other, rules prose does not hold, a
+context budget gone too far, or a rule every agent and skill must now meet. It runs across
+many agents and skills, whatever workflow each belongs to, in a plugin too big for one chat
+to read. No workflow is being invented; what is needed is every place the facts apply,
+found, deduplicated and ordered, and a few decisions only you can take.
 
-So the review is split the way the reading is: agents that each read one part of the plugin
+It is one of two routes to `plan-phases`. The other, [a large change](phased-change.md),
+starts from an idea and is organized by workflow. And it is the large end of a route whose
+small end is `fix-issues`: a few audited issues are planned and fixed in one chat, and
+`issues.py route` sends a selection here when it has more than six issues, more than three
+issues across more than three roles, or an issue that recurred after two fixes.
+
+So the work is split the way the reading is: agents that each read one part of the plugin
 whole and write findings, one agent that reconciles them into an edit list, and a chat that
 orchestrates without reading any of it. The edit list is the spec. From `plan-phases` on, the
 path is the same as [a large change](phased-change.md).
 
 ```mermaid
 flowchart TD
-  S["/plugin-dev:review-plugin slug<br/>(inside the plugin, chat 0)"] --> V["survey the shape:<br/>frontmatter · line counts · audit index"]
+  S["/plugin-dev:revise-plugin slug<br/>(inside the plugin, chat 0)"] --> V["survey the shape:<br/>frontmatter · line counts · audit index"]
   V --> G["goal round · units table"]
   G -->|changes| G
   G -->|your yes| RP["review plan commit:<br/>site/notes/slug/slug-review-plan.md"]
@@ -31,12 +39,14 @@ flowchart TD
   class G,Q,P stop;
 ```
 
-## Chat 0 — `review-plugin <slug>`
+## Chat 0 — `revise-plugin <slug>`
 
 Run inside the plugin's directory. It creates the branch `<plugin>-<slug>` in a worktree,
 then reads the plugin's shape and not its content: every agent's and skill's frontmatter,
 line counts, `hooks.json`, `contracts.yml`, the audit index, the eval set names. One question
-round settles the goal: what is wrong, which outcomes come first, what is out of scope.
+round settles the goal: the facts the change starts from (typed as `issues run:<id8>`, the
+selection `fix-issues` or `audit-run` printed, or said in words), which outcomes come first,
+what is out of scope.
 
 From the shape it proposes the units: one per role (the agent, the skills it loads, the part
 of the driver that spawns it, the hooks that act on it) or per set of scripts, each reading

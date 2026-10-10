@@ -6,7 +6,7 @@ Reviewed <date>. Mode: review. Branch `<plugin>-<slug>`, against `<sha>` (<plugi
      belong to: `scripts/edits.py show --located` carries them from it to the tree as it
      stands. -->
 
-Written by the reconcile unit of `review-plugin` from every findings file under `findings/`,
+Written by the reconcile unit of `revise-plugin` from every findings file under `findings/`,
 with the decisions answered by the user. It is the spec for this change, the way a design is
 for one that starts from an idea: `plan-phases` assigns every item below to one phase, and
 `run-phase` reads only its phase's items through `scripts/edits.py show`. Anything not
@@ -25,7 +25,7 @@ tell each one holds.>
 ## Decisions taken
 
 <One row per choice the reconcile unit could not make on the findings alone: the user's.
-REC writes the rows with Chosen `open`; review-plugin asks them and fills Chosen and Why.
+REC writes the rows with Chosen `open`; revise-plugin asks them and fills Chosen and Why.
 plan-phases adds a row with Origin *planning* for every gap it asks about, here and not in a
 design read beside this list, which keeps its table as approved.>
 

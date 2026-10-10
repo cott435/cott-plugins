@@ -5,12 +5,14 @@ readable at a glance and must match every other chart and the components table.
 
 ## Which charts
 
-- **One chart per workflow**, a `mermaid` `flowchart TB`: the trigger → what the orchestrator
-  decides → the loops it runs, with fan-out shown as such (`claim-reader ×N`) → the files
-  written → the next reader, and the deliverable. An evaluator appears as a node with a
-  labelled edge back to the producer (`reject`). Under it, a caption of three lines:
-  **Unit** (what one instance reads and writes), **Strengthened by**, and **Inputs from**
-  (each input the unit needs and who supplies it).
+- **One chart per workflow**, a `mermaid` `flowchart TB`, drawn from its driver down: the
+  trigger → the driver → the loops it runs, with fan-out shown as such (`claim-reader ×N`)
+  → the files written → the next reader, and the deliverable. The script the driver asks
+  where the run stands is one node beside it, and the ledger that script reads is one file
+  node; a workflow of one step has neither. An evaluator appears as a node with a labelled
+  edge back to the producer (`reject`). Under it, a caption of four lines: **Driver** (the
+  typed skill, its script and its ledger), **Unit** (what one instance reads and writes),
+  **Strengthened by**, and **Inputs from** (each input the unit needs and who supplies it).
 - **One system chart**, drawn after the workflow charts: every loop as one node or one
   `subgraph`, the typed commands, and the files where loops meet. Nothing else goes in it. It
   answers "how do these fit together", and a file that one workflow writes and another reads
@@ -26,8 +28,9 @@ limit:
   modes is one node with its edges labelled by mode.
 - Use one node per shared file, and one node per set of per-unit files (`claims/*.md`), not one
   per instance. A report nobody else reads can be the command's edge label.
-- Knowledge skills and scripts go in the components table, not the chart. An agent's preloaded
-  skills can be a second line in its label.
+- Knowledge skills and scripts go in the components table, not the chart, except the one
+  script a driver asks where the run stands. An agent's preloaded skills can be a second line
+  in its label.
 - A hook is drawn only where it guards something: a small node on the edge it gates, labelled
   with its event (`PreToolUse`). An MCP server is a source node the agents that use it read
   from, drawn once.

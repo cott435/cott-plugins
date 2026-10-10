@@ -1,6 +1,6 @@
 # The unit prompt
 
-`review-plugin` spawns one general-purpose subagent per unit of a wave, all in one message,
+`revise-plugin` spawns one general-purpose subagent per unit of a wave, all in one message,
 each given the prompt below with every `<…>` filled from the unit's row in the review plan.
 One unit owns one findings file, so units in a wave never write the same file.
 
@@ -10,7 +10,7 @@ unit reports in its return.
 
 ## The prompt
 
-> You are unit `<UNIT>` of a review of the `<P>` plugin, in `<plugin dir>` on branch
+> You are unit `<UNIT>` of the review behind a planned change to the `<P>` plugin, in `<plugin dir>` on branch
 > `<branch>`. You read; you do not run the plugin and you edit no plugin file.
 >
 > Read, in this order:

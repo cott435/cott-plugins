@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """A review's findings files and its edit list, read and checked without a model.
 
-`review-plugin` has unit agents write findings under `site/notes/<slug>/findings/` and one
+`revise-plugin` has unit agents write findings under `site/notes/<slug>/findings/` and one
 reconcile agent write the edit list `site/notes/<slug>/<slug>-edits.md`. `plan-phases`
 assigns every item of that list to exactly one phase in the overview's **Phases** table, and
 `run-phase` reads only the items its phase owns. Each of those steps reads this script's

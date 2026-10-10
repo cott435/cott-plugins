@@ -56,18 +56,18 @@ headings:
       - file: skills/plan-phases/SKILL.md
         cites: ['Decisions taken', 'Build order', 'What must not break']
 
-  - name: review-plugin's edit list is read only by the sections its template defines
+  - name: revise-plugin's edit list is read only by the sections its template defines
     # templates/review/edits.md is the one list of the edit list's sections; the reconcile
-    # agent writes from it, review-plugin asks into Decisions taken and moves items to Needs
+    # agent writes from it, revise-plugin asks into Decisions taken and moves items to Needs
     # a design, plan-phases and run-phase print sections by name with sed, design-plugin
     # designs Needs a design, and scripts/edits.py parses Edits, Decisions taken and Build
     # order. A section renamed in the template is a change to every one of them.
     owner: templates/review/edits.md
     owner_form: markdown
     readers:
-      - file: skills/review-plugin/SKILL.md
+      - file: skills/revise-plugin/SKILL.md
         cites: ['Decisions taken', 'Edits', 'Needs a design', 'Issues']
-      - file: skills/review-plugin/references/reconcile-prompt.md
+      - file: skills/revise-plugin/references/reconcile-prompt.md
         cites: ['Edits', 'Decisions taken', 'Needs a design', 'Build order', 'Issues',
                 'Conflicts', 'Non-goals']
       - file: skills/plan-phases/SKILL.md

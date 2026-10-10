@@ -1,6 +1,6 @@
 ---
 name: plan-phases
-description: Split an approved spec into phases, each sized for one Claude Code chat - a design (site/notes/{slug}/{slug}-design.md, from design-plugin), an edit list (site/notes/{slug}/{slug}-edits.md, from review-plugin), or both. Reads the spec and nothing of the discussion behind it, asks about any gap it leaves, proposes the phase split for approval, then writes an overview with every phase's scope and evals, the eval sets (one writer subagent per target, in parallel) and a progress ledger. Writes no phase note - run-phase writes each one against the files as they are when its phase starts. Commits them as phase 0. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), in a fresh chat on the branch design-plugin or review-plugin created.
+description: Split an approved spec into phases, each sized for one Claude Code chat - a design (site/notes/{slug}/{slug}-design.md, from design-plugin), an edit list (site/notes/{slug}/{slug}-edits.md, from revise-plugin), or both. Reads the spec and nothing of the discussion behind it, asks about any gap it leaves, proposes the phase split for approval, then writes an overview with every phase's scope and evals, the eval sets (one writer subagent per target, in parallel) and a progress ledger. Writes no phase note - run-phase writes each one against the files as they are when its phase starts. Commits them as phase 0. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), in a fresh chat on the branch design-plugin or revise-plugin created.
 argument-hint: "<slug>"
 disable-model-invocation: true
 ---
@@ -18,8 +18,8 @@ It starts from the spec an earlier chat committed, and deliberately from nothing
 | Spec | Written by | Mode | What a phase owns |
 |---|---|---|---|
 | `site/notes/<slug>/<slug>-design.md` | `design-plugin` | **new** or **change**, from its header | components and build-order lines |
-| `site/notes/<slug>/<slug>-edits.md` | `review-plugin` | **review** | edit-list items, by id |
-| both | `review-plugin`, then `design-plugin` for its **Needs a design** items | **review** | items by id, and the design's components |
+| `site/notes/<slug>/<slug>-edits.md` | `revise-plugin` | **review** | edit-list items, by id |
+| both | `revise-plugin`, then `design-plugin` for its **Needs a design** items | **review** | items by id, and the design's components |
 
 The discussion or the review behind a spec is long; a planner that reads it plans from
 half-remembered turns. A planner that reads only the spec plans from what was approved. When
@@ -42,9 +42,9 @@ never pushes.
 1. Confirm this is a plugin subdirectory (`.claude-plugin/plugin.json` exists).
 2. Find the spec in `site/notes/<slug>/`: `<slug>-design.md`, `<slug>-edits.md`, or both.
    With no slug, use the one folder that has a spec and no `<slug>-progress.md`. With none,
-   stop: neither `design-plugin` nor `review-plugin` has run.
+   stop: neither `design-plugin` nor `revise-plugin` has run.
 3. With an edit list: `E check site/notes/<slug>/<slug>-edits.md --decided` must pass. An
-   open decision is `review-plugin`'s to ask, so stop and say which. When its **Needs a
+   open decision is `revise-plugin`'s to ask, so stop and say which. When its **Needs a
    design** section has items and there is no design, stop: `design-plugin <slug>` runs
    first.
 4. Confirm the branch: `git branch --show-current` equals the branch the spec names. If not,

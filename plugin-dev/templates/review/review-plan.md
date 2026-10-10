@@ -8,7 +8,7 @@ mechanism and the evals that prove it. `plan-phases` plans from it in a fresh ch
 Written <date> against `<branch>` at `<sha>` (<plugin> <version>). Inputs: <the bundle's
 agents, skills, hooks and scripts; the audit ledger's n issues; the eval set names>.
 
-<!-- review-plugin writes this from the approved goal and units. Keep every `##` heading.
+<!-- revise-plugin writes this from the approved goal and units. Keep every `##` heading.
      Brief, Checks and Finding format are the charge every unit gets; the unit rows say
      what each one reads. The finding format and the findings-file shape are fixed by
      templates/review/findings.md and checked by scripts/edits.py: do not change them here. -->

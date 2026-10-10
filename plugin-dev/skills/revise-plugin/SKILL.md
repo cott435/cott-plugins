@@ -1,22 +1,34 @@
 ---
-name: review-plugin
-description: Review a whole existing plugin for what is wrong with it - contradictions, rules prose cannot hold, duplication, bloat - as waves of parallel unit agents that each read one role or one set of scripts and write findings, then one reconcile agent that turns every finding into one deduplicated edit list, site/notes/{slug}/{slug}-edits.md. Agrees the goal and the units with you first, asks the decisions the findings leave open, and commits the list on a worktree branch for plan-phases to plan in a fresh chat. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json) for a sweep across many agents and skills; not for a new plugin or a new workflow (design-plugin), and not for a handful of audited issues (fix-issues).
-argument-hint: "<slug> [what the review is for]"
+name: revise-plugin
+description: Plan a change across a whole existing plugin from facts about it - audited issues, eval results, contradictions, a context budget, a rule every agent and skill must now meet - agent by agent and skill by skill, whatever workflow each belongs to. Agrees the goal and the units with you, runs waves of parallel unit agents that each read one role or one set of scripts whole and write findings, then one reconcile agent that turns every finding into one deduplicated edit list, site/notes/{slug}/{slug}-edits.md, asks the decisions the findings leave open, and commits the list on a worktree branch for plan-phases to plan in a fresh chat. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json) for a change that touches many agents and skills; not for a new plugin or a new or redrawn workflow (design-plugin), and not for a few audited issues (fix-issues).
+argument-hint: "<slug> [what the change is for | issues <selection>]"
 disable-model-invocation: true
 ---
 
-# Reviewing a plugin
+# Revising a plugin
 
-Some changes start from an idea: a new plugin, a new workflow, a loop redrawn. `design-plugin`
-is for those, because what should exist has to be worked out with you. Others start from
-evidence: audits that keep recurring, prompts that contradict each other, a context budget
-gone too far. There the work is finding every defect in a bundle too large for one chat to
-read, and the decisions are few and narrow. This skill is for those.
+A change to a plugin reaches `plan-phases` by one of two routes, and which one depends on
+where the change starts and what it is organized by.
 
-It plans the review with you, runs it as waves of agents that each read one part of the
-plugin whole, and reconciles their findings into one edit list: every item with its files and
-lines, its mechanism, its dependencies and the evals that prove it. That list is the spec.
-`plan-phases` splits it into phases in a fresh chat, the way it splits a design.
+- **From an idea, by workflow.** A new plugin, a workflow added or redrawn. What should
+  exist has to be worked out with you, one workflow at a time: its driver, its agents, its
+  ledger. That is `design-plugin`, and its spec is a design.
+- **From facts, by agent and skill.** The plugin exists, and something known about it says
+  it must change in many places at once: issues an audit keeps filing, eval results,
+  prompts that contradict each other, a context budget gone too far, or a rule every agent
+  and skill must now meet (`plugin-anatomy`'s driver shape, a new platform fact). No
+  workflow is being invented. The work is finding every place the facts apply, in a bundle
+  too large for one chat to read, and the decisions are few and narrow. That is this skill,
+  and its spec is an edit list.
+
+It agrees the goal with you, reads the plugin as waves of agents that each take one role or
+one set of scripts whole, and reconciles their findings into one edit list: every item with
+its files and lines, its mechanism, its dependencies and the evals that prove it. That list
+is the spec. `plan-phases` splits it into phases in a fresh chat, the way it splits a design.
+
+The reading is a review, and the files it leaves keep that name (`<slug>-review-plan.md`,
+`templates/review/`, `Mode: review`), as plans already in flight have them. The review is the
+means. What this skill is for is the change.
 
 This chat orchestrates and nothing else. It reads the plugin's shape (frontmatter, line
 counts, the audit index), never the bodies of its files, and it reads the findings and the
@@ -25,11 +37,17 @@ however big the plugin is.
 
 `E` below is `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/edits.py`.
 
-| | `review-plugin` | `design-plugin` | `fix-issues` |
+| | `design-plugin` | `revise-plugin` | `fix-issues` |
 |---|---|---|---|
-| Starts from | what is wrong across the bundle | an idea for what should exist | issues an audit already filed |
-| The spec | the edit list, item by item | the design: charts and a writeup | one planned edit per issue |
+| Starts from | an idea for what should exist | facts about the plugin as it is | issues an audit already filed |
+| Organized by | workflow: one driver and its loop at a time | agent and skill, across every workflow | issue |
+| Size | a new plugin, or one workflow | many agents and skills | a few issues: `issues.py route` exits 0 |
+| The spec | the design: charts and a writeup | the edit list, item by item | one planned edit per issue |
 | Then | `plan-phases` | `plan-phases` | edits in the same chat |
+
+`fix-issues` is the small end of this route: it stops and names this skill when
+`issues.py route` gives its selection here (more than six issues, more than three issues
+across more than three roles, or an issue that recurred after two fixes).
 
 ## Setup
 
@@ -41,7 +59,13 @@ however big the plugin is.
    If the branch and its worktree exist, work there. Never switch the user's own checkout.
    Every path below is in the worktree.
 3. The plan's folder is `<P>/site/notes/<slug>/`. If `<slug>-edits.md` is already there, say
-   so and stop: the review is done, and the next step is `plan-phases`.
+   so and stop: the edit list is written, and the next step is `plan-phases`.
+4. When the argument says `issues` and a selection, as `fix-issues` and `audit-run` print
+   it, resolve it once with `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/issues.py list` (the
+   ids as given; `--session <id8>` for `run:<id8>`; `--status open,recurred` for `open`;
+   `--status recurred`). Its lines (id, status, severity, fault, the roles each issue
+   applies to, title) are the facts this change starts from, and the roles they name are
+   where the units start.
 
 ## 1. Survey the shape
 
@@ -60,10 +84,16 @@ hook acts on which role, and how many lines each role loads before it reads anyt
 ## 2. The goal and the units, then your yes
 
 **The goal.** One `AskUserQuestion` round of two to four questions, each with the recommended
-option first, unless the argument and the survey settle it: what is wrong (the audits,
-incidents or evals behind the review); which outcomes come first (no contradictions, rules
-moved from prose into scripts, less always-loaded context, or others the user names); what is
-out of scope.
+option first, unless the argument and the survey settle it: the facts the change starts from
+(the issues selected in Setup, the audits, incidents or eval logs behind it, or the rule the
+plugin must now meet, named by its file); which outcomes come first (no contradictions, rules
+moved from prose into scripts, less always-loaded context, every driver holding only what a
+script prints, or others the user names); what is out of scope.
+
+A goal that turns out to need a workflow that does not exist, or one redrawn from its
+driver down, is `design-plugin`'s: say so before any unit runs, and stop. A goal that needs
+one such piece among many edits goes on here, and that piece lands under **Needs a design**
+(§5).
 
 **The units.** Compose them from the survey:
 
@@ -154,7 +184,7 @@ Write each answer into its row: Chosen, and Why in the user's terms. Then, for e
 
 ## Rules
 
-- **No unit edits a plugin file**, and neither does this chat. The review produces findings
+- **No unit edits a plugin file**, and neither does this chat. This skill produces findings
   and one list; the edits are `run-phase`'s.
 - **This chat reads shapes and script output.** Frontmatter, line counts, the audit index,
   unit returns, `edits.py`. It never opens an agent's or skill's body, a findings file, or

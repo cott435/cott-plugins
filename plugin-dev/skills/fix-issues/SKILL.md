@@ -1,7 +1,7 @@
 ---
 name: fix-issues
-description: Fix the issues an audit filed in a plugin's committed ledger (runs/audits/issues/) from any chat - select them by id, by run, or as open or recurred; plan one edit per issue and get a yes; make the edits on a worktree branch; run check-contracts, build-site and run-evals against the plugin's last tag; record a Fix attempt with a Verify line in each issue; then propose the merge to main and the bump. Use only inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json) that has an runs/audits/ directory. It never marks an issue verified - only an audit of a rerun can.
-argument-hint: "[<ID> ... | run:<id8> | open | recurred]"
+description: Fix a few of the issues an audit filed in a plugin's committed ledger (runs/audits/issues/) from any chat - select them by id, by run, or as open or recurred; stop and name revise-plugin when a script says the selection is too many issues or too many roles for one chat; plan one edit per issue and get a yes; make the edits on a worktree branch; run check-contracts, build-site and run-evals against the plugin's last tag; record a Fix attempt with a Verify line in each issue; then propose the merge to main and the bump. Use only inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json) that has an runs/audits/ directory. It never marks an issue verified - only an audit of a rerun can.
+argument-hint: "[<ID> ... | run:<id8> | open | recurred] [--here]"
 disable-model-invocation: true
 ---
 
@@ -13,6 +13,13 @@ is how those issues get fixed, from any chat: it plans one edit per issue, gets 
 makes the edits on a worktree branch, proves them with the plugin's own checks and evals,
 and records in each issue what changed and how a rerun will show whether it held. That
 record is what the next audit of a rerun checks, so it is written for that audit to read.
+
+It is the small end of one route. A change that starts from facts about a plugin (issues,
+eval logs, contradictions) is planned here when it is a handful of edits one chat can read
+and make, and by `/plugin-dev:revise-plugin` when it is not: that skill reads each role
+whole in its own agent and writes an edit list `plan-phases` splits into phases, and the
+last phase records the same Fix attempts this skill does. Which of the two a selection
+belongs to is `issues.py route`'s answer (§1), not this chat's.
 
 `I` below is `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/issues.py`, run from the plugin's own
 directory (or with `--dir <plugin directory>`). It is the only writer of issue files and of
@@ -32,6 +39,23 @@ writes.
    - `recurred`: `I list --status recurred`.
 3. Show the selection as a table: id, status, severity, fault, title. Nothing selected: say
    so and stop.
+4. **The route.** Run `I route` with the same selection: the ids, or `--session <id8>`, or
+   `--status open,recurred`, or `--status recurred`. It prints one line and exits 0 or 3.
+   - Exit 0, `route: fix-issues`: go on to §2.
+   - Exit 3, `route: revise-plugin`, with the reason: more than six issues, more than three
+     issues across more than three roles, or an issue that recurred after two fixes. Print
+     the line, and stop with:
+
+     > This selection is `revise-plugin`'s. In a new chat, from this directory:
+     > `/plugin-dev:revise-plugin <slug> issues <the selection as typed>`
+     > It reads each role these issues name whole, writes one edit list, and `plan-phases`
+     > lands it in phases. To fix a few of them here, name them: `/plugin-dev:fix-issues
+     > <ids>`. To fix all of them here anyway: add `--here`.
+
+     Read no issue file and plan nothing before stopping: the plan is what this route
+     exists to keep out of one chat.
+   - With `--here` in the arguments, print the line, say the selection is being fixed here
+     on the user's `--here`, and go on to §2.
 
 ## 2. The plan, and your yes
 
@@ -155,6 +179,7 @@ whether it worked. Only an audit of a rerun can say an issue held.
 
 ## What this skill never does
 
+- Plan a selection `I route` gave to `revise-plugin`, unless the arguments carry `--here`.
 - Edit anything outside the worktree, or before the plan's yes.
 - Merge, bump, tag or push without a yes for each.
 - Set an issue to verified, or call `I check-result`: only an audit of a rerun can.

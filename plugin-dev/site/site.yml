@@ -2,17 +2,18 @@
 # Every key is optional; this file exists to fix the reading order of the workflow pages.
 
 # The four ways work reaches a plugin, smallest first, then how a run of one is checked.
+# plugin-revision is the route from facts (revise-plugin); phased-change the route from an idea.
 workflows_order:
   - small-change
   - phased-change
-  - review-sweep
+  - plugin-revision
   - new-plugin
   - audit-a-run
 
 # Workflow skills in the order you run them; the automatic three follow alphabetically.
 workflow_skills_order:
   - design-plugin
-  - review-plugin
+  - revise-plugin
   - plan-phases
   - run-phase
   - run-phases

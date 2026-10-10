@@ -1,13 +1,13 @@
 # The reconcile prompt
 
-`review-plugin` spawns one general-purpose subagent, REC, after the last unit wave, with the
+`revise-plugin` spawns one general-purpose subagent, REC, after the last unit wave, with the
 prompt below. REC is the only agent that reads every findings file, and the only writer of
 the edit list. Its list is the spec `plan-phases` plans from, so whatever a unit found and
 REC does not carry is lost; `edits.py check --findings` makes that visible.
 
 ## The prompt
 
-> You are REC, the reconcile unit of a review of the `<P>` plugin, in `<plugin dir>` on
+> You are REC, the reconcile unit of the review behind a planned change to the `<P>` plugin, in `<plugin dir>` on
 > branch `<branch>`. You edit no plugin file.
 >
 > Read, in this order:

@@ -15,6 +15,7 @@
         "The charts page is an .html file in outputs/ with one <pre class=\"mermaid\"> chart per workflow the user named, plus one system chart",
         "Chat message does not dump raw mermaid code (no ```mermaid fence in the final chat message)",
         "Every workflow chart has a caption naming its Unit, what it is Strengthened by, and where its Inputs come from",
+        "Every workflow chart draws its driver, the typed skill in the main thread, as a node the agents are spawned from, and its caption has a Driver line that names the script saying where a run stands and the ledger it reads, or says the workflow is one step with no ledger",
         "Agents are not one-per-job: at least one agent or agent-written file is used by two or more of the typed jobs",
         "Fan-out: at least one agent is designed to run as parallel instances, one per unit of source material",
         "The unit is strengthened: an evaluator or reviewer, in a separate agent from the producer, checks unit outputs against their source, or the page states why the unit needs none",
@@ -121,6 +122,7 @@
         "outputs/trading-agents/site/notes/0.1/0.1-design.md exists",
         "It has these ## headings, in this order: The idea, Workflows, How they fit together, Components, Outputs, Cost, Decisions taken, Platform facts, Build order, Non-goals (What must not break absent or deleted, since the mode is new)",
         "Under Workflows, every workflow has its own ### heading, a mermaid chart, a Unit line, a Strengthened by line, and an Input | Supplied by table",
+        "Under Workflows, every workflow also has a Driver line, a Where the run stands line (a script and its command, and a ledger that is a named file or stated as derived, or 'one step, no ledger'), a Returns line giving each spawned agent's statuses, and a Held by line",
         "How they fit together has a mermaid system chart and a table with the columns File, Written by, Read by, Fields read, Stale when, with at least one file read by two workflows",
         "Outputs states, for every file a reader depends on, what it cites, what it must never claim, and when it goes stale",
         "Cost gives, for every workflow, what a cold run reads and what a warm run reads, and the horizon assumed",
@@ -132,6 +134,27 @@
         "outputs/chat.md tells the user to run /plugin-dev:plan-phases 0.1 in a new chat, and says why it is a new chat"
       ],
       "added_in": "design-plugin split"
+    },
+    {
+      "id": 6,
+      "name": "not-a-workflow-goes-to-revise",
+      "kind": "behavioral",
+      "baseline": "none",
+      "harness": "evals/sets/files/design-plugin/not-a-workflow.md",
+      "prompt": "/plugin-dev:design-plugin 0.2-returns make the writer's return rule and the ship skill's handling of it consistent everywhere, and close the open audit issues",
+      "expected_output": "After reading the toy plugin, says the change adds and redraws no workflow, so it is not a design; names revise-plugin or fix-issues as the skill for it; stops before any interview round, chart or file.",
+      "files": [
+        "evals/fixtures/audit-run/make_session.py"
+      ],
+      "expectations": [
+        "`outputs/chat.md` says the change adds no workflow and redraws none (or an equivalent: it is fixes and a rule applied to what exists), so `design-plugin` is not the skill for it",
+        "`outputs/chat.md` names `/plugin-dev:revise-plugin` or `/plugin-dev:fix-issues` as the command to type instead, and for two audited issues in a two-file plugin it names `fix-issues` at least as an option",
+        "No interview round was held: `outputs/interview.md` records no `AskUserQuestion` round on purpose, workflows, scope or boundaries",
+        "No charts page and no writeup were produced: `outputs/` holds no `.html` file and no `*-design.md`",
+        "`outputs/git-log.txt` shows only `main` at the fixture's commits: no `toy-0.2-returns` branch and no extra worktree",
+        "`transcript.md` shows the plugin's files were read (`agents/writer.md` and `skills/ship/SKILL.md`) before the skill said the change was not a design"
+      ],
+      "added_in": "planning routes (plugin-dev-planning-routes branch)"
     }
   ]
 }

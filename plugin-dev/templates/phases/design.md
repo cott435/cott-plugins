@@ -14,7 +14,7 @@ not written here is lost.
 ## The idea
 
 <The restated idea, as approved at the charts gate: one paragraph, in the user's terms, of what exists when this is built. (change) What is wrong
-today and what the change makes true, citing the review, eval or incident behind it.>
+today in the workflow being changed and what the change makes true, citing the eval or incident behind it.>
 
 ## Workflows
 
@@ -29,6 +29,16 @@ flowchart TB
   %% the approved chart for this workflow
 ```
 
+- **Driver:** <the typed skill that drives this workflow in the main thread, and what it
+  holds: what the script prints, what each agent returns, the user's answers. Nothing else>
+- **Where the run stands:** <the script and its command that prints the next step and each
+  agent's slice, with an exit code per outcome; the ledger it reads, either a file and what
+  one row holds, or "derived" and from which files; and the command that checks a step and
+  writes its row. A workflow of one step: "one step, no ledger">
+- **Returns:** <one entry for every agent in this workflow's chart, an agent another workflow
+  also spawns included: its closed list of statuses, and what the driver does on each>
+- **Held by:** <the hook behind each step that must pass before its agent stops, and behind
+  each write scope; or "nothing must hold" and why>
 - **Unit:** <what one instance reads, and the file it writes, with that file's fields>
 - **Strengthened by:** <structure, evaluator, revision cap, never-claim rules, and why>
 

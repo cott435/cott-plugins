@@ -60,7 +60,7 @@ Authored, and committed:
   hand-offs, the order of authority. Omitted entirely if the plugin has no such page.
 - `site/workflows/*.md` — one page per pipeline
 - `site/notes/*.md` — design docs and decision records; each gets a nav entry under "Notes"
-- `site/notes/<slug>/` — one folder per plan, from `design-plugin` or `review-plugin`,
+- `site/notes/<slug>/` — one folder per plan, from `design-plugin` or `revise-plugin`,
   `plan-phases` and `run-phase`; only its `<slug>-00-overview.md` gets a nav entry under
   "Notes", so the spec, the phase notes, the findings and the ledger stay in the repo and out
   of the site

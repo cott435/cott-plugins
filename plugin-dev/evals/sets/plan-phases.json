@@ -29,7 +29,7 @@
         "outputs/trading-agents/site/notes/0.1/0.1-progress.md has phase 0 'in progress' and every other row 'todo'",
         "outputs/chat.md gives the line to run /plugin-dev:run-phase 0.1 and the number of phases"
       ],
-      "added_in": "design-plugin split (replaces the old eval 4, trading-through-phase-notes); rewritten in review-plugin for notes written by run-phase"
+      "added_in": "design-plugin split (replaces the old eval 4, trading-through-phase-notes); rewritten in revise-plugin for notes written by run-phase"
     },
     {
       "id": 2,
@@ -71,7 +71,7 @@
         "outputs/toy-plugin/site/notes/fix/fix-progress.md has phase 0 'done' and every other row 'todo'",
         "outputs/chat.md gives the line to run /plugin-dev:run-phase fix"
       ],
-      "added_in": "review-plugin; harness resets greet to the reviewed state after iteration 1"
+      "added_in": "revise-plugin; harness resets greet to the reviewed state after iteration 1"
     }
   ]
 }

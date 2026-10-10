@@ -1,6 +1,6 @@
 ---
 name: design-plugin
-description: Turn an idea for a new plugin, or a large change to one, into an approved design through discussion. Interviews the user in rounds, composes the jobs into loops (each loop's unit of work, what makes that unit strong, where its inputs come from, the files where loops meet), shows one flow chart per workflow plus a system chart for approval, then writes the design up for approval. Commits the approved writeup as site/notes/{slug}/{slug}-design.md, which plan-phases reads in a fresh chat. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json) for a change that adds or redraws a workflow across several agents or skills, or from the marketplace repo root with --new to start a plugin that will have more than a skill or two. A sweep of what is wrong across an existing plugin is review-plugin's, not this skill's.
+description: Turn an idea for a new plugin, or for a workflow to add to a plugin or redraw in it, into an approved design through discussion. Interviews the user in rounds and composes each workflow from its driver down (the typed skill that drives it, the script and ledger that say where a run stands, each loop's unit of work, what makes that unit strong, where its inputs come from, the files where loops meet), shows one flow chart per workflow plus a system chart for approval, then writes the design up for approval. Commits the approved writeup as site/notes/{slug}/{slug}-design.md, which plan-phases reads in a fresh chat. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json) for a change that adds or redraws a workflow, or from the marketplace repo root with --new to start a plugin that will have more than a skill or two. A change across many of a plugin's agents and skills that starts from facts about it (audited issues, evals, a rule they must all meet) is revise-plugin's, not this skill's.
 argument-hint: "<slug> [what the change is]  |  --new <plugin-name> [what it does]"
 disable-model-invocation: true
 ---
@@ -24,13 +24,21 @@ until it is right:
 
 Nothing is written in the repo before the second gate: no branch, no scaffold, no file.
 
-This skill is for changes that start from an idea of what should exist. A change that starts
-from evidence of what is wrong (recurring audits, contradictions, a context budget) across a
-plugin too big to read in one chat is `review-plugin`'s: its edit list is the spec, and it
-needs no charts. When its decisions add a new workflow, a new agent with its own loop, or a new
-file two workflows meet at, it lists those items under **Needs a design**, and this skill
-designs just them on the review's branch
-(see **From a review**).
+This skill is for changes that start from an idea of what should exist, and it works by
+workflow: a new plugin is its workflows, and a change is one workflow added or redrawn. Each
+is designed from its driver down, in the shape `plugin-anatomy` gives every workflow. A
+change that starts from facts about the plugin as it is (recurring audits, eval results,
+contradictions, a context budget, a rule every agent and skill must now meet) and runs
+across many agents and skills, whatever workflow they belong to, is `revise-plugin`'s: its
+edit list is the spec, and it needs no charts. When its decisions add a new workflow, a new
+agent with its own loop, or a new file two workflows meet at, it lists those items under
+**Needs a design**, and this skill designs just them on that branch (see **From an edit
+list**).
+
+An idea that turns out to be neither, a rule to apply or a set of fixes across the bundle
+with no workflow added or redrawn, is not a design: say so after the reading and before the
+first round, name `/plugin-dev:revise-plugin <slug>` (or `/plugin-dev:fix-issues`, when it
+is a few issues an audit filed), and stop.
 
 ## Two modes
 
@@ -52,7 +60,8 @@ A question a file could have answered wastes a round, so reading comes first.
 - **change:** read every agent and skill file the change could touch, the plugin's `CLAUDE.md`
   for its own rules, and its `contracts.yml`. Quote heading names, frontmatter fields and
   line-level rules from the files, not from memory.
-- **From a review**, when `site/notes/<slug>/<slug>-edits.md` exists on the branch: its
+- **From an edit list**, when `site/notes/<slug>/<slug>-edits.md` exists on the branch
+  (`revise-plugin` wrote it): its
   **Needs a design** section is the change to design, and nothing else in it. Its **Goal**
   is theme 1's answer and its **Decisions taken** are settled, not re-asked. Read the other
   items only through `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/edits.py index`, to see what the
@@ -87,8 +96,8 @@ leads to the same design.
 
 | # | **new** | **change** |
 |---|---|---|
-| 1 | Purpose and users: who types the commands, what they have today instead, what one good outcome looks like | What is wrong today: the review, eval or incident behind it, and what must be true after |
-| 2 | The workflows: every job, its trigger and deliverable; the source material a practitioner reads one piece at a time, and what a careful reading of one piece looks like | Scope: which agents and skills are in, which are explicitly out |
+| 1 | Purpose and users: who types the commands, what they have today instead, what one good outcome looks like | The workflow: the one being added, or what the existing one does today and what must be true of it after |
+| 2 | The workflows: every job, its trigger and deliverable; the source material a practitioner reads one piece at a time, and what a careful reading of one piece looks like; how long a run takes and where it can stop partway | Scope: the workflow's driver, agents, scripts and hooks that are in, and the workflows explicitly left as they are |
 | 3 | Data, integrations, secrets: sources, APIs, credentials, volumes, where files live | What must not break: headings other files parse, commands users already type, defaults |
 | 4 | Boundaries and risk: what it must never do (and whether "never" means a hook or an instruction), what needs a human yes, non-goals | Decisions: vendor vs. depend, a default that changes behavior, a name |
 
@@ -117,7 +126,8 @@ Draw one chart per workflow and one system chart, with the components table belo
 1. The idea restated: one paragraph, in the user's terms, of what will exist when this is
    built.
 2. The system chart.
-3. Each workflow's chart with its three-line caption (Unit, Strengthened by, Inputs from).
+3. Each workflow's chart with its four-line caption (Driver, Unit, Strengthened by, Inputs
+   from).
 4. The components table.
 5. The suggestions: each with one line of why.
 
@@ -153,7 +163,7 @@ Only after the writeup is approved:
 1. Create the branch from the default branch: `<plugin>-<slug>` (**new**: `<name>-0.1`). Put it
    where the repo's `CLAUDE.md` says branch work goes. In this marketplace that is a worktree:
    `git worktree add ../cott-plugins-worktrees/<plugin>_<branch> -b <branch> <default branch>`.
-   Work from there. **From a review**, the branch and worktree exist already: use them.
+   Work from there. **From an edit list**, the branch and worktree exist already: use them.
 2. **new only:** invoke `new-plugin` and complete its scaffold and marketplace steps, so the
    design lands in a directory that already builds.
 3. Write the approved writeup to `<plugin>/site/notes/<slug>/<slug>-design.md`, exactly as

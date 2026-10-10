@@ -27,8 +27,10 @@ flowchart TD
   X --> M["merge · spot-check every ERROR and every verdict · still at HEAD?"]
   M --> O["issues.py: new · seen · Checks lines<br/>runs/audits/reports/date-id8.md · one runs/audits/ commit<br/>log-eval → evals/date-audit-….md"]
   O --> ISS
-  O --> U["summary in chat; tells you to type fix-issues"]
-  U --> FI["/plugin-dev:fix-issues run:id8<br/>(any chat: plan, your yes, worktree, checks, Fix + Verify)"]
+  O --> U["summary in chat; issues.py route says which skill takes the issues"]
+  U -->|"route: fix-issues"| FI["/plugin-dev:fix-issues run:id8<br/>(any chat: plan, your yes, worktree, checks, Fix + Verify)"]
+  U -->|"route: revise-plugin"| RV["/plugin-dev:revise-plugin slug issues run:id8<br/>(edit list → plan-phases → phases; the last phase records Fix + Verify)"]
+  RV --> ISS
   FI --> ISS
   FI -->|"merge, bump: each on your yes"| UP["/plugin update, then rerun the workflow"]
   UP -.->|the rerun's transcripts| A
@@ -129,7 +131,10 @@ dozen. The cross pass runs after them.
 - the path to the run report, `dev-team/runs/audits/reports/<date>-<id8>.md`, and to the re-rendered
   `flow.html`, where each audited box now carries its ERROR count or a ✓ and the ids of the
   issues first found there;
-- that `/plugin-dev:fix-issues run:<id8>` fixes what it found.
+- which skill takes what it found, as `issues.py route` says: `/plugin-dev:fix-issues
+  run:<id8>` for a few issues, or `/plugin-dev:revise-plugin <slug> issues run:<id8>` when
+  there are more than six, more than three across more than three roles, or one that
+  recurred after two fixes.
 
 Every ERROR and WARN, and every `definition` NOTE, is now an issue: one file under
 `dev-team/runs/audits/issues/` with an id such as `DT-031`. A finding that breaks the same quoted
@@ -163,6 +168,12 @@ Open a chat on the plugin, this one or any other, even days later, and type:
 `run:<id8>` takes the issues that audit found or saw again. With issue ids
 (`/plugin-dev:fix-issues DT-004 DT-011`) it takes those; with nothing, or `open`, every open
 issue and every one whose fix recurred; with `recurred`, only those. It shows them as a table.
+
+Then it runs `issues.py route` on the selection. A selection the script gives to
+`revise-plugin` is not planned here: `fix-issues` prints the reason and the command and
+stops, because one chat planning one edit per issue is the wrong tool for thirty issues
+across eight roles. Name a few ids to fix those here, or add `--here` to fix them all here
+anyway.
 
 1. **The plan, and your yes.** For each issue it reads the issue file, the run report's
    finding and the rule in the working tree (by its quoted text, since line numbers drift).
