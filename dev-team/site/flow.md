@@ -1,52 +1,56 @@
 # The flow
 
-How the pieces hand work to each other: where each agent gets its facts, the loop the driver
-runs, who talks to whom, which document wins a disagreement, and what lives under `docs/`.
+The map of dev-team: which command to type, which agent uses which skill, who writes and
+reads each document under `docs/`, how the driver runs, and which document wins a
+disagreement. The workflow pages walk each route step by step.
 
-## Where truth comes from
+## Which route
 
-A section is built from its own design but consumes other work from what actually shipped.
-Three rules, each the same rule: the document written from the thing beats the document
-written about it before it existed.
+| You have | Type | Page |
+|---|---|---|
+| a rough idea, scope not settled | `/dev-team:shape-brief`, then `/dev-team:plan-repo` | [New repo, package by package](workflows/new-repo.md) |
+| a new repo, nothing built | `/dev-team:plan-repo`, then per package, lowest first, `/dev-team:plan-package <pkg>` and `/dev-team:run-package <pkg>` | [New repo, package by package](workflows/new-repo.md) |
+| a planned repo that needs another package | `/dev-team:plan-repo "<what to add>"`, then `/dev-team:plan-package <pkg>` | [Adding a package to an existing repo](workflows/add-package.md) |
+| a change to shipped code | `/dev-team:plan-package <pkg> "<change>"`, then `/dev-team:run-package <pkg>` | [Changing shipped code](workflows/change-shipped-code.md) |
+| an existing repo with no `docs/`, or docs that drifted | `/dev-team:map-repo`, then `/dev-team:run-package <pkg>` | [Adopting an existing repo](workflows/adopt-existing-repo.md) |
+| an old, messy repo to rebuild from | `/dev-team:extract-legacy <old repo>`, then `/dev-team:plan-repo` | [Rebuilding from a legacy repo](workflows/rebuild-from-legacy.md) |
+| built code to iterate on by hand | `/dev-team:pair <pkg>/<section>` | [Pairing on a section](workflows/pair-on-a-section.md) |
 
-- **A README over a design.** Inside a package a dependency is a section; a DONE section has a
-  README written by the implementer from the code, and the designer, tester and implementer of
-  every section that depends on it read that README, never the dependency's design. The
-  `surface` section is designed and tested before its dependencies are DONE, right after PLAN:
-  its designer and tester read the contract's **Section interfaces** and **Call paths** in
-  place of the READMEs that do not exist yet, and its implementer, which runs last, reads the
-  READMEs; where one differs from the contract, the README wins and the difference is a
-  deviation.
-- **`interface.md` over a contract.** Across packages a dependency is a package; once its
-  `surface` section is DONE it has an `interface.md`, and a consumer imports only the names it
-  lists, only from the package's top level. Before then, the upstream `contract.md` is read and
-  every consumed name is marked provisional.
-- **A probe doc over an assumption.** An external source is what `docs/sources/<source>.md`
-  observed on the date probed, not what the vendor documents or the designer expected.
+Any time: `/dev-team:set-constraints` writes the quality bar, `/dev-team:probe-source`
+re-probes a source that changed, `/dev-team:finalize-project` writes the human-facing docs,
+and `/dev-team:status` says where everything stands and the next command.
 
-```mermaid
-flowchart LR
-  subgraph data["package data"]
-    direction LR
-    ingD["design/ingest.md"]
-    ingR["ingest/README.md<br/>(shipped)"]
-    clnD["design/clean.md"]
-    cln["designer · tester · implementer<br/>data/clean"]
-    surf["surface section<br/>designed from the contract after PLAN<br/>built last from every README"]
-    iface["interface.md<br/>(shipped)"]
-    clnD --> cln
-    ingR -- "reads what shipped" --> cln
-    ingD -. "never" .-> cln
-    ingR --> surf --> iface
-  end
-  src["docs/sources/trades.md<br/>(observed)"] --> cln
-  subgraph analysis["package analysis"]
-    feat["designer · tester · implementer<br/>analysis/features"]
-  end
-  iface -- "reads what shipped<br/>from data import load_trades" --> feat
-```
+## Agents and skills
 
-## The loop
+<!-- flow:agents-skills -->
+
+## Who writes what
+
+Every agent works from documents and leaves documents. An arrow runs from an agent to a
+document it writes.
+
+<!-- flow:writes -->
+
+## Who reads what
+
+An arrow runs from a document to an agent that reads it. A dependency is read as what
+shipped (a README, an `interface.md`, a probe doc), never as its plan.
+
+<!-- flow:reads -->
+
+<!-- flow:documents -->
+
+## How the driver runs
+
+`/dev-team:run-package` is the one driver. It keeps no ledger: `status.py` derives every
+section's state from the documents, the code, git and the gate records on every call, so a
+re-run after a crash, a hand edit or a week away behaves as the uninterrupted run would
+have. The driver holds the ready set `status.py` prints, each return's first line, and your
+answers.
+
+<!-- flow:drivers -->
+
+### The loop
 
 `/dev-team:run-package <pkg>` first builds the package's workspace when it has none, so every
 test is written and run inside it under the repo's own lint rules; then it derives every
@@ -131,6 +135,49 @@ level names. Every state
 the driver acts on is derived, so a re-run after a crash, a hand edit or a week away behaves
 exactly as the uninterrupted run would have.
 
+## Where truth comes from
+
+A section is built from its own design but consumes other work from what actually shipped.
+Three rules, each the same rule: the document written from the thing beats the document
+written about it before it existed.
+
+- **A README over a design.** Inside a package a dependency is a section; a DONE section has a
+  README written by the implementer from the code, and the designer, tester and implementer of
+  every section that depends on it read that README, never the dependency's design. The
+  `surface` section is designed and tested before its dependencies are DONE, right after PLAN:
+  its designer and tester read the contract's **Section interfaces** and **Call paths** in
+  place of the READMEs that do not exist yet, and its implementer, which runs last, reads the
+  READMEs; where one differs from the contract, the README wins and the difference is a
+  deviation.
+- **`interface.md` over a contract.** Across packages a dependency is a package; once its
+  `surface` section is DONE it has an `interface.md`, and a consumer imports only the names it
+  lists, only from the package's top level. Before then, the upstream `contract.md` is read and
+  every consumed name is marked provisional.
+- **A probe doc over an assumption.** An external source is what `docs/sources/<source>.md`
+  observed on the date probed, not what the vendor documents or the designer expected.
+
+```mermaid
+flowchart LR
+  subgraph data["package data"]
+    direction LR
+    ingD["design/ingest.md"]
+    ingR["ingest/README.md<br/>(shipped)"]
+    clnD["design/clean.md"]
+    cln["designer · tester · implementer<br/>data/clean"]
+    surf["surface section<br/>designed from the contract after PLAN<br/>built last from every README"]
+    iface["interface.md<br/>(shipped)"]
+    clnD --> cln
+    ingR -- "reads what shipped" --> cln
+    ingD -. "never" .-> cln
+    ingR --> surf --> iface
+  end
+  src["docs/sources/trades.md<br/>(observed)"] --> cln
+  subgraph analysis["package analysis"]
+    feat["designer · tester · implementer<br/>analysis/features"]
+  end
+  iface -- "reads what shipped<br/>from data import load_trades" --> feat
+```
+
 ## Hand-offs
 
 ```mermaid
@@ -201,29 +248,3 @@ higher document overrides is not a spec gap. When a higher document is itself wr
 
 **For what a section consumes**, the provider's shipped document — a sibling's README, an
 upstream `interface.md`, a probe doc — wins over every plan-time document about that provider.
-
-## The `docs/` map
-
-| File | Written by | Read by | Stale when |
-|---|---|---|---|
-| `docs/architecture.md` | architect (plan-repo, map-repo phase 3, sync-plan) | every agent; `status.py` (Packages table) | the brief differs from `docs/history/brief-contracted.md`; a repo-level change file is open |
-| `docs/packages/<pkg>/contract.md` | architect (plan-package, map-repo phase 2, sync-plan) | `status.py` (Sections table, Call paths), designer, tester, implementer, reviewer, documenter | `docs/architecture.md` changed after it; an open `spec-change:contract` or change file names it |
-| `docs/packages/<pkg>/design/<section>.md` | designer | tester, implementer, reviewer A, `status.py` | its contract row changed; a cited probe doc is newer; an open change file or `spec-change:design` names it |
-| `docs/sources/<source>.md` (+ sample or stats, probe or profile script) | researcher; the shared body only grows, and a line is rewritten only when the observation changed | designer, implementer, reviewer, architect, `status.py` | a new consuming section has no entry yet (it needs PROBE); for a consumer's design, when a line the design was written against is gone or reworded (added lines re-open nothing) |
-| `docs/sources/<token>.md` (+ `.profile.py`, `.pull.py`, `.sample.json`), the data profile of a `stage:` source, written to the contract's **Data stages** row | profiler; append-only once round 0 closes | designer, tester, implementer, reviewers, `status.py`, later profiler rounds | the section's code is newer than the newest round line's commit; never because a dependency's code changed (re-profile by hand with `--step PROBE`) |
-| `tests/intent/<section>/` | tester | implementer, reviewer, the stop gate, `status.py` | the design is newer than the tree |
-| section `README.md`; the `surface` section's is `docs/packages/<pkg>/interface.md` | implementer; `pair` at wrap-up | dependents' designer, tester and implementer, reviewer, documenter, architect, `status.py` | the code is newer than it |
-| `docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<a, b or s>.md` (2.0: `docs/reviews/…`, still read) | reviewer | `status.py`, the fix-round implementer, the next reviewer | the code is newer than its `Commit:` |
-| `docs/packages/<pkg>/reviews/paths/<date>-r<n>-p.md` | reviewer (`Focus: paths`) | `status.py`, the FIX implementer, the next paths review | a section's code changed after its `Commit:` |
-| `docs/packages/<pkg>/deviations/<section>.md` (one per section; the 2.0 `docs/deviations/…` still read) | implementer, designer, tester, reviewer, architect; `pair` at wrap-up | reviewer, tester, architect, `status.py`, the stop gate | never; an entry speaks while its `Status:` is `open` |
-| `docs/packages/<pkg>/changes/<slug>.md` (one per affected package; the 2.0 `docs/changes/…` still read) | architect (a CHANGE outcome) | `status.py`, designer (delta), implementer, reviewer, architect (sync-plan) | its sections are DONE and `sync-plan` has not run |
-| `docs/decisions.md` | `sync_decisions.py` from the inboxes; architect (stubs); you, the driver or `pair` (`Decision:`, `Status:`) | every agent; `status.py`; documenter | never; retired by `superseded` |
-| `docs/packages/<pkg>/decisions/<section>.md` (the inbox) | designer (`D?` stubs), implementer (`Applied:`) | `sync_decisions.py`; `status.py --run-gate` | an entry not yet in `docs/decisions.md` (`sync_decisions.py --all` repairs) |
-| `docs/constraints.md` | `set-constraints`, you | the stop gate, the integration check, `status.py --run-gate` and `--scaffold`, CI, reviewer (Measured, Exceptions), tester (coverage) | you change the bar |
-| `docs/followups.md` | reviewer (out-of-diff WARNINGs, `ELSEWHERE` lines, defer), architect (map-repo defects) | the fix-round implementer (entries for its section), documenter, you | never counted, never a gate |
-| `docs/history/<date>-<name>.md` | architect, before every contract edit | you | never |
-| `docs/index.md`, `packages/*/README.md`, root `README.md` | documenter | you | a shipped document changed after it |
-| `.dev-team/gate/<pkg>/<section>.txt` | the stop gate, on every implementer stop; `gate_on_stop.py --report` (`pair` at wrap-up) | `status.py` (holds a blocked or let-through section BLOCKED), the reviewer (its evidence), the driver (quotes it when it asks about a gate-BLOCKED row) | its `commit:` is not the section's current commit, or it has none (written before 2.4) |
-| `.dev-team/integration/<pkg>.txt` | `gate_on_stop.py --integration`, run by the driver once every section is DONE | `status.py` (re-opens the sections a failure lies in; `shipped:` needs `pass`), the FIX implementer (in its **Review**), the driver (quotes it when it asks) | anything under the package root changed after its `commit:`, or it ran on uncommitted changes |
-| `.github/workflows/ci.yml` | implementer (scaffold) | GitHub Actions, on every push to `main` and pull request; `status.py --scaffold` (every Floor and Enforced command, as text) | a Floor or Enforced row it lacks |
-| `.dev-team/stop/<pkg>/<section>` | implementer (`blocked` or `spec-change`) | the stop gate, for that section only | deleted by the gate |

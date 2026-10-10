@@ -34,3 +34,173 @@ config_files:
   # python-style-guide's frontmatter says "Complete terms in LICENSE" — CC BY 3.0 attribution
   # for Google's guide. A pointer to a file nobody reading the site can open is not attribution.
   - skills/python-style-guide/LICENSE
+
+# The flow page (site/flow.md). Its markers are filled from this block and from each agent's
+# `skills:` frontmatter: who uses which skill, who writes and reads which document, and how
+# the driver runs. See plugin-dev's `build-site`, "The flow page".
+flow:
+  # Left to right in the charts. Anyone else a document names (a script, a hook, you, a
+  # skill that runs in your chat) is shown in the documents table only.
+  roles:
+    - {id: run-package, note: driver}
+    - architect
+    - researcher
+    - profiler
+    - designer
+    - tester
+    - implementer
+    - reviewer
+    - documenter
+    - curator
+
+  # Skills an agent invokes with the Skill tool, beyond the ones its frontmatter preloads.
+  uses:
+    architect:
+      sometimes:
+        - planning-templates: before writing a contract, a change file or a ledger entry
+    curator:
+      always: [git-workflow-and-versioning]
+    documenter:
+      always: [git-workflow-and-versioning]
+    researcher:
+      always: [git-workflow-and-versioning]
+      sometimes:
+        - planning-templates: a probe, before writing the source doc
+    profiler:
+      always: [git-workflow-and-versioning, planning-templates]
+    designer:
+      sometimes:
+        - data-quality: the contract row's `builds with` names it
+    implementer:
+      sometimes:
+        - security-review: a trigger in its description matches the section
+        - debugging-and-error-recovery: a test still fails after two fix attempts
+        - workspace-scaffold: the scaffold run, before any section
+        - python-implementation: a module is promoted to a package
+    reviewer:
+      sometimes:
+        - security-review: "reviewer B in round 1; later, when the diff touches code it names"
+
+  documents:
+    - name: repo contract
+      path: docs/architecture.md
+      writes: [{architect: "plan-repo, map-repo phase 3, sync-plan"}]
+      reads: [all, {"`status.py`": Packages table}]
+      stale: the brief differs from `docs/history/brief-contracted.md`; a repo-level change file is open
+    - name: package contract
+      path: docs/packages/<pkg>/contract.md
+      writes: [{architect: "plan-package, map-repo phase 2, sync-plan"}]
+      reads: [designer, tester, implementer, reviewer, documenter, {"`status.py`": "Sections table, Call paths"}]
+      stale: "`docs/architecture.md` changed after it; an open `spec-change:contract` or change file names it"
+    - name: change file
+      path: docs/packages/<pkg>/changes/<slug>.md
+      writes: [{architect: a CHANGE outcome}]
+      reads: [{designer: delta}, implementer, reviewer, {architect: sync-plan}, "`status.py`"]
+      stale: its sections are DONE and `sync-plan` has not run
+    - name: contract history
+      path: docs/history/<date>-<name>.md
+      writes: [{architect: before every contract edit}]
+      reads: [you]
+      stale: never
+    - name: source probe
+      path: docs/sources/<source>.md
+      writes: [{researcher: "the shared body only grows"}]
+      reads: [designer, implementer, reviewer, architect, "`status.py`"]
+      stale: a new consuming section has no entry yet; for a design, a line it was written against is gone or reworded
+    - name: project skills
+      path: .claude/skills/<name>/
+      writes: [{researcher: "extract, one inventory row each"}]
+      reads: [{designer: its row's `builds with`}, {profiler: its row's `builds with`}]
+    - name: data profile
+      path: docs/sources/<token>.md
+      writes: [{profiler: append-only once round 0 closes}]
+      reads: [designer, tester, implementer, reviewer, {profiler: later rounds}, "`status.py`"]
+      stale: the section's code is newer than the newest round line's commit
+    - name: section design
+      path: docs/packages/<pkg>/design/<section>.md
+      writes: [designer]
+      reads: [tester, implementer, {reviewer: A}, "`status.py`"]
+      stale: its contract row changed; a cited probe doc is newer; an open change file or `spec-change:design` names it
+    - name: decisions inbox
+      path: docs/packages/<pkg>/decisions/<section>.md
+      writes: [{designer: "`D?` stubs"}, {implementer: "`Applied:`"}]
+      reads: ["`sync_decisions.py`", "`status.py --run-gate`"]
+      stale: an entry is not yet in `docs/decisions.md`
+    - name: decisions
+      path: docs/decisions.md
+      writes: [{"`sync_decisions.py`": from the inboxes}, {architect: stubs}, {run-package: your answers}, you, "`pair`"]
+      reads: [all, "`status.py`"]
+      stale: never; retired by `superseded`
+    - name: intent tests
+      path: tests/intent/<section>/
+      writes: [tester]
+      reads: [implementer, reviewer, the stop gate, "`status.py`"]
+      stale: the design is newer than the tree
+    - name: section README
+      path: "<section>/README.md; for `surface`, docs/packages/<pkg>/interface.md"
+      writes: [implementer, {"`pair`": at wrap-up}]
+      reads: [{designer: a dependent's}, {tester: a dependent's}, {implementer: a dependent's}, reviewer, documenter, architect, "`status.py`"]
+      stale: the code is newer than it
+    - name: stop marker
+      path: .dev-team/stop/<pkg>/<section>
+      writes: [{implementer: "`blocked` or `spec-change`"}]
+      reads: [the stop gate]
+      stale: deleted by the gate
+    - name: CI workflow
+      path: .github/workflows/ci.yml
+      writes: [{implementer: scaffold}]
+      reads: [GitHub Actions, "`status.py --scaffold`"]
+      stale: a Floor or Enforced row it lacks
+    - name: deviations
+      path: docs/packages/<pkg>/deviations/<section>.md
+      writes: [implementer, designer, tester, reviewer, architect, {"`pair`": at wrap-up}]
+      reads: [reviewer, tester, architect, the stop gate, "`status.py`"]
+      stale: never; an entry speaks while its `Status:` is `open`
+    - name: review reports
+      path: docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<a, b or s>.md
+      writes: [reviewer]
+      reads: [{implementer: the fix round}, {reviewer: the next round}, "`status.py`"]
+      stale: the code is newer than its `Commit:`
+    - name: paths review
+      path: docs/packages/<pkg>/reviews/paths/<date>-r<n>-p.md
+      writes: [{reviewer: "`Focus: paths`"}]
+      reads: [{implementer: FIX}, {reviewer: the next paths review}, "`status.py`"]
+      stale: a section's code changed after its `Commit:`
+    - name: followups
+      path: docs/followups.md
+      writes: [{reviewer: "out-of-diff WARNINGs, `ELSEWHERE` lines, defer"}, {architect: map-repo defects}]
+      reads: [{implementer: "the fix round, its section's entries"}, documenter, you]
+      stale: never counted, never a gate
+    - name: gate record
+      path: .dev-team/gate/<pkg>/<section>.txt
+      writes: [{the stop gate: on every implementer stop}, {"`pair`": "`gate_on_stop.py --report`"}]
+      reads: [{reviewer: its evidence}, {run-package: quotes it when it asks}, "`status.py`"]
+      stale: its `commit:` is not the section's current commit
+    - name: integration record
+      path: .dev-team/integration/<pkg>.txt
+      writes: [{run-package: "`gate_on_stop.py --integration`"}]
+      reads: [{implementer: "FIX, in its Review"}, {run-package: quotes it when it asks}, "`status.py`"]
+      stale: anything under the package root changed after its `commit:`
+    - name: constraints
+      path: docs/constraints.md
+      writes: ["`set-constraints`", you]
+      reads: [{reviewer: "Measured, Exceptions"}, {tester: coverage}, the stop gate, the integration check, "`status.py`", CI]
+      stale: you change the bar
+    - name: human docs
+      path: docs/index.md · packages/*/README.md · README.md
+      writes: [documenter]
+      reads: [you]
+      stale: a shipped document changed after it
+    - name: legacy inventory
+      path: docs/legacy/inventory.md
+      writes: [curator]
+      reads: [{researcher: "extract, one row"}, you]
+
+  drivers:
+    - skill: run-package
+      ledger: "none kept: `status.py` derives every section's state from the documents, the code, git and the gate records"
+      next: "`status.py`: the ready set"
+      spawns: every ready section's next agent, in one message
+      returns: "Result: done | stopped | blocked | spec-change"
+      writer: "each agent's own documents and one commit; the stop gate's record"
+      held: "`gate_on_stop.py` on the implementer's `SubagentStop`, exit 2 until the section is green; `guard_writes.py` and `guard_bash.py` on `PreToolUse`, each agent to its own paths; `format_on_edit.py` and `sync_decisions.py` on `PostToolUse`"

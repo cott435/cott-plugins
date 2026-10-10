@@ -26,6 +26,15 @@ only, selected by `disable-model-invocation: true` rather than by a second list.
 own skill names are never listed anywhere else: at run time the architect derives them with
 `ls ${CLAUDE_PLUGIN_ROOT}/skills`.
 
+## The flow page is drawn from `site/site.yml`
+
+`site/flow.md`'s table of agents and skills, its two document charts, the documents table
+and the driver's row are drawn by `plugin-dev`'s `build-site` from the `flow:` block of
+`site/site.yml` and each agent's `skills:` frontmatter. An agent that starts invoking a
+skill, a document under `docs/` that gains a writer or a reader or changes when it goes
+stale, or a change to the driver's hooks is an edit to that block, in the same change. It
+replaced the hand-written `docs/` map, so there is no second copy to keep in step.
+
 ## The shared protocol is in the parent, and it is not optional
 
 The repo root `CLAUDE.md` carries the rules this plugin is maintained by — when `build-site`,
