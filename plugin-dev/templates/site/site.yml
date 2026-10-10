@@ -21,7 +21,8 @@
 #   - pyproject-lint-config.toml
 
 # The flow page (site/flow.md) is drawn from this block and from the agents' frontmatter.
-# See `build-site`, "The flow page", for every field.
+# See `build-site`, "The flow page", for every field. Once the block exists, declare a
+# `flow:` claim in contracts.yml (`check-contracts`), which holds it to the files.
 # flow:
 #   roles:                    # left to right in the charts; default: every agent
 #     - my-driver

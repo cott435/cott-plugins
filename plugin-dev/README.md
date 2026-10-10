@@ -105,7 +105,8 @@ Every plugin's site has the same shape. This README is the home page. **The flow
 map: the routes, a table of which role uses which skill, a chart of who writes each
 document and one of who reads it, and each driver's loop with its ledger. The last four
 are drawn by the builder from the agents' frontmatter and the `flow:` block of
-`site/site.yml`, so they cannot drift from each other. After them come one page per
+`site/site.yml`, so they cannot drift from each other, and `check-contracts` fails when the
+block and the agent and skill files disagree. After them come one page per
 workflow, then a page for every agent, skill, reference and script, found without any
 config.
 

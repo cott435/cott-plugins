@@ -1,7 +1,7 @@
 # The flow page drawn by the builder: agents × skills, who writes and reads what, how the drivers run
 
 **Tested against:** uncommitted — see working-tree diff on branch `plugin-dev-planning-routes` over `1069a0f` (`scripts/build_site.py`, `site/site.yml`, `site/flow.md`, `README.md`, `contracts.yml`, `skills/build-site/SKILL.md`, `templates/site/`, `templates/README.md`; in `dev-team`: `site/site.yml`, `site/flow.md`, `contracts.yml`) · model: none, every case is mechanical or read in a browser · 2026-10-10
-**Set:** none; the builder has no eval set · **Baseline:** `build_site.py` at `1069a0f`, run on the same two bundles · **Pass rate:** 9/9 cases
+**Set:** `evals/fixtures/flow/check.py` (16 cases) for the `flow` claim; none for the builder's layout · **Baseline:** `build_site.py` at `1069a0f`, run on the same two bundles · **Pass rate:** 13/13 cases
 
 ## What was tested
 
@@ -51,11 +51,48 @@ documents placed strictly left to right ran to seven rows on `dev-team`'s readin
 take four when the most shared are placed first; a document's path set to wrap anywhere
 shrank its table column to a few characters until it was given a minimum width.
 
+## The block held to the files (added the same day, over `2949ca8`)
+
+The first version of this log ended by saying nothing compared the hand-written `flow:`
+block to the agent and skill files. `contract_sweep.py` now has a `flow` claim that does,
+declared in both plugins' `contracts.yml`.
+
+**Method.** `python3 evals/fixtures/flow/check.py`, no model: a throwaway plugin whose block
+agrees with its files must pass the sweep and build its flow page with every marker filled;
+then fourteen copies, each with one planted disagreement, must each exit 1 and name it. Then
+the claim on the two real bundles as their blocks stood at `2949ca8`.
+
+| # | Case | Result |
+|---|---|---|
+| 10 | fixture: the agreeing block passes and builds | pass |
+| 11 | fixture: fourteen planted disagreements (a skill newly named, a use and a `names` entry no longer backed, a skill that does not exist, a document a new role names, a listed role that never names it, an agent that is no role, a hook wired and unnamed, named and unwired, named on the wrong event, a script that does not exist, a script the driver never names, a driver that is no skill, no block) | 14/14 fail as they should, each naming the file and line or the entry |
+| 12 | `plugin-dev`'s block as first written | 75 disagreements; 0 after the block was corrected |
+| 13 | `dev-team`'s block as first written | 42 disagreements; 0 after |
+
+Most of the 117 were mentions to classify (a file names a skill or a document without
+using it, now a `names` entry) and documents the files name by something other than their
+path (now a `match`). The rest were facts the hand-written block had wrong, several of them
+carried over from `dev-team`'s old `docs/` map:
+
+- the profiler writes to the decisions inbox, a section's deviations and `docs/followups.md`,
+  and reads the package contract and the source probes; none of that was listed;
+- the tester reads source probes, and the implementer reads `docs/constraints.md`;
+- the designer, tester, implementer and reviewer each read a `planning-templates` reference,
+  the designer reads `python-style-guide`'s `pipelines.md`, and the architect lists the
+  project skills by name;
+- the researcher never reads `docs/legacy/inventory.md`: the curator sends it one row;
+- in `plugin-dev`, the unit agents read the issues their row names, `run-phase` and
+  `plan-phases` can write an eval set, and `run-phase` does not write issue files itself (a
+  plan's last phase does, from its note).
+
 ## Verdict
 
-Pass. The builder's change is confined to the flow page, and both plugins' pages render as
-designed. Not tested: a real phone, Safari and Firefox (the charts use `orient="auto"`
+Pass, 13/13. The builder's change is confined to the flow page, both plugins' pages render
+as designed, and the block they are drawn from now fails `check-contracts` when it and the
+files disagree. Not tested: a real phone, Safari and Firefox (the charts use `orient="auto"`
 markers and CSS variables with fallbacks, nothing newer), and a plugin with more than about
-fourteen roles, where the chart scrolls. The `flow:` blocks were written by hand from the
-skill and agent files; no check compares them to those files, so a role that starts using a
-skill without an edit to the block goes unnoticed until someone reads the page.
+fourteen roles, where the chart scrolls. What the `flow` claim cannot see: a role that
+already names a skill or a document and changes what it does with it (from naming to
+running, from reading to writing), the free text of `spawns`, `returns` and each condition,
+and the two `plugin-dev` documents marked `match: false` (the plugin's own files, the
+release), which are too general to look for.

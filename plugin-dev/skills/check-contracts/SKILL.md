@@ -54,7 +54,7 @@ Report the result, and when a check fails or a new claim is added, record the ru
 
 ## Declaring claims — `contracts.yml` at the bundle root
 
-Absent, nothing is checked and the script says so. Four kinds:
+Absent, nothing is checked and the script says so. Five kinds:
 
 ```yaml
 forbid:                 # a pattern that must not appear in an authored file
@@ -88,6 +88,10 @@ frontmatter:            # every frontmatter key is one the platform documents, a
   - name: every agent uses only fields plugin agents honor
     kind: agent                    # agent or skill
     files: 'agents/*.md'           # a glob or a list; a glob matching nothing is a FAIL
+
+flow:                   # the block the site's flow page is drawn from agrees with the files
+  - name: the flow page's block agrees with the agents, skills, scripts and hooks
+    file: site/site.yml            # the file holding `flow:`
 ```
 
 `form` is how the target list writes a name, because a list is checked where it lives rather
@@ -117,6 +121,30 @@ carrying its own copy. A misspelled key (`allowed_tools`) fails as undocumented,
 plugin agents ignore (`hooks`, `mcpServers`, `permissionMode`, `initialPrompt`) fails as
 ignored: both look fine and do nothing at run time. When the platform adds a field, the fix is
 in the reference, with its source, and the check follows.
+
+`flow` holds `site/site.yml`'s hand-written `flow:` block (`build-site`, **The flow page**)
+to the files it describes, so the flow page cannot say what the bundle does not. A role's
+file is `agents/<id>.md`, `skills/<id>/SKILL.md`, or the `file:` its entry gives, and every
+rule is about what that file names:
+
+- **Skills.** A model-invocable skill the file names must be in the role's `always`,
+  `sometimes` or `names` (it is mentioned, not run), or in its agent's `skills:`
+  frontmatter. Each of those lists may name only skills the file names.
+- **Documents.** A role in a document's `writes` or `reads` must name the document: its
+  `path`, where `<x>` stands for anything, or one of its `match` strings as written. A role
+  whose file names it must be in `writes`, `reads` or `names`. `match: false` leaves out a
+  document too general to look for, and `relays: true` on a role (a driver that hands paths
+  to agents) excuses what it names beyond its own lists.
+- **Drivers and hooks.** `skill` is a skill; every `x.py` a driver names exists, and one in
+  `next` or `writer` is named in the driver's file; every hook script wired in
+  `hooks/hooks.json` is named in some driver's `held`, on an event it is wired to.
+- **Roles.** Every agent is a role.
+
+A FAIL names the role's `file:line` or the block's entry. Fix it by placing the mention in
+the block, or by changing the file, never by widening a `match` until it passes. What it
+cannot see: a role that already names a skill or a document and changes what it does with
+it (from naming to running, from reading to writing), and the free text of `spawns`,
+`returns` and each condition.
 
 Three things to know about writing claims:
 

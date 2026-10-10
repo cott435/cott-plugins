@@ -26,12 +26,15 @@ care when editing it:
   and no workflow summaries: those are the site's pages. `site/flow.md` is the map, and its
   table and charts are drawn from the `flow:` block of `site/site.yml`. A skill that starts
   running another skill, a document that gains a writer or a reader, or a driver that
-  changes its ledger or its hooks is an edit to that block in the same commit.
+  changes its ledger or its hooks is an edit to that block in the same commit, and
+  `check-contracts`' `flow` claim fails until it is made.
   `site/workflows/` holds the four workflow pages; a change to how work reaches a plugin is
   a change to the page and to **Which route** on the flow page.
 - **`scripts/build_site.py` is shared.** A change to it changes every plugin's site at once.
   Before committing one, rebuild at least `dev-team` and diff the output — its site is
-  the reference the builder was verified against.
+  the reference the builder was verified against. It and `contract_sweep.py`'s `flow` check
+  read the same `flow:` block: a key added to one is a key the other must accept, and
+  `python3 evals/fixtures/flow/check.py` (no model) is run before either is committed.
 - **`run-evals` is shared.** Its `references/eval-kinds.md` is the one list of eval kinds;
   `plan-phases` and its eval writers write the overview's eval rows and the sets against it,
   and `run-phase` runs them through it. A kind added or renamed there is a change to all three, and

@@ -132,6 +132,13 @@ headings:
       - file: skills/fix-issues/SKILL.md
         cites: ['held', 'recurred']
 
+flow:
+  - name: the flow page's block agrees with the agents, skills, scripts and hooks
+    # site/site.yml's `flow:` block is written by hand and the flow page is drawn from it.
+    # This holds it to the files: a role whose file starts naming a skill or a document
+    # fails here until the block says whether it runs, writes, reads or only names it.
+    file: site/site.yml
+
 frontmatter:
   - name: every skill's frontmatter uses only documented skill fields
     # The allowed keys are plugin-anatomy's references/skills.md block, read by the checker.

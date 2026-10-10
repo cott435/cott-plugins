@@ -42,7 +42,7 @@ flow:
   # Left to right in the charts. Anyone else a document names (a script, a hook, you, a
   # skill that runs in your chat) is shown in the documents table only.
   roles:
-    - {id: run-package, note: driver}
+    - {id: run-package, note: driver, relays: true}   # it hands paths to agents and reads none
     - architect
     - researcher
     - profiler
@@ -53,11 +53,14 @@ flow:
     - documenter
     - curator
 
-  # Skills an agent invokes with the Skill tool, beyond the ones its frontmatter preloads.
+  # Skills an agent invokes or reads from, beyond the ones its frontmatter preloads. `names`
+  # are skills its file mentions without running. plugin-dev's check-contracts fails on a
+  # mention in none of the three lists, and on an entry the file no longer mentions.
   uses:
     architect:
       sometimes:
         - planning-templates: before writing a contract, a change file or a ledger entry
+        - workspace-scaffold: "plan-repo, for the Toolchain and the dependency graph"
     curator:
       always: [git-workflow-and-versioning]
     documenter:
@@ -71,16 +74,27 @@ flow:
     designer:
       sometimes:
         - data-quality: the contract row's `builds with` names it
+        - planning-templates: before a deviation entry
+        - python-style-guide: "the section has a pipeline: its `pipelines.md`"
+    tester:
+      sometimes:
+        - planning-templates: before a deviation entry
     implementer:
       sometimes:
         - security-review: a trigger in its description matches the section
         - debugging-and-error-recovery: a test still fails after two fix attempts
         - workspace-scaffold: the scaffold run, before any section
         - python-implementation: a module is promoted to a package
+        - planning-templates: before an inbox or deviation entry
     reviewer:
+      always: [planning-templates]
       sometimes:
         - security-review: "reviewer B in round 1; later, when the diff touches code it names"
 
+  # Every document a role writes or reads. `match` is how a role's file names it when that
+  # is not its path; `names` are roles whose file mentions it without touching it.
+  # check-contracts fails when a role listed here does not name the document, and when a
+  # role that names it is in none of the lists.
   documents:
     - name: repo contract
       path: docs/architecture.md
@@ -90,7 +104,7 @@ flow:
     - name: package contract
       path: docs/packages/<pkg>/contract.md
       writes: [{architect: "plan-package, map-repo phase 2, sync-plan"}]
-      reads: [designer, tester, implementer, reviewer, documenter, {"`status.py`": "Sections table, Call paths"}]
+      reads: [designer, tester, implementer, reviewer, documenter, {profiler: its Data stages row}, {"`status.py`": "Sections table, Call paths"}]
       stale: "`docs/architecture.md` changed after it; an open `spec-change:contract` or change file names it"
     - name: change file
       path: docs/packages/<pkg>/changes/<slug>.md
@@ -104,27 +118,34 @@ flow:
       stale: never
     - name: source probe
       path: docs/sources/<source>.md
+      match: ["docs/sources/<source>", "Source probe", "probe doc"]
       writes: [{researcher: "the shared body only grows"}]
-      reads: [designer, implementer, reviewer, architect, "`status.py`"]
+      reads: [designer, tester, implementer, reviewer, architect, {profiler: its Observed schema}, "`status.py`"]
       stale: a new consuming section has no entry yet; for a design, a line it was written against is gone or reworded
     - name: project skills
       path: .claude/skills/<name>/
+      match: [".claude/skills/", "Skills to invoke"]
       writes: [{researcher: "extract, one inventory row each"}]
-      reads: [{designer: its row's `builds with`}, {profiler: its row's `builds with`}]
+      reads: [{designer: its row's `builds with`}, {profiler: its row's `builds with`}, {architect: "their names, for `builds with`"}]
+      names: [curator, implementer]
     - name: data profile
       path: docs/sources/<token>.md
+      match: ["docs/sources/<token>", "data profile", "Source probe"]
       writes: [{profiler: append-only once round 0 closes}]
-      reads: [designer, tester, implementer, reviewer, {profiler: later rounds}, "`status.py`"]
+      reads: [designer, {tester: as the row's source doc}, {implementer: as the row's source doc}, {reviewer: as the row's source doc}, {profiler: later rounds}, "`status.py`"]
+      names: [architect]
       stale: the section's code is newer than the newest round line's commit
     - name: section design
       path: docs/packages/<pkg>/design/<section>.md
       writes: [designer]
       reads: [tester, implementer, {reviewer: A}, "`status.py`"]
+      names: [architect]
       stale: its contract row changed; a cited probe doc is newer; an open change file or `spec-change:design` names it
     - name: decisions inbox
       path: docs/packages/<pkg>/decisions/<section>.md
-      writes: [{designer: "`D?` stubs"}, {implementer: "`Applied:`"}]
+      writes: [{designer: "`D?` stubs"}, {implementer: "`Applied:`"}, {profiler: "a verify run, a stub per kind that repairs or drops data"}]
       reads: ["`sync_decisions.py`", "`status.py --run-gate`"]
+      names: [architect]
       stale: an entry is not yet in `docs/decisions.md`
     - name: decisions
       path: docs/decisions.md
@@ -138,6 +159,7 @@ flow:
       stale: the design is newer than the tree
     - name: section README
       path: "<section>/README.md; for `surface`, docs/packages/<pkg>/interface.md"
+      match: ["interface.md", "README.md"]
       writes: [implementer, {"`pair`": at wrap-up}]
       reads: [{designer: a dependent's}, {tester: a dependent's}, {implementer: a dependent's}, reviewer, documenter, architect, "`status.py`"]
       stale: the code is newer than it
@@ -153,28 +175,32 @@ flow:
       stale: a Floor or Enforced row it lacks
     - name: deviations
       path: docs/packages/<pkg>/deviations/<section>.md
-      writes: [implementer, designer, tester, reviewer, architect, {"`pair`": at wrap-up}]
+      writes: [implementer, designer, tester, reviewer, architect, {profiler: "verify from round 1, and defer"}, {"`pair`": at wrap-up}]
       reads: [reviewer, tester, architect, the stop gate, "`status.py`"]
       stale: never; an entry speaks while its `Status:` is `open`
     - name: review reports
       path: docs/packages/<pkg>/reviews/<section>/<date>-r<n>-<a, b or s>.md
+      match: "reviews/"
       writes: [reviewer]
       reads: [{implementer: the fix round}, {reviewer: the next round}, "`status.py`"]
+      names: [architect]
       stale: the code is newer than its `Commit:`
     - name: paths review
       path: docs/packages/<pkg>/reviews/paths/<date>-r<n>-p.md
+      match: "reviews/paths"
       writes: [{reviewer: "`Focus: paths`"}]
       reads: [{implementer: FIX}, {reviewer: the next paths review}, "`status.py`"]
       stale: a section's code changed after its `Commit:`
     - name: followups
       path: docs/followups.md
-      writes: [{reviewer: "out-of-diff WARNINGs, `ELSEWHERE` lines, defer"}, {architect: map-repo defects}]
+      writes: [{reviewer: "out-of-diff WARNINGs, `ELSEWHERE` lines, defer"}, {architect: map-repo defects}, {profiler: "defer: the kinds still open"}]
       reads: [{implementer: "the fix round, its section's entries"}, documenter, you]
       stale: never counted, never a gate
     - name: gate record
       path: .dev-team/gate/<pkg>/<section>.txt
       writes: [{the stop gate: on every implementer stop}, {"`pair`": "`gate_on_stop.py --report`"}]
       reads: [{reviewer: its evidence}, {run-package: quotes it when it asks}, "`status.py`"]
+      names: [implementer]
       stale: its `commit:` is not the section's current commit
     - name: integration record
       path: .dev-team/integration/<pkg>.txt
@@ -184,17 +210,18 @@ flow:
     - name: constraints
       path: docs/constraints.md
       writes: ["`set-constraints`", you]
-      reads: [{reviewer: "Measured, Exceptions"}, {tester: coverage}, the stop gate, the integration check, "`status.py`", CI]
+      reads: [{reviewer: "Measured, Exceptions"}, {tester: coverage}, {implementer: its Floor and Enforced checks}, the stop gate, the integration check, "`status.py`", CI]
       stale: you change the bar
     - name: human docs
       path: docs/index.md · packages/*/README.md · README.md
+      match: docs/index.md
       writes: [documenter]
       reads: [you]
       stale: a shipped document changed after it
     - name: legacy inventory
       path: docs/legacy/inventory.md
       writes: [curator]
-      reads: [{researcher: "extract, one row"}, you]
+      reads: [{architect: a row that names a dataset}, you, {"the researcher": "one row, in the prompt the curator sends"}]
 
   drivers:
     - skill: run-package

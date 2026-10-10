@@ -93,18 +93,22 @@ The `flow:` block:
 ```yaml
 flow:
   roles:            # left to right in the charts. Default: every agent, alphabetically.
-    - run-package                                   # an agent or a skill, by name
-    - {id: you, label: You, note: main chat}        # anything else, with a label
+    - {id: run-package, note: driver, relays: true} # an agent or a skill, by name
+    - {id: unit-agent, label: unit agent, file: skills/x/references/unit-prompt.md}
+                                                    # anything else: a label, and the file that defines it
   uses:             # beyond what an agent's frontmatter preloads
     implementer:
       always: [project-structure]
       sometimes:
         - security-review: a trigger in its description matches
+      names: [workspace-scaffold]                   # its file mentions it and does not run it
   documents:
     - name: the design                              # the label in the charts: keep it short
       path: docs/packages/<pkg>/design/<section>.md
+      match: "design/"                              # optional: how role files name it, if not by path
       writes: [designer]                            # a role, or {role: a note for the table}
       reads: [tester, implementer, {reviewer: round 1}]
+      names: [architect]                            # its file mentions the document and does not touch it
       stale: its contract row changed               # optional column
   drivers:
     - skill: run-package
@@ -122,10 +126,14 @@ where a misspelled role shows up. `all` means every role and moves the document 
 chart to its caption. A document one role writes is drawn above that role, and one several
 write is drawn below the row, so the charts need no layout config.
 
-Keep the block true in the same commit as the change it describes: a role that starts
-running a skill, a document that gains a writer or a reader, a driver that changes its
-ledger or its hooks. The build warns when the block has a part and `flow.md` has no marker
-for it.
+The block is written by hand and held to the files by `check-contracts`: a `flow` claim in
+the plugin's `contracts.yml` fails when a role's file names a skill or a document the block
+does not place for that role, when the block lists one the file never names, when an agent
+is no role, and when a hook is wired and no driver names it. So a role that starts running
+a skill, a document that gains a writer or a reader, or a new hook stops the next
+`check-contracts` until the block says so; `names`, `match`, `file` and `relays` exist for
+that check and draw nothing. Every plugin with a `flow:` block declares the claim. The build
+itself warns when the block has a part and `flow.md` has no marker for it.
 
 ## The README
 

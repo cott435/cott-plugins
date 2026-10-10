@@ -52,7 +52,8 @@ Every plugin's site has the same shape, drawn by `plugin-dev/scripts/build_site.
 - **`site/flow.md`** is the map: which route to take, a table of which role uses which skill
   (always, or on a condition), a chart of who writes each document and one of who reads it,
   and each driver's loop with its ledger. Everything but the routes is drawn from the agents'
-  frontmatter and the `flow:` block of `site/site.yml`.
+  frontmatter and the `flow:` block of `site/site.yml`, and a `flow` claim in the plugin's
+  `contracts.yml` holds that block to the agent and skill files.
 - **`site/workflows/`** has one page per workflow.
 
 ## Working across branches

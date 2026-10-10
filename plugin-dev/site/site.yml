@@ -28,10 +28,10 @@ flow:
   roles:
     - {id: design-plugin, note: driver}
     - {id: revise-plugin, note: driver}
-    - {id: unit-agent, label: unit agent, note: of revise-plugin}
-    - {id: reconcile-agent, label: reconcile agent, note: of revise-plugin}
+    - {id: unit-agent, label: unit agent, note: of revise-plugin, file: skills/revise-plugin/references/unit-prompt.md}
+    - {id: reconcile-agent, label: reconcile agent, note: of revise-plugin, file: skills/revise-plugin/references/reconcile-prompt.md}
     - {id: plan-phases, note: driver}
-    - {id: eval-writer, label: eval writer, note: of plan-phases}
+    - {id: eval-writer, label: eval writer, note: of plan-phases, file: skills/plan-phases/references/eval-writer.md}
     - {id: run-phases, note: driver}
     - {id: run-phase, note: one phase}
     - {id: run-evals, note: runner}
@@ -42,7 +42,9 @@ flow:
     - run-narrator
     - {id: bump-version, note: on your yes}
 
-  # Skills a role runs. An agent's own `skills:` frontmatter is read from its file.
+  # Skills a role runs or loads. An agent's own `skills:` frontmatter is read from its file.
+  # `names` are skills the role's file mentions without running: check-contracts fails on a
+  # mention that is in none of the three lists, and on an entry the file no longer mentions.
   uses:
     design-plugin:
       always: [plugin-anatomy]
@@ -52,24 +54,41 @@ flow:
     revise-plugin:
       sometimes:
         - check-contracts: the plugin has a `contracts.yml`
+      names: [plugin-anatomy]
     plan-phases:
       always: [plugin-anatomy]
+      names: [build-site, bump-version, check-contracts, run-evals]
     eval-writer:
       always: [plugin-anatomy]
+      names: [run-evals]
+    run-phases:
+      names: [bump-version, plugin-anatomy, run-evals]
     run-phase:
       always: [plugin-anatomy, check-contracts]
       sometimes:
         - build-site: the last phase
         - run-evals: the phase is a checkpoint
+      names: [bump-version, log-eval]
     run-evals:
       always: [log-eval]
+      names: [build-site, check-contracts, plugin-anatomy]
     fix-issues:
       always: [plugin-anatomy, check-contracts, build-site]
       sometimes:
         - run-evals: a set covers a file the fix touched
+      names: [bump-version, log-eval]
     audit-run:
       always: [log-eval]
+      names: [check-contracts, run-flow]
+    run-flow:
+      names: [plugin-anatomy]
+    bump-version:
+      names: [build-site, log-eval, new-plugin, plugin-anatomy]
 
+  # Every document a role writes or reads. `match` is how a role's file names it when that
+  # is not its path; `names` are roles whose file mentions it without touching it; `match:
+  # false` leaves out a document too general to look for. check-contracts fails when a role
+  # here does not name the document, and when a role that names it is in none of the lists.
   documents:
     - name: the design
       path: site/notes/<slug>/<slug>-design.md
@@ -77,14 +96,17 @@ flow:
       reads: [plan-phases, eval-writer, {run-phase: for the why}]
     - name: review plan
       path: site/notes/<slug>/<slug>-review-plan.md
+      match: "-review-plan.md"
       writes: [revise-plugin]
       reads: [unit-agent, reconcile-agent]
     - name: unit findings
       path: site/notes/<slug>/findings/<UNIT>.md
+      match: "notes/<slug>/findings"
       writes: [unit-agent]
-      reads: [reconcile-agent, {unit-agent: "a synthesis unit, by kind"}]
+      reads: [reconcile-agent, {unit-agent: "a synthesis unit, by kind"}, {revise-plugin: "only `edits.py findings`' verdict on them"}]
     - name: the edit list
       path: site/notes/<slug>/<slug>-edits.md
+      match: "-edits.md"
       writes: [reconcile-agent, {revise-plugin: the decisions you answer}]
       reads:
         - plan-phases: "`edits.py index`"
@@ -93,22 +115,27 @@ flow:
         - eval-writer
     - name: the overview
       path: site/notes/<slug>/<slug>-00-overview.md
+      match: ["-00-overview.md", "the overview"]
       writes: [plan-phases]
-      reads: [{run-phase: "`phases.py brief`"}]
+      reads: [{run-phase: "`phases.py brief`"}, eval-writer]
+      names: [run-phases]
     - name: the phase ledger
       path: site/notes/<slug>/<slug>-progress.md
+      match: ["-progress.md", "phases.py"]
       writes: [{plan-phases: the empty rows}, {run-phase: "`phases.py finish`"}]
       reads: [{run-phases: "`phases.py next`, `check`"}, {run-phase: "`phases.py brief`"}]
     - name: eval sets
       path: evals/sets/<target>.json
-      writes: [eval-writer]
-      reads: [run-evals]
+      match: evals/sets
+      writes: [eval-writer, {plan-phases: a set its writer left failing}, {run-phase: a fix its graders call for}]
+      reads: [run-evals, {fix-issues: the sets covering a file it touched}, {revise-plugin: their names}]
     - name: phase note
       path: site/notes/<slug>/<slug>-NN-<name>.md
       writes: [run-phase]
       reads: [{run-phase: a phase picked up in progress}]
     - name: the plugin's files
       path: agents/ · skills/ · hooks/ · scripts/
+      match: false
       writes: [run-phase, fix-issues]
       reads:
         - design-plugin: what the change touches
@@ -117,30 +144,38 @@ flow:
         - run-auditor: at the version that ran
     - name: platform facts
       path: skills/plugin-anatomy/references/
+      match: plugin-anatomy/references
       writes: [{run-phase: a fact an eval proved}]
-      reads: [design-plugin, plan-phases, eval-writer, run-phase, fix-issues]
+      reads: [plan-phases, eval-writer, run-phase, fix-issues]
     - name: eval workspace
       path: evals/workspace/<target>/iteration-N/
+      match: evals/workspace
       writes: [run-evals]
       reads: [{you: in the viewer}]
+      names: [run-phases]
     - name: eval log
       path: evals/<date>-<subject>.md
+      match: ["log-eval", "eval log"]
       writes: [{run-evals: through `log-eval`}, {audit-run: through `log-eval`}]
       reads: [{run-phase: "`phases.py finish` wants one per eval row"}, fix-issues]
+      names: [revise-plugin, plan-phases, bump-version]
     - name: the run's trace
       path: runs/<project>/<command> <title>/<id8>/
+      match: ["units/U", "run.md"]
       writes: [{audit-run: "`trace.py`"}, {run-flow: "`trace.py`"}]
       reads: [{run-auditor: its one piece}, {run-narrator: one unit}]
     - name: auditor findings
       path: runs/…/<id8>/findings/
+      match: ["<workspace>/findings", "Findings file"]
       writes: [run-auditor]
       reads: [{audit-run: "merges, spot-checks"}, {run-auditor: the cross pass}]
     - name: issues
       path: runs/audits/issues/<ID>.md
+      match: ["runs/audits", "issues.py", "Prior issues"]
       writes:
         - audit-run: new, seen, verdicts
         - fix-issues: a Fix attempt
-        - run-phase: "the last phase, per issue closed"
+        - "a plan's last phase": a Fix attempt per issue its edits closed
         - bump-version: "`fixed_in`"
       reads:
         - audit-run: fixes to check
@@ -148,16 +183,21 @@ flow:
         - fix-issues
         - revise-plugin: "`issues.py list`"
         - reconcile-agent: the index
+        - unit-agent: the ones its row names
+      names: [plan-phases, run-flow]
     - name: run report
       path: runs/audits/reports/<date>-<id8>.md
+      match: reports/
       writes: [audit-run]
       reads: [fix-issues]
     - name: agent account
       path: runs/…/<id8>/explain/U<nn>.md
+      match: explain/
       writes: [run-narrator]
       reads: [run-flow]
     - name: the release
       path: plugin.json · marketplace row · CHANGELOG.md · tag
+      match: false
       writes: [bump-version]
       reads: [whoever installs the plugin]
 

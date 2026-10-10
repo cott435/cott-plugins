@@ -32,8 +32,10 @@ own skill names are never listed anywhere else: at run time the architect derive
 and the driver's row are drawn by `plugin-dev`'s `build-site` from the `flow:` block of
 `site/site.yml` and each agent's `skills:` frontmatter. An agent that starts invoking a
 skill, a document under `docs/` that gains a writer or a reader or changes when it goes
-stale, or a change to the driver's hooks is an edit to that block, in the same change. It
-replaced the hand-written `docs/` map, so there is no second copy to keep in step.
+stale, or a change to the driver's hooks is an edit to that block, in the same change, and
+`check-contracts`' `flow` claim fails until it is made: an agent file that names a skill or
+a document the block does not place for that agent, or the reverse. It replaced the
+hand-written `docs/` map, so there is no second copy to keep in step.
 
 ## The shared protocol is in the parent, and it is not optional
 
