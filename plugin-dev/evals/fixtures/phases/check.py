@@ -41,6 +41,8 @@ Baseline `previous` is the branch point.
 
 **Checkpoints:** 3
 
+**Init flags:** `--reuse-unhashed`
+
 | Phase | ID | Kind | Target | Baseline | Set evals | Pass bar |
 |---|---|---|---|---|---|---|
 | 1–3 | R*.a | mechanical | `check-contracts` | — | `contracts.yml` | PASS |
@@ -48,7 +50,8 @@ Baseline `previous` is the branch point.
 | Phase | ID | Kind | Target | Baseline | Set evals | Pass bar |
 |---|---|---|---|---|---|---|
 | 1 | R1.1 | mechanical | `scripts/x.py` | — | — | exits 0 |
-| 3 | R3.e1 | behavioral | hello | working tree only | `evals/sets/hello.json` 1 | default |
+| 3 | R3.e1 | behavioral | hello | working tree only | `evals/sets/hello.json` 1, 3–4 | default |
+| 3 | R3.e2 | behavioral | hello | previous | `evals/sets/hello.json` 5 | default, compared |
 
 ## Breaking changes
 
@@ -221,12 +224,33 @@ def main():
     r = ph("next")
     case("next: phase 3 is a checkpoint", "phase 3 · 03-docs · todo · checkpoint · 3 of 4 done" in r.stdout, r.stdout)
     (notes / "p-03-docs.md").write_text("# 03 — docs\n")
+    r = ph("brief")
+    script = PLUGIN_DEV / "skills" / "run-evals" / "scripts" / "eval_workspace.py"
+    case("brief at a checkpoint: one exact init command per behavioral row, the plan's flags on each",
+         f"- R3.e1: `python3 {script} init . hello --quiet --evals 1,3,4 --working-tree-only --reuse-unhashed`" in r.stdout
+         and f"- R3.e2: `python3 {script} init . hello --quiet --evals 5 --reuse-unhashed`" in r.stdout
+         and "This phase is one: its behavioral rows run here." in r.stdout, r.stdout)
     r = ph("finish", "--what", "docs")
     case("finish at a checkpoint with a behavioral row not run: exit 1 naming the row",
          r.returncode == 1 and "row R3.e1 (hello) has no --iteration" in r.stdout, r.stdout)
     it = toy / "evals" / "workspace" / "hello" / "iteration-1"
     run = it / "eval-1-x" / "with_skill" / "run-1"
     run.mkdir(parents=True)
+
+    def manifest(pairs):
+        (it / "manifest.json").write_text(json.dumps({"target": "hello", "runs": [
+            {"eval_id": i, "config": c} for i, c in pairs]}))
+
+    manifest([(1, "with_skill"), (3, "with_skill"), (5, "with_skill")])
+    (it / "report.md").write_text("# hello iteration-1\n")
+    r = ph("finish", "--what", "docs", "--iteration", "evals/workspace/hello/iteration-1")
+    case("finish: an eval id the row names and no iteration ran, exit 1 with the command",
+         r.returncode == 1 and "row R3.e1: hello eval(s) [4] are in none of its iterations" in r.stdout
+         and "--evals 1,3,4 --working-tree-only" in r.stdout, r.stdout)
+    case("finish: a compared row run working tree only, exit 1",
+         "row R3.e2: hello eval(s) [5] ran working tree only and the row runs them compared" in r.stdout, r.stdout)
+    manifest([(i, c) for i in (1, 3, 4, 5) for c in ("with_skill", "old_skill")])
+    (it / "report.md").unlink()
     r = ph("finish", "--what", "docs", "--iteration", "evals/workspace/hello/iteration-1")
     case("finish with an iteration that has no report: exit 1", r.returncode == 1 and "no report.md" in r.stdout, r.stdout)
     (it / "report.md").write_text("# hello iteration-1\n")
@@ -274,7 +298,6 @@ def main():
     def guard(prompt):
         return sh(sys.executable, GUARD, cwd=tmp, stdin=json.dumps({"tool_name": "Agent", "tool_input": {"prompt": prompt}}))
     executor = f"You are testing `hello` by executing it. Keep `{run}/transcript.md`: each step."
-    (it / "manifest.json").write_text(json.dumps({"runs": []}))
     r = guard(executor)
     case("guard: an executor spawned for a runner's iteration, exit 2 with the command to run",
          r.returncode == 2 and f"eval_workspace.py run {it}" in r.stderr, r.stderr)

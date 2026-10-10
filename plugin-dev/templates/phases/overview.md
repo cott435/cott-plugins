@@ -86,6 +86,8 @@ Baseline `working tree only`.>
 
 **Checkpoints:** <phase numbers, the last phase always among them>
 
+<Optional, when every eval run of the plan needs the same flag: **Init flags:** `--baseline <ref>`>
+
 | Phase | ID | Kind | Target | Baseline | Set evals | Pass bar |
 |---|---|---|---|---|---|---|
 | 1 | <ID> | <kind> | <skill or agent> | <none / previous / ref / working tree only> | <evals/sets/x.json 1,2> | <checkable condition> |

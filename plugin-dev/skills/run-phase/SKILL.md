@@ -135,7 +135,11 @@ Follow the note's **Steps** in order. Whatever the note says, these always apply
   `run-evals` with that target's rows — the set file, the eval IDs, the baseline — in the
   table's order (platform facts and mechanical rows first). Most phases have mechanical rows
   only: behavioral rows sit in the plan's checkpoints, where each target's evals run once,
-  after its last edit. A row whose Baseline cell says `working tree only` runs that way. Every result is
+  after its last edit. `P brief` printed, under the rows, the exact `eval_workspace.py init`
+  command for each behavioral row: its set, its ids, `--working-tree-only` where the row's
+  Baseline cell says so, and the plan's own flags. Run those commands as printed; do not
+  compose one from the row. `P finish` reads each iteration's manifest and refuses a phase
+  where an id a row names was laid out in none of them, or a compared row ran one-sided. Every result is
   logged with `log-eval` before it is reported here, a clean pass exactly like a failure,
   with the commit field reading *uncommitted — see working-tree diff*, since the phase's
   commit comes after.
@@ -180,8 +184,9 @@ Follow the note's **Steps** in order. Whatever the note says, these always apply
   path outside the plugin the phase changed and `--trailer "<line>"` for each attribution
   line this session's commits carry. It refuses, naming each gap, unless the phase is whole:
   the note exists; every log exists and has its row in `evals/README.md`; every behavioral
-  row of the phase has an iteration with a report and no run left not run or not graded
-  (`--skip-row <ID>` for a row a Deviation says was not run); `check-contracts` passes;
+  row of the phase has its ids laid out, in the row's mode, in the iterations given, each
+  with a report and no run left not run or not graded (`--skip-row <ID>` for a row a
+  Deviation says was not run); `check-contracts` passes;
   nothing outside the plugin is changed and unnamed. Then it fills the ledger row, resolves
   earlier rows' `(phase N)` to SHAs, stages the plugin and commits
   `<plugin> <slug> (phase N): <what>`. Never write the ledger row or run `git commit` for a

@@ -158,7 +158,11 @@ smallest end-to-end slice is phase 1.
     an earlier phase a checkpoint when targets finish there, so their result does not wait
     for the end; `phases.py plan-check` warns when a finished target waits more than three
     phases. The overview names them on one line under **Evals by phase**:
-    `**Checkpoints:** 9, 14`. An edit-list item's `evals:` names ids to rerun and new evals
+    `**Checkpoints:** 9, 14`. A flag every eval run of the plan needs — a baseline ref when
+    the sets mix baselines — goes on a second line, `**Init flags:** --baseline <ref>`, and
+    `phases.py brief` puts it on every `init` command it prints. A behavioral row's **Set
+    evals** cell is `` `evals/sets/<target>.json` `` and its ids (`1, 4–6`), exactly: the
+    command is built from it. An edit-list item's `evals:` names ids to rerun and new evals
     to write; both go in the row of their target's checkpoint.
   - A row says `blind` in its pass bar only where the change is meant to make an output
     better in a way no expectation states. Never by default.

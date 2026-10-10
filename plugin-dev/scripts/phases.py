@@ -9,12 +9,17 @@ what a command can decide by exit code. Run from the plugin's own directory. Std
 
   next [slug]         preflight (branch, tree) and the next phase on one line.
                       Exit 0 a phase to run · 1 something stops it · 3 the plan is done
-  brief [slug]        what the phase's chat reads: its Phases row, its eval rows, its ledger
-                      row, and the overview's prose without the other phases' rows. Marks the
-                      phase as begun (the stop gate reads the mark)
+  brief [slug] [--phase N]
+                      what the phase's chat reads: its Phases row, its eval rows with the
+                      exact `eval_workspace.py init` command for each behavioral one, its
+                      ledger row, and the overview's prose without the other phases' rows.
+                      Marks the phase as begun (the stop gate reads the mark); --phase N
+                      prints another phase's and marks nothing
   finish [slug] --what TEXT [--log FILE]... [--iteration DIR]... [--notes TEXT]
                [--also PATH]... [--skip-row ID]... [--trailer TEXT]... [--no-commit]
-                      checks the phase is whole, fills its ledger row, resolves earlier
+                      checks the phase is whole — its note, its logs, every behavioral
+                      row's ids laid out in the row's mode in the iterations given and none
+                      left not run, contracts — fills its ledger row, resolves earlier
                       `(phase N)` cells to SHAs, stages the plugin and commits
                       `<plugin> <slug> (phase N): <what>`
   check [slug] N      phase N's commit is HEAD, the tree is clean, its row is `done`
@@ -26,7 +31,8 @@ what a command can decide by exit code. Run from the plugin's own directory. Std
 Shapes read, all owned by `templates/phases/`: the ledger's table (`Phase | Note | Status |
 Commit | Eval log(s) | Notes for the next chat`), the overview's `## Phases` table, every
 table under `## Evals by phase` whose header starts `Phase | ID | Kind`, and the overview's
-`**Checkpoints:** 4, 9, 12` line.
+`**Checkpoints:** 4, 9, 12` line, and an optional `**Init flags:** --baseline <ref>` line
+whose flags go on every `eval_workspace.py init` command `brief` prints.
 """
 
 import argparse
@@ -38,6 +44,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+EVAL_WORKSPACE = HERE.parent / "skills" / "run-evals" / "scripts" / "eval_workspace.py"
 LEDGER_COLS = ["Phase", "Note", "Status", "Commit", "Eval log(s)", "Notes for the next chat"]
 MAX_WAIT = 3        # phases a finished target may wait for its checkpoint before plan-check warns
 
@@ -196,6 +203,13 @@ class Plan:
                 return sorted({int(x) for x in re.findall(r"\d+", m.group(1).split(".")[0])})
         return []
 
+    def init_flags(self):
+        for line in self.ov_lines:
+            m = re.match(r"\*\*Init flags:\*\*\s*(.+)", line.strip())
+            if m:
+                return m.group(1).strip().strip("`").split()
+        return []
+
     def prefix(self, n):
         return f"{self.plugin} {self.slug} (phase {n}):"
 
@@ -204,7 +218,41 @@ class Plan:
 
 
 def target_of(row):
-    return row["Target"].strip("` ")
+    return set_evals(row)[0] or row["Target"].strip("` ")
+
+
+def set_evals(row):
+    """(set name, eval ids) from a row's Set evals cell: `evals/sets/x.json` 1, 4–6."""
+    m = re.search(r"evals/sets/([\w.-]+)\.json`?\s*(.*)", row.get("Set evals", ""))
+    if not m:
+        return None, []
+    ids = []
+    for part in re.split(r"[,;]", m.group(2)):
+        r = re.fullmatch(r"\s*(\d+)(?:\s*[–-]\s*(\d+))?\s*", part)
+        if r:
+            ids += range(int(r.group(1)), int(r.group(2) or r.group(1)) + 1)
+    return m.group(1), sorted(set(ids))
+
+
+def compared(row):
+    """A row whose baseline runs beside the working tree; `working tree only` starts none."""
+    return "working tree only" not in row["Baseline"].lower()
+
+
+def init_command(plan, row):
+    """The one `init` command that lays out a behavioral row's runs, flags and ids exact."""
+    name, ids = set_evals(row)
+    if not name or not ids:
+        return None
+    cmd = ["python3", str(EVAL_WORKSPACE), "init", ".", name, "--quiet",
+           "--evals", ",".join(map(str, ids))]
+    base = row["Baseline"].strip("` ")
+    flags = plan.init_flags()
+    if not compared(row):
+        cmd.append("--working-tree-only")
+    elif base not in ("none", "previous") and "--baseline" not in flags:
+        cmd += ["--baseline", base]
+    return " ".join(cmd + flags)
 
 
 def dirty(plan):
@@ -246,6 +294,10 @@ def cmd_next(args):
 def cmd_brief(args):
     plan = Plan(args.slug)
     _, row = plan.current()
+    if args.phase is not None:      # a look at another phase: nothing is marked as begun
+        row = next((r for _, r in plan.rows() if r["Phase"] == str(args.phase)), None)
+        if row is None:
+            raise Stop(f"the ledger has no phase {args.phase}")
     if row is None:
         print("plan done")
         return 3
@@ -265,6 +317,14 @@ def cmd_brief(args):
             for r in rows]
     cps = plan.checkpoints()
     behavioral = [r for r in rows if r["Kind"] == "behavioral"]
+    commands = [(r["ID"], init_command(plan, r)) for r in behavioral]
+    if commands:
+        out += ["", "Run each behavioral row with exactly this command, then start "
+                f"`python3 {EVAL_WORKSPACE} run <the iteration it prints>` for every one of them, "
+                "in the background, in one message. `finish` checks each row's ids and mode "
+                "against the iterations it is given.", ""]
+        out += [f"- {rid}: `{cmd}`" if cmd else f"- {rid}: its Set evals cell names no set and ids; "
+                "lay it out by hand and say so under Deviations" for rid, cmd in commands]
     out += ["", f"Checkpoints of this plan: {', '.join(map(str, cps)) or 'none named'}. This phase is "
             + ("one: its behavioral rows run here." if n in cps else
                "not one" + (", yet it has behavioral rows: run them and say so in the note."
@@ -287,6 +347,8 @@ def cmd_brief(args):
             rest.append(f"- {m.group(1)}: `sed -n '{a + 1},{b}p' site/notes/{plan.slug}/{plan.overview.name}`")
     out += ["", "## The rest of the overview, read only as a step needs it", ""] + rest
     print("\n".join(out))
+    if args.phase is not None:
+        return 0
     head = sh("git", "rev-parse", "HEAD", cwd=plan.root).stdout.strip()
     plan.marker().parent.mkdir(parents=True, exist_ok=True)
     plan.marker().write_text(json.dumps({"phase": n, "head": head}) + "\n")
@@ -294,6 +356,20 @@ def cmd_brief(args):
 
 
 # ---------------------------------------------------------------- finish
+
+def coverage(iterations):
+    """{set name: {eval id: {configurations laid out}}} from the iterations' manifests."""
+    out = {}
+    for it in iterations:
+        try:
+            m = json.loads((Path(it) / "manifest.json").read_text())
+        except (OSError, ValueError):
+            continue
+        name = m.get("target") or Path(it).parent.name
+        for r in m.get("runs", []):
+            out.setdefault(name, {}).setdefault(r.get("eval_id"), set()).add(r.get("config"))
+    return out
+
 
 def unfinished_runs(iteration):
     return sorted(str(p.parent.relative_to(iteration)) for name in ("not-run.json", "not-graded.json")
@@ -333,7 +409,7 @@ def cmd_finish(args):
         elif p.name not in index:
             problems.append(f"evals/README.md has no row for {p.name}")
         logs.append(p.name)
-    iterations = []
+    iterations, dirs = [], []
     for it in args.iteration:
         p = (plan.root / it).resolve()
         if not (p / "report.md").is_file():
@@ -341,11 +417,26 @@ def cmd_finish(args):
         for run in unfinished_runs(p):
             problems.append(f"{it}: {run} was not run or not graded")
         iterations.append(p.relative_to(plan.root).as_posix() if plan.root in p.parents else str(p))
+        dirs.append(p)
+    ran = coverage(dirs)
     for r in plan.eval_rows(n):
         if r["Kind"] == "behavioral" and not r["recurring"] and r["ID"] not in args.skip_row:
+            name, ids = set_evals(r)
             if not any(f"/workspace/{target_of(r)}/" in f"/{x}/" for x in iterations):
                 problems.append(f"row {r['ID']} ({target_of(r)}) has no --iteration; run it, or "
                                 f"--skip-row {r['ID']} and say why under Deviations")
+                continue
+            # The row's ids, each laid out in the mode the row names. A working tree only row
+            # run compared is more than was asked and stands; the other way round does not.
+            got = ran.get(name, {})
+            missing = [i for i in ids if "with_skill" not in got.get(i, ())]
+            one_sided = [i for i in ids if i not in missing and compared(r) and got[i] == {"with_skill"}]
+            if missing:
+                problems.append(f"row {r['ID']}: {name} eval(s) {missing} are in none of its "
+                                f"iterations: {init_command(plan, r)}")
+            if one_sided:
+                problems.append(f"row {r['ID']}: {name} eval(s) {one_sided} ran working tree only "
+                                f"and the row runs them compared: {init_command(plan, r)}")
     if (plan.root / "contracts.yml").is_file():
         sweep = sh(sys.executable, HERE / "contract_sweep.py", cwd=plan.root)
         if sweep.returncode != 0:
@@ -576,6 +667,8 @@ def main(argv=None):
                      ("touch", cmd_touch), ("plan-check", cmd_plan_check)):
         p = sub.add_parser(name)
         p.add_argument("slug", nargs="?")
+        if name == "brief":
+            p.add_argument("--phase", type=int, help="print another phase's brief; marks nothing")
         if name in ("touch", "plan-check"):
             p.add_argument("--remaining", action="store_true",
                            help="only the phases from the next unfinished one on")

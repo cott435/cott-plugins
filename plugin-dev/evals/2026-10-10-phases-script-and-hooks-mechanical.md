@@ -1,7 +1,7 @@
 # `scripts/phases.py` and plugin-dev's two hooks — a plan walked with no model, then each hook in a real session
 
-**Tested against:** uncommitted — see working-tree diff, on `892e3b6` (`scripts/phases.py`, `hooks/hooks.json`, `hooks/guard_agent.py`, `hooks/gate_stop.py`) · model: none for the 37 cases; `claude-sonnet-5-5` (CLI 2.1.283, `--plugin-dir` the working copy) for the two live sessions · 2026-10-10
-**Set:** `python3 evals/fixtures/phases/check.py` (37 cases, a throwaway repo it builds) · **Iteration:** none · **Baseline:** none · **Pass rate:** 37/37 cases; both live sessions as expected
+**Tested against:** uncommitted — see working-tree diff, on `892e3b6`, then `dcfa250` for the three `init`-command cases (`scripts/phases.py`, `hooks/hooks.json`, `hooks/guard_agent.py`, `hooks/gate_stop.py`) · model: none for the 37 cases; `claude-sonnet-5-5` (CLI 2.1.283, `--plugin-dir` the working copy) for the two live sessions · 2026-10-10
+**Set:** `python3 evals/fixtures/phases/check.py` (40 cases, a throwaway repo it builds) · **Iteration:** none · **Baseline:** none · **Pass rate:** 40/40 cases; both live sessions as expected
 
 ## What was tested
 
@@ -43,6 +43,8 @@ prompt for that iteration; the second to reply `done` and stop.
 | `finish`: one commit with the subject and trailer, a clean tree, the row `done` with log and notes, phase 0's `(phase 0)` resolved to its SHA | as expected | ✅ |
 | `check 1` / `check 2` | exit 0 with the commit / exit 1 naming the commit and the row | ✅ |
 | a checkpoint: `finish` with a behavioral row not run; an iteration with no report; a run not run; then whole | exit 1 naming the row, the report, the run; then committed, `next: none` | ✅ |
+| `brief` at a checkpoint: the exact `init` command per behavioral row | `init . hello --quiet --evals 1,3,4 --working-tree-only --reuse-unhashed` and, for the compared row, `--evals 5 --reuse-unhashed`: the ids from the Set evals cell (a range expanded), the mode from the Baseline cell, the plan's `**Init flags:**` on each | ✅ |
+| `finish`: an id a row names in no iteration's manifest; a compared row laid out working tree only | exit 1 naming the row and ids, with the command to run, for each | ✅ |
 | `next` when every phase is done; `status` | exit 3; one line per phase, the checkpoint with `evals 3/4, 1.5M tokens` | ✅ |
 | `touch`; `plan-check` on the plan as written | hello last touched in 2, evals at 3; `ok` | ✅ |
 | `plan-check`: a behavioral row outside a checkpoint; the last phase not one; none named | FAIL each, exit 1; a later touch of the row's target is a warning | ✅ |
@@ -53,6 +55,7 @@ prompt for that iteration; the second to reply `done` and stop.
 | guard: the iteration `--by-hand`; any other spawn; a blind comparator; unreadable event | exit 0 each | ✅ |
 | the determinism plan: `next`, `status`, `brief` | `phase 20 · 20-write-scope · todo · no behavioral evals · 20 of 38 done`; 38 rows read, three of them with a `|` inside a code span; the brief is 10 KB where the overview and ledger are 127 KB | ✅ |
 | the determinism plan: `plan-check --remaining` | `ok: 15 behavioral rows, checkpoints 34, 37`, one warning (curator is touched and has no behavioral row) | ✅ |
+| the determinism plan: `brief --phase 34` | seven commands, one per row, each with `--baseline d9d38c3 --reuse-unhashed` from the plan's **Init flags** line, `--working-tree-only` on the five rows that say so; nothing marked as begun | ✅ |
 | the determinism plan: `check 19` with a later commit on top | exit 1: HEAD is not the phase's commit | ✅ |
 | live: an Agent call with an executor's prompt | the tool result is `PreToolUse:Agent hook error: … plugin-dev: an eval's executors and graders are not spawned one Agent call each …` with the `run` command; no subagent started | ✅ |
 | live: a chat stopping on a phase committed by hand | after `done`, `Stop hook feedback: … plugin-dev: phase 1 does not stand: the ledger's phase 1 is \`todo\`, not \`done\``; the chat took a second turn quoting it, and its second stop went through (2 turns) | ✅ |
