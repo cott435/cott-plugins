@@ -61,82 +61,65 @@ Fifteen skills, in three groups by how they start. The table is the one list of 
 | `templates/` | The files a new plugin subdirectory starts with. |
 | `templates/phases/` | The design shape `design-plugin` writes, the overview and ledger shapes `plan-phases` writes, and the phase-note shape `run-phase` writes. |
 | `templates/review/` | The review plan, findings-file and edit-list shapes `revise-plugin` and its agents write. |
-| `site/workflows/` | The five workflows below, one page each, rendered on the reading site. |
+| `site/workflows/` | The four workflows below, one page each, rendered on the reading site. |
 | `evals/sets/` | Every skill's committed eval set, and trigger set for the model-invoked ones, that `run-evals` runs. |
 | `evals/fixtures/` | What those sets run against: a toy plugin for `run-phase`, a written design for `plan-phases`. Also the two checks that need no model: `run-evals-runner/check.py` for `eval_workspace.py`, `phases/check.py` for `phases.py` and the hooks. |
 
 ## Workflows
 
-Four ways work reaches a plugin, and one way to check what a plugin did once it ran. Each is
-a page under `site/workflows/`; the summaries here say which skills run, in what order, and
-which of them wait for you.
+A plugin exists to run workflows on their own: a thin driver in the main chat, the agents it
+spawns, and the scripts, hooks and ledger that keep a run on track. A change to one reaches
+the plugin by where it starts, from an idea or from facts, and both routes hand a spec to the
+same phases. Each of the four is a page under `site/workflows/`; `site/flow.md` opens with
+the table that says which to take.
 
-**[A new plugin](site/workflows/new-plugin.md).** Three kinds of chat. First, from the
-repo root, `/plugin-dev:design-plugin --new <name>`: it reads the closest existing plugin for
-conventions, interviews you in rounds, and composes the jobs into loops. Then it shows one flow
-chart per workflow plus a system chart and waits for your yes, then shows the writeup and waits
-again. Only then does it create the branch, invoke `new-plugin` for the scaffold and
-marketplace row, and commit `site/notes/0.1/0.1-design.md`. Second, in a fresh chat,
-`/plugin-dev:plan-phases 0.1` from `<name>/`: from the design alone, it splits the work into
-phases (phase 1 is the smallest bundle that loads), shows the split for your yes, and commits
-the notes, the ledger and every phase's eval sets as phase 0. Third, one chat per phase:
-`/plugin-dev:run-phase 0.1`, each running that phase's evals through `run-evals`. The last
-phase proposes tagging `0.1.0`; `bump-version` does it on your yes. A plugin that will only
-ever be one or two skills skips all this: `new-plugin`, write them, `build-site`,
-`check-contracts`, `run-evals` on whatever is behavioral, propose the tag.
+**[Designing a plugin or a workflow](site/workflows/design-a-workflow.md).** From an idea: a
+new plugin (`/plugin-dev:design-plugin --new <name>`, at the repo root) or a workflow added or
+redrawn (`/plugin-dev:design-plugin <slug>`, inside the plugin). It reads first, interviews
+you in rounds, and composes each workflow from its driver down: the script and ledger that
+say where a run stands, each agent's return form, the hooks that hold a step, the unit of
+work and what makes it trustworthy. It waits for your yes twice, on the charts and on the
+writeup, and only then creates the branch (and, for a new plugin, the scaffold) and commits
+`site/notes/<slug>/<slug>-design.md`. A plugin of one or two skills, or one agent edited in
+place, needs no design.
 
-**[A small change](site/workflows/small-change.md).** One agent or skill, one chat. Read
-the component's `plugin-anatomy` reference; edit; the plugin's own rules (`CLAUDE.md`); `check-contracts`; `build-site`; if the edit changes
-what an agent *does*, `run-evals` on the target's set in `evals/sets/` — the new case added
-to the set first — logged with `log-eval` before results are reported; one commit. If it
-looks bump-worthy, `bump-version` says so and waits.
+**[Changing a plugin from facts](site/workflows/revise-from-facts.md).** From what is known
+about the plugin: audited issues, evals, contradictions, a rule every agent and skill must
+now meet. `issues.py route` says which size it is. A few issues go to
+`/plugin-dev:fix-issues`: one planned edit per issue, your yes, a worktree branch, the checks
+and evals, a Fix attempt in each issue. More than six issues, more than three across more
+than three roles, or an issue that recurred after two fixes goes to
+`/plugin-dev:revise-plugin <slug>`: waves of agents each read one role whole and write
+findings, one agent reconciles them into an edit list, and you answer the decisions it
+leaves open. `design-plugin` comes in only for the list's **Needs a design** items, which
+are usually none.
 
-**[A large change, in phases](site/workflows/phased-change.md).** For a change that starts from an idea and adds or redraws a workflow. Inside the plugin,
-`/plugin-dev:design-plugin <slug>`: it reads what the change touches, interviews you in rounds,
-shows the changed workflows as charts (new, changed and suggested components marked) and then
-the writeup, each waiting for your yes, and commits the design on a new branch. Then, in a fresh
-chat, `/plugin-dev:plan-phases <slug>` splits the design into phases, with every behavioral
-eval's prompts and expectations written into `evals/sets/`, and commits phase 0. Then one fresh
-chat per phase, each opened with nothing but `/plugin-dev:run-phase <slug>`, which writes
-that phase's note against the files as they are, runs its evals through `run-evals` and stops
-for your review of the viewer before it commits, until the ledger's last row is `done` and the
-last phase has proposed the bump. Or one chat, `/plugin-dev:run-phases <slug>`, which runs a
-fresh agent per phase in series and brings each review back to you.
+**[Planning and running the phases](site/workflows/plan-and-run-phases.md).** What both
+routes hand to. In a new chat, `/plugin-dev:plan-phases <slug>` reads the spec and none of
+the discussion, asks any decision it did not take, shows the split for your yes, and commits
+the overview, the ledger and every eval set as phase 0. Then `/plugin-dev:run-phases <slug>`
+drives the plan from one chat, a fresh agent per phase, or `/plugin-dev:run-phase <slug>`
+does one phase per chat. Each phase writes its own note against the files as they are, and
+`scripts/phases.py` says what is next, runs the checks, and writes the ledger row and the
+commit. Behavioral evals run at checkpoints and stop for your review. The last phase
+proposes the bump.
 
-**[A plugin-wide revision](site/workflows/plugin-revision.md).** For a change that starts from
-facts about the plugin (audited issues, evals, a rule every agent and skill must now meet)
-and runs across many agents and skills, whatever workflow each belongs to. Inside the plugin,
-`/plugin-dev:revise-plugin <slug>`: it agrees the goal and the units with you, runs
-waves of agents that each read one role whole and write findings, has one agent reconcile them
-into an edit list, asks you the decisions it leaves open, and commits the list on a new
-branch. From there the path is the large change's: `plan-phases`, then `run-phase` per phase.
-`design-plugin` comes in only for the items under the edit list's **Needs a design**: a fix that adds a new workflow, a new agent with its own loop, or a new file two workflows meet at. A hook, a script flag or a record file inside a loop that already exists is not one of these: it is an edit, whose item gives its exact behavior and a fixture. That section is usually empty, and then the next chat is `plan-phases`.
+**[Checking a run, and checking the fix](site/workflows/audit-a-run.md).** A workflow ran in
+some project's chat and you want to know whether it did what the plugin says. In a new chat
+on the plugin, `/plugin-dev:audit-run` with words from that chat's title rebuilds the run
+from the transcripts on disk, draws it, and has one `run-auditor` agent judge each selected
+agent's trace in a fresh context, then one more across them. What it finds is filed as
+issues under `runs/audits/` with ids that stay, and it prints which skill takes them. After
+the fix and a rerun, the next audit reports each fix held, recurred, not exercised or not
+testable; an issue that has held in three sessions is settled and no longer checked.
+`/plugin-dev:run-flow` draws any run, with every agent one click from its full record.
 
-**[Checking a run, fixing it, and checking the fix](site/workflows/audit-a-run.md).** A workflow ran in some project's chat,
-maybe for hours, and you want to know whether it did what the plugin says. Open a fresh chat
-on the plugin's folder (`dev-team/`, not the project) and type `/plugin-dev:audit-run` with
-words from the chat's title, as the sidebar shows it. With several matches, or none given, it
-lists the candidates by title, span, agent count and fork, and asks. It rebuilds the run from the
-transcripts on disk and draws it as `flow.html`. It proposes up to 12 agents to audit and asks
-before more. The skill runs in your chat: it asks, selects, merges and spot-checks. The
-`run-auditor` agents it spawns each judge one agent's trace in a fresh context, then one
-more checks consistency across them. The run report is committed under the plugin's
-`runs/audits/reports/`, and the run is logged by `log-eval`. It never edits the plugin itself.
-`--units new` watches a run that is still going. What it finds is filed as issues under the
-plugin's `runs/audits/`, with ids that stay. `issues.py route` says which skill takes them:
-`/plugin-dev:fix-issues` fixes a few from any chat and records how a rerun will show each
-fix, and a selection too large for that goes to `/plugin-dev:revise-plugin`, whose last phase
-records the same; the next `/plugin-dev:audit-run` of a rerun reports
-each one held, recurred, not exercised or not testable (an issue that has held in three
-sessions is settled and no longer checked), and `/plugin-dev:run-flow` draws any
-run with every agent one click from its full record.
-
-What is the same in the four that change a plugin: which component a responsibility belongs in, and every
-platform fact a design relies on, come from `plugin-anatomy`, and a fact proven by an eval is
-written back to it; every eval is a file before it is a sentence in chat; evals
-run through `run-evals` from committed sets in `evals/sets/`; the site is rebuilt after
-every agent or skill edit; contracts are checked before every commit that touches one; and
-nothing is bumped, tagged or pushed without a yes.
+The same in all of them: which component a responsibility belongs in, and every platform
+fact a design relies on, come from `plugin-anatomy`, and a fact proven by an eval is written
+back to it; every eval is a file before it is a sentence in chat; evals run through
+`run-evals` from committed sets in `evals/sets/`; the site is rebuilt after every agent or
+skill edit; contracts are checked before every commit that touches one; and nothing is
+bumped, tagged or pushed without a yes.
 
 ## Install
 

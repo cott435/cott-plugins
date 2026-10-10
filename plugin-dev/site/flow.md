@@ -3,6 +3,24 @@
 How work moves through plugin-dev, which file is the truth for what, and where you are
 asked. The workflow pages walk through each path step by step; this page is the map.
 
+## Which route
+
+A plugin exists to run workflows on their own: a thin driver in the main chat, the agents
+it spawns, and the scripts, hooks and ledger that keep a run on track (`plugin-anatomy`).
+A change to one reaches the plugin by where it starts.
+
+| The change starts from | And is | Type | Page |
+|---|---|---|---|
+| an idea | a new plugin, or a workflow added or redrawn | `/plugin-dev:design-plugin` | [Designing a plugin or a workflow](workflows/design-a-workflow.md) |
+| facts about the plugin | a few audited issues (`issues.py route` exits 0) | `/plugin-dev:fix-issues` | [Changing a plugin from facts](workflows/revise-from-facts.md) |
+| facts about the plugin | many issues, or a rule every agent and skill must meet | `/plugin-dev:revise-plugin` | [Changing a plugin from facts](workflows/revise-from-facts.md) |
+| a spec either route committed | to be built | `/plugin-dev:plan-phases`, then `/plugin-dev:run-phases` | [Planning and running the phases](workflows/plan-and-run-phases.md) |
+| a run of the plugin's workflow | to be checked against the plugin's files | `/plugin-dev:audit-run` | [Checking a run, and checking the fix](workflows/audit-a-run.md) |
+
+One agent or skill edited in place needs none of these: read its `plugin-anatomy`
+reference, edit, `check-contracts`, `build-site`, `run-evals` on its set when the edit
+changes what it does, one commit.
+
 ## Where truth comes from
 
 Every question a chat can have about a plugin has one file that answers it. When two files
@@ -65,8 +83,7 @@ Around every edit, in every path, the automatic skills run on their own:
 `check-contracts` and `build-site` after any agent or skill edit, `run-evals` when a change
 calls for evals, and `log-eval` for every test run before its result is reported.
 `plugin-anatomy` loads whenever a component is being designed, written or reviewed. A small
-change is the same loop with the design and planning chats left out; see
-[A small change](workflows/small-change.md).
+change is the same loop with the design and planning chats left out.
 
 ## The hand-offs
 
@@ -113,5 +130,5 @@ show if the fix held. You merge, bump, update the plugin and rerun the workflow;
 `/plugin-dev:audit-run` of that rerun checks every fix that was in the code that ran and marks
 each issue held, recurred, not exercised or not testable. The issue files are the hand-off
 between those chats, written only through `scripts/issues.py`, and each issue's status is
-derived from them, never stored. See [Checking a run, fixing it, and checking the
+derived from them, never stored. See [Checking a run, and checking the
 fix](workflows/audit-a-run.md).
