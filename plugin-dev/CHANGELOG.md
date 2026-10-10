@@ -5,6 +5,38 @@ how model and eval versioning relate to it — is in the `plugin-dev` plugin's `
 skill. This repo's own decisions are in `VERSIONING.md`.
 
 
+## [2.2.0] - 2026-10-10
+
+Everything a run of a plugin leaves behind has one place, `runs/` in the audited plugin, and
+an audit stops carrying issues that have stopped coming back.
+
+### Added
+
+- `trace.py where`: the workspace for a session, `runs/<project>/<command> <title>/<id8>`,
+  named once and kept when the chat is renamed (`dc65572`).
+- `settled`: an issue whose latest fix held in three sessions and has not been found again
+  since is no longer handed to auditors and is one line in `INDEX.md` (`6489cda`).
+- `issues.py list --format brief`: one line per fixed issue, what `audit-run` needs of it
+  (`6489cda`).
+- `evals/fixtures/issues/check.py`: a no-model check of the ledger layout and settling
+  (`6489cda`).
+
+### Changed
+
+- **Breaking, for a plugin with an `audits/` directory:** the ledger moved to
+  `runs/audits/` (`issues/`, `INDEX.md`, and the run reports as `reports/`), and a session's
+  trace from `evals/workspace/audit/<id8>/` to `runs/<project>/<command> <title>/<id8>/`.
+  `issues.py`, `audit-run`, `run-flow`, `fix-issues`, `bump-version` and the report template
+  read the new paths; `dev-team`'s ledger is migrated and its `.gitignore` holds `runs/*` and
+  `!runs/audits/` (`dc65572`).
+- `audit-run` writes a Checks line only for a prior issue that held or recurred; `not
+  exercised` and `not testable` live in the run report's Prior issues table, and
+  `check-result` refuses them (`6489cda`).
+
+### Fixed
+
+- `audit-run` and `fix-issues` named `audits` in their ledger commits (`32f7d7f`).
+
 ## [2.1.0] - 2026-10-10
 
 A phase of a plan spends less time waiting and reading. Two mechanical-only phases of
