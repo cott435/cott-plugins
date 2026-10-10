@@ -5,6 +5,35 @@ how model and eval versioning relate to it — is in the `plugin-dev` plugin's `
 skill. This repo's own decisions are in `VERSIONING.md`.
 
 
+## [2.3.0] - 2026-10-10
+
+`plugin-anatomy` starts from the driver: a workflow is a thin driver in the main chat, the
+agents it spawns, and the scripts, hooks and ledger that keep the run on track.
+
+### Added
+
+- `plugin-anatomy`'s `SKILL.md`: **What a plugin is for**, ahead of the routing questions —
+  the six parts of a workflow and the three rules (the driver is thin, the run is
+  deterministic wherever it can be, the run lives in files); a Driver row and a Ledger row
+  in the components table (`8b791a1`).
+- `plugin-anatomy`'s `references/composition.md`: the driver's loop, the ledger (written or
+  derived, one writer and it is a script), the hooks that hold a run, and how much driver a
+  small workflow needs (`8b791a1`).
+- `references/edge-cases.md`: a run that costs more with every step, and a run that cannot
+  be continued in a new chat (`8b791a1`).
+- `evals/sets/plugin-anatomy.json` evals 11 and 12, and three trigger queries (`8b791a1`).
+
+### Changed
+
+- `references/composition.md` is organized around composing a workflow with a driver, not
+  around choosing a skill or an agent; **A workflow that runs for a long time** and **Where
+  hooks and MCP servers fit** are folded into the new sections (`8b791a1`).
+- The routing questions send keeping a run going to the driver, "where does the run stand"
+  to a script, and a run's state to the ledger (`8b791a1`).
+- `design-plugin`: a design names each workflow's driver, the script that prints where the
+  run stands, its ledger and its return forms, and the checklist before the charts asks for
+  them (`8b791a1`).
+
 ## [2.2.0] - 2026-10-10
 
 Everything a run of a plugin leaves behind has one place, `runs/` in the audited plugin, and
