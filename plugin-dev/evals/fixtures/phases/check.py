@@ -18,6 +18,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 PLUGIN_DEV = HERE.parents[2]
 PHASES = PLUGIN_DEV / "scripts" / "phases.py"
+EDITS_PY = PLUGIN_DEV / "scripts" / "edits.py"
 GUARD = PLUGIN_DEV / "hooks" / "guard_agent.py"
 GATE = PLUGIN_DEV / "hooks" / "gate_stop.py"
 results = []
@@ -117,7 +118,8 @@ def build(repo, overview):
         (toy / "evals" / "sets" / f"{s}.json").write_text(json.dumps(
             {"target": s, "target_path": f"skills/{s}/SKILL.md", "evals": []}))
     (toy / "evals" / "README.md").write_text("# Evals\n\n| Date | Subject | File |\n|---|---|---|\n")
-    (toy / ".gitignore").write_text("evals/workspace/\n")
+    (toy / ".gitignore").write_text("evals/workspace/\nsite/docs/\nsite/_build/\n")
+    (toy / "site" / "site.yml").write_text("# every key is optional\n")
     (repo / "README.md").write_text("repo\n")
     (notes / "p-00-overview.md").write_text(overview)
     (notes / "p-progress.md").write_text(LEDGER)
@@ -148,7 +150,7 @@ def checks_cases(tmp):
         return sh(sys.executable, PHASES, *args, cwd=toy)
 
     r = ph("brief")
-    case("brief with a **Checks:** line: the one command, what it runs, the foreground timeout",
+    case("brief with a **Checks:** line: the one command, what it runs (no build-site before the last phase), the foreground timeout",
          f"{PHASES} checks p` runs `check-contracts`, `python3 scripts/x.py`, `python3 scripts/y.py` in one" in r.stdout
          and "`timeout: 600000`" in r.stdout and "`finish` refuses until `checks` has passed" in r.stdout, r.stdout)
     r = ph("finish", "--what", "greet")
@@ -164,7 +166,9 @@ def checks_cases(tmp):
     case("finish after failed checks: exit 1", ph("finish", "--what", "greet").returncode == 1)
     (toy / "scripts" / "y.py").write_text("print('PASS b')\n")
     r = ph("checks")
-    case("checks all passing: exit 0, one line per command", r.returncode == 0 and "checks: 3 of 3 pass" in r.stdout, r.stdout)
+    case("checks all passing: exit 0, one line per command, the site not built",
+         r.returncode == 0 and "checks: 3 of 3 pass" in r.stdout and "build-site" not in r.stdout
+         and not (toy / "site" / "docs").exists(), r.stdout)
     (toy / "skills" / "hello" / "SKILL.md").write_text("---\nname: hello\n---\nSay hello, by name.\n")
     r = ph("finish", "--what", "greet")
     case("finish after an edit made since checks passed: exit 1", r.returncode == 1 and "have not passed" in r.stdout, r.stdout)
@@ -181,6 +185,24 @@ def checks_cases(tmp):
     r = ph("checks", "--timeout", "1")
     case("checks with a command over --timeout: exit 1, said so",
          r.returncode == 1 and "FAIL python3 scripts/x.py" in r.stdout and "timed out after 1s" in r.stdout, r.stdout)
+    # the items' cited lines carried from the reviewed commit to the tree as it stands
+    base = sh("git", "rev-list", "--max-parents=0", "HEAD", cwd=repo).stdout.strip()[:10]
+    (toy / "skills" / "hello" / "SKILL.md").write_text("# a\n# b\n---\nname: hello\n---\nSay hello, by name.\n")
+    (notes / "p-edits.md").write_text(
+        EDITS.replace("# toy p — edits\n", f"# toy p — edits\n\nReviewed today, against `{base}`.\n").replace(
+            "- files: skills/hello/SKILL.md:5", "- files: skills/hello/SKILL.md:1-2, skills/hello/SKILL.md:4, "
+            "`skills/wave/SKILL.md:4`, skills/gone/SKILL.md:1, README.md"))
+    r = sh(sys.executable, EDITS_PY, "show", notes / "p-edits.md", "E-001", "--located", cwd=toy)
+    case("show --located: a moved range, a changed line, an untouched one, a file that is gone; a bare path cites nothing",
+         r.returncode == 0 and "skills/hello/SKILL.md:1-2 → :3-4, moved" in r.stdout
+         and "skills/hello/SKILL.md:4 → :6, changed since the review" in r.stdout and "     6  Say hello, by name." in r.stdout
+         and "skills/wave/SKILL.md:4 → :4, as reviewed" in r.stdout and "skills/gone/SKILL.md:1 → the file is gone" in r.stdout
+         and "README.md →" not in r.stdout and f"as reviewed at `{base}`" in r.stdout, r.stdout)
+    r = sh(sys.executable, EDITS_PY, "show", notes / "p-edits.md", "E-001", "--located", "--at", "HEAD", cwd=toy)
+    case("show --located --at HEAD: carried from the commit given", "skills/hello/SKILL.md:4 → :6, moved" in r.stdout, r.stdout)
+    r = sh(sys.executable, EDITS_PY, "show", notes / "p-edits.md", "E-001", cwd=toy)
+    case("show without --located: the item only", r.returncode == 0 and "→" not in r.stdout, r.stdout)
+
     (notes / "p-00-overview.md").write_text(OVERVIEW.replace("**Init flags:**", "**Checks:** `no-such-program-xyz`\n\n**Init flags:**"))
     r = ph("checks")
     case("checks with a command that cannot start: exit 1, said so",
@@ -219,10 +241,17 @@ def main():
          r.returncode == 0 and "**Items:** E-001" in r.stdout and "| R1.1 |" in r.stdout
          and "| R*.a |" in r.stdout and "R3.e1" not in r.stdout and "02-loud" not in r.stdout
          and "start here; `a|b` is one cell" in r.stdout and "not one: mechanical rows only" in r.stdout
-         and "toy p (phase 1): <what>" in r.stdout, r.stdout)
+         and "toy p (phase 1): <what>" in r.stdout and "## Its checks" not in r.stdout, r.stdout)
     case("brief: the overview's prose and pointers to its other sections, the phase marked as begun",
          "Names are exact." in r.stdout and "Breaking changes: `sed -n" in r.stdout
          and json.loads(mark.read_text())["phase"] == 1, r.stdout[-400:])
+
+    case("brief against an edit list: this phase's item whole with the lines it cites, not another phase's",
+         "## Its items, each with the lines it cites as they stand now" in r.stdout
+         and "#### E-001 hello greets by name" in r.stdout and "E-002" not in r.stdout
+         and "     4  Say hello." in r.stdout and "the list names no commit" in r.stdout, r.stdout)
+    r = ph("brief", "--phase", "1", "--short")
+    case("brief --short: without the edit list's part", r.returncode == 0 and "## Its items" not in r.stdout, r.stdout)
 
     # finish
     (toy / "skills" / "hello" / "SKILL.md").write_text("---\nname: hello\n---\nSay hello, by name.\n")
@@ -295,6 +324,8 @@ def main():
          f"- R3.e1: `python3 {script} init . hello --quiet --evals 1,3,4 --working-tree-only --reuse-unhashed`" in r.stdout
          and f"- R3.e2: `python3 {script} init . hello --quiet --evals 5 --reuse-unhashed`" in r.stdout
          and "This phase is one: its behavioral rows run here." in r.stdout, r.stdout)
+    case("brief at the last phase: build-site is among its checks, as at no phase before",
+         "checks p` runs `build-site` in one call" in r.stdout, r.stdout)
     r = ph("finish", "--what", "docs")
     case("finish at a checkpoint with a behavioral row not run: exit 1 naming the row",
          r.returncode == 1 and "row R3.e1 (hello) has no --iteration" in r.stdout, r.stdout)
@@ -338,8 +369,9 @@ def main():
          and "4 of 4 phases done; evals so far 1.5M tokens" in r.stdout and r.stdout.count("done") >= 5, r.stdout)
 
     r = ph("checks")
-    case("checks on a plan with no **Checks:** line and no contracts or site: exit 0, said so",
-         r.returncode == 0 and "no checks here" in r.stdout, r.stdout)
+    case("checks at the end of a plan with a site and no **Checks:** line: the site built, nothing left in the tree",
+         r.returncode == 0 and "PASS build-site (" in r.stdout and "checks: 1 of 1 pass" in r.stdout
+         and (toy / "site" / "docs").is_dir() and not sh("git", "status", "--porcelain", cwd=repo).stdout, r.stdout)
 
     # touch and plan-check
     r = ph("touch")

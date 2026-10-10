@@ -2,6 +2,10 @@
 
 Reviewed <date>. Mode: review. Branch `<plugin>-<slug>`, against `<sha>` (<plugin> <version>).
 
+<!-- The last commit this paragraph names in backticks is the one every item's line numbers
+     belong to: `scripts/edits.py show --located` carries them from it to the tree as it
+     stands. -->
+
 Written by the reconcile unit of `review-plugin` from every findings file under `findings/`,
 with the decisions answered by the user. It is the spec for this change, the way a design is
 for one that starts from an idea: `plan-phases` assigns every item below to one phase, and

@@ -21,7 +21,7 @@ flowchart TD
   P -->|your yes to the split| Z["phase 0 commit:<br/>slug-00-overview.md · eval sets · slug-progress.md"]
   Z --> R["/plugin-dev:run-phase slug<br/>(fresh chat; reads design → overview → ledger)"]
   R --> N["writes slug-NN-name.md from its row<br/>and the files as they are now"]
-  N --> E["edits · plugin's own rules · check-contracts · build-site"]
+  N --> E["edits · plugin's own rules · phases.py checks"]
   E --> X["run-evals on the note's Evals table<br/>(sets in evals/sets/, graded against the baseline)"]
   X --> Y["your review of the viewer"]
   Y --> C["logged with log-eval · one commit · ledger row · stop"]
@@ -92,7 +92,8 @@ asking you only a decision the design did not take. A plan written before notes 
 already has its notes, and then the chat reads its note instead. Then it does exactly that
 note: its edits (each component's `plugin-anatomy` reference
 read first), the plugin's own rules for added or removed files,
-`check-contracts`, `build-site`, then the note's **Evals** table — one row per eval, each
+`phases.py checks` (`check-contracts` and the plan's own checks; `build-site` once, at the
+last phase), then the note's **Evals** table — one row per eval, each
 naming its kind, its target, the baseline to compare against, which evals of that target's
 set in `evals/sets/` it runs, and the pass bar. Each row goes through `run-evals`, whose
 runner starts every executor and grader as a headless session and prints one report: the
@@ -106,8 +107,9 @@ commit, which names the commit it corrects.
 
 The chat reads the plan through `scripts/phases.py` and never opens the overview or the
 ledger whole: `next` says which phase and whether anything stops it, `brief` prints that
-phase's rows and notes, `checks` runs the phase's mechanical gate in one call
-(`check-contracts`, `build-site` and the commands on the overview's `**Checks:**` line), and
+phase's rows and notes and, against an edit list, its items with the lines they cite as
+they stand now, `checks` runs the phase's mechanical gate in one call (`check-contracts` and
+the commands on the overview's `**Checks:**` line; `build-site` at the last phase only), and
 `finish` checks the phase is whole, those checks passed on the tree it commits among the
 rest, writes its ledger row and makes its commit. `run-phases` uses `next`, `check` and `status` the same way, so the chat
 that keeps the phases going holds the script's lines, each agent's return and your answers. `log-eval` writes each

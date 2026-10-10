@@ -13,6 +13,9 @@ what a command can decide by exit code. Run from the plugin's own directory. Std
                       what the phase's chat reads: its Phases row, its eval rows with the
                       exact `eval_workspace.py init` command for each behavioral one, its
                       ledger row, and the overview's prose without the other phases' rows.
+                      Against an edit list, also the list's Goal, Decisions taken and What
+                      must not break, and the phase's items whole, each with the lines its
+                      `files:` cites as they stand now (`edits.py show --located`).
                       Marks the phase as begun (the stop gate reads the mark); --phase N
                       prints another phase's and marks nothing
   finish [slug] --what TEXT [--log FILE]... [--iteration DIR]... [--notes TEXT]
@@ -24,9 +27,10 @@ what a command can decide by exit code. Run from the plugin's own directory. Std
                       `<plugin> <slug> (phase N): <what>`
   checks [slug] [--timeout S]
                       the phase's whole mechanical gate in one call: `check-contracts` when
-                      the plugin has a `contracts.yml`, `build-site` when it has a
-                      `site/site.yml`, and every command on the overview's `**Checks:**`
-                      line, those started together. One line per command, a failure's FAIL
+                      the plugin has a `contracts.yml`, every command on the overview's
+                      `**Checks:**` line, those started together, and `build-site` only at
+                      the plan's last phase (the built site is not committed, so one build
+                      once the phases are in says what a build per phase would). One line per command, a failure's FAIL
                       lines under it, the full output in the run's `checks.log`. Records the
                       tree it passed on; `finish` refuses a plan with a `**Checks:**` line
                       until that record matches the tree. Exit 0 all pass · 1 any failed
@@ -341,8 +345,7 @@ def cmd_brief(args):
     out += [f"| {r['ID']} | {r['Kind']} | {r['Target']} | {r['Baseline']} | {r['Set evals']} | {r['Pass bar']} |"
             for r in rows]
     own = plan.check_commands()
-    gate = [name for name, needs in (("`check-contracts`", "contracts.yml"), ("`build-site`", "site/site.yml"))
-            if (plan.root / needs).is_file()] + [f"`{c}`" for c in own]
+    gate = [f"`{name}`" for name, _, _ in builtin_checks(plan, n)] + [f"`{c}`" for c in own]
     if gate:
         out += ["", "## Its checks", "",
                 f"`python3 {Path(__file__).resolve()} checks {plan.slug}` runs {', '.join(gate)} in one "
@@ -377,6 +380,8 @@ def cmd_brief(args):
             prose = [l for l in plan.ov_lines[span[0] + 1:span[1]] if not l.lstrip().startswith("|")]
             out += ["", f"## The overview's {name}: its conventions", ""] + \
                    [l for i, l in enumerate(prose) if l.strip() or (i and prose[i - 1].strip())]
+    if plan.edits.is_file() and not args.short:
+        out += spec_and_items(plan, n)
     rest = []
     for i, line in enumerate(plan.ov_lines):
         m = re.fullmatch(r"##\s+(.+?)\s*", line)
@@ -391,6 +396,26 @@ def cmd_brief(args):
     plan.marker().parent.mkdir(parents=True, exist_ok=True)
     plan.marker().write_text(json.dumps({"phase": n, "head": head}) + "\n")
     return 0
+
+
+def spec_and_items(plan, n):
+    """The edit list's part of a brief: why the change is made, and this phase's items with
+    the lines they cite as they stand."""
+    text = plan.edits.read_text().split("\n")
+    out = []
+    for name in ("Goal", "Decisions taken", "What must not break"):
+        start = next((i for i, l in enumerate(text) if re.fullmatch(rf"##\s+(\d+\.\s+)?{re.escape(name)}\s*", l)), None)
+        if start is not None:
+            end = next((i for i in range(start + 1, len(text)) if text[i].startswith("## ")), len(text))
+            out += ["", f"## The edit list's {name}", ""] + [l for l in text[start + 1:end]]
+    if (plan.phase_row(n) or {}).get("Items", "").strip(" —-"):
+        show = sh(sys.executable, HERE / "edits.py", "show", plan.edits, "--phase", n, "--overview", plan.overview,
+                  "--located", cwd=plan.root)
+        out += ["", "## Its items, each with the lines it cites as they stand now", "",
+                "An item's own numbers are the review's. The lines printed under it are where they "
+                "are in the tree now; open a file only for what these do not show.", "",
+                re.sub(r"(?m)^(#{2,4}) ", lambda m: "#" + m.group(1) + " ", show.stdout.rstrip())]
+    return out
 
 
 # ---------------------------------------------------------------- checks
@@ -424,12 +449,26 @@ def failure_lines(text, keep=15):
     return out[:60] or [l for l in text.splitlines() if l.strip()][-keep:]
 
 
+def builtin_checks(plan, n=None):
+    """(name, the file that calls for it, its script) for the checks every plan gets, at
+    phase n or the current one. The site is built once, at the plan's last phase:
+    `site/docs/` is not committed."""
+    rows = plan.rows()
+    if n is None:
+        _, row = plan.current()
+        n = int(row["Phase"]) if row else None
+    last = n is None or str(n) == rows[-1][1]["Phase"]
+    every = [("check-contracts", "contracts.yml", "contract_sweep.py")] + \
+            ([("build-site", "site/site.yml", "build_site.py")] if last else [])
+    return [c for c in every if (plan.root / c[1]).is_file()]
+
+
 def cmd_checks(args):
     plan = Plan(args.slug)
     work = plan.marker().parent
     work.mkdir(parents=True, exist_ok=True)
     started = time.time()
-    # The plan's own commands are the slow ones, so they start first and together; the two
+    # The plan's own commands are the slow ones, so they start first and together; the
     # built-in checks run beside them, in series, since build-site writes what the sweep reads.
     jobs = []
     for k, cmd in enumerate(plan.check_commands()):
@@ -441,13 +480,10 @@ def cmd_checks(args):
             proc = None
         jobs.append((cmd, proc, out, time.time()))
     results = []        # (name, ok, seconds, output)
-    builtin = [("check-contracts", "contracts.yml", "contract_sweep.py"),
-               ("build-site", "site/site.yml", "build_site.py")]
-    for name, needs, script in builtin:
-        if (plan.root / needs).is_file():
-            t = time.time()
-            r = sh(sys.executable, HERE / script, cwd=plan.root)
-            results.append((name, r.returncode == 0, time.time() - t, r.stdout + r.stderr))
+    for name, _, script in builtin_checks(plan):
+        t = time.time()
+        r = sh(sys.executable, HERE / script, cwd=plan.root)
+        results.append((name, r.returncode == 0, time.time() - t, r.stdout + r.stderr))
     for cmd, proc, out, t in jobs:
         code = 1
         if proc is not None:
@@ -475,7 +511,8 @@ def cmd_checks(args):
         "phase": int(row["Phase"]) if row else None, "passed": all_pass,
         "fingerprint": fingerprint(plan), "commands": [name for name, _, _, _ in results]}) + "\n")
     if not results:
-        print("no checks here: no contracts.yml, no site/site.yml, and the overview has no **Checks:** line")
+        print("no checks here: no contracts.yml, the overview has no **Checks:** line, and "
+              "build-site waits for the last phase")
         return 0
     print(f"checks: {passed} of {len(results)} pass in {time.time() - started:.0f}s · "
           f"full output: {log.relative_to(plan.root)}")
@@ -811,6 +848,7 @@ def main(argv=None):
         p.add_argument("slug", nargs="?")
         if name == "brief":
             p.add_argument("--phase", type=int, help="print another phase's brief; marks nothing")
+            p.add_argument("--short", action="store_true", help="without the edit list's part")
         if name in ("touch", "plan-check"):
             p.add_argument("--remaining", action="store_true",
                            help="only the phases from the next unfinished one on")

@@ -28,7 +28,7 @@ readers — that is the `contracts.yml` entry.>
 1. <Edit, in the order that keeps the bundle consistent after each step.>
 2. …
 3. The plugin's own rules for an added or removed file (its `CLAUDE.md`).
-4. `check-contracts` (if `contracts.yml`); `build-site` (if `site/`).
+4. `phases.py checks`: `check-contracts`, the plan's own checks, `build-site` at the last phase only.
 5. Evals — the table below, run with `run-evals` (it stops for review when a row is
    behavioral) and logged with `log-eval` before results are reported.
 6. `phases.py finish --what "<what>" --log … --iteration …`: the ledger row and the commit

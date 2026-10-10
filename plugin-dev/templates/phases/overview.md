@@ -59,7 +59,8 @@ exactly. A phase note may not rename anything here; a rename is a Deviation.>
 
 One commit per phase. Commit messages begin `<plugin> <slug> (phase N): <what>`. After
 every phase that touches an agent or skill: the plugin's own rules, `check-contracts`,
-`build-site`, then the phase's evals logged with `log-eval`, then the commit.
+then the phase's evals logged with `log-eval`, then the commit. `build-site` runs once, at
+the last phase.
 
 <Items: (review) the edit-list ids and ranges the phase lands, `E-001, E-004–E-009`, every
 item in exactly one row (`scripts/edits.py coverage` checks it); (new, change) the

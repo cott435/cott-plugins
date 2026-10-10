@@ -146,7 +146,9 @@ smallest end-to-end slice is phase 1.
     the final description.
   - **A phase is mechanical unless it is a checkpoint** (`eval-kinds.md`, **When behavioral
     evals run**). Every phase carries the mechanical rows for what it changes: fixtures,
-    `check-contracts`, `build-site`, a line count, a load check.
+    `check-contracts`, a line count, a load check. `build-site` is a row of the last phase
+    only: the built site is not committed, so one build once the phases are in says what a
+    build per phase would.
   - **A target's behavioral evals run once, after its last edit**: every id of that target,
     new or existing, in one row pair at the first checkpoint at or after the last phase that
     touches the target or what it is made of. `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/phases.py
@@ -164,7 +166,7 @@ smallest end-to-end slice is phase 1.
     before its commit — the plugin's own fixture runner, its test file — goes on a third,
     each command as a code span, run from the plugin's directory:
     ``**Checks:** `python3 evals/fixtures/check_all.py` ``. `phases.py checks` runs them
-    beside `check-contracts` and `build-site` in one call, and `finish` refuses the phase
+    beside `check-contracts` in one call, and `finish` refuses the phase
     until they have passed on the tree it commits. A behavioral row's **Set
     evals** cell is `` `evals/sets/<target>.json` `` and its ids (`1, 4–6`), exactly: the
     command is built from it. An edit-list item's `evals:` names ids to rerun and new evals
@@ -181,7 +183,8 @@ smallest end-to-end slice is phase 1.
 - **Every phase touching an agent or skill** runs the plugin's own rules, `check-contracts`
   (once a `contracts.yml` exists; in **new** mode, phase 1 creates it with the first claim the
   README makes about the bundle and a `frontmatter` claim for each of `skills/*/SKILL.md` and
-  `agents/*.md` it ships), and `build-site`, then its eval rows through `run-evals`.
+  `agents/*.md` it ships), then its eval rows through `run-evals`. The last phase also
+  runs `build-site`.
 - **Every platform-fact row** says, in its pass bar, where its result is written back in
   `plugin-anatomy`.
 

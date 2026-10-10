@@ -1,7 +1,7 @@
-# `phases.py checks` — a phase's mechanical gate in one call, and `finish` behind it
+# `phases.py checks` and a fuller `brief` — a phase's mechanical gate in one call, its items with their cited lines in one output
 
-**Tested against:** uncommitted — see working-tree diff, on `545b56d` (`scripts/phases.py`, `skills/run-phase/SKILL.md`, `skills/plan-phases/SKILL.md`, `templates/phases/overview.md`) · model: none · 2026-10-10
-**Set:** `python3 evals/fixtures/phases/check.py` (50 cases, 10 of them new) · **Iteration:** none · **Baseline:** none · **Pass rate:** 50/50 cases; the real plan's gate 3 of 3 in one call
+**Tested against:** uncommitted — see working-tree diff, on `545b56d` then `3b51457` (`scripts/phases.py`, `scripts/edits.py`, `skills/run-phase/SKILL.md`, `skills/plan-phases/SKILL.md`, `templates/phases/`) · model: none · 2026-10-10
+**Set:** `python3 evals/fixtures/phases/check.py` (56 cases, 16 of them new) · **Iteration:** none · **Baseline:** none · **Pass rate:** 56/56 cases; the real plan's gate 2 of 2 in one 82 s call
 
 ## What was tested
 
@@ -17,6 +17,11 @@ command removes the part of it that was waiting:
    log changed after it.
 3. A plan with no `**Checks:**` line is finished exactly as before.
 4. `finish --log` takes a log's bare name.
+5. `edits.py show --located` carries every `path:line` an item cites from the reviewed commit
+   to the tree as it stands, and `phases.py brief` prints the phase's items that way, with the
+   edit list's Goal, Decisions taken and What must not break, so a phase's chat reads one
+   output where it made about fifty reads.
+6. `checks` builds the site at the plan's last phase and at no phase before it.
 
 ## Method
 
@@ -58,19 +63,31 @@ series.
 | a command over `--timeout` | exit 1, `timed out after 1s` | yes |
 | a command that cannot start | exit 1, `could not start` | yes |
 | a plan with no `**Checks:**` line, no contracts, no site | exit 0, `no checks here`; its `finish` cases unchanged (the 40 earlier cases) | yes |
-| negative: `checks_stand` true whenever a record exists | 47/50: the three cases that need a failed or stale record fail | yes |
+| `brief` against an edit list | the phase's item whole, the lines it cites under it, no other phase's item; `--short` leaves the part out | yes |
+| `show --located`: a range moved by two added lines; a line an edit replaced; an untouched line; a file that is gone; a bare path | `:1-2 → :3-4, moved`; `:4 → :6, changed since the review` with the line there; `:4 → :4, as reviewed`; `the file is gone`; nothing | yes |
+| `show --located --at HEAD`; `show` without `--located` | carried from the commit given; the item only | yes |
+| `brief` at phase 1, and at the last phase, of a plugin with a `site/site.yml` | no `build-site` among the checks; `build-site` among them | yes |
+| `checks` before the last phase; at the end of the plan | the site not built; `PASS build-site`, `site/docs/` written, the tree clean | yes |
+| negative: `checks_stand` true whenever a record exists | three cases fail, the ones that need a failed or stale record (run when the set was 50) | yes |
 | the determinism plan: `brief --phase 22` | names `check-contracts`, `build-site`, `python3 evals/fixtures/check_all.py` | yes |
 | the determinism plan: `checks determinism` | `PASS check-contracts (0s): 73/73 pass`, `PASS build-site (0s)`, `PASS python3 evals/fixtures/check_all.py (292s): 575/575 pass`; one call, 4 min 53 s; `checks_stand` true in 0.1 s | yes |
+
+| the determinism plan: `brief --phase 22`, `23`, `30`, `37` at `4c32095` | 57, 57, 85 and 33 KB; 39, 47, 82 and 6 cited places carried from `e8df7f8`, the commit the list's opening paragraph names last; of phase 23's 34 cited places on three items, 18 moved, 13 changed, 3 as reviewed; `agents/architect.md:426-430 → :400-404` is the same paragraph | yes |
+| the determinism plan with dev-team's `check_all.py` run in parallel (`7f24905`) and `build-site` left to phase 37 (`249af7c`): `checks determinism` | `PASS check-contracts (1s): 73/73 pass`, `PASS python3 evals/fixtures/check_all.py (82s): 575/575 pass`; one call, 82 s | yes |
+| `edits.py check` and `coverage` on the determinism list | `ok: 152 items, 23 decisions`; `ok: 152 items in 37 phases` | yes |
 
 `check-contracts` 15/15 and `build-site` clean on plugin-dev itself.
 
 ## Conclusion
 
-Held. One call replaces what cost phase 20 two runs and 21 polls and phase 21 a ten-minute
-dead wait, and `finish` no longer takes the suite's result on the agent's word.
+Held, for what a script can show. One call replaces what cost phase 20 two runs and 21
+polls and phase 21 a ten-minute dead wait; with dev-team's runner in parallel that call is
+82 s, where the gate took those phases 9.5 and 14 minutes. `finish` no longer takes the
+suite's result on the agent's word. The brief now holds what the phase 20 agent fetched over
+about fifty turns: the spec's three sections, the items, and each cited place as it stands.
 
-Not tested: a phase agent following the new `run-phase` text. The claim that it makes the
-one call with `timeout: 600000` and does not poll is unproven until a phase runs on this
-version. Not changed here: `check_all.py` still takes 292 s, which is dev-team's to shorten;
-the reading before the note, which the new sentence in `run-phase` asks to batch and nothing
-enforces.
+Not tested: a phase agent on this version. That it makes the one `checks` call with
+`timeout: 600000` and does not poll, and that it reads less because the brief holds more, are
+both unproven until a phase runs; the eight minutes of reading in phase 20 also held the
+agent's own thinking, which no brief removes. A place marked *changed since the review*
+points at the start of what replaced the line, which may not be where the text went.

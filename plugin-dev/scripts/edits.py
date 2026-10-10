@@ -30,6 +30,13 @@ Commands:
   show <edits> <ID>...           print those items' blocks whole, then the decision rows they cite
   show <edits> --phase N --overview <overview>
                                  the same, for the items the overview gives phase N
+  show ... --located [--at REF]  under each item, where every `path:line` its `files:` cites
+                                 is in the tree now, with the lines there: the item's numbers
+                                 are the reviewed commit's, and `git diff REF` carries each
+                                 one across what has changed since. REF is the last commit
+                                 the list's opening paragraph names in backticks; with none,
+                                 the lines at the item's own numbers. Paths are the plugin's,
+                                 so run it from the plugin's directory.
   coverage <edits> <overview>    every item in exactly one phase; no unknown id; an item's
                                  dependencies in its own phase or one its phase depends on
 
@@ -41,6 +48,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -295,8 +303,86 @@ def expand(cell: str, known: list[str]) -> list[str]:
     return out
 
 
+CITED = re.compile(r"^([^:\s]+?)(?::(\d+)(?:\s*[-–]\s*(\d+))?)?$")
+HUNK = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
+CONTEXT, MOST = 3, 40       # lines shown around a cited range; the most lines for one range
+
+
+def reviewed_at(edits: str) -> str | None:
+    """The commit the items' line numbers belong to: the last one the list's opening
+    paragraph names, as `against `<sha>`` or after it."""
+    head = Path(edits).read_text().split("\n## ")[0]
+    found = re.findall(r"`([0-9a-f]{7,40})`", head)
+    return found[-1] if found else None
+
+
+def hunks(ref: str, path: str) -> list[tuple[int, int, int, int]] | None:
+    """(old start, old count, new start, new count) per change to path since ref; None when
+    git cannot say (no such ref, not a repository)."""
+    r = subprocess.run(["git", "diff", "-U0", "--no-color", ref, "--", path], capture_output=True, text=True)
+    if r.returncode != 0:
+        return None
+    out = []
+    for line in r.stdout.splitlines():
+        m = HUNK.match(line)
+        if m:
+            out.append((int(m.group(1)), int(m.group(2) or 1), int(m.group(3)), int(m.group(4) or 1)))
+    return out
+
+
+def carry(line: int, changes: list[tuple[int, int, int, int]]) -> tuple[int, bool]:
+    """Where a reviewed line is now, and whether it sits inside a change (then the place is
+    the start of what replaced it)."""
+    shift = 0
+    for a, b, c, d in changes:
+        if b == 0:                  # lines added after old line a
+            if line <= a:
+                break
+        elif line < a:
+            break
+        elif line < a + b:
+            return max(c, 1), True
+        shift += d - b
+    return line + shift, False
+
+
+def located(item: dict, ref: str | None) -> list[str]:
+    """The lines to print under an item: each cited place as it stands. With no commit to
+    carry the numbers from, the lines at the review's own numbers."""
+    out = [f"#### Where {item['id']}'s cited lines are now (numbers as reviewed at `{ref}` → the tree as it stands)"
+           if ref else f"#### The lines {item['id']} cites, at the review's own numbers (the list names no commit to "
+           "carry them from: check each against the item's text)", ""]
+    for part in item["fields"].get("files", "").split(","):
+        m = CITED.match(part.strip("` "))
+        if not m or not m.group(2):
+            continue                # a bare path cites no line
+        path, lo = m.group(1), int(m.group(2))
+        hi = int(m.group(3) or lo)
+        cite = f"{path}:{lo}" + (f"-{hi}" if hi != lo else "")
+        f = Path(path)
+        if not f.is_file():
+            out += [f"{cite} → the file is gone", ""]
+            continue
+        changes = hunks(ref, path) if ref else []
+        if changes is None:
+            out += [f"{cite} → git has no `{ref}` to carry it from; the numbers are the review's", ""]
+            changes = []
+        (new_lo, hit_lo), (new_hi, hit_hi) = carry(lo, changes), carry(hi, changes)
+        inside = hit_lo or hit_hi or any(b and lo <= a <= hi for a, b, _, _ in changes)
+        new_hi = max(new_hi, new_lo)
+        now = f":{new_lo}" + (f"-{new_hi}" if new_hi != new_lo else "")
+        out.append(f"{cite} → {now}" + ("" if not ref else ", changed since the review: an earlier phase may have "
+                                         "made this edit" if inside else ", as reviewed" if (new_lo, new_hi) == (lo, hi)
+                                         else ", moved"))
+        text = f.read_text(errors="replace").split("\n")
+        first, last = max(1, new_lo - CONTEXT), min(len(text), new_hi + CONTEXT, new_lo - CONTEXT + MOST)
+        out += [f"{n:>6}  {text[n - 1]}" for n in range(first, last + 1)] + [""]
+    return out if len(out) > 2 else []
+
+
 def cmd_show(args) -> int:
     _, items, decisions = load_edits(args.edits)
+    ref = args.at or reviewed_at(args.edits)
     known = [it["id"] for it in items]
     if args.phase is not None:
         if not args.overview:
@@ -320,6 +406,8 @@ def cmd_show(args) -> int:
     for w in wanted:
         if w in by_id:
             print("\n".join(by_id[w]["raw"]) + "\n")
+            if args.located:
+                print("\n".join(located(by_id[w], ref)))
             cited += [d for d in DECISION_ID.findall(by_id[w]["fields"].get("decide", ""))
                       if d not in cited]
     if cited:
@@ -391,7 +479,9 @@ def main(argv=None) -> int:
     p.add_argument("--findings", metavar="DIR"); p.set_defaults(fn=cmd_check)
     p = sub.add_parser("index"); p.add_argument("edits"); p.set_defaults(fn=cmd_index)
     p = sub.add_parser("show"); p.add_argument("edits"); p.add_argument("ids", nargs="*")
-    p.add_argument("--phase"); p.add_argument("--overview"); p.set_defaults(fn=cmd_show)
+    p.add_argument("--phase"); p.add_argument("--overview")
+    p.add_argument("--located", action="store_true"); p.add_argument("--at", metavar="REF")
+    p.set_defaults(fn=cmd_show)
     p = sub.add_parser("coverage"); p.add_argument("edits"); p.add_argument("overview")
     p.set_defaults(fn=cmd_coverage)
     args = ap.parse_args(argv)

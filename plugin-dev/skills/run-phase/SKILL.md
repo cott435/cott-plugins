@@ -40,9 +40,8 @@ exit code what a chat would otherwise decide by reading.
    - `site/notes/<slug>/<slug>-design.md` when there is one: the workflows and their charts,
      the decisions, the non-goals, as approved. Plans written before `design-plugin` existed
      have none; their overview carries it.
-   - `site/notes/<slug>/<slug>-edits.md` when there is one, never whole: its **Goal**,
-     **Decisions taken** and **What must not break** sections
-     (`sed -n '/^## <name>/,/^## /p'`).
+   - `site/notes/<slug>/<slug>-edits.md` when there is one, never opened: `P brief` printed
+     its **Goal**, **Decisions taken** and **What must not break** sections.
 2. `P brief`'s output, in place of the overview and the ledger: read neither file whole.
    The overview's other sections (the contents tree, the files other files parse, the
    breaking changes) are read with the `sed` line the brief gives, when a step needs one.
@@ -52,13 +51,15 @@ exit code what a chat would otherwise decide by reading.
    evals, listed in its notes. Running those evals is this chat's phase; the overview is
    its note.
 4. That phase's note, `site/notes/<slug>/<slug>-NN-<name>.md`, if it exists. If it does not,
-   this phase's items, when the spec is an edit list:
-   `E show site/notes/<slug>/<slug>-edits.md --phase <N> --overview site/notes/<slug>/<slug>-00-overview.md`,
-   which prints the items the overview gives this phase and the decisions they cite. Then
-   write the note, per **Write the note**.
+   this phase's items, when the spec is an edit list: `P brief` printed them whole, with the
+   decisions they cite and, under each item, the lines its `files:` cites as they stand in
+   the tree now (`E show … --located` prints the same for one item). Then write the note,
+   per **Write the note**.
 
-Reads that do not depend on each other go in one message, not one per turn: a phase's cost
-is its turns times its context, and the reading before the note is most of its turns.
+The brief is most of the reading. What it does not show, read in as few messages as it
+takes: every read that does not depend on another goes in the same message, never one per
+turn. A phase's cost is its turns times its context, and the reading before the note was
+most of a phase's turns.
 
 Open plugin files as the note's steps reach them. Do not read other phases' notes or items,
 the evals of other phases, findings files, or any earlier conversation: the spec and the
@@ -99,10 +100,12 @@ sections, in order:
 - **`## Done when`**: conditions checkable without judgment.
 
 Against an edit list, each item's lines are where the review found them, and earlier phases
-have moved them since. For every `path:line` an item cites, find the quoted text in the file
-as it is now (`grep -nF`), and cite the line where it is. When the text is gone because an
-earlier phase already made the change, say so under Decisions and drop that edit; when it is
-gone for any other reason, the item cannot be followed as written, which is a Deviation.
+have moved them since. The brief carries each one across: under an item, `path:line → :line`
+with the lines there, marked *moved*, *as reviewed*, or *changed since the review*. Cite the
+line where it is now. A place marked *changed* is one an earlier phase edited: read it, and
+when that phase already made the change, say so under Decisions and drop that edit; when the
+text is gone for any other reason, the item cannot be followed as written, which is a
+Deviation.
 
 `references/example-phase.md` walks through a real note.
 
@@ -132,9 +135,13 @@ Follow the note's **Steps** in order. Whatever the note says, these always apply
 - **The plugin's own rules.** Its `CLAUDE.md` — a three-file rule, a naming list, a site
   order file — applies to every file the phase adds or removes, in the same commit.
 - **Checks before evals, in one call.** `P checks [slug]` runs the phase's whole mechanical
-  gate — `check-contracts` when the plugin has `contracts.yml`, `build-site` when it has
-  `site/site.yml`, and the plan's own commands from the overview's `**Checks:**` line — and
-  prints one line per command, a failure's FAIL lines under it. `P brief` names what it runs
+  gate — `check-contracts` when the plugin has `contracts.yml`, and the plan's own commands
+  from the overview's `**Checks:**` line — and prints one line per command, a failure's FAIL
+  lines under it. `build-site` is not part of a phase: `site/docs/` is not committed, so
+  `checks` builds the site once, at the plan's last phase, and a phase before it never runs
+  `build-site` on its own, whatever an older overview's rows say. A phase that changes how
+  work flows still edits the hand-written `site/workflows/` page it changes, as one of its
+  files. `P brief` names what it runs
   here. Run it once, when the edits are done and before the evals, as one foreground Bash
   call with `timeout: 600000`, so a failed contract is fixed in the file rather than
   discovered by an eval. A plan's suite can run for minutes, and a call left at the default

@@ -52,7 +52,9 @@ care when editing it:
   for `review-plugin`'s spec: `review-plugin` writes from it, `plan-phases` and `run-phase`
   read it by those names, and `check-contracts` fails until they agree. Its item fields and
   the findings file's fields (`templates/review/findings.md`) are parsed by
-  `scripts/edits.py`; a field renamed in a template is a change to the script, and the
+  `scripts/edits.py`, which also reads the commit the list's opening paragraph names, to
+  carry an item's line numbers to the tree as it stands (`show --located`); a field renamed
+  in a template is a change to the script, and the
   script is run against the real `dev-team/site/notes/determinism/` review before it is
   committed.
 - **`plugin-anatomy` is the source of truth for platform facts.** A fact about how a plugin

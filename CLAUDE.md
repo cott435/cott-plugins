@@ -23,7 +23,7 @@ matches, because none of them commit or push anything on their own:
   in `evals/README.md`. Every time, including a clean pass, and written *before* reporting
   results back — a test that exists only in a conversation is a test nobody can check later.
 - **`build-site`** — rebuilds `<plugin>/site/docs/` (a Sphinx source tree) and, on request, `<plugin>/site/_build/`. Re-run
-  after editing any agent or skill in a plugin that has a `site/`. Always check the workflows affected by the adits and update them accordingly.
+  after editing any agent or skill in a plugin that has a `site/`; inside a phased plan, once, at its last phase (`phases.py checks` does it there), not after every phase. Always check the workflows affected by the adits and update them accordingly.
 - **`check-contracts`** — runs the cross-file claims a plugin declares in its own
   `contracts.yml`: a heading one prompt parses against the template another owns, a rule one
   file states and another contradicts, a list of names that goes stale when a directory
