@@ -5,6 +5,36 @@ how model and eval versioning relate to it — is in the `plugin-dev` plugin's `
 skill. This repo's own decisions are in `VERSIONING.md`.
 
 
+## [2.1.0] - 2026-10-10
+
+A phase of a plan spends less time waiting and reading. Two mechanical-only phases of
+dev-team's determinism plan took 21 and 23 minutes; 9.5 and 14 of those went to the plugin's
+fixture suite outlasting the Bash tool's 120 s default, and about 8 to fifty separate reads
+before the note. Plans without a `**Checks:**` line are finished as before.
+
+### Added
+
+- `phases.py checks`: a phase's whole mechanical gate in one call — `check-contracts` and
+  every command on the overview's new optional `**Checks:**` line, started together — one
+  line per command, a failure's FAIL lines under it, the full output in `checks.log`
+  (`3b51457`).
+- `edits.py show --located`: under each item, where every `path:line` it cites is in the tree
+  now, carried from the reviewed commit through `git diff`, with the lines there (`90928cd`).
+
+### Changed
+
+- `phases.py finish` refuses a plan that has a `**Checks:**` line until `checks` has passed
+  on the tree as it stands; the note, the ledger and the eval logs may change after it. It
+  takes `--log` as a bare file name too (`3b51457`).
+- `phases.py brief`, against an edit list, prints the list's Goal, Decisions taken and What
+  must not break, and the phase's items with their cited lines as they stand; `--short`
+  leaves that part out (`90928cd`).
+- `build-site` runs once in a plan, at its last phase, where `checks` runs it: the built site
+  is not committed. `run-phase`, `plan-phases` and the phase templates no longer ask for it
+  every phase (`90928cd`).
+- `run-phase` makes the one `checks` call in the foreground with a ten-minute timeout, never
+  polls it, and batches the reads the brief does not cover (`3b51457`, `90928cd`).
+
 ## [2.0.0] - 2026-10-10
 
 The reading site is built with Sphinx, MyST and Furo instead of MkDocs, so skills nest their
