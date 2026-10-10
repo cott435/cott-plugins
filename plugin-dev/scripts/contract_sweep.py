@@ -254,7 +254,7 @@ def main() -> int:
     try:
         import yaml
     except ImportError:
-        sys.exit("contracts.yml needs PyYAML — `pip install pyyaml` (mkdocs pulls it in).")
+        sys.exit("contracts.yml needs PyYAML — `pip install pyyaml`.")
     declared = yaml.safe_load(config.read_text()) or {}
 
     rows = []

@@ -1,7 +1,7 @@
 # Per-plugin config for the shared site builder (plugin-dev/scripts/build_site.py).
 
 # Every key is optional. site_title and command_prefix default to the plugin name, and the
-# kit's mkdocs-base.yml / extra.css are used unless this directory overrides them.
+# kit's extra.css is used unless this directory overrides it.
 
 # Reading order for the workflow pages in site/workflows/ — one page per pipeline.
 # Files not listed are appended alphabetically, so a new workflow needs no edit here.

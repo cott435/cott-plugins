@@ -22,7 +22,7 @@ matches, because none of them commit or push anything on their own:
   under that plugin's `evals/`, with the commit and model it was tested against, plus a row
   in `evals/README.md`. Every time, including a clean pass, and written *before* reporting
   results back — a test that exists only in a conversation is a test nobody can check later.
-- **`build-site`** — rebuilds `<plugin>/site/docs/` and `<plugin>/site/mkdocs.yml`. Re-run
+- **`build-site`** — rebuilds `<plugin>/site/docs/` (a Sphinx source tree) and, on request, `<plugin>/site/_build/`. Re-run
   after editing any agent or skill in a plugin that has a `site/`. Always check the workflows affected by the adits and update them accordingly.
 - **`check-contracts`** — runs the cross-file claims a plugin declares in its own
   `contracts.yml`: a heading one prompt parses against the template another owns, a rule one
@@ -55,7 +55,7 @@ branch-specific changes: create (or reuse) a worktree for that branch in a sibli
 when the branch is ready, merge it into the correct target branch (`main` unless told
 otherwise) rather than leaving it stranded in the worktree. After the merge, re-run
 `build-site` in the checkout you merged into for every plugin the branch touched: `site/docs/`
-and `site/mkdocs.yml` are gitignored, so a site built in the worktree never arrives with the
+and `site/_build/` are gitignored, so a site built in the worktree never arrives with the
 merge. Remove the worktree
 (`git worktree remove`) once its branch is merged and no longer needed.
 

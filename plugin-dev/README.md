@@ -28,7 +28,7 @@ Fifteen skills, in three groups by how they start. The table is the one list of 
 | Skill | Starts | What it does |
 |---|---|---|
 | `log-eval` | on its own, every test run | Records a test against a plugin's own skills or agents as a dated file under `evals/` with the commit and model it ran against, plus an index row. A clean pass exactly like a failure. |
-| `build-site` | on its own, after any agent or skill edit | Rebuilds `site/docs/` and `site/mkdocs.yml` from the bundle. |
+| `build-site` | on its own, after any agent or skill edit | Rebuilds the Sphinx site (`site/docs/`, HTML in `site/_build/`) from the bundle. |
 | `check-contracts` | on its own, beside `build-site` and before any bump | Runs the cross-file claims in a bundle's `contracts.yml`: a heading one file parses and another owns, a pattern no file may contain, a list of names that goes stale, and frontmatter keys the platform does not document or ignores in plugins (checked against `plugin-anatomy`). A `FAIL` names the `file:line`. |
 | `run-evals` | on its own, whenever a phase or change calls for evals | Runs one skill's or agent's evals from its committed set in `evals/sets/`: mechanical checks, a load check, behavioral runs graded assertion by assertion with skill-creator's grader. A script starts the runs as headless sessions and hands back one report, so the chat that asked reads a table, not every run. The baseline runs once per ref and is reused after; a regression row runs the working tree only. Stops for your review in skill-creator's viewer, then records the result with `log-eval`. |
 | `plugin-anatomy` | on its own, when a plugin's components are designed, written or reviewed | The source of truth for plugin components: which one a responsibility belongs in (skill, agent, hook, MCP server, script, config), how skills and agents combine, every documented frontmatter field, and the edge cases that fail silently. Each fact is marked documented, proven by an eval, or unconfirmed. `design-plugin`, `plan-phases` and `run-phase` read it, and the frontmatter check in `check-contracts` enforces its key lists. |
@@ -50,14 +50,14 @@ Fifteen skills, in three groups by how they start. The table is the one list of 
 | `agents/run-auditor.md` | One of the two agents: audits one unit, one driver segment, or the whole run for cross-agent consistency, and writes a findings file. On a rerun it is also given the prior issues that apply to its piece and reports each held, recurred or not exercised, with the step. Spawned only by `audit-run`. |
 | `agents/run-narrator.md` | The second agent: with `run-flow --explain`, writes a short account of one unit, each line citing its steps. Never judges. |
 | `audits/` (in each audited plugin) | The committed ledger an audit writes: `issues/<ID>.md`, `INDEX.md`, `runs/<date>-<id8>.md`. Written only through `scripts/issues.py`. |
-| `scripts/build_site.py` | The site builder. Fully generic — everything is discovered from the bundle. |
+| `scripts/build_site.py` | The site builder (Sphinx, MyST, Furo). Fully generic — everything is discovered from the bundle. |
 | `scripts/contract_sweep.py` | The contracts checker. Its `frontmatter` check reads the allowed keys from `plugin-anatomy`'s references rather than its own copy. Shared, so a change to it gets a positive and a negative run before it is committed (this plugin's `CLAUDE.md`). |
 | `scripts/edits.py` | A review's findings files and edit list, read and checked without a model: the shape of every findings file, the edit list's items and decisions, an index of one line per item, one phase's items printed whole, and coverage (every item in exactly one phase, dependencies respected). `review-plugin`, `plan-phases` and `run-phase` read the list through it. |
 | `scripts/phases.py` | A phased plan, read and advanced without a model: the next phase and whether anything stops it, the slice of the overview and ledger one phase needs, the ledger row and the commit that close a phase, the check that a phase stands, a status line per phase with eval pass counts and tokens, each eval target's last-touch phase, and the plan's eval rows against the checkpoint rule. `run-phases`, `run-phase` and `plan-phases` call it and never read the overview or the ledger whole. |
 | `hooks/` | Two hooks, both silent unless they apply. `guard_agent.py` refuses an eval executor or grader spawned through the Agent tool for an iteration the runner should run. `gate_stop.py` checks a phase that was committed without `phases.py finish` before its chat stops. |
 | `scripts/issues.py` | The audit ledger: creates and updates issue files under a plugin's `audits/issues/`, derives each issue's status, renders `audits/INDEX.md`, and checks the ledger. `audit-run`, `fix-issues` and `bump-version` write through it; nothing writes an issue file by hand. |
 | `templates/audits/` | `issue.md` and `run-report.md`: the one list of an issue file's and a run report's sections. |
-| `scripts/defaults/` | `mkdocs-base.yml` and `extra.css` used when a plugin doesn't override them. |
+| `scripts/defaults/` | `extra.css` used when a plugin doesn't override it. |
 | `templates/` | The files a new plugin subdirectory starts with. |
 | `templates/phases/` | The design shape `design-plugin` writes, the overview and ledger shapes `plan-phases` writes, and the phase-note shape `run-phase` writes. |
 | `templates/review/` | The review plan, findings-file and edit-list shapes `review-plugin` and its agents write. |
@@ -200,21 +200,22 @@ should say which plugin the release is actually about.
 ## The reading site
 
 ```
-python3 ~/dev/cott-plugins/plugin-dev/scripts/build_site.py   # from any plugin subdirectory
-cd site && mkdocs serve
+python3 ~/dev/cott-plugins/plugin-dev/scripts/build_site.py --build   # from any plugin subdirectory
+open site/_build/index.html
 ```
 
-Requires `pip install mkdocs mkdocs-material pymdown-extensions` once per
-machine. The nav is
-generated from what the script finds, so a new agent, skill, command, rule or `references/`
-file appears without editing any config:
+Requires `pip install sphinx myst-parser furo sphinxcontrib-mermaid pyyaml` once per
+machine. The nav is generated from what the script finds, so a new agent, skill, command,
+rule, script or `references/` file appears without editing any config:
 
-    Home (README) -> The flow -> Workflows -> Agents -> Commands ->
-    Workflow skills -> Knowledge skills -> Rules and config -> Notes -> Evals
+    Start (README, the flow) -> Workflows -> Agents -> Commands -> Workflow skills ->
+    Knowledge skills -> Scripts -> Rules and config -> Notes -> Evals
 
 A section with nothing in it is omitted. A skill is a **workflow skill** when its frontmatter
 says `context: fork` or `disable-model-invocation: true`, and a **knowledge skill** otherwise.
-A skill's `references/` pages follow the skill that owns them. `site/docs/` and `site/mkdocs.yml`
+A skill's `references/` pages are its children in the nav. Each script under `scripts/` and
+`skills/*/scripts/` gets a page (docstring, `--help` for every subcommand, functions, source),
+and a backticked mention of one anywhere links to it. `site/docs/` and `site/_build/`
 are generated and gitignored in every plugin repo; `site/site.yml`, `site/flow.md`,
 `site/workflows/` and `site/notes/` are authored and committed. Every key in `site.yml` is
 optional — a plugin with no site config at all still builds.
