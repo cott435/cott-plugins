@@ -131,8 +131,8 @@ attempt's `evals` is `none`.
 4. `I check --dir <path>/<P>` must print `ok`. If it does not, fix what it names through
    `issues.py` and run it again.
 5. Commit the attempts, from `<path>/<P>/` (the plugin's directory in the worktree, not the
-   worktree's root, where `audits` names nothing): `git add audits && git commit -m "<P>
-   audits: fix attempts for <ids>" -- audits`. Two commits, in that order, because an
+   worktree's root, where `runs/audits` names nothing): `git add runs/audits && git commit -m "<P>
+   audits: fix attempts for <ids>" -- runs/audits`. Two commits, in that order, because an
    attempt names the edit commit, which must exist first.
 
 Never `I check-result`, and never a `held`: fix-issues records what was changed, not

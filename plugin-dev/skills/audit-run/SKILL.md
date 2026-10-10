@@ -286,8 +286,8 @@ lines: each box then also shows the issues first found there and the prior issue
    - **Flow chart:** the template's line, naming the workspace's `flow.html` and
      `/plugin-dev:run-flow <id8>`.
 7. **Commit the ledger.** `I check` must print `ok`; if it does not, fix what it names
-   through `issues.py` and run it again. Then `git add audits && git commit -m "<P> audits:
-   <id8> — <n> new, <n> seen, <n> checked" -- audits`, where `<n> checked` is the number of
+   through `issues.py` and run it again. Then `git add runs/audits && git commit -m "<P> audits:
+   <id8> — <n> new, <n> seen, <n> checked" -- runs/audits`, where `<n> checked` is the number of
    issues step 4 reached (the rows of the Prior issues table), staging nothing outside `runs/audits/`
    because the checkout may hold other work. This is the one commit this skill makes
    itself. When the plugin directory is not in a git checkout (a cache copy, a fixture), the
