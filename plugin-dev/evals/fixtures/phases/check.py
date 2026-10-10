@@ -181,6 +181,13 @@ def checks_cases(tmp):
     case("finish after checks, then the note and the eval log: committed; the log given by its bare name",
          r.returncode == 0 and "phase 1 committed" in r.stdout and "`2026-01-01-greet.md`" in (notes / "p-progress.md").read_text()
          and not sh("git", "status", "--porcelain", cwd=repo).stdout, r.stdout)
+    (toy / "skills" / "wave" / "SKILL.md").write_text("---\nname: wave\n---\nSay goodbye.\n")
+    (toy / "scripts" / "x.py").write_text("import pathlib\npathlib.Path('ran.txt').write_text('x')\n")
+    r = ph("checks")
+    case("checks with a failed contract: exit 1, the plan's own commands not run",
+         r.returncode == 1 and "FAIL check-contracts" in r.stdout and "NOT RUN python3 scripts/x.py: fix the contracts first" in r.stdout
+         and "checks: 0 of 1 pass" in r.stdout and not (toy / "ran.txt").exists(), r.stdout)
+    sh("git", "checkout", "--", "skills/wave/SKILL.md", cwd=toy)
     (toy / "scripts" / "x.py").write_text("import time\ntime.sleep(30)\n")
     r = ph("checks", "--timeout", "1")
     case("checks with a command over --timeout: exit 1, said so",

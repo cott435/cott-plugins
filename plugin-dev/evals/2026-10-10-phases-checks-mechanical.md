@@ -91,3 +91,34 @@ Not tested: a phase agent on this version. That it makes the one `checks` call w
 both unproven until a phase runs; the eight minutes of reading in phase 20 also held the
 agent's own thinking, which no brief removes. A place marked *changed since the review*
 points at the start of what replaced the line, which may not be where the text went.
+
+## Later the same day: phase 23 on 2.1.0, and `checks` stopping at a failed contract
+
+**Tested against:** `fc80c47` (2.1.0, installed) for the phase; uncommitted on `fc80c47` (`scripts/phases.py`) for the change · model: `claude-sonnet-5-5` for the phase agent, none for the cases
+
+Phase 23 of the determinism plan ran on 2.1.0 with dev-team's runner in parallel (session
+`c7937d09`, agent `afba05d0`): 23.3 minutes, 101 turns, context up to 365k tokens, for a
+commit of 3,994 added lines and 97 new fixture cases (phase 20: 21.5 minutes for 1,617 lines
+and 25 cases).
+
+| What the transcript shows | Phase 20 (1.2.0) | Phase 23 (2.1.0) |
+|---|---|---|
+| Waiting on the fixture suite | 9.5 min: a 120 s cut-off, a second run, 21 polls | 4.4 min: three runs of 88 to 90 s, no cut-off, no poll |
+| Reading before the first edit | 8.5 min, about 55 calls | 6.8 min, about 40 calls, still one a turn; 3.7 min of it thinking |
+| Did `finish` see the suite pass | on the agent's word | `checks` recorded `763/763 pass` on the committed tree |
+| `timeout: 600000` on the `checks` call | — | not passed; the call ended in 88 s, under the 120 s default |
+
+Of the three suite runs, one was `check_all.py` on its own mid-edit (it found two failing
+tests), and one was a whole `checks` call that failed only `check-contracts`, a one-second
+check, and was run again after a one-line fix. `checks` now runs the sweep first and does not
+start the plan's own commands when a contract fails.
+
+| Case | Result | Pass |
+|---|---|---|
+| `checks` with a failed contract | exit 1, `FAIL check-contracts`, `NOT RUN python3 scripts/x.py: fix the contracts first`, `checks: 0 of 1 pass`; the command left no trace of having run | yes |
+| the other 56 cases | unchanged | yes |
+
+Held for the gate: the wait is down by half and no longer on the agent's word. Not held for
+the reading: the brief cut about a fifth of it, and the agent still read the previous phase's
+note and log, findings files and whole source files, one call a turn. What is left of a
+phase is the model's own work: 17 of phase 23's 23 minutes.

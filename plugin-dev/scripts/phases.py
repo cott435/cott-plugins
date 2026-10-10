@@ -28,9 +28,11 @@ what a command can decide by exit code. Run from the plugin's own directory. Std
   checks [slug] [--timeout S]
                       the phase's whole mechanical gate in one call: `check-contracts` when
                       the plugin has a `contracts.yml`, every command on the overview's
-                      `**Checks:**` line, those started together, and `build-site` only at
-                      the plan's last phase (the built site is not committed, so one build
-                      once the phases are in says what a build per phase would). One line per command, a failure's FAIL
+                      `**Checks:**` line, those started together after the sweep and not
+                      at all when a contract fails, and `build-site` only at the plan's
+                      last phase (the built site is not committed, so one build once the
+                      phases are in says what a build per phase would). One line per
+                      command, a failure's FAIL
                       lines under it, the full output in the run's `checks.log`. Records the
                       tree it passed on; `finish` refuses a plan with a `**Checks:**` line
                       until that record matches the tree. Exit 0 all pass · 1 any failed
@@ -468,10 +470,18 @@ def cmd_checks(args):
     work = plan.marker().parent
     work.mkdir(parents=True, exist_ok=True)
     started = time.time()
-    # The plan's own commands are the slow ones, so they start first and together; the
-    # built-in checks run beside them, in series, since build-site writes what the sweep reads.
+    results = []        # (name, ok, seconds, output)
+    builtin = builtin_checks(plan)
+    # The sweep takes a second and the plan's own commands minutes, so it goes first and a
+    # failed contract stops the call there: the fix would send the slow ones round again.
+    for name, _, script in [c for c in builtin if c[0] == "check-contracts"]:
+        t = time.time()
+        r = sh(sys.executable, HERE / script, cwd=plan.root)
+        results.append((name, r.returncode == 0, time.time() - t, r.stdout + r.stderr))
+    stopped = plan.check_commands() if any(not ok for _, ok, _, _ in results) else []
+    # The plan's own commands start together; build-site runs beside them.
     jobs = []
-    for k, cmd in enumerate(plan.check_commands()):
+    for k, cmd in enumerate([] if stopped else plan.check_commands()):
         out = (work / f"checks-{k}.out").open("w+")
         try:
             proc = subprocess.Popen(shlex.split(cmd), cwd=plan.root, stdout=out, stderr=subprocess.STDOUT, text=True)
@@ -479,8 +489,7 @@ def cmd_checks(args):
             out.write(f"could not start: {e}\n")
             proc = None
         jobs.append((cmd, proc, out, time.time()))
-    results = []        # (name, ok, seconds, output)
-    for name, _, script in builtin_checks(plan):
+    for name, _, script in [c for c in builtin if c[0] != "check-contracts" and not stopped]:
         t = time.time()
         r = sh(sys.executable, HERE / script, cwd=plan.root)
         results.append((name, r.returncode == 0, time.time() - t, r.stdout + r.stderr))
@@ -504,6 +513,8 @@ def cmd_checks(args):
         print(f"{'PASS' if ok else 'FAIL'} {name} ({secs:.0f}s)" + (f": {last[:160]}" if ok and last else ""))
         if not ok:
             print("\n".join("    " + l for l in failure_lines(text)))
+    for cmd in stopped:
+        print(f"NOT RUN {cmd}: fix the contracts first")
     passed = sum(ok for _, ok, _, _ in results)
     all_pass = bool(results) and passed == len(results)
     _, row = plan.current()
