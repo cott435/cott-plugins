@@ -57,6 +57,9 @@ exit code what a chat would otherwise decide by reading.
    which prints the items the overview gives this phase and the decisions they cite. Then
    write the note, per **Write the note**.
 
+Reads that do not depend on each other go in one message, not one per turn: a phase's cost
+is its turns times its context, and the reading before the note is most of its turns.
+
 Open plugin files as the note's steps reach them. Do not read other phases' notes or items,
 the evals of other phases, findings files, or any earlier conversation: the spec and the
 overview carry what they concluded, and another phase's work is not this chat's job. A
@@ -128,9 +131,18 @@ Follow the note's **Steps** in order. Whatever the note says, these always apply
   ledger, done afterwards as a small change to plugin-dev.
 - **The plugin's own rules.** Its `CLAUDE.md` — a three-file rule, a naming list, a site
   order file — applies to every file the phase adds or removes, in the same commit.
-- **Checks before evals.** If the plugin has `contracts.yml`, `check-contracts` passes. If
-  it has `site/`, `build-site` runs. Both before the evals, so a failed contract is fixed in
-  the file rather than discovered by an eval.
+- **Checks before evals, in one call.** `P checks [slug]` runs the phase's whole mechanical
+  gate — `check-contracts` when the plugin has `contracts.yml`, `build-site` when it has
+  `site/site.yml`, and the plan's own commands from the overview's `**Checks:**` line — and
+  prints one line per command, a failure's FAIL lines under it. `P brief` names what it runs
+  here. Run it once, when the edits are done and before the evals, as one foreground Bash
+  call with `timeout: 600000`, so a failed contract is fixed in the file rather than
+  discovered by an eval. A plan's suite can run for minutes, and a call left at the default
+  timeout is cut off and run twice. Never start it in the background and never poll it: each
+  look at a log is a turn that re-reads this chat's whole context. While editing, run only
+  the cases you touched, with the checker they belong to. After a fix, `P checks` again;
+  `P finish` refuses a plan with a `**Checks:**` line until it has passed on the tree as it
+  stands. The note, the ledger and the eval logs may change after it.
 - **Evals, through `run-evals`.** For each target in the note's `## Evals` table, invoke
   `run-evals` with that target's rows — the set file, the eval IDs, the baseline — in the
   table's order (platform facts and mechanical rows first). Most phases have mechanical rows
@@ -183,7 +195,8 @@ Follow the note's **Steps** in order. Whatever the note says, these always apply
   --iteration <iteration dir>… --notes "<for the next chat>"`, with `--also <path>` for each
   path outside the plugin the phase changed and `--trailer "<line>"` for each attribution
   line this session's commits carry. It refuses, naming each gap, unless the phase is whole:
-  the note exists; every log exists and has its row in `evals/README.md`; every behavioral
+  the note exists; every log exists and has its row in `evals/README.md`; `P checks` has
+  passed on the tree as it stands, when the plan has a `**Checks:**` line; every behavioral
   row of the phase has its ids laid out, in the row's mode, in the iterations given, each
   with a report and no run left not run or not graded (`--skip-row <ID>` for a row a
   Deviation says was not run); `check-contracts` passes;

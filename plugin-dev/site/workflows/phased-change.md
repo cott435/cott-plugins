@@ -106,8 +106,10 @@ commit, which names the commit it corrects.
 
 The chat reads the plan through `scripts/phases.py` and never opens the overview or the
 ledger whole: `next` says which phase and whether anything stops it, `brief` prints that
-phase's rows and notes, and `finish` checks the phase is whole, writes its ledger row and
-makes its commit. `run-phases` uses `next`, `check` and `status` the same way, so the chat
+phase's rows and notes, `checks` runs the phase's mechanical gate in one call
+(`check-contracts`, `build-site` and the commands on the overview's `**Checks:**` line), and
+`finish` checks the phase is whole, those checks passed on the tree it commits among the
+rest, writes its ledger row and makes its commit. `run-phases` uses `next`, `check` and `status` the same way, so the chat
 that keeps the phases going holds the script's lines, each agent's return and your answers. `log-eval` writes each
 run up before any result is reported. Then one commit and the ledger row, then it stops.
 

@@ -22,6 +22,14 @@ what a command can decide by exit code. Run from the plugin's own directory. Std
                       left not run, contracts — fills its ledger row, resolves earlier
                       `(phase N)` cells to SHAs, stages the plugin and commits
                       `<plugin> <slug> (phase N): <what>`
+  checks [slug] [--timeout S]
+                      the phase's whole mechanical gate in one call: `check-contracts` when
+                      the plugin has a `contracts.yml`, `build-site` when it has a
+                      `site/site.yml`, and every command on the overview's `**Checks:**`
+                      line, those started together. One line per command, a failure's FAIL
+                      lines under it, the full output in the run's `checks.log`. Records the
+                      tree it passed on; `finish` refuses a plan with a `**Checks:**` line
+                      until that record matches the tree. Exit 0 all pass · 1 any failed
   check [slug] N      phase N's commit is HEAD, the tree is clean, its row is `done`
   status [slug]       one line per phase; pass counts and tokens for the phases with evals
   touch [slug]        per eval target: the files it is made of, the phases that touch them,
@@ -31,16 +39,21 @@ what a command can decide by exit code. Run from the plugin's own directory. Std
 Shapes read, all owned by `templates/phases/`: the ledger's table (`Phase | Note | Status |
 Commit | Eval log(s) | Notes for the next chat`), the overview's `## Phases` table, every
 table under `## Evals by phase` whose header starts `Phase | ID | Kind`, and the overview's
-`**Checkpoints:** 4, 9, 12` line, and an optional `**Init flags:** --baseline <ref>` line
-whose flags go on every `eval_workspace.py init` command `brief` prints.
+`**Checkpoints:** 4, 9, 12` line, an optional `**Init flags:** --baseline <ref>` line
+whose flags go on every `eval_workspace.py init` command `brief` prints, and an optional
+`**Checks:**` line whose code spans are the plan's own check commands, each run from the
+plugin's directory, for `checks`.
 """
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import re
+import shlex
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -210,11 +223,23 @@ class Plan:
                 return m.group(1).strip().strip("`").split()
         return []
 
+    def check_commands(self):
+        """The plan's own check commands: each code span on the `**Checks:**` line, or the
+        whole line when it has none."""
+        for line in self.ov_lines:
+            m = re.match(r"\*\*Checks:\*\*\s*(.+)", line.strip())
+            if m:
+                return re.findall(r"`([^`]+)`", m.group(1)) or [m.group(1).strip()]
+        return []
+
     def prefix(self, n):
         return f"{self.plugin} {self.slug} (phase {n}):"
 
     def marker(self):
         return self.root / "evals" / "workspace" / "run-phases" / self.slug / "active.json"
+
+    def checks_record(self):
+        return self.marker().parent / "checks.json"
 
 
 def target_of(row):
@@ -315,6 +340,19 @@ def cmd_brief(args):
             "| ID | Kind | Target | Baseline | Set evals | Pass bar |", "|---|---|---|---|---|---|"]
     out += [f"| {r['ID']} | {r['Kind']} | {r['Target']} | {r['Baseline']} | {r['Set evals']} | {r['Pass bar']} |"
             for r in rows]
+    own = plan.check_commands()
+    gate = [name for name, needs in (("`check-contracts`", "contracts.yml"), ("`build-site`", "site/site.yml"))
+            if (plan.root / needs).is_file()] + [f"`{c}`" for c in own]
+    if gate:
+        out += ["", "## Its checks", "",
+                f"`python3 {Path(__file__).resolve()} checks {plan.slug}` runs {', '.join(gate)} in one "
+                "call and prints one line per command, with a failure's FAIL lines under it. Run it "
+                "once, when the edits are done, as one foreground Bash call with `timeout: 600000`: "
+                "never in the background, never polled, and none of those commands on its own beside "
+                "it. While editing, run only the cases you touched, with the checker those cases "
+                "belong to."
+                + (" `finish` refuses until `checks` has passed on the tree as it stands; the note, "
+                   "the ledger and the eval logs may change after it." if own else "")]
     cps = plan.checkpoints()
     behavioral = [r for r in rows if r["Kind"] == "behavioral"]
     commands = [(r["ID"], init_command(plan, r)) for r in behavioral]
@@ -353,6 +391,104 @@ def cmd_brief(args):
     plan.marker().parent.mkdir(parents=True, exist_ok=True)
     plan.marker().write_text(json.dumps({"phase": n, "head": head}) + "\n")
     return 0
+
+
+# ---------------------------------------------------------------- checks
+
+def fingerprint(plan):
+    """A hash of what the checks test: every file of the plugin git tracks or would, as it
+    stands. The plan's own notes and the eval logs are left out; a phase writes them after
+    its checks, and `finish` runs the contract sweep over them itself."""
+    listed = sh("git", "ls-files", "-co", "--exclude-standard", "-z", cwd=plan.root).stdout
+    h = hashlib.sha256()
+    for rel in sorted(set(filter(None, listed.split("\0")))):
+        if rel.startswith(f"site/notes/{plan.slug}/") or re.fullmatch(r"evals/[^/]+\.md", rel):
+            continue
+        f = plan.root / rel
+        h.update(rel.encode() + b"\0" + (f.read_bytes() if f.is_file() else b"<gone>") + b"\0")
+    return h.hexdigest()
+
+
+def failure_lines(text, keep=15):
+    """A failed command's FAIL lines with the detail indented under each; its last lines
+    when it printed none."""
+    out, under = [], False
+    for line in text.splitlines():
+        if line.startswith("FAIL"):
+            under = True
+            out.append(line)
+        elif under and line.startswith((" ", "\t")) and line.strip():
+            out.append(line)
+        else:
+            under = False
+    return out[:60] or [l for l in text.splitlines() if l.strip()][-keep:]
+
+
+def cmd_checks(args):
+    plan = Plan(args.slug)
+    work = plan.marker().parent
+    work.mkdir(parents=True, exist_ok=True)
+    started = time.time()
+    # The plan's own commands are the slow ones, so they start first and together; the two
+    # built-in checks run beside them, in series, since build-site writes what the sweep reads.
+    jobs = []
+    for k, cmd in enumerate(plan.check_commands()):
+        out = (work / f"checks-{k}.out").open("w+")
+        try:
+            proc = subprocess.Popen(shlex.split(cmd), cwd=plan.root, stdout=out, stderr=subprocess.STDOUT, text=True)
+        except OSError as e:
+            out.write(f"could not start: {e}\n")
+            proc = None
+        jobs.append((cmd, proc, out, time.time()))
+    results = []        # (name, ok, seconds, output)
+    builtin = [("check-contracts", "contracts.yml", "contract_sweep.py"),
+               ("build-site", "site/site.yml", "build_site.py")]
+    for name, needs, script in builtin:
+        if (plan.root / needs).is_file():
+            t = time.time()
+            r = sh(sys.executable, HERE / script, cwd=plan.root)
+            results.append((name, r.returncode == 0, time.time() - t, r.stdout + r.stderr))
+    for cmd, proc, out, t in jobs:
+        code = 1
+        if proc is not None:
+            try:
+                code = proc.wait(timeout=max(1, args.timeout - (time.time() - t)))
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
+                out.write(f"\ntimed out after {args.timeout}s\n")
+        out.seek(0)
+        results.append((cmd, code == 0, time.time() - t, out.read()))
+        out.close()
+        Path(out.name).unlink()
+    log = work / "checks.log"
+    log.write_text("".join(f"$ {name}\n{text.rstrip()}\n\n" for name, _, _, text in results))
+    for name, ok, secs, text in results:
+        last = next((l.strip() for l in reversed(text.splitlines()) if l.strip()), "")
+        print(f"{'PASS' if ok else 'FAIL'} {name} ({secs:.0f}s)" + (f": {last[:160]}" if ok and last else ""))
+        if not ok:
+            print("\n".join("    " + l for l in failure_lines(text)))
+    passed = sum(ok for _, ok, _, _ in results)
+    all_pass = bool(results) and passed == len(results)
+    _, row = plan.current()
+    plan.checks_record().write_text(json.dumps({
+        "phase": int(row["Phase"]) if row else None, "passed": all_pass,
+        "fingerprint": fingerprint(plan), "commands": [name for name, _, _, _ in results]}) + "\n")
+    if not results:
+        print("no checks here: no contracts.yml, no site/site.yml, and the overview has no **Checks:** line")
+        return 0
+    print(f"checks: {passed} of {len(results)} pass in {time.time() - started:.0f}s · "
+          f"full output: {log.relative_to(plan.root)}")
+    return 0 if all_pass else 1
+
+
+def checks_stand(plan):
+    """Whether `checks` last passed on the tree as it stands now."""
+    try:
+        record = json.loads(plan.checks_record().read_text())
+    except (OSError, ValueError):
+        return False
+    return bool(record.get("passed")) and record.get("fingerprint") == fingerprint(plan)
 
 
 # ---------------------------------------------------------------- finish
@@ -404,6 +540,8 @@ def cmd_finish(args):
     logs = []
     for log in args.log:
         p = (plan.root / log) if not Path(log).is_absolute() else Path(log)
+        if not p.is_file() and (plan.root / "evals" / Path(log).name).is_file():
+            p = plan.root / "evals" / Path(log).name       # the log's bare name
         if not p.is_file():
             problems.append(f"no eval log at {log}")
         elif p.name not in index:
@@ -437,6 +575,10 @@ def cmd_finish(args):
             if one_sided:
                 problems.append(f"row {r['ID']}: {name} eval(s) {one_sided} ran working tree only "
                                 f"and the row runs them compared: {init_command(plan, r)}")
+    if plan.check_commands() and not checks_stand(plan):
+        problems.append("the plan's checks have not passed on the tree as it stands: run "
+                        f"`python3 {Path(__file__).resolve()} checks {plan.slug}` (one foreground "
+                        "call, `timeout: 600000`), then `finish` again")
     if (plan.root / "contracts.yml").is_file():
         sweep = sh(sys.executable, HERE / "contract_sweep.py", cwd=plan.root)
         if sweep.returncode != 0:
@@ -673,6 +815,10 @@ def main(argv=None):
             p.add_argument("--remaining", action="store_true",
                            help="only the phases from the next unfinished one on")
         p.set_defaults(fn=fn)
+    p = sub.add_parser("checks")
+    p.add_argument("slug", nargs="?")
+    p.add_argument("--timeout", type=int, default=1200, help="seconds each of the plan's own commands may run")
+    p.set_defaults(fn=cmd_checks)
     p = sub.add_parser("check")
     p.add_argument("args", nargs="+", metavar="[slug] N")
     p.set_defaults(fn=cmd_check)

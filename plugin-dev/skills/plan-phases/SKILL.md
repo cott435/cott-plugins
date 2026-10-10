@@ -160,7 +160,12 @@ smallest end-to-end slice is phase 1.
     phases. The overview names them on one line under **Evals by phase**:
     `**Checkpoints:** 9, 14`. A flag every eval run of the plan needs — a baseline ref when
     the sets mix baselines — goes on a second line, `**Init flags:** --baseline <ref>`, and
-    `phases.py brief` puts it on every `init` command it prints. A behavioral row's **Set
+    `phases.py brief` puts it on every `init` command it prints. A check every phase runs
+    before its commit — the plugin's own fixture runner, its test file — goes on a third,
+    each command as a code span, run from the plugin's directory:
+    ``**Checks:** `python3 evals/fixtures/check_all.py` ``. `phases.py checks` runs them
+    beside `check-contracts` and `build-site` in one call, and `finish` refuses the phase
+    until they have passed on the tree it commits. A behavioral row's **Set
     evals** cell is `` `evals/sets/<target>.json` `` and its ids (`1, 4–6`), exactly: the
     command is built from it. An edit-list item's `evals:` names ids to rerun and new evals
     to write; both go in the row of their target's checkpoint.

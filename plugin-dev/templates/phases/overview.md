@@ -88,6 +88,9 @@ Baseline `working tree only`.>
 
 <Optional, when every eval run of the plan needs the same flag: **Init flags:** `--baseline <ref>`>
 
+<Optional, when every phase runs the plugin's own checks before its commit, each command a
+code span, run from the plugin's directory: **Checks:** `python3 evals/fixtures/check_all.py`>
+
 | Phase | ID | Kind | Target | Baseline | Set evals | Pass bar |
 |---|---|---|---|---|---|---|
 | 1 | <ID> | <kind> | <skill or agent> | <none / previous / ref / working tree only> | <evals/sets/x.json 1,2> | <checkable condition> |

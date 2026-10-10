@@ -101,9 +101,11 @@ def sh(*args, cwd, stdin=None):
     return subprocess.run([str(a) for a in args], cwd=cwd, input=stdin, capture_output=True, text=True)
 
 
-def main():
-    tmp = Path(tempfile.mkdtemp(prefix="phases-check-"))
-    repo = tmp / "repo"
+GIT = ("git", "-c", "user.name=t", "-c", "user.email=t@t")
+
+
+def build(repo, overview):
+    """A git repo at `repo` holding the toy plugin and its plan, on the plan's branch."""
     toy = repo / "toy"
     notes = toy / "site" / "notes" / "p"
     for d in (toy / ".claude-plugin", toy / "skills" / "hello", toy / "skills" / "wave",
@@ -117,16 +119,79 @@ def main():
     (toy / "evals" / "README.md").write_text("# Evals\n\n| Date | Subject | File |\n|---|---|---|\n")
     (toy / ".gitignore").write_text("evals/workspace/\n")
     (repo / "README.md").write_text("repo\n")
-    (notes / "p-00-overview.md").write_text(OVERVIEW)
+    (notes / "p-00-overview.md").write_text(overview)
     (notes / "p-progress.md").write_text(LEDGER)
     (notes / "p-edits.md").write_text(EDITS)
-    git = ("git", "-c", "user.name=t", "-c", "user.email=t@t")
     sh("git", "init", "-q", "-b", "main", cwd=repo)
     sh("git", "add", "-A", cwd=repo)
-    sh(*git, "commit", "-qm", "toy p (phase 0): the plan", cwd=repo)
+    sh(*GIT, "commit", "-qm", "toy p (phase 0): the plan", cwd=repo)
     sh("git", "checkout", "-qb", "toy-p", cwd=repo)
     sh("git", "config", "user.name", "t", cwd=repo)
     sh("git", "config", "user.email", "t@t", cwd=repo)
+    return toy, notes
+
+
+def checks_cases(tmp):
+    """`checks`, and `finish` behind it, on a plan whose overview has a **Checks:** line."""
+    repo = tmp / "checks-repo"
+    toy, notes = build(repo, OVERVIEW.replace(
+        "**Init flags:**", "**Checks:** `python3 scripts/x.py` · `python3 scripts/y.py`\n\n**Init flags:**"))
+    (toy / "contracts.yml").write_text(
+        "forbid:\n  - name: no skill says goodbye\n    pattern: 'goodbye'\n    files: ['skills/*/SKILL.md']\n")
+    (toy / "scripts").mkdir()
+    (toy / "scripts" / "x.py").write_text("print('PASS a')\nprint('2/2 pass')\n")
+    (toy / "scripts" / "y.py").write_text(
+        "import sys\nprint('PASS b')\nprint('FAIL c')\nprint('    the detail')\nprint('noise')\nsys.exit(1)\n")
+    (notes / "p-01-greet.md").write_text("# 01 — greet\n")
+
+    def ph(*args):
+        return sh(sys.executable, PHASES, *args, cwd=toy)
+
+    r = ph("brief")
+    case("brief with a **Checks:** line: the one command, what it runs, the foreground timeout",
+         f"{PHASES} checks p` runs `check-contracts`, `python3 scripts/x.py`, `python3 scripts/y.py` in one" in r.stdout
+         and "`timeout: 600000`" in r.stdout and "`finish` refuses until `checks` has passed" in r.stdout, r.stdout)
+    r = ph("finish", "--what", "greet")
+    case("finish before checks: exit 1 with the command", r.returncode == 1
+         and "checks have not passed on the tree as it stands" in r.stdout and "checks p`" in r.stdout, r.stdout)
+    r = ph("checks")
+    log = toy / "evals" / "workspace" / "run-phases" / "p" / "checks.log"
+    case("checks with a failing command: exit 1, its FAIL line and detail, not its noise, the rest PASS",
+         r.returncode == 1 and "FAIL python3 scripts/y.py (" in r.stdout and "    FAIL c\n        the detail" in r.stdout
+         and "noise" not in r.stdout and "PASS check-contracts (" in r.stdout
+         and "PASS python3 scripts/x.py (0s): 2/2 pass" in r.stdout and "checks: 2 of 3 pass" in r.stdout
+         and "noise" in log.read_text(), r.stdout)
+    case("finish after failed checks: exit 1", ph("finish", "--what", "greet").returncode == 1)
+    (toy / "scripts" / "y.py").write_text("print('PASS b')\n")
+    r = ph("checks")
+    case("checks all passing: exit 0, one line per command", r.returncode == 0 and "checks: 3 of 3 pass" in r.stdout, r.stdout)
+    (toy / "skills" / "hello" / "SKILL.md").write_text("---\nname: hello\n---\nSay hello, by name.\n")
+    r = ph("finish", "--what", "greet")
+    case("finish after an edit made since checks passed: exit 1", r.returncode == 1 and "have not passed" in r.stdout, r.stdout)
+    ph("checks")
+    (notes / "p-01-greet.md").write_text("# 01 — greet\n\n## Deviations\n\nnone\n")
+    (toy / "evals" / "2026-01-01-greet.md").write_text("# greet\n")
+    with open(toy / "evals" / "README.md", "a") as f:
+        f.write("| 2026-01-01 | greet | [2026-01-01-greet.md](2026-01-01-greet.md) |\n")
+    r = ph("finish", "--what", "greet", "--log", "2026-01-01-greet.md")
+    case("finish after checks, then the note and the eval log: committed; the log given by its bare name",
+         r.returncode == 0 and "phase 1 committed" in r.stdout and "`2026-01-01-greet.md`" in (notes / "p-progress.md").read_text()
+         and not sh("git", "status", "--porcelain", cwd=repo).stdout, r.stdout)
+    (toy / "scripts" / "x.py").write_text("import time\ntime.sleep(30)\n")
+    r = ph("checks", "--timeout", "1")
+    case("checks with a command over --timeout: exit 1, said so",
+         r.returncode == 1 and "FAIL python3 scripts/x.py" in r.stdout and "timed out after 1s" in r.stdout, r.stdout)
+    (notes / "p-00-overview.md").write_text(OVERVIEW.replace("**Init flags:**", "**Checks:** `no-such-program-xyz`\n\n**Init flags:**"))
+    r = ph("checks")
+    case("checks with a command that cannot start: exit 1, said so",
+         r.returncode == 1 and "FAIL no-such-program-xyz" in r.stdout and "could not start" in r.stdout, r.stdout)
+
+
+def main():
+    tmp = Path(tempfile.mkdtemp(prefix="phases-check-"))
+    repo = tmp / "repo"
+    toy, notes = build(repo, OVERVIEW)
+    git = GIT
 
     def ph(*args):
         return sh(sys.executable, PHASES, *args, cwd=toy)
@@ -272,6 +337,10 @@ def main():
          r.returncode == 0 and "[checkpoint]  evals 3/4, 1.5M tokens" in r.stdout
          and "4 of 4 phases done; evals so far 1.5M tokens" in r.stdout and r.stdout.count("done") >= 5, r.stdout)
 
+    r = ph("checks")
+    case("checks on a plan with no **Checks:** line and no contracts or site: exit 0, said so",
+         r.returncode == 0 and "no checks here" in r.stdout, r.stdout)
+
     # touch and plan-check
     r = ph("touch")
     lines = {l.split("\t")[0]: l for l in r.stdout.splitlines()}
@@ -313,6 +382,8 @@ def main():
     case("guard: a blind comparator, exit 0", r.returncode == 0, r.stderr)
     r = sh(sys.executable, GUARD, cwd=tmp, stdin="not json")
     case("guard: an unreadable event, exit 0 with the reason", r.returncode == 0 and "allowing" in r.stderr, r.stderr)
+
+    checks_cases(tmp)
 
     shutil.rmtree(tmp, ignore_errors=True)
     print(f"{sum(results)}/{len(results)} pass")

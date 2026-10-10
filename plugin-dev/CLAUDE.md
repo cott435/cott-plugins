@@ -37,7 +37,8 @@ care when editing it:
   `python3 evals/fixtures/run-evals-runner/check.py`, which needs no model.
 - **`scripts/phases.py` owns the ledger and reads the overview.** It parses the ledger's
   table by its column names, the overview's `## Phases` and `## Evals by phase` tables, and
-  the `**Checkpoints:**` line, all as `templates/phases/` writes them. A column renamed in a
+  the `**Checkpoints:**`, `**Init flags:**` and `**Checks:**` lines, all as
+  `templates/phases/` writes them. A column renamed in a
   template is a change to the script, and `python3 evals/fixtures/phases/check.py` (no
   model) is run before either is committed.
 - **This plugin has hooks, and they run in every session on every machine.** Each exits 0
