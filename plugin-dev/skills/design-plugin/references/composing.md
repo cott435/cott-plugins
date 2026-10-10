@@ -102,6 +102,13 @@ are the chart captions and, later, the writeup's **Workflows** section.
     `references/composition.md`. Every "must never" from the interview is either a hook or
     an instruction, and the design says which and why.
 
+    Each workflow's orchestrator is its **driver**, built as that reference's **The driver's
+    loop** and **What the driver holds** say. Name, per workflow: the typed skill that
+    drives it; the script that prints where the run stands and each agent's slice; the
+    ledger that script reads, written or derived; the form each agent returns in; and the
+    hook behind each step that must pass before its agent stops. A workflow of one step
+    names its driver and says it needs no ledger.
+
 11. **Say what each output must say.** For every file a reader depends on, name its sections
     and the domain rules that make it trustworthy: what it must cite, what it must never claim,
     and when it goes stale. Structure without those rules produces well-organized files nobody
@@ -140,6 +147,9 @@ These come up often. Use one because steps 2 to 10 derived it, never because it 
 - Every component has a kind (agent, workflow skill, forked skill, knowledge skill, hook, MCP
   server, script, config), every user decision sits in the main thread, and no agent is given
   a field plugin agents ignore (`plugin-anatomy`'s `references/edge-cases.md`).
+- Every workflow has a driver, and the driver reads where the run stands from a script, not
+  from the plan or its agents' files. A workflow of more than one step names its ledger and
+  the script that writes it.
 - With every suggestion removed, the core still works end to end.
 - The depth is the same everywhere it is described: a source is not "read in full" in one
   place and "skimmed" in another.

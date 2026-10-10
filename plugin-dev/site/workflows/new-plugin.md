@@ -58,7 +58,9 @@ another loop, often a cheaper, wider one that feeds the deep one. Loops meet at 
 workflows that need the same thing share the loop that makes it. Then each piece is routed to
 a component with `plugin-anatomy`: a "must never" becomes a hook or an instruction, with the
 reason; a pure fetch or count becomes a script; anything that needs you stays in a workflow
-skill, since agents cannot ask. Every platform fact the design leans on is checked against
+skill, since agents cannot ask. Each workflow gets a driver: its typed skill in the main
+chat, which spawns the agents, reads where the run stands from a script and a ledger, and
+holds almost nothing itself. Every platform fact the design leans on is checked against
 `plugin-anatomy` first and the docs second, and one neither settles is written down as an
 assumption for phase 0 to prove.
 

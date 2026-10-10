@@ -58,7 +58,7 @@
       "kind": "behavioral",
       "baseline": "none",
       "prompt": "In my plugin lit-review/, the paper-reader agent runs once per paper, about 40 at a time. I'm preloading six skills into it with skills: (citation-style, claim-extraction, stats-checklist, figure-reading, retraction-check, writing-style). Is that fine?",
-      "expected_output": "Explains skills: injects full content into every instance, so six skills × 40 instances multiplies context; preload only what every run needs and invoke the rest on demand via the Skill tool; batches the 40-wide fan-out",
+      "expected_output": "Explains skills: injects full content into every instance, so six skills \u00d7 40 instances multiplies context; preload only what every run needs and invoke the rest on demand via the Skill tool; batches the 40-wide fan-out",
       "files": [],
       "expectations": [
         "The final message says the skills field preloads each skill's full content into the agent at startup",
@@ -75,7 +75,7 @@
       "kind": "platform-fact",
       "baseline": "none",
       "prompt": "Does claude.ai (and so the desktop app's marketplace sync) reject a plugin whose agents/*.md description contains an <example> block, the way it rejects XML-style tags in a SKILL.md description?",
-      "expected_output": "Assumed: yes, rejected like a skill description. Method: a scratch marketplace on a branch with one plugin whose only agent's description has <example>…</example>; sync in the desktop app; record whether the plugin lists or errors. Write the result back to plugin-anatomy references/agents.md (The description) and, if accepted, relax contracts.yml's XML-tag forbid for agents/*.md",
+      "expected_output": "Assumed: yes, rejected like a skill description. Method: a scratch marketplace on a branch with one plugin whose only agent's description has <example>\u2026</example>; sync in the desktop app; record whether the plugin lists or errors. Write the result back to plugin-anatomy references/agents.md (The description) and, if accepted, relax contracts.yml's XML-tag forbid for agents/*.md",
       "files": [],
       "expectations": [
         "The desktop app's plugin list or error for the scratch plugin is recorded verbatim",
@@ -152,6 +152,44 @@
         "The observed cap is written back to plugin-anatomy with the log as its source"
       ],
       "added_in": "plugin-anatomy step (design-plugin branch)"
+    },
+    {
+      "id": 11,
+      "name": "workflow-designed-driver-first",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "prompt": "I'm in my plugin grant-desk/ (it has .claude-plugin/plugin.json). New workflow: /grant-desk:draft-application takes a funder's call for proposals and writes the application - about 12 sections, each one drafted, then checked against the funder's criteria, then revised if the check rejects it. A full run takes a couple of hours and I sometimes close the laptop partway. Sketch the components for me: what is a skill, what is an agent, and how does the run keep its place?",
+      "expected_output": "A driver-first design: one typed workflow skill inline in the main thread that loops ask-script, spawn, record; a drafter and a checker agent returning in a fixed form; a script that prints the next step and each agent's slice and writes the ledger; a ledger in the user's project so a new chat resumes; a hook for what must hold",
+      "files": [],
+      "expectations": [
+        "The design names one typed skill that runs inline in the main thread as the workflow's driver (or orchestrator), and says it spawns the agents",
+        "It says the driver holds little context: it does not read the call for proposals, the drafts or the plan itself, and does no section's work itself",
+        "Where the run stands (which sections are drafted, checked, left) is printed by a script, and the driver acts on the script's output rather than working it out by reading files",
+        "The record of the run is a ledger (or state derived from files) in the user's project, not under ${CLAUDE_PLUGIN_ROOT} and not only in the conversation, and the answer says a new chat running the same command resumes from it",
+        "The ledger row or step record is written by a script that checks the step, not by the driver or an agent by hand",
+        "Drafting and checking are separate agents (the checker in its own context), and each returns to the driver in a fixed form with a status",
+        "The revision loop is capped at a stated number of rounds",
+        "At least one must-hold rule is a plugin hook in hooks/hooks.json (for example a SubagentStop gate or a PreToolUse write guard), not an agent's own hooks field"
+      ],
+      "added_in": "driver shape (plugin-dev-anatomy-driver branch)"
+    },
+    {
+      "id": 12,
+      "name": "driver-reads-the-plan",
+      "kind": "behavioral",
+      "baseline": "previous",
+      "prompt": "In my plugin lit-review/ the /lit-review:run skill works through a plan of ~60 papers. Each loop it Reads plan.md to find the next unchecked paper, spawns the reader agent, then Reads the reader's notes file to confirm it looks complete and ticks the box in plan.md with Edit. By paper 30 it is slow and expensive and twice it has skipped a paper. What should I change?",
+      "expected_output": "Names the cause as the driver's own growing context (it re-reads everything it has read on every turn) and model-performed bookkeeping; moves next-step lookup, the completeness check and the tick into a script with exit codes, has the reader return a fixed-form status, and keeps the driver to script output, returns and user answers",
+      "files": [],
+      "expectations": [
+        "The final message says the skill in the main thread (the driver) is the cost: its context grows over the run and is re-read on every turn",
+        "It says the driver should stop reading plan.md and the readers' notes files",
+        "Finding the next paper becomes a script that prints it, with the driver acting on its output or exit code",
+        "Checking a paper's notes are complete and ticking the plan (the record) is done by a script, not by the model reading and editing, and it ties the skipped papers to a model doing that bookkeeping by hand",
+        "The reader agent returns a short fixed-form result that starts with a status from a closed list (for example done or blocked), and the answer says the driver acts on that status",
+        "It does not recommend moving the driver itself into a subagent or a forked skill as the fix"
+      ],
+      "added_in": "driver shape (plugin-dev-anatomy-driver branch)"
     }
   ]
 }

@@ -63,10 +63,12 @@ A question a file could have answered wastes a round, so reading comes first.
   `disable-model-invocation: true`, knowledge skills preloaded by role, nothing stated in two
   files.
 
-Then read `plugin-anatomy`'s `SKILL.md`, the routing guide for which component a
-responsibility belongs in. Open one of its component references only when the design is about
-to use that component, and `references/composition.md` before deciding what goes in an agent
-and what in a skill.
+Then read `plugin-anatomy`'s `SKILL.md`: the shape every workflow takes (a thin driver in
+the main thread, the agents it spawns, the scripts, hooks and ledger that keep the run on
+track) and the routing guide for which component a responsibility belongs in. Open one of
+its component references only when the design is about to use that component, and
+`references/composition.md` before composing: it has the driver's loop, the ledger, and what
+goes in an agent and what in a skill.
 
 ## 1. Explore
 

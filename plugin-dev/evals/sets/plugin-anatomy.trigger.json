@@ -78,5 +78,17 @@
   {
     "query": "write a webpack plugin that injects the build hash into index.html",
     "should_trigger": false
+  },
+  {
+    "query": "in my plugin grant-desk/ I want one command that drafts all 12 sections on its own and picks up where it left off if I close the chat \u2014 how should the skill, the agents and the progress tracking fit together?",
+    "should_trigger": true
+  },
+  {
+    "query": "my plugin's run skill reads the whole plan.md every loop before spawning the next agent and it's getting slow by step 30 \u2014 is that the wrong way to build the orchestrating skill?",
+    "should_trigger": true
+  },
+  {
+    "query": "I have a 40-step migration checklist for our Django app and want Claude to work through it across a few sessions without losing its place \u2014 what's a good way to track progress?",
+    "should_trigger": false
   }
 ]

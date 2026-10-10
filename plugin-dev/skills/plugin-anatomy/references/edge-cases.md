@@ -48,6 +48,8 @@ the log as the source.
 | A hook inside a subagent finds none of the agent's own records in `transcript_path` | That path is the parent session's. The subagent's transcript is `<transcript_path minus .jsonl>/subagents/agent-<agent_id>.jsonl`; `SubagentStop` also gives it as `agent_transcript_path`. | `hooks.md` |
 | A deep agent cannot delegate | Subagents nest three layers below the main conversation; at the limit there is no `Agent` tool. | `agents.md` |
 | A wide fan-out uses far more context than expected | `skills:` preloads full content into every instance. Preload only what every run needs. | `composition.md` |
+| A long run costs more with every step, and most of it is the driver | The driver's context lasts the whole run and is re-read every turn. It reads only what a script prints and what each agent returns in its fixed form; it opens no plan, ledger or agent output. | `composition.md` |
+| A run cannot be continued in a new chat, or a step is redone | Where the run stood was only in the conversation. A script reads it from the ledger, and the script that checks a step writes its row. | `composition.md` |
 | An agent does not follow the project's `CLAUDE.md` | It loads its own `CLAUDE.md` hierarchy from its working directory, or none with `omitClaudeMd`. Put what it needs in its file or its skills. | `agents.md` |
 | A plugin hook changes behavior in unrelated repos | Plugin hooks run in every session the plugin is enabled in. Scope the script by `cwd`. | `hooks.md` |
 
