@@ -31,7 +31,10 @@ care when editing it:
   `plan-phases` and its eval writers write the overview's eval rows and the sets against it,
   and `run-phase` runs them through it. A kind added or renamed there is a change to all three, and
   `check-contracts`' eval-kinds claim fails until they agree. Eval sets under `evals/sets/`
-  are committed; `evals/workspace/` never is.
+  are committed; `evals/workspace/` never is. Its `references/prompts.md` is the one copy of
+  the executor and grader prompts, read by `eval_workspace.py run` by heading; a change to
+  the script's `init`, `run` or `report` is checked with
+  `python3 evals/fixtures/run-evals-runner/check.py`, which needs no model.
 - **`templates/phases/design.md` is the one list of the design's sections**, as its `##`
   headings. `design-plugin` writes from it and `plan-phases` reads the design by those names.
   Renaming a section is a change to both, and `check-contracts` fails until they agree.

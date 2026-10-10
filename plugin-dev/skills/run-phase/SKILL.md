@@ -130,10 +130,28 @@ Follow the note's **Steps** in order. Whatever the note says, these always apply
   the file rather than discovered by an eval.
 - **Evals, through `run-evals`.** For each target in the note's `## Evals` table, invoke
   `run-evals` with that target's rows — the set file, the eval IDs, the baseline — in the
-  table's order (platform facts and mechanical rows first). Every result is logged with
-  `log-eval` before it is reported here, a clean pass exactly like a failure, with the
-  commit field reading *uncommitted — see working-tree diff*, since the phase's commit
-  comes after.
+  table's order (platform facts and mechanical rows first). A row whose Baseline cell says
+  `working tree only` is a checkpoint's regression row and runs that way. Every result is
+  logged with `log-eval` before it is reported here, a clean pass exactly like a failure,
+  with the commit field reading *uncommitted — see working-tree diff*, since the phase's
+  commit comes after.
+- **The evals cost this chat a few turns, not one per run.** A phase's cost is its turns
+  times its context, and the evals are where both grow. So: `init` every target's
+  iteration first, start every `eval_workspace.py run` as a background command in one
+  message, and do nothing until they exit — no polling, no reading `run.log`. Then read
+  each iteration's report and nothing else of it; open one run's `transcript.md` or
+  `outputs/` only for a failed expectation the report's evidence does not settle. Never
+  spawn executors or graders through the Agent tool unless `run-evals`' **Without the
+  runner** says this eval needs it. No blind comparison unless a row's pass bar says
+  `blind`.
+- **A regression found at a checkpoint is this phase's to fix.** A checkpoint row's failed
+  expectation that the baseline passes was broken by an earlier phase. Find it —
+  `git log --oneline <previous checkpoint's commit>..HEAD -- <target_path>`, then the diff
+  of the commit the evidence points at — and fix it in that file, in this phase's commit:
+  the one exception to *Only this phase's edits*, with the commit it corrects named under
+  `## Deviations`. A failed expectation the baseline fails too, or one the report's
+  evidence shows to be stale or a harness artifact, is not a regression: it is a line in
+  the eval log and, when the expectation is at fault, a correction to the set.
 - **Stop for review.** When any row is behavioral, stop once the viewer is open (or the
   results table is in chat, if skill-creator is missing) and wait for the user. Read
   `feedback.json` before continuing. Nothing is committed before the user has replied.
@@ -141,7 +159,8 @@ Follow the note's **Steps** in order. Whatever the note says, these always apply
   phase ran, per the exception above — is part of this phase; anything else is a
   *noticed:* line in the ledger.
 - **One fix, then a Deviation.** A missed pass bar: one fix inside the note's Files, rerun
-  that target's rows as the next iteration, review again. Still missed: append the outcome
+  the evals that missed — those ids, not the whole row; their baselines are reused — as the
+  next iteration, review again. Still missed: append the outcome
   — the bar, the result, what was tried — to `## Deviations` and ask whether to commit.
 - **Notes written before 0.9** have no `## Evals` section; run the evals their Steps list
   names, as that list describes, and write "old-format note" in the ledger's Notes cell.

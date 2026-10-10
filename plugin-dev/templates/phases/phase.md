@@ -37,11 +37,12 @@ readers — that is the `contracts.yml` entry.>
 
 <!-- This phase's rows from the overview's Evals by phase, copied; a pass bar is never
      loosened here. Kind is one of run-evals' kinds: mechanical · load · behavioral · trigger ·
-     platform-fact. A behavioral row names its set file and eval IDs. -->
+     platform-fact. A behavioral row names its set file and eval IDs. Baseline `working tree
+     only` marks a checkpoint's regression row: run-evals starts no baseline for it. -->
 
 | ID | Kind | Target | Baseline | Set evals | Pass bar |
 |---|---|---|---|---|---|
-| <ID> | <kind> | <skill or agent> | <none / previous / ref> | <evals/sets/x.json 1,2> | <checkable condition> |
+| <ID> | <kind> | <skill or agent> | <none / previous / ref / working tree only> | <evals/sets/x.json 1,2> | <checkable condition> |
 
 ## Done when
 

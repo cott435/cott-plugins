@@ -1,7 +1,7 @@
 ---
 name: run-phases
 description: Drive a plan written by plan-phases from the main chat - run one fresh agent (a subagent, or a headless session where subagents cannot delegate) per unfinished phase, in series, each doing run-phase, relay its review stops and questions to the user, check its commit, and go on to the next phase until the plan is done or something needs the user. Use only inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), typed by the user.
-argument-hint: "[slug] [--through N]"
+argument-hint: "[slug] [--through N] [--model sonnet|inherit]"
 disable-model-invocation: true
 ---
 
@@ -18,10 +18,17 @@ Platform facts it rests on (`plugin-anatomy`):
 
 - A subagent has no `AskUserQuestion` (`references/agents.md`), so every stop `run-phase`
   makes for the user comes back to this chat, which asks.
-- A phase's evals spawn `run-evals` executors, graders and comparators. So the agent running
-  a phase must itself be able to spawn. Subagents nest to `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`
-  (`references/agents.md`), and a Claude Code cloud session sets it to `1`: there a
-  subagent cannot spawn anything, and the phase runs as a headless session instead.
+- A phase's evals are headless sessions `run-evals`' runner starts from a script, which an
+  agent at any depth can do. Spawning is still needed for a row that says `blind` and for an
+  eval run without the runner, so the agent running a phase must itself be able to spawn.
+  Subagents nest to `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` (`references/agents.md`), and a
+  Claude Code cloud session sets it to `1`: there a subagent cannot spawn anything, and the
+  phase runs as a headless session instead.
+- A phase agent re-reads its whole context on every turn, and a phase is a hundred turns. So
+  it runs on Sonnet 5.5 unless the user says otherwise: the note it follows is exact, and the
+  model that wrote the plan is not needed to carry it out. `--model inherit` keeps the model
+  of this chat. In the Agent tool that is `model: "sonnet"`; in a headless session
+  `--model claude-sonnet-5-5`, the full ID (`references/agents.md`, **Model names**).
 - `run-phase` is typed only (`disable-model-invocation: true`), so a subagent cannot invoke
   it through the Skill tool and reads its file instead. A headless session is started with
   the typed command as its prompt, which does invoke it (`references/skills.md`).
@@ -39,7 +46,8 @@ Platform facts it rests on (`plugin-anatomy`):
 4. Pick the mode: `echo "${CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH:-unset}"`. Use **subagent**
    when it is unset or 2 or more. Use **headless** when it is 0 or 1.
 5. Read the ledger and nothing else of the plan. Say in chat which phases will run, in
-   order: every row not `done`, or up to phase N with `--through N`. Also say the mode.
+   order: every row not `done`, or up to phase N with `--through N`. Also say the mode and
+   the model the phase agents run on.
 
 ## The phase agent's instructions
 
@@ -74,7 +82,8 @@ rules**:
 2. **Start one agent**, and never two phases at once, not even phases the overview says may
    pair. They share one working tree, and each note assumes the commit before it.
    - **Subagent mode.** The Agent tool, `subagent_type: general-purpose`,
-     `run_in_background: false`. The prompt:
+     `run_in_background: false`, `model: "sonnet"` (omitted with `--model inherit`). The
+     prompt:
 
      > You are running one phase of a plan, as a fresh chat typed `/plugin-dev:run-phase
      > <slug>` would. Read `${CLAUDE_PLUGIN_ROOT}/skills/run-phase/SKILL.md` and follow it
@@ -91,7 +100,7 @@ rules**:
      the background (a phase can outlast a foreground call), and wait for it to exit:
 
      ```
-     claude -p "/plugin-dev:run-phase <slug>" --session-id <id> \
+     claude -p "/plugin-dev:run-phase <slug>" --session-id <id> --model claude-sonnet-5-5 \
        --append-system-prompt "$(cat evals/workspace/run-phases/<slug>/return-rules.md)" \
        --plugin-dir ${CLAUDE_PLUGIN_ROOT} \
        --permission-mode acceptEdits --allowedTools "Bash Read Write Edit Glob Grep Agent Skill" \
@@ -99,8 +108,8 @@ rules**:
        > evals/workspace/run-phases/<slug>/phase-<N>-<k>.jsonl
      ```
 
-     `<k>` counts this phase's turns from 1. The session runs unattended with the listed
-     tools, because it has nobody to ask; the user chose that by typing this skill. Drop
+     `<k>` counts this phase's turns from 1. Drop `--model` with `--model inherit`. The
+     session runs unattended with the listed tools, because it has nobody to ask; the user chose that by typing this skill. Drop
      `--plugin-dir` when `ls -d ~/.claude/plugins/cache/*/plugin-dev` finds an installed
      copy, so the plugin is not loaded twice. `evals/workspace/` is gitignored. The agent's
      return is the `result` field of the file's last `"type": "result"` line. When there is

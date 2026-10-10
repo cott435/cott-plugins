@@ -17,11 +17,13 @@ not define, and a phase note's Evals table uses these names in its Kind column.
    `claude -p` and scores whether the description was picked, should-trigger and
    should-not alike. Below 0.9, `run_loop.py` proposes better descriptions, applied only
    under the guard in `SKILL.md` **Trigger evals**, which also says where it must run.
-4. **behavioral** — the loop in `SKILL.md` **The behavioral loop**: the target and its
-   baseline run the set's prompts side by side, a grader checks each expectation against
-   the outputs with quoted evidence, then the benchmark and the viewer. The pass bar comes
-   from the phase note; the default is every expectation passing for `with_skill`, and its
-   pass rate at least the baseline's.
+4. **behavioral** — the loop in `SKILL.md` **The behavioral loop**: the target runs the
+   set's prompts, a grader checks each expectation against the outputs with quoted evidence,
+   and one report comes back. Compared, the baseline runs the same prompts beside it, once
+   per ref — a later iteration reuses that run. Working tree only, no baseline runs at all:
+   a regression check (**When regression runs**, below). The pass bar comes from the phase
+   note; the default is every expectation passing for `with_skill`, and, where there is a
+   baseline, its pass rate at least the baseline's.
 5. **platform-fact** — a fact about Claude Code or a tool that the docs do not settle. Run
    once, in phase 0 of a plan (or first thing in phase 1), with the assumed answer written
    down before the test. No later phase may depend on it until its result is logged.
@@ -53,14 +55,49 @@ the working tree: a change to a skill the target reads then showed up on both si
 the sets, and so the expectations. The snapshot keeps its `.claude-plugin/plugin.json`, so
 a headless baseline can load it with `claude --plugin-dir`.
 
+The snapshot is made only when a baseline executor will run in this iteration. A baseline
+run an earlier iteration of the same target finished — same ref, same model, same
+`inputs_hash` (the prompt, the harness sheet and every path under the eval's `files`) — is
+copied in instead and marked `reused_from` in the manifest: the plugin at a ref does not
+change, so neither does what a run of it is given. Its grades are reused with it unless the
+eval's expectations changed, in which case it is graded again. A manifest written before
+`inputs_hash` existed is passed over; `init --reuse-unhashed` accepts it on the prompt and
+the harness file's name, which is right only if no seed or harness sheet changed since.
+
+A phase note's **Baseline** cell may also say `working tree only`, which is not a baseline
+but the instruction to run none: `init --working-tree-only`. The set's own `baseline` field
+still names the ref, for the reuse above and for the one compared rerun a failed expectation
+gets.
+
 `init` also warns when the plugin at the baseline ref is identical to the working tree
 (outside `evals/`): the two configurations would run the same files. Both warnings are in the
 manifest's `warnings` and on stderr, and neither stops `init` — the baseline may be right,
 as when the files under test are a fixture's rather than the plugin's.
 
-An agent is run by giving a general-purpose subagent its prompt file as instructions. Its
-`tools:` list and `skills:` preloads are not reproduced, so a behavioral result about what
-the agent does with its tools says "proxy" in the log.
+An agent is run by giving a headless session its prompt file as instructions. Its `tools:`
+list and `skills:` preloads are not reproduced, so a behavioral result about what the agent
+does with its tools says "proxy" in the log. An eval that only means something inside a
+subagent — a hook keyed on `agent_type` — is run through the Agent tool instead (`SKILL.md`,
+**Without the runner**).
+
+## When regression runs
+
+Rerunning a changed target's existing evals asks one question — does it still pass — and
+asking it after every edit is where a plan's cost goes: in one 37-phase plan, a prose-only
+phase reran 15 evals on both sides for a result of 126/136 against 123/136
+(`dev-team/evals/2026-10-10-determinism-phase9-behavioral.md`). So:
+
+- **A phase runs its own evals**: the ones written for what it changes, compared, since
+  their point is that the baseline fails them. A phase whose edits change nothing a model
+  does — a script, a hook with fixture cases, text moved between files word for word — has
+  mechanical rows and no behavioral one.
+- **Regression runs at checkpoints**: the phases a plan marks, the last one always. A
+  checkpoint reruns, working tree only, the existing evals of every target changed since
+  the previous checkpoint.
+- **A regression found at a checkpoint** is a failed expectation the baseline passes. The
+  commits since the previous checkpoint that touched the target are the suspects
+  (`git log --oneline <previous checkpoint>..HEAD -- <target_path>`), and the fix is the
+  checkpoint phase's own.
 
 ## Per component
 
@@ -95,9 +132,12 @@ they conflict:
   `manifest.json`, `eval_metadata.json` at the eval and the configuration level, and the
   set itself all hold the expectations; a baseline executor once read the copy one level
   above its run directory (`dev-team/site/notes/2.2-progress.md`, phase 8). A run
-  that read them is void and rerun. Grader prompts are not staged where an executor may read.
+  that read them is void and rerun: the runner checks every tool call of the session for
+  those paths. A grader's prompt is passed to its session and never written to disk, and no
+  grader starts before the last executor has finished.
 - **Its scratch is its own.** A copy of a repo or fixture lives in a directory the executor
-  makes with `mktemp -d`, and it deletes nothing it did not create. Two parallel runs shared
+  makes with `mktemp -d` inside the scratch directory the runner made for that run alone,
+  and it deletes nothing it did not create. Two parallel runs shared
   one copy in the session scratchpad and one ran `rm -rf` on it
   (`dev-team/evals/2026-09-30-2.2-implementer.md`).
 - **It keeps its own transcript.** `transcript.md` in the run directory: each step, what it
@@ -107,13 +147,26 @@ they conflict:
 
 An executor ended by an API error is rerun once; `SKILL.md` **The behavioral loop** step 3 has
 the rule. Executors, graders and comparators run on the model `SKILL.md` **The model** names.
+The prompts that carry these rules are `prompts.md`, the one copy.
 
 ## Cost
+
+Tokens here count every turn's input, cache reads included, which is what a usage limit
+counts; a run's final context size is some tenth of it. Measured on Sonnet 5.5 over 1,100
+sessions of one plan (`dev-team/evals/`, the determinism logs of 2026-10-09 and -10):
 
 | Kind | Cost |
 |---|---|
 | mechanical | seconds; no model |
 | load | one `claude -p` call, ~10k tokens |
 | trigger | 20 queries × 3 runs = 60 short `claude -p` calls, one at a time — ~20 min per skill; `run_loop` up to 5× that plus one rewrite call per iteration |
-| behavioral | prompts × 2 executors plus one grader per run — ~0.8M tokens for 3 prompts cold, ~0.4M warm |
+| behavioral, compared | per eval: two executors (~1.6M each; one that spawns its own agents, several times that) and two graders (~0.5M each) — ~4M the first time, ~2M once its baseline is reused |
+| behavioral, working tree only | per eval: one executor and one grader — ~2M |
+| blind comparison | one comparator per eval, ~0.4M |
 | platform-fact | one small test each, usually under 50k tokens |
+
+What a plan's split shows per phase is these, times the evals in its rows. The chat that
+drives a run adds its own turns on top, each one a re-read of its whole context: with the
+runner that is a handful per target; spawning the same runs through the Agent tool is one
+turn per session, which on that plan cost as much again as every executor and grader
+together.

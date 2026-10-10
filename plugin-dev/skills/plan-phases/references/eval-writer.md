@@ -23,8 +23,9 @@ spec never said, and the writer reports it instead of inventing it.
 >    below, and the **Evals by phase** rows for this target, which name these eval IDs:
 >    `<IDs, with each row's phase, baseline and pass bar>`.
 > 3. `<plugin-dev>/skills/run-evals/references/eval-kinds.md`, for what a behavioral eval is.
-> 4. `<plugin-dev>/skills/run-evals/SKILL.md`, sections **The set** and **The behavioral
->    loop**: the set's JSON shape, and the executor prompt your evals will be run with.
+> 4. `<plugin-dev>/skills/run-evals/SKILL.md`, section **The set**, for the set's JSON
+>    shape, and `<plugin-dev>/skills/run-evals/references/prompts.md`, **Executor**, for the
+>    prompt your evals will be run with.
 > 5. `<plugin-dev>/skills/plugin-anatomy/references/<the target's component file>`, its
 >    **How to test it** section: what can be observed about this kind of component, and
 >    what a general-purpose executor cannot reproduce (an agent's `tools:` and `skills:`).

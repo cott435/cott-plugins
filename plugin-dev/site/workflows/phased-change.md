@@ -68,8 +68,13 @@ reopening. Then it shows the phase split as a table and waits for your yes. Then
 | `evals/sets/<target>.json` | one per behavioral target, written by one writer subagent each, in parallel, and checked before the commit |
 
 and commits them as phase 0. The split obeys four rules: every phase is mergeable on its own;
-every phase fits one chat; foundations first; every phase has an eval. The last phase is
-always the end-to-end eval, the docs and the bump proposal.
+every phase fits one chat; foundations first; every phase has an eval. A phase's behavioral
+evals are the new ones written for what it changes. Rerunning a changed target's existing
+evals as regression happens at checkpoints — about one phase in six, and always the last —
+not after every edit, and a phase that changes nothing a model does (a script, a hook with
+fixtures, text moved word for word) is proved by its mechanical rows alone. The split is
+shown with its cost in tokens before you approve it. The last phase is always the
+end-to-end eval, the last checkpoint, the docs and the bump proposal.
 
 It writes no phase note. A note names exact lines, and a note written now for a late phase
 would cite lines the earlier phases move; one chat writing every note of a large plan also
@@ -88,10 +93,15 @@ note: its edits (each component's `plugin-anatomy` reference
 read first), the plugin's own rules for added or removed files,
 `check-contracts`, `build-site`, then the note's **Evals** table — one row per eval, each
 naming its kind, its target, the baseline to compare against, which evals of that target's
-set in `evals/sets/` it runs, and the pass bar. Each row goes through `run-evals`, which
-runs the target's set against the baseline, grades every expectation, and **stops** on a
-behavioral row until you have looked at the viewer; a missed bar is fixed and rerun once,
-and a bar still missed becomes a Deviation rather than a quiet pass. `log-eval` writes each
+set in `evals/sets/` it runs, and the pass bar. Each row goes through `run-evals`, whose
+runner starts every executor and grader as a headless session and prints one report: the
+pass counts, each failed expectation with its evidence and what the baseline did with it,
+and the cost. The baseline of an eval runs once per ref and is reused by every later
+iteration; a checkpoint's regression row, Baseline `working tree only`, starts none. The
+chat **stops** on a behavioral row until you have looked at the viewer; a missed bar is
+fixed and the evals that missed are rerun once, and a bar still missed becomes a Deviation
+rather than a quiet pass. A regression a checkpoint finds is fixed in the checkpoint's own
+commit, which names the commit it corrects. `log-eval` writes each
 run up before any result is reported. Then one commit and the ledger row, then it stops.
 
 A platform fact an eval settles is written back to `plugin-anatomy`: in the phase itself
@@ -116,7 +126,10 @@ The agent is a subagent that reads `run-phase`'s file and follows it, since a ty
 cannot be invoked by an agent. Where subagents cannot spawn their own (a cloud session caps
 `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` at 1), the agent is instead a headless `claude -p`
 session typed `/plugin-dev:run-phase <slug>`, with its own session id so it can be resumed.
-A phase's evals need an agent that can spawn executors and graders, hence the two modes. A subagent cannot ask you anything, so where `run-phase` would stop for you (the
+The two modes are for the evals that still need a subagent (a blind comparison, an eval
+that only means something inside one). Phase agents run on Sonnet 5.5 unless you pass
+`--model inherit`: an agent re-reads its whole context every turn, and following an exact
+note does not need the model that wrote the plan. A subagent cannot ask you anything, so where `run-phase` would stop for you (the
 review of a behavioral row, a Deviation asking whether to commit, a question the plan does
 not answer, the last phase's bump) the agent returns a short status form instead. Your chat
 shows you what it found and resumes the same agent with your answer. After each `committed`

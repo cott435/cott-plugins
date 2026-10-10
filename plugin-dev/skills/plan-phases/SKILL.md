@@ -128,7 +128,8 @@ smallest end-to-end slice is phase 1.
   When the spec assumes no facts, this commit is the whole of phase 0, and its ledger row is
   written `done`. When it assumes any, the row is `in progress` with the evals listed under
   Notes, and the first `run-phase` chat runs them and marks it `done`.
-- **The last phase is always** the end-to-end eval, the docs (`README.md`, `site/flow.md`,
+- **The last phase is always** the end-to-end eval, the last regression checkpoint (below),
+  the docs (`README.md`, `site/flow.md`,
   `site/workflows/`, `CHANGELOG.md`'s unreleased section), and the release *proposal*: a bump
   at the level **What must not break** implies, or, for a new plugin, tagging `0.1.0` as
   scaffolded. `bump-version` decides on a yes; never this skill or `run-phase`.
@@ -143,11 +144,25 @@ smallest end-to-end slice is phase 1.
     into that set in the phase-0 commit (see **The evals**). Trigger sets are the exception:
     the phase that adds a model-invoked skill writes its `<target>.trigger.json`, since it needs
     the final description.
-  - A phase that changes a target with an existing set reruns that set as regression, as its
-    own row. An edit-list item's `evals:` names the ids to rerun and the new evals to write.
+  - **A phase's behavioral rows are its own evals**: the new ones written for what it
+    changes, and an existing eval only when the phase's edit is meant to change that eval's
+    verdict. Baseline `previous` (or `none`, or a ref): run compared.
+  - **Regression runs at checkpoints, not in every phase** (`eval-kinds.md`, **When
+    regression runs**). A checkpoint is a phase that also carries, per target changed since
+    the previous checkpoint, one row rerunning that target's existing evals with Baseline
+    `working tree only`. The last phase is always one. Put another after the last phase of
+    each run of phases that work on the same targets, roughly one in six, so a regression is
+    found within a few commits of its cause; a plan of eight phases or fewer needs only the
+    last. An edit-list item's `evals:` names the ids to rerun, which go in the next
+    checkpoint's row, and the new evals to write, which run in the item's own phase.
+  - **A phase that changes nothing a model does has no behavioral row**: a script, a hook
+    with fixture cases, text moved between files word for word. Its proof is its mechanical
+    rows, and the next checkpoint covers what it touched.
+  - A row says `blind` in its pass bar only where the change is meant to make an output
+    better in a way no expectation states. Never by default.
   - A script item's `fixture:` is a mechanical row: the fixture's input and expected output.
-  - The pass bar can be checked without judgment (default: every expectation passes and the
-    target's pass rate ≥ the baseline's).
+  - The pass bar can be checked without judgment (default: every expectation passes and,
+    where a baseline ran or was reused, the target's pass rate ≥ the baseline's).
 - **Each component's own tests.** A phase that adds or changes a component takes its
   mechanical and load rows from the **How to test it** table in that component's
   `plugin-anatomy` reference: a hook gets its script piped recorded events and a `/hooks`
@@ -163,8 +178,10 @@ smallest end-to-end slice is phase 1.
 
 In chat, not as a page, show one table: Phase · What it adds · Items (**review**) or
 Components (**new**, **change**) · Depends on · Evals (kinds, and roughly how many tokens for
-the behavioral and trigger rows, from the cost table in `eval-kinds.md`) · May pair with.
-Under it, list any gap answers you wrote into the spec. Then ask with one `AskUserQuestion`:
+the behavioral and trigger rows, from the cost table in `eval-kinds.md`, with *checkpoint*
+on the phases that are one) · May pair with. Under the table, the plan's total for the
+behavioral rows, in tokens, so the split is approved with its cost in view. Then
+list any gap answers you wrote into the spec. Then ask with one `AskUserQuestion`:
 approve the split, or change it (the user says what). Discuss, revise and re-show the whole
 table until it is approved. Nothing is written before that.
 
@@ -211,9 +228,9 @@ Then check what came back before committing it. For each set:
 - `python3 ${CLAUDE_PLUGIN_ROOT}/skills/run-evals/scripts/eval_workspace.py validate
   evals/sets/<target>.json` exits 0;
 - every eval ID an overview row names exists in the set, and nothing else was added to it;
-- every expectation is observable in `outputs/` or the transcript, and at least one per eval
-  could fail against the row's baseline. A set whose every expectation the baseline already
-  meets proves nothing about the phase;
+- every expectation is observable in `outputs/` or the transcript, and at least one per new
+  eval could fail against the row's baseline. A new eval whose every expectation the
+  baseline already meets proves nothing about the phase;
 - a changed target's set keeps its existing evals, with the new ones appended with `added_in:
   "<slug> phase 0, run from phase N"`.
 
