@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The audit ledger: issue files under a plugin's `audits/issues/`, and `audits/INDEX.md`.
+"""The audit ledger: issue files under a plugin's `runs/audits/issues/`, and `runs/audits/INDEX.md`.
 
 An audit finding that a plugin can fix becomes an issue with an id that stays the same across
 audits (`<PREFIX>-<nnn>`). Each issue is one file, shaped by `templates/audits/issue.md` in
@@ -19,8 +19,8 @@ An issue's status is never stored. It is derived from the file, in this order:
 A Check of `not exercised` or `not testable` changes nothing.
 
 The plugin is the directory given by --dir (default: the working directory); its name, and so
-the id prefix, comes from `<dir>/.claude-plugin/plugin.json`. The ledger is `<dir>/audits/`,
-created on the first write. Every writing command re-renders `audits/INDEX.md` before it exits.
+the id prefix, comes from `<dir>/.claude-plugin/plugin.json`. The ledger is `<dir>/runs/audits/`,
+created on the first write. Every writing command re-renders `runs/audits/INDEX.md` before it exits.
 
 Usage:  python3 issues.py <command> [--dir DIR] ...   (`--help` on any command for its flags)
 
@@ -131,8 +131,12 @@ def prefix_of(name: str) -> str:
     return name[:2].upper()
 
 
+def ledger_dir(root: Path) -> Path:
+    return root / "runs" / "audits"
+
+
 def issues_dir(root: Path) -> Path:
-    return root / "audits" / "issues"
+    return ledger_dir(root) / "issues"
 
 
 # --- one issue file -----------------------------------------------------------------------
@@ -297,7 +301,7 @@ def render_index(root: Path, name: str, template: dict) -> str:
 
 
 def write_index(root: Path, name: str, template: dict) -> None:
-    path = root / "audits" / "INDEX.md"
+    path = ledger_dir(root) / "INDEX.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(render_index(root, name, template))
 
@@ -598,12 +602,12 @@ def cmd_check(a, root, name, t) -> list[str]:
     for issue_id, files in seen.items():
         if len(files) > 1:
             problems.append(f"duplicate id {issue_id}: {', '.join(files)}")
-    index = root / "audits" / "INDEX.md"
+    index = ledger_dir(root) / "INDEX.md"
     if issues or index.exists():
         if not index.exists():
-            problems.append("audits/INDEX.md is missing; run issues.py index")
+            problems.append("runs/audits/INDEX.md is missing; run issues.py index")
         elif index.read_text() != render_index(root, name, t):
-            problems.append("audits/INDEX.md differs from a fresh render; run issues.py index")
+            problems.append("runs/audits/INDEX.md differs from a fresh render; run issues.py index")
     if problems:
         raise LedgerError(*problems)
     return [f"ok: {len(issues)} issues"]
@@ -679,7 +683,7 @@ def build_parser() -> Parser:
     s = cmd("status", "print an issue's derived status")
     s.add_argument("id")
 
-    cmd("index", "rewrite audits/INDEX.md")
+    cmd("index", "rewrite runs/audits/INDEX.md")
     cmd("check", "check every issue file and the index")
     return p
 

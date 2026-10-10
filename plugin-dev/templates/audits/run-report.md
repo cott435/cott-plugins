@@ -2,7 +2,7 @@
 
 **Run:** <project> · <branch> · <span> · <models> · <n> units, <n> audited
 **Rules checked against:** <plugin root> (<the version that ran | working tree — see note>)
-**Flow chart:** `evals/workspace/audit/<id8>/flow.html` (gitignored; rebuilt with `/plugin-dev:run-flow <id8>`)
+**Flow chart:** `runs/<project>/<run>/<id8>/flow.html` (gitignored; rebuilt with `/plugin-dev:run-flow <id8>`)
 **Totals:** <n> ERROR · <n> WARN · <n> NOTE · issues: <n> new, <n> seen again · prior: <n> held, <n> recurred, <n> not exercised, <n> not testable
 
 ## Errors

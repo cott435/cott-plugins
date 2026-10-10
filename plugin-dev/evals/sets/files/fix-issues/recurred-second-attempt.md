@@ -19,7 +19,7 @@ attempt's commit.
 ## The further issue (fixture step 5, after TO-002)
 
 ```
-I new --dir $TMP/repo/toy --title "writer returned tests: 4 passed, 0 failed after pytest printed 1 failed, 3 passed" --fault agent --severity ERROR --check claims --applies-to agent:writer --rule-file agents/writer.md --rule-line 25 --rule-quote 'tests: <n> passed, <n> failed' --found-version 0.1.0 --found-session 0a0d17f0 --found-date 2026-09-28 --finding "pytest printed '1 failed, 3 passed' and the writer's return said 'tests: 4 passed, 0 failed'. The return's tests line is the summary line's counts, not a claim." --unit U01 --step U01.S3 --evidence "1 failed, 3 passed" --report audits/runs/2026-09-28-0a0d17f0.md --finding-id E2
+I new --dir $TMP/repo/toy --title "writer returned tests: 4 passed, 0 failed after pytest printed 1 failed, 3 passed" --fault agent --severity ERROR --check claims --applies-to agent:writer --rule-file agents/writer.md --rule-line 25 --rule-quote 'tests: <n> passed, <n> failed' --found-version 0.1.0 --found-session 0a0d17f0 --found-date 2026-09-28 --finding "pytest printed '1 failed, 3 passed' and the writer's return said 'tests: 4 passed, 0 failed'. The return's tests line is the summary line's counts, not a claim." --unit U01 --step U01.S3 --evidence "1 failed, 3 passed" --report runs/audits/reports/2026-09-28-0a0d17f0.md --finding-id E2
 ```
 
 Then the first attempt and the rerun audit's verdict on it, with `SHA` being

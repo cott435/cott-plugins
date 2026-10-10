@@ -51,7 +51,7 @@ Read what tells you how the plugin is divided, and nothing that tells you what i
 - Every agent's and skill's frontmatter, not the body:
   `for f in agents/*.md skills/*/SKILL.md; do echo "== $f"; awk 'NR==1&&/^---/{f=1;next} f&&/^---/{exit} f' "$f"; done`
 - Line counts: `wc -l agents/*.md skills/*/SKILL.md skills/*/references/*.md hooks/*.py scripts/*.py skills/*/scripts/*.py 2>/dev/null`.
-- `audits/INDEX.md`, when the plugin has an audit ledger.
+- `runs/audits/INDEX.md`, when the plugin has an audit ledger.
 - Each eval set's ids and names: `python3 -c "import json,sys;[print(sys.argv[1],e['id'],e['name']) for e in json.load(open(sys.argv[1]))['evals']]" evals/sets/<set>.json`.
 
 From these: which agent preloads which skill, which skill forks or spawns which agent, which
@@ -110,7 +110,7 @@ Do not open the findings. The returns and `E findings` are all this chat reads o
 2. `E check <P>/site/notes/<slug>/<slug>-edits.md --findings <P>/site/notes/<slug>/findings`
    must pass, open decisions allowed: every item well formed, no dependency cycle, and every
    finding id cited by an item, a conflict or a non-goal. With
-   an audit ledger, every open, recurred and wontfix id in `audits/INDEX.md` must also
+   an audit ledger, every open, recurred and wontfix id in `runs/audits/INDEX.md` must also
    appear in the list's **Issues** section (a `grep -c` per id, not a reading). Failures go
    back to REC once, as in step 3.
 

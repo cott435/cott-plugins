@@ -29,8 +29,8 @@ in a directory of your own and work there:
 - Anything about the project the run built: out of scope, skip it.
 
 # Where what the target would commit or write goes
-- The `audits/` commit happens for real in `$TMP/toy`; nothing else is committed. When done, save `git -C $TMP/toy log --stat` to `outputs/git-log.txt` and `git -C $TMP/toy status --short` to `outputs/git-status.txt`.
-- Copy the whole `$TMP/toy/audits/` tree to `outputs/audits/` (so `outputs/audits/issues/`, `outputs/audits/runs/`, `outputs/audits/INDEX.md`), and the workspace's `findings/` directory to `outputs/findings/`.
+- The `runs/audits/` commit happens for real in `$TMP/toy`; nothing else is committed. When done, save `git -C $TMP/toy log --stat` to `outputs/git-log.txt` and `git -C $TMP/toy status --short` to `outputs/git-status.txt`.
+- Copy the whole `$TMP/toy/runs/audits/` tree to `outputs/runs/audits/` (so `outputs/runs/audits/issues/`, `outputs/runs/audits/reports/`, `outputs/runs/audits/INDEX.md`), and the workspace's `findings/` directory to `outputs/findings/`.
 - After the target's own checks, run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/issues.py check` from `$TMP/toy` once more and save its stdout, stderr and exit code to `outputs/issues-check.txt`. If your plugin root has no `scripts/issues.py`, write that into the file instead.
 - The eval log: `log-eval` would write an entry under the audited plugin's `evals/` and commit it. Write that entry's full content to `outputs/eval-log.md` instead, and skip its README row and its commit. If the target wrote the entry somewhere in `$TMP/toy` as well, copy it; the `outputs/` copy is the one that counts.
 - Your final message to the user goes at the end of `transcript.md`, verbatim.

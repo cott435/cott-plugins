@@ -100,8 +100,8 @@ Nothing that commits, publishes, or decides for you happens without a stop:
 Once a plugin's workflow has run in some project, a second loop starts from its transcripts
 rather than from a design. `/plugin-dev:audit-run` holds the run against the plugin's files
 and files each ERROR and WARN, and each `definition` NOTE, as an issue under the plugin's
-committed `audits/issues/`, with an id that stays the same from one audit to the next, plus a
-run report under `audits/runs/`. `/plugin-dev:fix-issues`, from any chat, plans one edit per
+committed `runs/audits/issues/`, with an id that stays the same from one audit to the next, plus a
+run report under `runs/audits/reports/`. `/plugin-dev:fix-issues`, from any chat, plans one edit per
 issue, waits for your yes, makes the edits on a worktree branch, runs the checks and evals,
 and records in each issue a Fix attempt whose `Verify:` line says what a rerun's trace will
 show if the fix held. You merge, bump, update the plugin and rerun the workflow; the next

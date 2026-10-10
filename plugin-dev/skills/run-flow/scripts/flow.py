@@ -24,8 +24,8 @@ shows its critical and warning counts. A unit with a findings file gets a badge 
 ERROR count. Everything here is read from index.json, so re-running `trace.py flow` after an
 audit adds the badges without rebuilding the trace.
 
-Issue marks come from the plugin's ledger, `audits/issues/*.md`: by default the directory four
-levels above the workspace (`<plugin>/evals/workspace/audit/<id8>/`), else the `issues`
+Issue marks come from the plugin's ledger, `runs/audits/issues/*.md`: by default the directory four
+levels above the workspace (`<plugin>/runs/<project>/<run>/<id8>/`), else the `issues`
 directory passed in. For this session's `<id8>`, a Found in line on a unit marks it `+ <ID>`
 (first found there), and a Checks line on a unit marks it `✓ <ID>` (held) or `✗ <ID>`
 (recurred); other verdicts are not drawn. Marks are a second badge line on the box and an
@@ -48,6 +48,7 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote
 
 PALETTE = ["#4e79a7", "#f28e2b", "#59a14f", "#b07aa1", "#76b7b2", "#edc948", "#ff9da7", "#9c755f"]
 VERDICT = {  # label, css class
@@ -92,9 +93,10 @@ MARK_ORDER = ["recurred", "held", "found"]
 
 
 def default_issues(out: Path) -> Path:
-    """`<plugin>/audits/issues/` for a workspace at `<plugin>/evals/workspace/audit/<id8>/`."""
+    """`<plugin>/runs/audits/issues/` for a workspace at `<plugin>/runs/<project>/<run>/<id8>/`."""
     parents = out.resolve().parents
-    return parents[3] / "audits" / "issues" if len(parents) > 3 else out / "audits" / "issues"
+    base = parents[3] if len(parents) > 3 else out
+    return base / "runs" / "audits" / "issues"
 
 
 def issue_marks(issues: Path | None, id8: str) -> dict[str, list[tuple[str, str, Path]]]:
@@ -641,7 +643,7 @@ def short_path(path: str, project: str | None) -> str:
 
 def agent_rows(entries: list[tuple[str, dict, dict]]) -> str:
     """One row per (link prefix, index, unit), in time order. The prefix is the path from the
-    page to the unit's workspace: `../` for agents/, `../<id8>/` for views/."""
+    page to the unit's workspace: `../` for agents/, `../<project>/<run>/<id8>/` for views/."""
     entries = sorted(entries, key=lambda e: (e[2].get("first_ts") or "", e[1]["session"], e[2]["unit"]))
     rows = []
     for prefix, index, u in entries:
@@ -700,7 +702,7 @@ def write_view(root: Path, workspaces: list[Path], agent_type: str, date: str) -
     entries, header = [], []
     for ws in workspaces:
         index = json.loads((ws / "index.json").read_text(encoding="utf-8"))
-        prefix = f"../{ws.relative_to(root).as_posix()}/" if ws.is_relative_to(root) else f"{ws.resolve().as_uri()}/"
+        prefix = f"../{quote(ws.relative_to(root).as_posix())}/" if ws.is_relative_to(root) else f"{ws.resolve().as_uri()}/"
         mine = [(prefix, index, u) for u in index["units"] if is_type(u, agent_type)]
         entries += mine
         header.append(f"{esc(index['session'][:8])} · {esc(index.get('title') or '(untitled)')} · "

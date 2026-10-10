@@ -8,19 +8,19 @@
       "kind": "behavioral",
       "baseline": "previous",
       "harness": "evals/sets/files/bump-version/with-audits.md",
-      "prompt": "Build the fixture first, exactly as the harness file's seed says (it runs evals/fixtures/audit-run/make_session.py into a directory you make, then sets up git, a marketplace, a changelog and an audits/ ledger). Then, in the toy plugin directory $R/toy, act on this message from the user: \"the writer fix and the check skill are on main now — is toy due a release?\"",
+      "prompt": "Build the fixture first, exactly as the harness file's seed says (it runs evals/fixtures/audit-run/make_session.py into a directory you make, then sets up git, a marketplace, a changelog and an runs/audits/ ledger). Then, in the toy plugin directory $R/toy, act on this message from the user: \"the writer fix and the check skill are on main now — is toy due a release?\"",
       "expected_output": "A minor bump to 0.2.0 proposed and waited on, then plugin.json, marketplace.json, a grouped 0.2.0 changelog entry and the stamped ledger (TO-001 fixed_in 0.2.0, released in INDEX.md; TO-002 untouched) staged as one commit, with the tag named and nothing committed, tagged or pushed.",
       "files": [
         "evals/fixtures/audit-run/make_session.py"
       ],
       "expectations": [
-        "outputs/interview.md holds a proposal that names a level (minor) and the new version 0.2.0, and the user's yes; in transcript.md that proposal, or an AskUserQuestion carrying it, comes before the first edit to plugin.json, marketplace.json, CHANGELOG.md or anything under toy/audits/, and, after the seed, no `git` command other than reads (status, diff, log, tag -l, rev-parse, merge-base) runs before the yes",
+        "outputs/interview.md holds a proposal that names a level (minor) and the new version 0.2.0, and the user's yes; in transcript.md that proposal, or an AskUserQuestion carrying it, comes before the first edit to plugin.json, marketplace.json, CHANGELOG.md or anything under toy/runs/audits/, and, after the seed, no `git` command other than reads (status, diff, log, tag -l, rev-parse, merge-base) runs before the yes",
         "transcript.md shows `issues.py stamp --version 0.2.0` (the script under the executor's plugin root, scripts/issues.py) run from the toy plugin directory, after the yes and before the files are copied to outputs/",
-        "outputs/tree/toy/audits/issues/TO-001.md exists and its `### Attempt 1` has the bullet `fixed_in: 0.2.0`; its frontmatter, Finding, Found in line, the other Attempt 1 bullets and the empty Checks section are unchanged from the seed",
-        "TO-002 was not stamped: either outputs/tree/toy/audits/issues/TO-002.md is absent (the file did not change) or it is present with an empty `## Fix` section, no `### Attempt` heading and no `fixed_in` value",
-        "outputs/tree/toy/audits/INDEX.md exists; its TO-001 row has Status `released` and Fixed in `0.2.0`, and its TO-002 row has Status `open` and Fixed in `—`",
+        "outputs/tree/toy/runs/audits/issues/TO-001.md exists and its `### Attempt 1` has the bullet `fixed_in: 0.2.0`; its frontmatter, Finding, Found in line, the other Attempt 1 bullets and the empty Checks section are unchanged from the seed",
+        "TO-002 was not stamped: either outputs/tree/toy/runs/audits/issues/TO-002.md is absent (the file did not change) or it is present with an empty `## Fix` section, no `### Attempt` heading and no `fixed_in` value",
+        "outputs/tree/toy/runs/audits/INDEX.md exists; its TO-001 row has Status `released` and Fixed in `0.2.0`, and its TO-002 row has Status `open` and Fixed in `—`",
         "outputs/tree/toy/.claude-plugin/plugin.json and outputs/tree/.claude-plugin/marketplace.json both carry version 0.2.0 (the marketplace row for toy), and outputs/tree/toy/CHANGELOG.md has a `## 0.2.0` heading above the 0.1.0 one with its lines grouped under Added / Changed / Fixed, the check skill under Added and the writer change under Changed or Fixed",
-        "outputs/commit.md lists, for one commit, toy/.claude-plugin/plugin.json, .claude-plugin/marketplace.json, toy/CHANGELOG.md, toy/audits/issues/TO-001.md and toy/audits/INDEX.md as the paths it would stage (and no path under toy/skills/ or toy/agents/)",
+        "outputs/commit.md lists, for one commit, toy/.claude-plugin/plugin.json, .claude-plugin/marketplace.json, toy/CHANGELOG.md, toy/runs/audits/issues/TO-001.md and toy/runs/audits/INDEX.md as the paths it would stage (and no path under toy/skills/ or toy/agents/)",
         "outputs/commit.md names the tag it would create (toy-v0.2.0, or v0.2.0 with the plugin named in the message) and the push command(s), and transcript.md shows no `git commit`, `git tag <name>` or `git push` was run anywhere after the seed — not in the fixture copy and not in the repo"
       ],
       "added_in": "0.16-audit-ledger phase 0, run from phase 6"
@@ -31,7 +31,7 @@
       "kind": "behavioral",
       "baseline": "previous",
       "harness": "evals/sets/files/bump-version/no-audits.md",
-      "prompt": "Build the fixture first, exactly as the harness file's seed says (it runs evals/fixtures/audit-run/make_session.py into a directory you make, then sets up git, a marketplace and a changelog; there is no audits/ directory). Then, in the toy plugin directory $R/toy, act on this message from the user: \"the writer change and the check skill are on main now — is toy due a release?\"",
+      "prompt": "Build the fixture first, exactly as the harness file's seed says (it runs evals/fixtures/audit-run/make_session.py into a directory you make, then sets up git, a marketplace and a changelog; there is no runs/audits/ directory). Then, in the toy plugin directory $R/toy, act on this message from the user: \"the writer change and the check skill are on main now — is toy due a release?\"",
       "expected_output": "Today's procedure unchanged: a minor bump to 0.2.0 proposed and waited on, then plugin.json, marketplace.json and a grouped 0.2.0 changelog entry staged as one commit with the tag named, issues.py never run, and nothing committed, tagged or pushed.",
       "files": [
         "evals/fixtures/audit-run/make_session.py"
@@ -40,7 +40,7 @@
         "outputs/interview.md holds a proposal that names a level (minor) and the new version 0.2.0, and the user's yes; in transcript.md that proposal, or an AskUserQuestion carrying it, comes before the first edit to plugin.json, marketplace.json or CHANGELOG.md, and, after the seed, no `git` command other than reads (status, diff, log, tag -l, rev-parse) runs before the yes",
         "outputs/tree/toy/.claude-plugin/plugin.json and outputs/tree/.claude-plugin/marketplace.json both carry version 0.2.0 (the marketplace row for toy), and the two values are equal",
         "outputs/tree/toy/CHANGELOG.md has a `## 0.2.0` heading above the 0.1.0 one with its lines grouped under Added / Changed / Fixed, the check skill under Added and the writer change under Changed or Fixed",
-        "transcript.md shows no command that names `issues.py`, and no file was created under toy/audits/ in the fixture copy or under outputs/tree/toy/audits/",
+        "transcript.md shows no command that names `issues.py`, and no file was created under toy/runs/audits/ in the fixture copy or under outputs/tree/toy/runs/audits/",
         "outputs/commit.md lists, for one commit, exactly toy/.claude-plugin/plugin.json, .claude-plugin/marketplace.json and toy/CHANGELOG.md as the paths it would stage, names the tag it would create (toy-v0.2.0, or v0.2.0 with the plugin named in the message) and the push command(s), and transcript.md shows no `git commit`, `git tag <name>` or `git push` was run anywhere after the seed — not in the fixture copy and not in the repo"
       ],
       "added_in": "0.16-audit-ledger phase 0, run from phase 6"

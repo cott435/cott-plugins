@@ -18,7 +18,7 @@ The run to draw is a planted fixture, not a real chat. Build it first:
    instructions name; only the working directory is `$TMP/toy`.
 5. The workspace the target writes goes where the target says, under `$TMP/toy` — that is the
    fixture copy, not the repo, so it is the one place outside `outputs/` you may write. Nothing
-   under the repo is written, including its `evals/workspace/`.
+   under the repo is written, including its `runs/`.
 
 # Browser and server
 There is no browser pane in this session. Serve the page exactly as the target says all the

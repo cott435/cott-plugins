@@ -18,7 +18,7 @@ REC does not carry is lost; `edits.py check --findings` makes that visible.
 >    unit and a wave-1 unit disagree on a rule its row made it the owner of, the synthesis
 >    unit's view is the starting point: <the plan's precedence, e.g. "DET on every
 >    mechanism, SKL on every skill cut">.
-> 4. `<plugin dir>/audits/INDEX.md` <when the plugin has one>.
+> 4. `<plugin dir>/runs/audits/INDEX.md` <when the plugin has one>.
 > 5. A plugin file only to settle a conflict two findings quote differently, at the lines
 >    they quote.
 >

@@ -25,10 +25,16 @@ Usage:
       are printed on an `over cap:` line); `driver:<command>` names, on a `cover segments:`
       line, every segment that ran /<plugin>:<command>; entries nothing matches are printed
       on an `uncovered:` line. `cross` entries are covered by the cross audit and ignored.
+  trace.py where SESSION --plugin NAME --root PLUGIN_DIR
+      Print the workspace for a session: `<PLUGIN_DIR>/runs/<project>/<command> <title>/<id8>`,
+      `<project>` the basename of the session's directory, `<command>` the first command of
+      NAME it ran, `<title>` the chat's title as lowercase words. The folder is named once: a
+      session already built under `runs/*/*/<id8>` keeps that path whatever its chat is called
+      now. Creates nothing.
   trace.py flow DIR [--issues DIR]
       Re-render DIR/flow.html and DIR/units/U<nn>.html from DIR/index.json, adding a badge
       for every unit that has a findings file, and the issue marks for this session from
-      the plugin's audits/issues/ (four levels above DIR, or --issues). `build` renders it
+      the plugin's runs/audits/issues/ (four levels above DIR, or --issues). `build` renders it
       too, before any audit.
   trace.py build SESSION --plugin NAME --out DIR [--full]
       SESSION is a .jsonl path, a session id (or unique prefix), `latest`, or words from
@@ -40,8 +46,9 @@ Usage:
       chart, with DIR/units/U<nn>.html, one page per unit (see flow.py).
       --full raises every truncation limit fivefold.
   trace.py view --plugin NAME --agent TYPE --root DIR (--sessions a,b | --branch GLOB)
-      Every run of one agent type across several sessions. Each session is built (or
-      rebuilt) into DIR/<id8>/ as `build` would, then DIR/views/<type>-<YYYY-MM-DD>.html lists
+      Every run of one agent type across several sessions. DIR is the plugin's `runs/`
+      directory. Each session is built (or rebuilt) into its own `where` workspace as `build`
+      would, then DIR/views/<type>-<YYYY-MM-DD>.html lists
       every unit of TYPE in time order, each linking to its unit page. TYPE matches a unit's
       role (`profiler`) or its full type (`dev-team:profiler`), ignoring case. --sessions takes
       ids, prefixes or paths; --branch takes every session of NAME, headless ones included,
@@ -982,8 +989,28 @@ def build(session_path: Path, plugin: str, out: Path, quiet: bool = False) -> di
     return index
 
 
+def workspace_for(path: Path, plugin: str, runs: Path) -> Path:
+    """`runs/<project>/<command> <title>/<id8>`, or the folder this session already has.
+
+    The slug is frozen at the first build: a chat renamed since keeps its folder.
+    """
+    id8 = path.stem[:8]
+    for old in sorted(runs.glob(f"*/*/{id8}")):
+        if old.is_dir():
+            return old
+    s = next((x for x in sessions_for(plugin, include_headless=True) if x["path"] == path), None)
+    project = Path(s["cwd"]).name if s and s["cwd"] != "?" else "unknown-project"
+    first = s["commands"][0].split(":", 1)[1] if s and s["commands"] else "run"
+    raw = s["title"] if s and s["title"] != "(untitled)" else ""
+    words = re.sub(r"[^a-z0-9]+", "-", raw.lower()).strip("-")
+    words = f"-{words}-".replace(f"-{first}-", "-", 1).strip("-")
+    title = words[:40].strip("-")
+    return runs / project / f"{first} {title}".strip() / id8
+
+
 def view(plugin: str, agent: str, root: Path, sessions: str | None, branch: str | None) -> int:
-    """Build each session into root/<id8>/, then the cross-session page for one agent type."""
+    """Build each session into its workspace under root (the plugin's runs/), then the
+    cross-session page for one agent type."""
     if sessions:
         paths = [resolve(x.strip(), plugin) for x in sessions.split(",") if x.strip()]
     else:
@@ -995,7 +1022,7 @@ def view(plugin: str, agent: str, root: Path, sessions: str | None, branch: str 
     paths = list(dict.fromkeys(paths))
     workspaces, lines = [], []
     for path in paths:
-        out = root / path.stem[:8]
+        out = workspace_for(path, plugin, root)
         index = build(path, plugin, out, quiet=True)
         workspaces.append(out)
         n = sum(1 for u in index["units"] if flow.is_type(u, agent))
@@ -1111,7 +1138,11 @@ def main() -> int:
     f.add_argument("--all", action="store_true", help="include headless runs in temp dirs (eval harnesses)")
     fl = sub.add_parser("flow")
     fl.add_argument("out")
-    fl.add_argument("--issues", help="an audits/issues/ directory to mark (default: four levels above OUT)")
+    fl.add_argument("--issues", help="a runs/audits/issues/ directory to mark (default: four levels above OUT)")
+    w = sub.add_parser("where")
+    w.add_argument("session")
+    w.add_argument("--plugin", required=True)
+    w.add_argument("--root", required=True, help="the plugin directory")
     se = sub.add_parser("select")
     se.add_argument("out")
     se.add_argument("--units", default="risk")
@@ -1163,6 +1194,10 @@ def main() -> int:
             print("cover segments: " + (", ".join(f"seg-{n}" for n in widened["segments"]) or "none"))
             if widened["uncovered"]:
                 print(f"uncovered: {', '.join(widened['uncovered'])}")
+        return 0
+
+    if a.cmd == "where":
+        print(workspace_for(resolve(a.session, a.plugin), a.plugin, Path(a.root) / "runs"))
         return 0
 
     if a.cmd == "view":

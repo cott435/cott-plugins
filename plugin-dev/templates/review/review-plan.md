@@ -99,7 +99,7 @@ more. Twelve units per wave at most.>
 | Unit | Reads | Writes |
 |---|---|---|
 | **<ID>** | <wave-1 findings of kinds …; files whole> | `findings/<ID>.md`: <the cross-cutting view, one owner per rule> |
-| **REC** | every file under `findings/`, `audits/INDEX.md` | `<slug>-edits.md`, in the shape of `templates/review/edits.md` |
+| **REC** | every file under `findings/`, `runs/audits/INDEX.md` | `<slug>-edits.md`, in the shape of `templates/review/edits.md` |
 
 ## 9. Between waves
 

@@ -15,6 +15,6 @@ on branch `flow`: three writer runs and two reviewer runs). `0f10d17f` is a uniq
 - Anything else: the option marked Recommended.
 
 # Copy out, when done
-Copy the whole `evals/workspace/audit/` tree the target built under `$TMP/toy` to
-`outputs/audit/`, so `outputs/audit/views/`, `outputs/audit/0a0d17f0/` and
-`outputs/audit/0f10d17f/` hold what the target wrote.
+Copy the whole `runs/` tree the target built under `$TMP/toy` to `outputs/runs/`, so
+`outputs/runs/views/`, `outputs/runs/toy-project/ship the-toy-file/0a0d17f0/` and
+`outputs/runs/toy-project/ship/0f10d17f/` hold what the target wrote.

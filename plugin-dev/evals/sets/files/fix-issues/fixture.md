@@ -29,11 +29,11 @@ Names used below and in the sheets:
 5. Two open issues, created in this order so their ids are `TO-001` and `TO-002`:
 
    ```
-   I new --dir $TMP/repo/toy --title "ship printed shipped: for a writer return that was neither Result: done nor Result: failed" --fault definition --severity ERROR --check procedure --applies-to driver:ship --rule-file skills/ship/SKILL.md --rule-line 10 --rule-quote 'When it returns `Result: done`, print `shipped: <the commit it reported>` and stop.' --found-version 0.1.0 --found-session 0a0d17f0 --found-date 2026-09-28 --finding "The writer's first line was 'Done. Wrote out/a.txt and committed it.', neither 'Result: done' nor 'Result: failed', and the driver printed 'shipped: abc1234' anyway. Step 2 says what to print for each of the two first lines the writer may return and nothing about any other first line." --unit seg-1 --step D3 --evidence "shipped: abc1234" --report audits/runs/2026-09-28-0a0d17f0.md --finding-id E1
+   I new --dir $TMP/repo/toy --title "ship printed shipped: for a writer return that was neither Result: done nor Result: failed" --fault definition --severity ERROR --check procedure --applies-to driver:ship --rule-file skills/ship/SKILL.md --rule-line 10 --rule-quote 'When it returns `Result: done`, print `shipped: <the commit it reported>` and stop.' --found-version 0.1.0 --found-session 0a0d17f0 --found-date 2026-09-28 --finding "The writer's first line was 'Done. Wrote out/a.txt and committed it.', neither 'Result: done' nor 'Result: failed', and the driver printed 'shipped: abc1234' anyway. Step 2 says what to print for each of the two first lines the writer may return and nothing about any other first line." --unit seg-1 --step D3 --evidence "shipped: abc1234" --report runs/audits/reports/2026-09-28-0a0d17f0.md --finding-id E1
    ```
 
    ```
-   I new --dir $TMP/repo/toy --title "writer wrote notes/scratch.md, outside out/" --fault agent --severity WARN --check scope --applies-to agent:writer --rule-file agents/writer.md --rule-line 15 --rule-quote 'You only ever write under `out/`; never anywhere else.' --found-version 0.1.0 --found-session 0a0d17f0 --found-date 2026-09-28 --finding "The writer wrote notes/scratch.md. Its definition allows writes under out/ only and says so, in the step that writes the target." --unit U01 --step U01.S2 --evidence "Write notes/scratch.md" --report audits/runs/2026-09-28-0a0d17f0.md --finding-id W1
+   I new --dir $TMP/repo/toy --title "writer wrote notes/scratch.md, outside out/" --fault agent --severity WARN --check scope --applies-to agent:writer --rule-file agents/writer.md --rule-line 15 --rule-quote 'You only ever write under `out/`; never anywhere else.' --found-version 0.1.0 --found-session 0a0d17f0 --found-date 2026-09-28 --finding "The writer wrote notes/scratch.md. Its definition allows writes under out/ only and says so, in the step that writes the target." --unit U01 --step U01.S2 --evidence "Write notes/scratch.md" --report runs/audits/reports/2026-09-28-0a0d17f0.md --finding-id W1
    ```
 
    Then any further issue your eval's sheet names, in its order.
@@ -45,7 +45,7 @@ Names used below and in the sheets:
 
 ## Facts about the fixture
 
-- The run report the Found in lines name, `audits/runs/2026-09-28-0a0d17f0.md`, is not in
+- The run report the Found in lines name, `runs/audits/reports/2026-09-28-0a0d17f0.md`, is not in
   the fixture. The issue files are the whole record; say so and go on from the Finding.
 - The toy plugin has no `CLAUDE.md`, no `contracts.yml`, no `evals/sets/`, no `site/` and no
   tags. A check that has nothing to run in it has nothing to run; the sheets do not ask you
@@ -59,7 +59,7 @@ Besides `interview.md` (every question you would have asked, with its options an
 answer you took from the sheet):
 
 - `outputs/toy/` — a copy of the worktree's `toy/` directory as it stands at the end, at
-  least `agents/`, `skills/`, `audits/` and `.claude-plugin/`.
+  least `agents/`, `skills/`, `runs/audits/` and `.claude-plugin/`.
 - `outputs/git-log.txt` — `git -C $TMP/repo log --oneline --all --decorate` followed by
   `git -C $TMP/repo branch -a` and `git -C $TMP/repo worktree list`, taken at the end.
 - `outputs/check.txt` — the output of `I check --dir <the worktree's toy/>` taken after the

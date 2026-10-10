@@ -19,7 +19,7 @@ unit reports in its return.
 > 2. `<plugin-dev>/templates/review/findings.md`: the exact shape of your file.
 > 3. Your row, in §7 or §8 of the plan: `<the row, verbatim>`.
 > 4. Every file your row lists under Reads whole, with the Read tool, whole; the sections
->    your row lists under Reads in part; the issues it names under `audits/issues/`.
+>    your row lists under Reads in part; the issues it names under `runs/audits/issues/`.
 >    <Wave 2 and later: the findings files or kinds your row names, under
 >    `site/notes/<slug>/findings/`.>
 >

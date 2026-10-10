@@ -1,8 +1,8 @@
-# bump-version eval 2 — a plugin with no `audits/`
+# bump-version eval 2 — a plugin with no `runs/audits/`
 
 Seed: the toy plugin from `evals/fixtures/audit-run/make_session.py`, copied into a directory
 you make, made a git repository on `main` with a root marketplace, a changelog, a tag at
-0.1.0 and one release-worthy commit on top. No `audits/` directory. Run this once, as
+0.1.0 and one release-worthy commit on top. No `runs/audits/` directory. Run this once, as
 written, with `PD` set to the plugin root you were given; `$R` is the fixture root and
 `$R/toy` the plugin directory the user is in.
 
@@ -58,7 +58,7 @@ echo "fixture: $R"
 ```
 
 After the seed: `main` holds two commits (`toy 0.1.0`, tagged `toy-v0.1.0`; the writer change
-and the new skill), the working tree is clean, and `toy/` has no `audits/` directory. The
+and the new skill), the working tree is clean, and `toy/` has no `runs/audits/` directory. The
 user is in `$R/toy`. Everything since 0.1.0 is committed; nothing is uncommitted.
 
 ## The user's answers

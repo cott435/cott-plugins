@@ -1,6 +1,6 @@
 ---
 name: audit-run
-description: Audit a real run of this plugin's workflow from its session transcripts - which agents were spawned with what, every tool call, hook block, commit and hand-back - against the plugin's own agent and skill files at the version that ran, and report every error with evidence on both sides. Draws the run as a flow chart showing what ran in parallel and what in series, how many runs and review rounds each section took, and what each review found. Checks each agent's inputs, procedure, write scope, error recovery and whether its claims are backed by its tool calls, the driver's branching on each return, and consistency across agents. Files what it finds as issues in the plugin's committed ledger under audits/, with a run report beside them, and logs the run with log-eval. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), after or during a workflow run in another project.
+description: Audit a real run of this plugin's workflow from its session transcripts - which agents were spawned with what, every tool call, hook block, commit and hand-back - against the plugin's own agent and skill files at the version that ran, and report every error with evidence on both sides. Draws the run as a flow chart showing what ran in parallel and what in series, how many runs and review rounds each section took, and what each review found. Checks each agent's inputs, procedure, write scope, error recovery and whether its claims are backed by its tool calls, the driver's branching on each return, and consistency across agents. Files what it finds as issues in the plugin's committed ledger under runs/audits/, with a run report beside them, and logs the run with log-eval. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), after or during a workflow run in another project.
 argument-hint: "[chat title words | session-id | path.jsonl | latest] [--units risk|all|new|seg:N|U01,U05] [--full]"
 disable-model-invocation: true
 ---
@@ -47,9 +47,13 @@ own directory, the one under test.
    agents under the original. So auditing the fork audits everything, and it is the one to
    pick when the work went on after the split. Two chats with the same title are usually a
    chat and its fork.
-3. The workspace is `evals/workspace/audit/<first 8 chars of the session id>/`. Check that
-   `.gitignore` covers `evals/workspace/`, and add the line if it does not. The trace holds
-   the project's file contents and must never be committed.
+3. The workspace is `W=$(T where <session> --plugin P --root .)`, which prints
+   `runs/<project>/<command> <title>/<first 8 chars of the session id>/`: the project's
+   directory name, the first command of **P** the chat ran, and the chat's title as lowercase
+   words. A session already built keeps its folder even when the chat has been renamed since.
+   Nothing under `runs/` is committed except `runs/audits/` (the ledger and the run reports).
+   Check that `.gitignore` holds `runs/*` and `!runs/audits/`, and add the lines if it does not.
+   The trace holds the project's file contents and must never be committed.
 
 ## 2. The trace
 
@@ -119,7 +123,7 @@ new`, audit a segment only once it has finished, meaning a later segment has beg
 last step is the driver's summary after every unit returned.
 
 **Prior issues.** A rerun's audit also checks each earlier fix, and widens the selection so
-every fix is exercised. With no `audits/issues/` in the plugin, skip this: every block in §4
+every fix is exercised. With no `runs/audits/issues/` in the plugin, skip this: every block in §4
 says `Prior issues: none`.
 
 1. **Which issues.** `I list --status fixed,released,verified --format json`, each with its
@@ -223,7 +227,7 @@ lines: each box then also shows the issues first found there and the prior issue
      cross> --step <step>] --evidence "<short quote, or why not>"`. That includes every
      **not testable** issue and every issue no auditor reached.
    - A **recurred** issue also gets `I seen <ID>` with the same unit and step, `--report
-     audits/runs/<date>-<id8>.md` and `--finding-id P`, since it has no F finding. File no new
+     runs/audits/reports/<date>-<id8>.md` and `--finding-id P`, since it has no F finding. File no new
      issue for it in the next step: if an auditor wrote an F finding for the same act as well,
      fold it into the P verdict and leave it out of the report's findings and counts. A
      recurrence is counted once, under `prior: … recurred`, never in `seen again` or the
@@ -236,7 +240,7 @@ lines: each box then also shows the issues first found there and the prior issue
    listed issue's `rule_quote` is the same rule as this finding's (the same sentence,
    whatever its line number now), it is the same issue: `I seen <ID> --session <id8>
    --version <version> --date <today> --unit <U<nn> | seg-<n> | cross> --step <step>
-   --evidence "<short quote>" --report audits/runs/<date>-<id8>.md --finding-id <E1 | W1 |
+   --evidence "<short quote>" --report runs/audits/reports/<date>-<id8>.md --finding-id <E1 | W1 |
    N1>`. A different quote is a different issue, even in the same file: line numbers drift
    between versions, the quoted rule does not. `seen` is only for an issue that existed
    before this audit, and **seen again** counts only those: when the match is an issue this
@@ -254,9 +258,9 @@ lines: each box then also shows the issues first found there and the prior issue
 
    `I new` prints the new id. Record each finding's issue id and whether it was new or seen.
    `issues.py` writes the issue's frontmatter, **Finding**, **Found in** and **Checks** and
-   re-renders `audits/INDEX.md`; never write or edit a file under `audits/issues/`, or
+   re-renders `runs/audits/INDEX.md`; never write or edit a file under `runs/audits/issues/`, or
    `INDEX.md`, by hand.
-6. **The run report.** Write `audits/runs/<YYYY-MM-DD>-<id8>.md` from
+6. **The run report.** Write `runs/audits/reports/<YYYY-MM-DD>-<id8>.md` from
    `${CLAUDE_PLUGIN_ROOT}/templates/audits/run-report.md`: its header lines and its headings
    (**Errors**, **Warnings**, **Notes**, **Prior issues**, **Audited**, **Not audited**,
    **Dropped on spot-check**) in its order, and nothing it does not define.
@@ -272,12 +276,12 @@ lines: each box then also shows the issues first found there and the prior issue
      for, **not testable** ones included: `| <ID> | <title> | <attempt> | <verdict> | <unit> ·
      <step>, or — | <evidence, or why not> |`. With none, the empty table and then the line
      `none: no fixed issue to check`.
-   - **Flow chart:** the template's line, naming `evals/workspace/audit/<id8>/flow.html` and
+   - **Flow chart:** the template's line, naming the workspace's `flow.html` and
      `/plugin-dev:run-flow <id8>`.
 7. **Commit the ledger.** `I check` must print `ok`; if it does not, fix what it names
    through `issues.py` and run it again. Then `git add audits && git commit -m "<P> audits:
    <id8> — <n> new, <n> seen, <n> checked" -- audits`, where `<n> checked` is the number of
-   Checks lines step 4 wrote, staging nothing outside `audits/`
+   Checks lines step 4 wrote, staging nothing outside `runs/audits/`
    because the checkout may hold other work. This is the one commit this skill makes
    itself. When the plugin directory is not in a git checkout (a cache copy, a fixture), the
    files are still the record: print the message you would have used and say the commit was
@@ -300,13 +304,13 @@ Invoke `log-eval` before saying anything about the results. The entry is
   not repeat them as a table.
 - **Verdict**: clean, or the count by fault, and which `definition` findings are still at
   HEAD.
-- A last line: `Report: audits/runs/<date>-<id8>.md`.
+- A last line: `Report: runs/audits/reports/<date>-<id8>.md`.
 
 Then tell the user, in this order and briefly:
 
 1. One line: the run, the version, the totals, the issue counts (`<n> new, <n> seen
    again`), the prior counts (`<n> held, <n> recurred, <n> not exercised, <n> not
-   testable`), the report path `audits/runs/<date>-<id8>.md`, and the path to `flow.html`. Say
+   testable`), the report path `runs/audits/reports/<date>-<id8>.md`, and the path to `flow.html`. Say
    that `/plugin-dev:run-flow <id8>` opens it in the browser pane.
 2. Each ERROR: what happened, its evidence step and its rule, as a clickable `file:line`
    into the working tree when it is still at HEAD.
@@ -321,6 +325,6 @@ Then tell the user, in this order and briefly:
 - Edit the plugin, the audited project, or the transcripts. The run report, the issue files
   and `INDEX.md` (through `issues.py`) and the eval log are its only writes, plus a
   `.gitignore` line when one is missing.
-- Commit anything except the one `audits/` commit and what `log-eval` commits.
+- Commit anything except the one `runs/audits/` commit and what `log-eval` commits.
 - Re-run the workflow to check a finding. The trace is the evidence. A finding the trace
   cannot settle is a WARN that says what would settle it.

@@ -47,19 +47,21 @@ an agent followed its definition is `audit-run`'s question, and this skill never
 3. **The agent type**, with `--agent TYPE`: the short name (`profiler`) or the full type
    (`dev-team:profiler`), either case; both match the same runs. Its pages are named by the
    short name, written **R** below.
-4. **The workspace** is `<plugin dir>/evals/workspace/audit/<first 8 chars of the session id>/`,
-   the same one `audit-run` uses, so a run already audited keeps its badges. Across sessions,
-   each session gets its own, side by side under `<plugin dir>/evals/workspace/audit/`. The
+4. **The workspace** is `T where <session> --plugin P --root <plugin dir>`, which prints
+   `<plugin dir>/runs/<project>/<command> <title>/<first 8 chars of the session id>/`, the
+   same one `audit-run` uses, so a run already audited keeps its badges. A session built
+   before keeps its folder whatever its chat is called now. Across sessions, each session gets
+   its own, side by side under `<plugin dir>/runs/`. The
    trace holds the project's file contents and must never be committed: when the plugin
    directory is inside a git checkout, check
-   `git -C <plugin dir> check-ignore -q evals/workspace/audit`, and if nothing ignores it, add
-   `evals/workspace/` to `<plugin dir>/.gitignore` (creating the file when there is none).
+   `git -C <plugin dir> check-ignore -q runs/views`, and if nothing ignores it, add `runs/*` and
+   `!runs/audits/` to `<plugin dir>/.gitignore` (creating the file when there is none).
    Outside a git checkout there is nothing to ignore; say so and go on.
 
 ## 2. Build
 
 One session, with or without `--agent`: `T build <session> --plugin P --out <workspace>`.
-Across sessions: `T view --plugin P --agent <type> --root <plugin dir>/evals/workspace/audit
+Across sessions: `T view --plugin P --agent <type> --root <plugin dir>/runs
 (--sessions a,b | --branch GLOB)`, one command that builds every session into its own
 workspace and then the cross-session page; never several `T build` calls stitched by hand. A
 `--branch` glob that matches nothing makes it print `no session of P on a branch matching …`
@@ -138,7 +140,7 @@ A local page opens in the browser pane only when it is served:
    `python3 -c "import socket; s=socket.socket(); s.bind(('127.0.0.1',0)); print(s.getsockname()[1])"`.
 2. Run `python3 -m http.server <port> --bind 127.0.0.1 --directory <dir>` in the
    background, and note its pid. `<dir>` is the workspace for one session, and
-   `<plugin dir>/evals/workspace/audit/` across sessions, so the view's links into each
+   `<plugin dir>/runs/` across sessions, so the view's links into each
    session's workspace resolve. It serves only that directory, and only to this machine.
 3. Open the page in the browser pane: `http://127.0.0.1:<port>/flow.html`; with `--agent`,
    `…/agents/<R>.html`; across sessions, `…/views/<R>-<date>.html`. With no browser pane (a
@@ -174,4 +176,4 @@ right, is the judgment this skill does not make.
 - Narrate on its own initiative: run-narrator is spawned only with `--explain`, which Claude
   passes when the user asks for an explanation of what the agents did.
 - Write anywhere but the workspace (across sessions, the session workspaces and `views/` under
-  `evals/workspace/audit/`), plus a `.gitignore` line when one is missing.
+  `runs/`), plus a `.gitignore` line when one is missing.

@@ -8,3 +8,7 @@ site/_build/
 
 # run-evals workspace — iterations, never committed
 evals/workspace/
+
+# audited runs hold the project's files: only the audit ledger under runs/audits/ is committed
+runs/*
+!runs/audits/

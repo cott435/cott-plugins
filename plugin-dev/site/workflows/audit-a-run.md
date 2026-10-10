@@ -8,7 +8,7 @@ says? And once you have fixed what it found and run the workflow again, did each
 
 Three skills, each typed or asked for in a fresh chat opened on the plugin, not the project.
 `/plugin-dev:audit-run` checks a run and files what it finds as issues in the plugin's
-committed `audits/`. `/plugin-dev:fix-issues` fixes those issues from any chat. The next
+committed `runs/audits/`. `/plugin-dev:fix-issues` fixes those issues from any chat. The next
 `/plugin-dev:audit-run`, of a rerun, checks each fix. `/plugin-dev:run-flow` draws any run, with
 every agent one click from its full record. All of them read the run from Claude Code's
 transcripts on disk, so the chat that ran the workflow can be closed, still open, or still
@@ -21,11 +21,11 @@ flowchart TD
   F --> T["run-flow's trace.py build: run.md · units/U01…Unn · driver/seg-1 · flow.html"]
   T --> V["which version ran: the installed cache, else the tag"]
   V --> S["select units: first of each type + outliers,<br/>+ coverage for prior fixes, ≤ 12 (asks before more)"]
-  ISS[("audits/issues/*.md")] -->|"fixed issues whose fix<br/>was in the code that ran"| S
+  ISS[("runs/audits/issues/*.md")] -->|"fixed issues whose fix<br/>was in the code that ran"| S
   S --> P["run-auditor × N units + × segments<br/>(parallel, fresh contexts, each given its prior issues)"]
   P --> X["run-auditor · cross<br/>(last: handoffs, shared files, repeats)"]
   X --> M["merge · spot-check every ERROR and every verdict · still at HEAD?"]
-  M --> O["issues.py: new · seen · Checks lines<br/>audits/runs/date-id8.md · one audits/ commit<br/>log-eval → evals/date-audit-….md"]
+  M --> O["issues.py: new · seen · Checks lines<br/>runs/audits/reports/date-id8.md · one runs/audits/ commit<br/>log-eval → evals/date-audit-….md"]
   O --> ISS
   O --> U["summary in chat; tells you to type fix-issues"]
   U --> FI["/plugin-dev:fix-issues run:id8<br/>(any chat: plan, your yes, worktree, checks, Fix + Verify)"]
@@ -90,7 +90,7 @@ the most recent chat that used dev-team anywhere. Headless eval runs in temp fol
 appear in the sidebar, so they are left out of the list.
 
 **4. Look at the chart first.** The trace step writes `flow.html` into
-`dev-team/evals/workspace/audit/<id8>/`, and `/plugin-dev:run-flow <id8>` opens it in the
+`dev-team/runs/<project>/<command> <title>/<id8>/`, and `/plugin-dev:run-flow <id8>` opens it in the
 browser pane, where every box opens that agent's page. Time runs down the page:
 - **Rows:** each row is a wave, the agents started in one message. A shaded row ran in
   parallel.
@@ -126,16 +126,16 @@ dozen. The cross pass runs after them.
   recurred, not exercised, not testable);
 - each ERROR, with the trace step it happened at and the plugin `file:line` it breaks;
 - the counts of WARN and NOTE findings, with their issue ids;
-- the path to the run report, `dev-team/audits/runs/<date>-<id8>.md`, and to the re-rendered
+- the path to the run report, `dev-team/runs/audits/reports/<date>-<id8>.md`, and to the re-rendered
   `flow.html`, where each audited box now carries its ERROR count or a ✓ and the ids of the
   issues first found there;
 - that `/plugin-dev:fix-issues run:<id8>` fixes what it found.
 
 Every ERROR and WARN, and every `definition` NOTE, is now an issue: one file under
-`dev-team/audits/issues/` with an id such as `DT-031`. A finding that breaks the same quoted
+`dev-team/runs/audits/issues/` with an id such as `DT-031`. A finding that breaks the same quoted
 rule as an existing issue is that issue seen again, so the id stays the same from one audit to
 the next, however far the rule's line number has drifted. The skill writes the issues, the
-run report and `audits/INDEX.md` through `scripts/issues.py` and commits `audits/` in one
+run report and `runs/audits/INDEX.md` through `scripts/issues.py` and commits `runs/audits/` in one
 commit of its own, `dev-team audits: <id8> — <n> new, <n> seen, <n> checked`. The `log-eval`
 entry under `dev-team/evals/` is short: the issue ids by outcome and a link to the report.
 
@@ -264,9 +264,9 @@ An audit has two pieces, and you only ever type one of them.
 | **Started by** | you, typed. It never starts itself | only the skill. Never typed, never spawned by hand |
 | **Runs in** | your chat, the main thread | its own fresh context, one per piece of the run |
 | **Can ask you** | yes: which session, and whether to audit more than 12 units | never. Claude Code gives subagents no way to ask |
-| **Sees** | the whole run: `run.md`, `index.json`, `flow.html`, every findings file, and the plugin's `audits/` | one piece of the run: one agent's trace, or one driver segment, or (in `cross` mode) the run table plus the others' findings. It also sees the one plugin file that defined that piece, at the version that ran, and the prior issues that apply to it |
-| **Does** | finds the session, builds the trace with `run-flow`'s `trace.py` (`skills/run-flow/scripts/`), settles which version ran, decides which prior fixes were in the code that ran, selects units with coverage for them, spawns the auditors in parallel and the cross pass last, merges, spot-checks every ERROR and every verdict against the trace and the plugin, checks each definition fault against HEAD, matches findings to existing issues, files the issues and the run report, commits `audits/`, logs with `log-eval`, and tells you | checks inputs, procedure, write scope, hooks and errors, claims against tool calls, and the return's shape, and each prior issue's `Verify:` line. Writes one findings file with a step id and a `file:line` for every finding, and a step for every verdict. Returns one line |
-| **Writes** | the issues and `audits/INDEX.md` (through `issues.py`), the run report, the one `audits/` commit, the eval log, and a `.gitignore` line if one is missing | its findings file, nothing else |
+| **Sees** | the whole run: `run.md`, `index.json`, `flow.html`, every findings file, and the plugin's `runs/audits/` | one piece of the run: one agent's trace, or one driver segment, or (in `cross` mode) the run table plus the others' findings. It also sees the one plugin file that defined that piece, at the version that ran, and the prior issues that apply to it |
+| **Does** | finds the session, builds the trace with `run-flow`'s `trace.py` (`skills/run-flow/scripts/`), settles which version ran, decides which prior fixes were in the code that ran, selects units with coverage for them, spawns the auditors in parallel and the cross pass last, merges, spot-checks every ERROR and every verdict against the trace and the plugin, checks each definition fault against HEAD, matches findings to existing issues, files the issues and the run report, commits `runs/audits/`, logs with `log-eval`, and tells you | checks inputs, procedure, write scope, hooks and errors, claims against tool calls, and the return's shape, and each prior issue's `Verify:` line. Writes one findings file with a step id and a `file:line` for every finding, and a step for every verdict. Returns one line |
+| **Writes** | the issues and `runs/audits/INDEX.md` (through `issues.py`), the run report, the one `runs/audits/` commit, the eval log, and a `.gitignore` line if one is missing | its findings file, nothing else |
 
 The split is deliberate:
 - **Why so many agents.** An 8-hour run is millions of tokens of transcript. No single
@@ -294,8 +294,8 @@ Around it, three more pieces:
 
 | Thing | Path | Committed |
 |---|---|---|
-| The workspace: the trace, the chart, every agent's full record and page, the agent views, the narration, the findings | `<plugin>/evals/workspace/audit/<id8>/` (`run.md`, `index.json`, `units/U*.md` for the auditors, `units/U*.json` and `units/U*.html` for the pages, `driver/`, `flow.html`, `agents/`, `explain/`, `findings/`), and `evals/workspace/audit/views/` across chats; `/plugin-dev:run-flow <id8>` rebuilds and serves it | never. It holds the project's file contents |
-| The run report | `<plugin>/audits/runs/<date>-<id8>.md` | yes, by audit-run's own `audits/` commit |
-| The issues and their index | `<plugin>/audits/issues/<ID>.md`, `<plugin>/audits/INDEX.md`; Fix attempts by `fix-issues`, `fixed_in` by `bump-version` | yes: audit-run's commit, `fix-issues`' attempts commit, the bump commit |
+| The workspace: the trace, the chart, every agent's full record and page, the agent views, the narration, the findings | `<plugin>/runs/<project>/<command> <title>/<id8>/` (`run.md`, `index.json`, `units/U*.md` for the auditors, `units/U*.json` and `units/U*.html` for the pages, `driver/`, `flow.html`, `agents/`, `explain/`, `findings/`), and `runs/views/` across chats; `/plugin-dev:run-flow <id8>` rebuilds and serves it | never. It holds the project's file contents |
+| The run report | `<plugin>/runs/audits/reports/<date>-<id8>.md` | yes, by audit-run's own `runs/audits/` commit |
+| The issues and their index | `<plugin>/runs/audits/issues/<ID>.md`, `<plugin>/runs/audits/INDEX.md`; Fix attempts by `fix-issues`, `fixed_in` by `bump-version` | yes: audit-run's commit, `fix-issues`' attempts commit, the bump commit |
 | The eval log: the issue ids by outcome and a link to the run report | `<plugin>/evals/<date>-audit-<command>-<id8>.md` + a row in `evals/README.md` | yes, by `log-eval` |
 | The transcripts it read | `~/.claude/projects/<project>/<session>.jsonl` and `<session>/subagents/` | Claude Code's, never touched |
