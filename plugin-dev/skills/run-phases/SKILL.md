@@ -35,19 +35,19 @@ Platform facts it rests on (`plugin-anatomy`):
 
 ## Before the first phase
 
-1. Confirm this is a plugin subdirectory (`.claude-plugin/plugin.json` exists).
-2. Find the ledger the way `run-phase` does: `site/notes/<slug>/<slug>-progress.md`. With no slug
-   and exactly one ledger, use it. With several, ask which. With none, stop: `plan-phases`
-   has not run.
-3. Check the branch and the tree the way `run-phase` does. `git branch --show-current` must
-   equal the branch the ledger names. `git status --porcelain` must be empty, or list only
-   the paths an `in progress` row names under Notes. Stop and say so otherwise; a failure is
-   cheaper to report here than from inside an agent. Never switch branches.
-4. Pick the mode: `echo "${CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH:-unset}"`. Use **subagent**
+`P` below is `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/phases.py`, run from the plugin's
+directory. This chat decides nothing a command can decide: it reads the ledger through `P`
+and never opens it, the overview or a phase note.
+
+1. `P next [slug]`. Exit 1 prints what stops the series — not a plugin directory, no ledger,
+   several plans (ask which), the wrong branch, a tree that is not clean — and this chat
+   stops with that line; a failure is cheaper to report here than from inside an agent.
+   Never switch branches. Exit 3: the plan is done.
+2. Pick the mode: `echo "${CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH:-unset}"`. Use **subagent**
    when it is unset or 2 or more. Use **headless** when it is 0 or 1.
-5. Read the ledger and nothing else of the plan. Say in chat which phases will run, in
-   order: every row not `done`, or up to phase N with `--through N`. Also say the mode and
-   the model the phase agents run on.
+3. `P status [slug]` and say in chat which phases will run, in order: every row not `done`,
+   or up to phase N with `--through N`. Also say the mode and the model the phase agents
+   run on.
 
 ## The phase agent's instructions
 
@@ -76,9 +76,9 @@ rules**:
 
 ## Each phase
 
-1. **Re-read the ledger.** The first row not `done` is this phase. If it is not the one the
-   previous agent named as next, say so before starting it. An `in progress` row is fine:
-   `run-phase` finishes it rather than restarting.
+1. **`P next`.** Its line names this phase. If it is not the one the previous agent named
+   as next, say so before starting it. An `in progress` row is fine: `run-phase` finishes
+   it rather than restarting. Exit 1 or 3 ends the series with that line.
 2. **Start one agent**, and never two phases at once, not even phases the overview says may
    pair. They share one working tree, and each note assumes the commit before it.
    - **Subagent mode.** The Agent tool, `subagent_type: general-purpose`,
@@ -115,10 +115,10 @@ rules**:
      return is the `result` field of the file's last `"type": "result"` line. When there is
      none, the session died: treat it as `blocked`, and give the file's last lines.
 3. **Act on its `Status:`.**
-   - `committed`: check it before going on. `git log -1 --format=%s` must start `<plugin>
-     <slug> (phase <N>):`, `git status --porcelain` must be empty, and the ledger row must
-     read `done`. Any mismatch stops the series, and you say which check failed. Otherwise
-     print one line, `phase <N> committed: <sha> — <pass rates>`, and go on.
+   - `committed`: `P check <N>` before going on. It exits 0 only when the phase's commit
+     is HEAD, the tree is clean and the ledger row reads `done`. Exit 1 stops the series
+     with what it printed. Otherwise print its line with the agent's pass rates,
+     `phase <N> committed: <sha> — <pass rates>`, and go on.
    - `review`, `question` or `proposal`: give the user **For the user** in full (tables,
      paths, the recommendation), and wait. Never answer for them. Then continue the same
      agent with the user's reply verbatim, and act on the status it returns next. It holds
@@ -142,13 +142,17 @@ Stop the series when:
 - the user says stop.
 
 A `proposal` for a release (the last phase's bump) is relayed, and `bump-version` runs only
-on the user's yes, like everywhere else. Then print the ledger rows this run changed and
-the next phase, or "the plan is done".
+on the user's yes, like everywhere else. Then print `P status` — one line per phase, with
+pass counts and eval tokens for the phases that ran evals — and the next phase, or "the plan
+is done".
 
 ## Rules
 
 - **No phase work in this chat.** It makes no edits, runs no evals and makes no commits. If
   an agent cannot be started, stop and say so; doing the phase inline defeats the point.
+- **Nothing read that `P` can print.** This chat's context holds `P`'s lines and what each
+  agent returned, and nothing of the plan's files. It keeps the phases going, reports the
+  counts, and carries questions between the user and the agent that asked.
 - **Relay, never decide.** Reviews, questions and proposals go to the user word for word
   enough that they can answer without asking the agent.
 - **Nothing is pushed, merged, bumped or tagged here.** Those stay the user's, as in

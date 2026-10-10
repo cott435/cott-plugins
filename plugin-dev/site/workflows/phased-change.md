@@ -68,13 +68,14 @@ reopening. Then it shows the phase split as a table and waits for your yes. Then
 | `evals/sets/<target>.json` | one per behavioral target, written by one writer subagent each, in parallel, and checked before the commit |
 
 and commits them as phase 0. The split obeys four rules: every phase is mergeable on its own;
-every phase fits one chat; foundations first; every phase has an eval. A phase's behavioral
-evals are the new ones written for what it changes. Rerunning a changed target's existing
-evals as regression happens at checkpoints — about one phase in six, and always the last —
-not after every edit, and a phase that changes nothing a model does (a script, a hook with
-fixtures, text moved word for word) is proved by its mechanical rows alone. The split is
-shown with its cost in tokens before you approve it. The last phase is always the
-end-to-end eval, the last checkpoint, the docs and the bump proposal.
+every phase fits one chat; foundations first; every phase has an eval. A phase runs its
+mechanical checks and nothing else. A target's behavioral evals, new and existing, run once:
+at the first checkpoint at or after the last phase that edits it, since a run made before a
+later edit tests a file nobody ships. Checkpoints are the phases where targets finish, the
+last phase always among them; the overview names them, and `scripts/phases.py plan-check`
+fails a plan with a behavioral row anywhere else. The split is shown with its cost in
+tokens before you approve it. The last phase is always the end-to-end eval, the last
+checkpoint, the docs and the bump proposal.
 
 It writes no phase note. A note names exact lines, and a note written now for a late phase
 would cite lines the earlier phases move; one chat writing every note of a large plan also
@@ -97,11 +98,17 @@ set in `evals/sets/` it runs, and the pass bar. Each row goes through `run-evals
 runner starts every executor and grader as a headless session and prints one report: the
 pass counts, each failed expectation with its evidence and what the baseline did with it,
 and the cost. The baseline of an eval runs once per ref and is reused by every later
-iteration; a checkpoint's regression row, Baseline `working tree only`, starts none. The
+iteration; a row with Baseline `working tree only` starts none. The
 chat **stops** on a behavioral row until you have looked at the viewer; a missed bar is
 fixed and the evals that missed are rerun once, and a bar still missed becomes a Deviation
 rather than a quiet pass. A regression a checkpoint finds is fixed in the checkpoint's own
-commit, which names the commit it corrects. `log-eval` writes each
+commit, which names the commit it corrects.
+
+The chat reads the plan through `scripts/phases.py` and never opens the overview or the
+ledger whole: `next` says which phase and whether anything stops it, `brief` prints that
+phase's rows and notes, and `finish` checks the phase is whole, writes its ledger row and
+makes its commit. `run-phases` uses `next`, `check` and `status` the same way, so the chat
+that keeps the phases going holds the script's lines, each agent's return and your answers. `log-eval` writes each
 run up before any result is reported. Then one commit and the ledger row, then it stops.
 
 A platform fact an eval settles is written back to `plugin-anatomy`: in the phase itself

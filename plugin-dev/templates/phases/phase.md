@@ -31,14 +31,15 @@ readers — that is the `contracts.yml` entry.>
 4. `check-contracts` (if `contracts.yml`); `build-site` (if `site/`).
 5. Evals — the table below, run with `run-evals` (it stops for review when a row is
    behavioral) and logged with `log-eval` before results are reported.
-6. Commit: `<plugin> <slug> (phase NN): <what>`.
+6. `phases.py finish --what "<what>" --log … --iteration …`: the ledger row and the commit
+   `<plugin> <slug> (phase NN): <what>`.
 
 ## Evals
 
 <!-- This phase's rows from the overview's Evals by phase, copied; a pass bar is never
      loosened here. Kind is one of run-evals' kinds: mechanical · load · behavioral · trigger ·
-     platform-fact. A behavioral row names its set file and eval IDs. Baseline `working tree
-     only` marks a checkpoint's regression row: run-evals starts no baseline for it. -->
+     platform-fact. Only a checkpoint phase has behavioral rows; each names its set file and
+     eval IDs. Baseline `working tree only`: run-evals starts no baseline for that row. -->
 
 | ID | Kind | Target | Baseline | Set evals | Pass bar |
 |---|---|---|---|---|---|

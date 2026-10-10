@@ -1,7 +1,7 @@
-# `run-evals` runner — `init` reuse and working-tree-only, `run`, `report`, with no model; one real-CLI attempt that hit the weekly limit
+# `run-evals` runner — `init` reuse and working-tree-only, `run`, `report`: 27 cases with no model, then one real run
 
-**Tested against:** uncommitted — see working-tree diff, on `d153fc1` (`skills/run-evals/scripts/eval_workspace.py`, `skills/run-evals/references/prompts.md`) · model: none (`evals/fixtures/run-evals-runner/fake_claude.py` stands in for `claude -p`); the one real attempt named `claude-sonnet-5-5` and ran no turn · 2026-10-10
-**Set:** `python3 evals/fixtures/run-evals-runner/check.py` (27 cases, a throwaway repo it builds) · **Iteration:** none kept · **Baseline:** none · **Pass rate:** 27/27 cases
+**Tested against:** uncommitted — see working-tree diff, on `d153fc1` (`skills/run-evals/scripts/eval_workspace.py`, `skills/run-evals/references/prompts.md`) · model: none (`evals/fixtures/run-evals-runner/fake_claude.py` stands in for `claude -p`); the real run: executors and graders on `claude-sonnet-5-5` (`session.jsonl`, 6 of 6 records), CLI 2.1.283 · 2026-10-10
+**Set:** `python3 evals/fixtures/run-evals-runner/check.py` (27 cases, a throwaway repo it builds) · **Iteration:** none kept · **Baseline:** none · **Pass rate:** 27/27 cases; the real run 3/3 vs 2/3
 
 ## What was tested
 
@@ -26,8 +26,11 @@ for its configuration), prints a stream-json result record with a fixed `usage`,
 call. `FAKE_PLAN` makes chosen runs exit 1 once, exit 1 always, or name the iteration's
 `manifest.json` in a tool call.
 
-Then one attempt with the real CLI (2.1.283): a toy plugin in the session scratchpad, `init`
-then `run --jobs 2`, two executors.
+Then the real CLI (2.1.283): a toy plugin in the session scratchpad — one skill told to
+write `greeting.txt`, edited in the working tree to add the repo's name; one eval, three
+expectations — `init` then `run --jobs 2`. The first attempt ran while the CLI was logged
+into an account at its weekly limit; the second, the same command on the same iteration,
+after the CLI was logged into the chat's account.
 
 ## Results
 
@@ -53,27 +56,30 @@ then `run --jobs 2`, two executors.
 | a run not run | never reused by a later `init`; an older finished run of the same eval is | as expected | ✅ |
 | `run` again | retries only the run not run, grades it, exit 0; a third `run` starts nothing and prints the report | as expected | ✅ |
 | no `claude` on `PATH` | exit 2, points at **Without the runner** | as expected | ✅ |
-| real CLI, 2 executors | sessions run, files written, a report with pass counts | both sessions returned a result record with `is_error` and "You've hit your weekly limit · resets Oct 14 at 4am"; the runner retried each once, wrote `not-run.json`, exit 1, and the report shows the error per run (2.9 s) | ❌ not run |
+| real CLI, account at its limit | the error reported per run, nothing graded | both sessions returned a result record with `is_error` and "You've hit your weekly limit"; the runner retried each once, wrote `not-run.json`, exit 1, and the report shows the error per run (2.9 s) | ✅ |
+| real CLI, `run` again on that iteration | the two runs not run are retried and graded | both executors ran unattended (4 and 3 turns), each wrote `outputs/greeting.txt` and `transcript.md`; the working tree's holds `hello from smoke`, the baseline's `hello` (it read the snapshot's skill); two graders wrote `grading.json`; report `3/3 (100.0%) vs 2/3 (66.7%)`, the one expectation only the baseline failed listed, a grader's remark on it listed; exit 0, 25.7 s | ✅ |
+| real CLI, cost | recorded per session | executors 122,632 and 118,628 tokens ($0.19, $0.18); graders 274,386 together ($0.24): the floor for a session that does almost nothing | — |
 
 Also run on the edited bundle: `contract_sweep.py` 15/15, `build_site.py` 62 pages exit 0,
 `eval_workspace.py validate` on every committed set exit 0.
 
 ## Verdict
 
-The script does what the three claims say, against a stand-in. **Not proven: a real session.**
-The real attempt shows the command line is accepted and an error record is parsed and reported,
-and nothing more. Still open until an account with headroom runs it, as `[unconfirmed]`:
+The script does what the three claims say, against the stand-in and in a real run. The real
+run settles what the mechanical cases could not: under `--permission-mode acceptEdits
+--allowedTools …` a headless executor writes its run directory unattended and the grader
+writes its grades; the baseline executor reads the snapshot; a result record's `usage` is
+read and summed; a second `run` retries what a limit stopped.
 
-- that `--permission-mode acceptEdits --allowedTools "Bash Read Write Edit Glob Grep Agent
-  Skill WebSearch WebFetch"` lets an executor write its run directory and its `--add-dir`
-  scratch unattended (`run-phases`' headless mode ran a whole phase under the same two
-  flags: `evals/2026-09-29-run-phases.md`, iteration 2);
-- that a successful result record's `usage` is the whole session's, subagents included, which
-  is what the report's token counts assume;
-- that a grader session can read skill-creator's `grader.md` through `--add-dir`.
+Still `[unconfirmed]`: that a result record's `usage` includes the subagents a session
+spawns (neither executor spawned one), and an executor that uses its `--add-dir` scratch
+(neither needed a copy). The floor is worth knowing: a session that reads one file and
+writes two costs about 120k tokens, and its grader more, so an eval is never cheap and a
+script-checked expectation would be.
 
-The first real run to do: any one-eval set, `init --quiet` then `run`, and check `run.log`, the
-two `timing.json` files and the report. No behavioral eval of `run-evals`, `run-phase`,
-`run-phases` or `plan-phases` was run on this change, for the same reason; their sets hold no
-expectation the change contradicts (checked by reading them), and their next run is that
-change's regression.
+A run's sessions bill the account the CLI is logged into, not the chat's: the first attempt
+failed for that reason alone. `SKILL.md`, **Without the runner**, now says so.
+
+No behavioral eval of `run-evals`, `run-phase`, `run-phases` or `plan-phases` was run on
+this change; their sets hold no expectation the change contradicts (checked by reading
+them), and their next run is that change's regression.

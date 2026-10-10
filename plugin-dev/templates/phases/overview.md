@@ -70,7 +70,7 @@ that this one would be tempted to edit. Depends on: phase numbers, or `all`.>
 |---|---|---|---|---|---|
 | 0 | 00-overview | this overview, the eval sets and the ledger; platform-fact evals <IDs> from the spec's assumed facts | — | — | spec |
 | 1 | 01-<name> | <(new) the smallest working plugin: one agent or one skill, its README, `CLAUDE.md`, `contracts.yml` with one claim> | | | 0 |
-| N | 0N-<name> | end-to-end eval and the last regression checkpoint; README, `site/flow.md`, `site/workflows/`, `CHANGELOG.md`; release proposed in chat | | | all |
+| N | 0N-<name> | end-to-end eval and the last checkpoint; README, `site/flow.md`, `site/workflows/`, `CHANGELOG.md`; release proposed in chat | | | all |
 
 <Which phases may pair in one chat, and which must not.>
 
@@ -79,10 +79,12 @@ that this one would be tempted to edit. Depends on: phase numbers, or `all`.>
 <Every phase's eval rows. run-phase copies its phase's rows into its note's Evals and never
 loosens a pass bar. Kind is one of run-evals' kinds: mechanical · load · behavioral ·
 trigger · platform-fact. A behavioral row names its set file and eval IDs; the prompts are
-in that set already. A phase's behavioral rows are its own new evals, run compared
-(Baseline none / previous / ref). A checkpoint phase also has one row per target changed
-since the previous checkpoint, rerunning that target's existing evals with Baseline
-`working tree only`. Name the checkpoint phases here: <phases>.>
+in that set already. A phase has mechanical rows only, unless it is a checkpoint. A
+target's behavioral evals run once, at the first checkpoint at or after the last phase that
+touches it: its new evals compared (Baseline none / previous / ref), its existing ones with
+Baseline `working tree only`.>
+
+**Checkpoints:** <phase numbers, the last phase always among them>
 
 | Phase | ID | Kind | Target | Baseline | Set evals | Pass bar |
 |---|---|---|---|---|---|---|

@@ -4,6 +4,7 @@
     eval_workspace.py validate <set.json | set.trigger.json>...
     eval_workspace.py init <plugin-dir> <target> [--evals 1,2,3] [--baseline REF]
                            [--working-tree-only] [--no-reuse] [--reuse-unhashed] [--model ID] [-q]
+                           [--by-hand]
     eval_workspace.py run <iteration-dir> [--jobs N] [--timeout SECONDS] [--dry-run]
     eval_workspace.py report <iteration-dir>
     eval_workspace.py timing <run-dir> --tokens N --duration-ms N
@@ -497,6 +498,8 @@ def cmd_init(args):
     manifest = {"iteration": str(it), "target": args.target, "plugin_dir": str(root),
                 "model": model, "baseline_ref": ref,
                 "working_tree_only": bool(args.working_tree_only),
+                # Without the runner: plugin-dev's Agent guard lets these runs be spawned.
+                "by_hand": bool(args.by_hand),
                 "baseline_plugin_root": str(base_root) if base_root else None,
                 "warnings": warnings,
                 "skill_creator": locate_skill_creator(), "runs": runs}
@@ -1087,6 +1090,8 @@ def main():
     i.add_argument("--reuse-unhashed", action="store_true",
                    help="also reuse baselines from manifests written before inputs_hash existed, "
                         "matched on prompt and harness name")
+    i.add_argument("--by-hand", action="store_true",
+                   help="the runs will be spawned through the Agent tool (SKILL.md, Without the runner)")
     i.add_argument("--quiet", "-q", action="store_true",
                    help="print the iteration path, the counts and the warnings, not the whole manifest")
     i.add_argument("--model", help=f"the model every executor and grader runs on (default {DEFAULT_MODEL})")

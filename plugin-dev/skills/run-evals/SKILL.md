@@ -334,11 +334,16 @@ the finding, not a number to bury.
 ## Without the runner
 
 `S run` needs the `claude` CLI on `PATH` (or its path in `RUN_EVALS_CLAUDE`) and exits 2
-without it. It is also the wrong tool for an eval that only means something inside a
-subagent: a hook keyed on `agent_type`, a tool list a session's main thread does not have.
-Then the same manifest is run by hand:
+without it. Its sessions run under the account that CLI is logged into, which is not
+always the account of the chat that started it: `claude auth status` says which, and a run
+that ends `not run` on a usage limit is that account's limit. It is also the wrong tool for
+an eval that only means something inside a subagent: a hook keyed on `agent_type`, a tool
+list a session's main thread does not have. Then the iteration is laid out with `S init …
+--by-hand` — the mark plugin-dev's Agent guard looks for; without it the guard refuses an
+executor or grader spawned through the Agent tool — and the same manifest is run by hand:
 
-1. Spawn every run the manifest owes (`reused_from` null) **in one message**, each a
+1. Spawn every run the manifest owes (`reused_from` null; read the manifest for this, it
+   is this chat's input now) **in one message**, each a
    general-purpose subagent on the manifest's model, given the **Executor** block of
    `references/prompts.md` filled from its manifest entry (`<scratch>` is the session
    scratchpad, or a `mktemp -d` of your own) — at most 20 running at once (`plugin-anatomy`,

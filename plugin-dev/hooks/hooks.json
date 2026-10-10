@@ -1,0 +1,28 @@
+{
+  "description": "plugin-dev: an eval's executors and graders are started by eval_workspace.py run, not one Agent call each; a phase committed without phases.py finish is checked before its chat stops. Both scripts exit 0 at once unless the event names a run-evals iteration or the plugin directory has a phase in flight, and both fail open.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [
+          { "type": "command", "command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/guard_agent.py"], "timeout": 10 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gate_stop.py"], "timeout": 120 }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "^general-purpose$",
+        "hooks": [
+          { "type": "command", "command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gate_stop.py"], "timeout": 120 }
+        ]
+      }
+    ]
+  }
+}

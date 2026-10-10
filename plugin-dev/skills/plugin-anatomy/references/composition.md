@@ -75,6 +75,35 @@ and give the person a thin workflow skill that spawns it.
   strongest. Pinned models are recorded in the plugin's `VERSIONING.md`, so a model change is
   not mistaken for a prompt regression.
 
+## A workflow that runs for a long time: the script holds the state
+
+A workflow skill that keeps other agents going — one per phase, one per section — is a
+*driver*. Its cost is its turns times its context, and both grow with the run, so what a
+driver holds decides what the whole run costs. These are design rules, not platform facts;
+the run they were measured on is in `plugin-dev/evals/2026-10-10-run-evals-runner-mechanical.md`.
+
+- **The state of the run lives in files, and a script reads them.** Where a run stands —
+  the next step, whether the last one landed, what is left — is printed by a script from the
+  repo and a ledger, one line or one block, with an exit code for each outcome. The driver
+  runs the script and acts on the code; it does not open the ledger or the plan and work it
+  out. (`dev-team`'s `status.py`; `plugin-dev`'s `scripts/phases.py`.)
+- **A driver carries three things**: what the script printed, what each agent returned in a
+  fixed form, and the user's answers. It keeps the work going, reports counts, and routes a
+  question to the user and the answer back to the agent that asked. It reads no file an
+  agent could read for itself and does none of the work.
+- **Each agent gets its slice, printed.** A script prints the part of the plan one agent
+  needs. An agent that reads the whole plan to find its row pays for every other row on
+  every turn.
+- **A record is written by a script, not by hand.** A ledger row, a commit that closes a
+  step, an index line: the script that checks the step is whole writes them, and refuses
+  when it is not. A check a model performs by reading is a check that is sometimes skipped.
+- **Fan-out is waited on by a script.** Many runs started one tool call each wake the
+  driver once each, and every wake re-reads its context: on one plan that cost as much as
+  all the runs together. One background command starts them, waits, and prints one report.
+- **What must hold is a hook; what must be known is a script's output; what is left is
+  judgment**, and only that is the model's. When a rule is being written into a driver's
+  prose for the third time, it belongs in one of the first two.
+
 ## Where hooks and MCP servers fit
 
 - A rule an agent must never break is enforced by a **plugin hook** (`hooks/hooks.json`),
@@ -94,6 +123,8 @@ and give the person a thin workflow skill that spawns it.
   loaded as plugin context (`agents.md`).
 - **The same checklist pasted into three agents.** Make it a skill; preload or invoke it.
 - **An agent that asks the user.** It cannot. Return the question.
+- **A driver that reads the plan.** A skill that keeps a run going and opens the ledger,
+  the plan or its agents' outputs to decide what is next. Print it from a script.
 - **A hook where an instruction would do**, or an instruction where only a hook would do.
   A hook runs in every session the plugin is enabled in, so it earns its place only when
   "almost always" is not good enough.

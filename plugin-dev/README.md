@@ -53,6 +53,8 @@ Fifteen skills, in three groups by how they start. The table is the one list of 
 | `scripts/build_site.py` | The site builder. Fully generic — everything is discovered from the bundle. |
 | `scripts/contract_sweep.py` | The contracts checker. Its `frontmatter` check reads the allowed keys from `plugin-anatomy`'s references rather than its own copy. Shared, so a change to it gets a positive and a negative run before it is committed (this plugin's `CLAUDE.md`). |
 | `scripts/edits.py` | A review's findings files and edit list, read and checked without a model: the shape of every findings file, the edit list's items and decisions, an index of one line per item, one phase's items printed whole, and coverage (every item in exactly one phase, dependencies respected). `review-plugin`, `plan-phases` and `run-phase` read the list through it. |
+| `scripts/phases.py` | A phased plan, read and advanced without a model: the next phase and whether anything stops it, the slice of the overview and ledger one phase needs, the ledger row and the commit that close a phase, the check that a phase stands, a status line per phase with eval pass counts and tokens, each eval target's last-touch phase, and the plan's eval rows against the checkpoint rule. `run-phases`, `run-phase` and `plan-phases` call it and never read the overview or the ledger whole. |
+| `hooks/` | Two hooks, both silent unless they apply. `guard_agent.py` refuses an eval executor or grader spawned through the Agent tool for an iteration the runner should run. `gate_stop.py` checks a phase that was committed without `phases.py finish` before its chat stops. |
 | `scripts/issues.py` | The audit ledger: creates and updates issue files under a plugin's `audits/issues/`, derives each issue's status, renders `audits/INDEX.md`, and checks the ledger. `audit-run`, `fix-issues` and `bump-version` write through it; nothing writes an issue file by hand. |
 | `templates/audits/` | `issue.md` and `run-report.md`: the one list of an issue file's and a run report's sections. |
 | `scripts/defaults/` | `mkdocs-base.yml` and `extra.css` used when a plugin doesn't override them. |
@@ -61,7 +63,7 @@ Fifteen skills, in three groups by how they start. The table is the one list of 
 | `templates/review/` | The review plan, findings-file and edit-list shapes `review-plugin` and its agents write. |
 | `site/workflows/` | The five workflows below, one page each, rendered on the reading site. |
 | `evals/sets/` | Every skill's committed eval set, and trigger set for the model-invoked ones, that `run-evals` runs. |
-| `evals/fixtures/` | What those sets run against: a toy plugin for `run-phase`, a written design for `plan-phases`. |
+| `evals/fixtures/` | What those sets run against: a toy plugin for `run-phase`, a written design for `plan-phases`. Also the two checks that need no model: `run-evals-runner/check.py` for `eval_workspace.py`, `phases/check.py` for `phases.py` and the hooks. |
 
 ## Workflows
 

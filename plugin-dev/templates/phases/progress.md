@@ -1,9 +1,10 @@
 # <plugin> <slug> — progress
 
-Branch `<plugin>-<slug>`. One row per phase of `<slug>-00-overview.md`. `run-phase` reads
-this file first, does the first row that is not `done`, and fills the row in the same
-commit as the phase. The Commit cell holds `(phase N)` until the next chat resolves it to a
-SHA.
+Branch `<plugin>-<slug>`. One row per phase of `<slug>-00-overview.md`. plugin-dev's
+`scripts/phases.py` reads and writes this table: `next` and `brief` find the first row that
+is not `done`, `finish` fills it in the same commit as the phase, and the Commit cell holds
+`(phase N)` until the next `finish` resolves it to a SHA. The column names are the script's;
+do not rename them.
 
 Status values: `todo` · `in progress` (uncommitted paths listed under Notes) · `done`.
 

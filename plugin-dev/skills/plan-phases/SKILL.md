@@ -128,7 +128,7 @@ smallest end-to-end slice is phase 1.
   When the spec assumes no facts, this commit is the whole of phase 0, and its ledger row is
   written `done`. When it assumes any, the row is `in progress` with the evals listed under
   Notes, and the first `run-phase` chat runs them and marks it `done`.
-- **The last phase is always** the end-to-end eval, the last regression checkpoint (below),
+- **The last phase is always** the end-to-end eval, the last checkpoint (below),
   the docs (`README.md`, `site/flow.md`,
   `site/workflows/`, `CHANGELOG.md`'s unreleased section), and the release *proposal*: a bump
   at the level **What must not break** implies, or, for a new plugin, tagging `0.1.0` as
@@ -144,20 +144,22 @@ smallest end-to-end slice is phase 1.
     into that set in the phase-0 commit (see **The evals**). Trigger sets are the exception:
     the phase that adds a model-invoked skill writes its `<target>.trigger.json`, since it needs
     the final description.
-  - **A phase's behavioral rows are its own evals**: the new ones written for what it
-    changes, and an existing eval only when the phase's edit is meant to change that eval's
-    verdict. Baseline `previous` (or `none`, or a ref): run compared.
-  - **Regression runs at checkpoints, not in every phase** (`eval-kinds.md`, **When
-    regression runs**). A checkpoint is a phase that also carries, per target changed since
-    the previous checkpoint, one row rerunning that target's existing evals with Baseline
-    `working tree only`. The last phase is always one. Put another after the last phase of
-    each run of phases that work on the same targets, roughly one in six, so a regression is
-    found within a few commits of its cause; a plan of eight phases or fewer needs only the
-    last. An edit-list item's `evals:` names the ids to rerun, which go in the next
-    checkpoint's row, and the new evals to write, which run in the item's own phase.
-  - **A phase that changes nothing a model does has no behavioral row**: a script, a hook
-    with fixture cases, text moved between files word for word. Its proof is its mechanical
-    rows, and the next checkpoint covers what it touched.
+  - **A phase is mechanical unless it is a checkpoint** (`eval-kinds.md`, **When behavioral
+    evals run**). Every phase carries the mechanical rows for what it changes: fixtures,
+    `check-contracts`, `build-site`, a line count, a load check.
+  - **A target's behavioral evals run once, after its last edit**: every id of that target,
+    new or existing, in one row pair at the first checkpoint at or after the last phase that
+    touches the target or what it is made of. `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/phases.py
+    touch <slug>` prints that phase per target from an edit list's `files:` (an upper bound:
+    an item also lists lines it only cites); for a design, work it out from the Phases
+    table's components. A new eval's row has Baseline `previous` (or `none`, or a ref) and
+    runs compared; the existing ids' row has Baseline `working tree only`.
+  - **Checkpoints are the phases where targets finish.** The last phase is always one. Name
+    an earlier phase a checkpoint when targets finish there, so their result does not wait
+    for the end; `phases.py plan-check` warns when a finished target waits more than three
+    phases. The overview names them on one line under **Evals by phase**:
+    `**Checkpoints:** 9, 14`. An edit-list item's `evals:` names ids to rerun and new evals
+    to write; both go in the row of their target's checkpoint.
   - A row says `blind` in its pass bar only where the change is meant to make an output
     better in a way no expectation states. Never by default.
   - A script item's `fixture:` is a mechanical row: the fixture's input and expected output.
@@ -179,7 +181,7 @@ smallest end-to-end slice is phase 1.
 In chat, not as a page, show one table: Phase · What it adds · Items (**review**) or
 Components (**new**, **change**) · Depends on · Evals (kinds, and roughly how many tokens for
 the behavioral and trigger rows, from the cost table in `eval-kinds.md`, with *checkpoint*
-on the phases that are one) · May pair with. Under the table, the plan's total for the
+on the phases that are one and *mechanical* on the rest) · May pair with. Under the table, the plan's total for the
 behavioral rows, in tokens, so the split is approved with its cost in view. Then
 list any gap answers you wrote into the spec. Then ask with one `AskUserQuestion`:
 approve the split, or change it (the user says what). Discuss, revise and re-show the whole
@@ -257,6 +259,10 @@ appropriate" is a decision not taken: take it, or ask it as a gap.
    otherwise `in progress` with their IDs under Notes; every other row `todo`.
 5. **review**: `E coverage site/notes/<slug>/<slug>-edits.md site/notes/<slug>/<slug>-00-overview.md`
    prints `ok`. Fix the overview's Items or Depends on cells until it does.
+   Then, for every plan, `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/phases.py plan-check <slug>`
+   exits 0: every behavioral row sits in a checkpoint and the last phase is one. Read its
+   warnings: a row placed before a phase the edit list has touching its target moves to the
+   later checkpoint unless that phase only cites the file.
 6. Write the eval sets through the writers and check them, per **The evals**.
 7. If the plugin has a `contracts.yml`, run `check-contracts`. `site/notes/<slug>/` is in its
    scope, so an overview that quotes a forbidden pattern must scope the pattern with `files:`

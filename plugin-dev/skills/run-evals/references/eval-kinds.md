@@ -80,24 +80,33 @@ does with its tools says "proxy" in the log. An eval that only means something i
 subagent — a hook keyed on `agent_type` — is run through the Agent tool instead (`SKILL.md`,
 **Without the runner**).
 
-## When regression runs
+## When behavioral evals run
 
-Rerunning a changed target's existing evals asks one question — does it still pass — and
-asking it after every edit is where a plan's cost goes: in one 37-phase plan, a prose-only
-phase reran 15 evals on both sides for a result of 126/136 against 123/136
+A behavioral eval is run for one of two reasons: to prove a change (it is new, and the
+baseline is expected to fail it) or as regression (it passed before; does it still). Either
+way it tests a file as it is when it runs, so a run made before a later phase edits that
+file again tests a version nobody ships. In one 37-phase plan one agent's file was edited by
+10 of the first 19 phases and its evals rerun after most of them; a prose-only phase reran
+15 evals on both sides for 126/136 against 123/136
 (`dev-team/evals/2026-10-10-determinism-phase9-behavioral.md`). So:
 
-- **A phase runs its own evals**: the ones written for what it changes, compared, since
-  their point is that the baseline fails them. A phase whose edits change nothing a model
-  does — a script, a hook with fixture cases, text moved between files word for word — has
-  mechanical rows and no behavioral one.
-- **Regression runs at checkpoints**: the phases a plan marks, the last one always. A
-  checkpoint reruns, working tree only, the existing evals of every target changed since
-  the previous checkpoint.
+- **Every phase runs its mechanical rows**, all of them: they cost nothing.
+- **A target's behavioral evals run once, after its last edit**: at the first checkpoint at
+  or after the last phase that touches the target or anything it is made of — its own file
+  or directory, the skills an agent preloads, the paths its set lists under `depends_on`.
+  New evals and existing ones alike. `scripts/phases.py touch` prints that phase per target
+  from an edit list.
+- **A checkpoint** is a phase the plan names (`**Checkpoints:**` in the overview) where
+  targets that are finished get their evals. The last phase is always one. Add an earlier
+  one where targets finish early, so their result does not wait for the end.
+- **New evals run compared**, the one time they run, since their point is that the baseline
+  fails them. **Existing evals run working tree only.**
 - **A regression found at a checkpoint** is a failed expectation the baseline passes. The
-  commits since the previous checkpoint that touched the target are the suspects
-  (`git log --oneline <previous checkpoint>..HEAD -- <target_path>`), and the fix is the
-  checkpoint phase's own.
+  commits since the plan's branch point that touched the target are the suspects
+  (`git log --oneline <branch point>..HEAD -- <target_path>`), and the fix is the checkpoint
+  phase's own.
+- **Outside a plan**, a change to one target runs that target's evals once, when the change
+  is done: the new ones compared, the rest working tree only.
 
 ## Per component
 

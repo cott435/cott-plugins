@@ -21,15 +21,18 @@ every note; then this chat reads its note instead of writing one.
 
 ## Find the work
 
-1. Confirm this is a plugin subdirectory (`.claude-plugin/plugin.json` exists).
-2. Locate the ledger: `site/notes/<slug>/<slug>-progress.md`. With no slug argument and exactly one
-   ledger, use it; with several, ask which. With none, stop — `plan-phases` has not run.
-3. Confirm the branch: `git branch --show-current` equals the branch the ledger names. If
-   not, stop and say so; never switch branches on the user's behalf.
-4. Confirm a clean tree: `git status --porcelain` is empty, or every listed path is one the
-   ledger's `in progress` row names under Notes. Anything else stops with the list.
-5. Resolve SHAs: for every `done` row whose Commit cell is a `(phase N)` prefix, replace it
-   with `git log --format=%h --grep='(phase N)'`. This edit rides in this chat's commit.
+`P` below is `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/phases.py`, run from the plugin's
+directory. It reads the ledger and the overview so this chat does not, and it decides by
+exit code what a chat would otherwise decide by reading.
+
+1. `P next [slug]`. Exit 0 prints the phase to do on one line. Exit 1 prints what stops it —
+   not a plugin directory, no ledger (`plan-phases` has not run), several plans (ask which),
+   the wrong branch, a tree that is not clean — and this chat stops with that line; it never
+   switches branches or cleans a tree on the user's behalf. Exit 3: the plan is done.
+2. `P brief [slug]`. Its output is this chat's copy of the plan: the phase's row from the
+   overview's Phases table, its eval rows, whether it is a checkpoint, its ledger row with
+   the notes earlier chats left for it, the overview's conventions, and a `sed` line for
+   each other section of the overview. It also marks the phase as begun.
 
 ## Read, in this order, and nothing else up front
 
@@ -40,14 +43,14 @@ every note; then this chat reads its note instead of writing one.
    - `site/notes/<slug>/<slug>-edits.md` when there is one, never whole: its **Goal**,
      **Decisions taken** and **What must not break** sections
      (`sed -n '/^## <name>/,/^## /p'`).
-2. `site/notes/<slug>/<slug>-00-overview.md` — what the spec turns into: the contents tree,
-   the files other files parse, the phases table, the eval rows by phase, the breaking
-   changes.
-3. `site/notes/<slug>/<slug>-progress.md` — the first row whose status is not `done` is this
-   chat's phase. `in progress` means a previous chat stopped mid-way: read its Notes cell
-   and `git status`, and finish rather than restart. Phase 0 is the exception: `plan-phases`
-   leaves it `in progress` on purpose when it has platform-fact evals, listed in its Notes
-   cell. Running those evals is this chat's phase; the overview is its note.
+2. `P brief`'s output, in place of the overview and the ledger: read neither file whole.
+   The overview's other sections (the contents tree, the files other files parse, the
+   breaking changes) are read with the `sed` line the brief gives, when a step needs one.
+3. A ledger row that says `in progress` means a previous chat stopped mid-way: read its
+   notes in the brief and `git status`, and finish rather than restart. Phase 0 is the
+   exception: `plan-phases` leaves it `in progress` on purpose when it has platform-fact
+   evals, listed in its notes. Running those evals is this chat's phase; the overview is
+   its note.
 4. That phase's note, `site/notes/<slug>/<slug>-NN-<name>.md`, if it exists. If it does not,
    this phase's items, when the spec is an edit list:
    `E show site/notes/<slug>/<slug>-edits.md --phase <N> --overview site/notes/<slug>/<slug>-00-overview.md`,
@@ -87,7 +90,7 @@ sections, in order:
   reference beside each new component. Every name in the overview's **Files other files
   parse** is used exactly as the overview gives it.
 - **`## Steps`**: ordered so the bundle is consistent after each one.
-- **`## Evals`**: this phase's rows from the overview's **Evals by phase**, copied, columns
+- **`## Evals`**: this phase's rows as `P brief` printed them, copied, columns
   `| ID | Kind | Target | Baseline | Set evals | Pass bar |`. A pass bar is never loosened
   here.
 - **`## Done when`**: conditions checkable without judgment.
@@ -130,8 +133,9 @@ Follow the note's **Steps** in order. Whatever the note says, these always apply
   the file rather than discovered by an eval.
 - **Evals, through `run-evals`.** For each target in the note's `## Evals` table, invoke
   `run-evals` with that target's rows — the set file, the eval IDs, the baseline — in the
-  table's order (platform facts and mechanical rows first). A row whose Baseline cell says
-  `working tree only` is a checkpoint's regression row and runs that way. Every result is
+  table's order (platform facts and mechanical rows first). Most phases have mechanical rows
+  only: behavioral rows sit in the plan's checkpoints, where each target's evals run once,
+  after its last edit. A row whose Baseline cell says `working tree only` runs that way. Every result is
   logged with `log-eval` before it is reported here, a clean pass exactly like a failure,
   with the commit field reading *uncommitted — see working-tree diff*, since the phase's
   commit comes after.
@@ -142,11 +146,11 @@ Follow the note's **Steps** in order. Whatever the note says, these always apply
   each iteration's report and nothing else of it; open one run's `transcript.md` or
   `outputs/` only for a failed expectation the report's evidence does not settle. Never
   spawn executors or graders through the Agent tool unless `run-evals`' **Without the
-  runner** says this eval needs it. No blind comparison unless a row's pass bar says
+  runner** says this eval needs it; plugin-dev's Agent guard refuses the spawn otherwise. No blind comparison unless a row's pass bar says
   `blind`.
 - **A regression found at a checkpoint is this phase's to fix.** A checkpoint row's failed
   expectation that the baseline passes was broken by an earlier phase. Find it —
-  `git log --oneline <previous checkpoint's commit>..HEAD -- <target_path>`, then the diff
+  `git log --oneline <the plan's branch point>..HEAD -- <target_path>`, then the diff
   of the commit the evidence points at — and fix it in that file, in this phase's commit:
   the one exception to *Only this phase's edits*, with the commit it corrects named under
   `## Deviations`. A failed expectation the baseline fails too, or one the report's
@@ -171,9 +175,18 @@ Follow the note's **Steps** in order. Whatever the note says, these always apply
   parse** came out differently, an item a later phase owns was already made), one line in
   the ledger's Notes cell for that later phase. Never silently do something other than the
   note.
-- **One commit.** All of the phase's edits, the eval logs, the note (written here, or its
-  Deviations section), and the ledger row, staged by explicit path. Message from the note, in the form
-  `<plugin> <slug> (phase N): <what>`. Nothing is pushed.
+- **One commit, made by `P finish`.** `P finish [slug] --what "<what>" --log <eval log>…
+  --iteration <iteration dir>… --notes "<for the next chat>"`, with `--also <path>` for each
+  path outside the plugin the phase changed and `--trailer "<line>"` for each attribution
+  line this session's commits carry. It refuses, naming each gap, unless the phase is whole:
+  the note exists; every log exists and has its row in `evals/README.md`; every behavioral
+  row of the phase has an iteration with a report and no run left not run or not graded
+  (`--skip-row <ID>` for a row a Deviation says was not run); `check-contracts` passes;
+  nothing outside the plugin is changed and unnamed. Then it fills the ledger row, resolves
+  earlier rows' `(phase N)` to SHAs, stages the plugin and commits
+  `<plugin> <slug> (phase N): <what>`. Never write the ledger row or run `git commit` for a
+  phase by hand: a phase committed around `finish` is checked when this chat stops, and the
+  stop is refused until it stands. Nothing is pushed.
 - **Never bump, never tag.** If the note says to propose a release — a bump at some level
   for a change, or tagging `0.1.0` as scaffolded for a new plugin — say so in chat with what
   the note names and stop; `bump-version` runs only on the user's yes.
@@ -184,17 +197,14 @@ Follow the note's **Steps** in order. Whatever the note says, these always apply
 
 ## Update the ledger
 
-In the same commit as the phase: the row's status `done`, the eval log file names — each
-with its iteration directory when it came from `run-evals` (`<log>.md` ·
-`evals/workspace/<target>/iteration-N`) — and a Notes cell with anything the next chat must
-know that its note does not say. The Commit cell cannot hold its own SHA, so it holds the message prefix `(phase N)`; the **next** chat,
-in step 4 of *Find the work*, resolves every `done` row that has a prefix and no SHA with
-`git log --format=%h --grep='(phase N)'` and writes the SHA in its own commit. Phase 0's
-SHA is written the same way by phase 1's chat.
+`P finish` does it, in the phase's commit: the row's status `done`, the eval log names and
+iteration directories it was given, and `--notes` as the Notes cell — anything the next chat
+must know that its note will not say, and nothing else. The Commit cell cannot hold its own
+SHA, so it holds `(phase N)`; the next phase's `finish` resolves it.
 
 ## Stop
 
-Print the ledger row as committed and the name of the next phase. Do not start it. If
-context ran out before the phase could finish: set the row to `in progress`, list every
-uncommitted path under Notes, commit nothing of the phase, and stop — the next chat resumes
-from that list.
+Print what `P finish` printed: the commit and the next phase. Do not start it. If context
+ran out before the phase could finish: set the row to `in progress` in the ledger by hand,
+list every uncommitted path under Notes, commit nothing of the phase, and stop — the next
+chat's `P next` accepts a tree whose paths that row names, and resumes from the list.

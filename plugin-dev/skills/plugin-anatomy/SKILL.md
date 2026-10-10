@@ -56,6 +56,11 @@ usually the answer.
 9. **Is it state that must outlive a session?** → `${CLAUDE_PLUGIN_DATA}`, or files in the
    user's project. Never under `${CLAUDE_PLUGIN_ROOT}`, which is replaced on every update.
 
+A skill that keeps other agents going over a long run — a driver — gets its state from a
+script and holds almost nothing itself: question 2 applies to "where does the run stand" as
+much as to any other lookup. `references/composition.md`, **A workflow that runs for a long
+time**, has the rules.
+
 Rarer components (output styles, LSP servers, monitors, themes, workflows, legacy commands,
 the plugin `settings.json`) are in `references/other.md`. Reach for one only when a design
 names the need it exists for.

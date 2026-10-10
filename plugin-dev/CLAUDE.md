@@ -35,6 +35,15 @@ care when editing it:
   the executor and grader prompts, read by `eval_workspace.py run` by heading; a change to
   the script's `init`, `run` or `report` is checked with
   `python3 evals/fixtures/run-evals-runner/check.py`, which needs no model.
+- **`scripts/phases.py` owns the ledger and reads the overview.** It parses the ledger's
+  table by its column names, the overview's `## Phases` and `## Evals by phase` tables, and
+  the `**Checkpoints:**` line, all as `templates/phases/` writes them. A column renamed in a
+  template is a change to the script, and `python3 evals/fixtures/phases/check.py` (no
+  model) is run before either is committed.
+- **This plugin has hooks, and they run in every session on every machine.** Each exits 0
+  before doing anything unless its event names a run-evals iteration or the plugin directory
+  has a phase in flight, and each exits 0 with the reason on stderr when it crashes. Keep
+  both properties in any hook added here; `evals/fixtures/phases/check.py` pipes the events.
 - **`templates/phases/design.md` is the one list of the design's sections**, as its `##`
   headings. `design-plugin` writes from it and `plan-phases` reads the design by those names.
   Renaming a section is a change to both, and `check-contracts` fails until they agree.
