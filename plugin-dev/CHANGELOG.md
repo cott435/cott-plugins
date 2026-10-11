@@ -5,6 +5,44 @@ how model and eval versioning relate to it — is in the `plugin-dev` plugin's `
 skill. This repo's own decisions are in `VERSIONING.md`.
 
 
+## [3.1.0] - 2026-10-10
+
+A plan's phases are planned once, side by side, before any is built. A phase of the
+determinism plan took 20 to 45 minutes with a two-sentence spec because its agent planned the
+phase first: 12 to 16 decisions a note, fixture cases invented, eight minutes finding its own
+lines. Plans written before this keep working: `run-phase` still writes the note when none
+exists.
+
+### Added
+
+- `edits.py split`: the proposed phases from the items' `depends:` and `files:` — dependency
+  levels, one owner per file region in a level, small clusters packed to a cap, a cluster
+  over the cap cut into a sequence. The Level column is the planning wave (`5d5db28`).
+- `phases.py notes-check`: every phase's note is there with the template's sections, its
+  Evals rows are the overview's unchanged, and no two notes of one level list a file that is
+  not shared (`5d5db28`).
+- `plan-phases/references/unit-planner.md` and `unify.md`: the planner spawned per phase, a
+  level at a time, and the agent that makes the notes agree where they meet (`5d5db28`).
+- The overview's `**Shared files:**` line, read by `edits.py coverage` and `notes-check`
+  (`5d5db28`).
+
+### Changed
+
+- `plan-phases` writes every phase's note — one planner per phase, a level at a time, then
+  `notes-check`, the unify agent, and every question the planners could not decide asked in
+  one round — and commits them with phase 0. Its split rule is one agent's work, by file, in
+  place of one concept and six files; the Phases table gains Level and Files columns and
+  loses Must not touch (`5d5db28`).
+- A phase note anchors every edit on text quoted from the file, never a line number;
+  `run-phase` finds each anchor as it stands before the first edit (`5d5db28`).
+- `phases.py brief` names the phase's note and the other phases on its files, and prints the
+  items with their cited lines only for a plan with no notes (`--items` prints them beside a
+  note) (`5d5db28`).
+- `edits.py coverage` refuses a plan that gives one file region to two phases of a level
+  (`5d5db28`).
+- `phases.py checks` runs the contract sweep first and does not start the plan's own commands
+  when a contract fails (`db6ccac`).
+
 ## [3.0.0] - 2026-10-10
 
 A change reaches a plugin by one of two routes, and every plugin's site has one shape. Major
