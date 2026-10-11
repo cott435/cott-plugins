@@ -5,6 +5,14 @@ how model and eval versioning relate to it — is in the `plugin-dev` plugin's `
 skill. This repo's own decisions are in `VERSIONING.md`.
 
 
+## [3.1.1] - 2026-10-10
+
+Wording only. `plan-phases` reads and writes the same files and runs the same subagents as 3.1.0.
+
+### Changed
+
+- **`plan-phases` is shorter and direct** (5b936dc), 348 to 275 lines. The split is three rules stated once: the level is dependency depth from `depends:`, a phase is the items of one level that cite the same file, the size is a cap of 9 with a hook or script item weighing 3; the shared files never merge phases. The eval rules, nested under the split before, are their own section. Sections are numbered §1 to §9 and the Steps cite them by number. The planner, unify and eval-writer prompts and the planning workflow page follow the new section names.
+
 ## [3.1.0] - 2026-10-10
 
 A plan's phases are planned once, side by side, before any is built. A phase of the
