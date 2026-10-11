@@ -9,7 +9,8 @@ Reviewed <date>. Mode: review. Branch `<plugin>-<slug>`, against `<sha>` (<plugi
 Written by the reconcile unit of `revise-plugin` from every findings file under `findings/`,
 with the decisions answered by the user. It is the spec for this change, the way a design is
 for one that starts from an idea: `plan-phases` assigns every item below to one phase, and
-`run-phase` reads only its phase's items through `scripts/edits.py show`. Anything not
+each phase's planner, and a `run-phase` whose plan has no note yet, read only that phase's
+items through `scripts/edits.py show`. Anything not
 written here is lost.
 
 <!-- This template is the one list of the edit list's sections: keep every `##` heading, in

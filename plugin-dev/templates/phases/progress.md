@@ -18,8 +18,8 @@ Status values: `todo` · `in progress` (uncommitted paths listed under Notes) ·
 
 - Run every phase in Claude Code from the repo root with the plugin loaded from its working
   copy (`claude --plugin-dir ./<plugin>`) and `plugin-dev` installed.
-- Every phase: its note (written by `run-phase` when the phase starts, unless it exists) →
-  edits → the plugin's own rules → `phases.py checks` (`build-site` at the last phase only) → the
+- Every phase: its note (written by `plan-phases` with the plan; by `run-phase` when the
+  phase starts, for a plan from before that) → edits → the plugin's own rules → `phases.py checks` (`build-site` at the last phase only) → the
   phase's `## Evals` table run with `run-evals` (stopping for review when a row is
   behavioral) and logged with `log-eval` → one commit `<plugin> <slug> (phase N): …` → this
   file, in that commit.

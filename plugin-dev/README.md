@@ -40,8 +40,8 @@ silently, each fact marked documented, proven by an eval, or unconfirmed.
 By where it starts. An idea for a new plugin or a workflow is designed, one workflow at a
 time, from its driver down. Facts about a plugin as it is (audited issues, eval results, a
 rule every agent must now meet) are fixed in one chat when they are few, and turned into an
-edit list when they are many. Both routes hand a spec to the same phases, each sized for one
-chat and committed with its evals. A run of the finished workflow is then audited against
+edit list when they are many. Both routes hand a spec to the same phases, each planned up
+front beside the others of its level, built by one agent and committed with its evals. A run of the finished workflow is then audited against
 the plugin's files, and what the audit files as issues is the next set of facts.
 
 The site's **The flow** page has the table that says which command to type, which role uses
@@ -68,8 +68,8 @@ Nothing that commits, publishes or decides for you happens without a stop.
 
 1. `design-plugin` waits twice, for the charts and then the writeup. `revise-plugin` waits
    for the goal and the units before any agent runs, then asks the decisions left open.
-2. `plan-phases` asks any decision the spec did not take, then waits for your yes to the
-   split.
+2. `plan-phases` asks any decision the spec did not take, waits for your yes to the split,
+   then asks what the phase planners could not decide, in one round.
 3. `run-evals` stops on every behavioral run until you have looked at the outputs.
 4. `fix-issues` shows one planned edit per issue and edits nothing before your yes.
 5. `bump-version` names a level in chat and does nothing until you say yes. The same holds

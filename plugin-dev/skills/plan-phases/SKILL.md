@@ -1,17 +1,17 @@
 ---
 name: plan-phases
-description: Split an approved spec into phases, each sized for one Claude Code chat - a design (site/notes/{slug}/{slug}-design.md, from design-plugin), an edit list (site/notes/{slug}/{slug}-edits.md, from revise-plugin), or both. Reads the spec and nothing of the discussion behind it, asks about any gap it leaves, proposes the phase split for approval, then writes an overview with every phase's scope and evals, the eval sets (one writer subagent per target, in parallel) and a progress ledger. Writes no phase note - run-phase writes each one against the files as they are when its phase starts. Commits them as phase 0. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), in a fresh chat on the branch design-plugin or revise-plugin created.
+description: Split an approved spec into phases and write the plan every phase is built from - a design (site/notes/{slug}/{slug}-design.md, from design-plugin), an edit list (site/notes/{slug}/{slug}-edits.md, from revise-plugin), or both. Reads the spec and nothing of the discussion behind it, asks about any gap it leaves, proposes the split (dependency levels, one owner per file region in a level) for approval, then writes an overview with every phase's scope and evals, a progress ledger, the eval sets (one writer subagent per target, in parallel) and every phase's note (one planner subagent per phase, a level at a time, then a unify agent, then your answers to what the planners could not decide, in one round). Commits them as phase 0. Use inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), in a fresh chat on the branch design-plugin or revise-plugin created.
 argument-hint: "<slug>"
 disable-model-invocation: true
 ---
 
 # Planning in phases
 
-A change too big for one chat is built in phases, each small enough for one chat and each
-leaving the plugin in a working state. This skill writes the split down before any of it
-starts: an overview that says what each phase owns and how it is proved, eval sets fixed
-before any code they test is written, and a ledger that says which phase is next.
-`run-phase` does the phases, one per chat.
+A change too big for one chat is built in phases, each one agent's work and each leaving the
+plugin in a working state. This skill writes the whole plan before any of it starts: an
+overview that says what each phase owns and how it is proved, eval sets fixed before any code
+they test is written, a note per phase that says exactly what it builds, and a ledger that
+says which phase is next. `run-phase` does the phases, one per agent, from their notes.
 
 It starts from the spec an earlier chat committed, and deliberately from nothing else:
 
@@ -26,13 +26,14 @@ half-remembered turns. A planner that reads only the spec plans from what was ap
 it cannot plan a phase without guessing, the spec has a gap, and the gap is asked about
 instead of filled in.
 
-**This skill writes no phase note.** A note says exactly which lines change, and a note
-written now for phase 9 would cite lines that phases 1 to 8 move; one chat writing every note
-of a large plan also runs out of room before the last. So the overview fixes what each phase
-owns, what it may not touch, what other files parse, and how it is proved, and `run-phase`
-writes the phase's note when the phase starts, from the files as they are then. The evals
-are the one thing written now, so that what proves a phase is fixed before the phase is
-built.
+**This skill writes every phase's note**, one planner subagent per phase, a level of the
+split at a time. A note written with the plan cites no line numbers: it anchors every edit on
+text quoted from the file, and `run-phase` finds that text where it is when the phase runs. A
+planner of a later level reads the notes of the earlier phases on its files, so it anchors on
+the text as those phases leave it. What a planner cannot decide from the spec comes back as a
+question, and every question of the plan is asked in one round, before anything is built, so
+the phases run with nothing left to ask. The planning that used to open every phase — a third
+of its time, in series — happens here, side by side.
 
 `E` below is `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/edits.py`. This skill makes one commit and
 never pushes.
@@ -81,12 +82,12 @@ the source and ask what it is missing.
 
 ## Find the gaps first
 
-Walk the spec as `run-phase` will meet it: for each phase you are about to propose, could a
-chat that has read the spec, the overview and the files as they are write that phase's note
-without a decision that is the user's? What it could not sorts into two kinds:
+Walk the spec as the planners will meet it: for each phase you are about to propose, could a
+planner that has read the spec, the overview and the files as they are write that phase's
+note without a decision that is the user's? What it could not sorts into two kinds:
 
-- **Detail left to the phase.** Exact lines, the order of steps inside a phase, a helper's
-  name. `run-phase` settles these in the note; that is its job.
+- **Detail left to the phase.** The text an edit anchors on, the order of steps inside a
+  phase, a helper's name. The planner settles these in the note; that is its job.
 - **A decision the spec did not take.** A horizon, a default, who reads a file, what an
   evaluator does on its second rejection. Ask about all of them in one `AskUserQuestion`
   round, with the recommended option first, and write each answer into one **Decisions
@@ -108,23 +109,38 @@ smallest end-to-end slice is phase 1.
   smallest thing that is a working plugin (the one loop and the thinnest workflow that uses
   it, plus a README that describes only what exists), and every later phase adds to a bundle
   that already loads and builds.
-- **A phase fits one chat.** One concept; at most six or so files edited (an edit list's
-  `E index` gives each item's files); at most one new agent or two new skills. Two
-  independent small items may pair; nothing else does.
+- **A phase is one agent's work, and the split is by file, not by concept.** From an edit
+  list, `E split site/notes/<slug>/<slug>-edits.md [--shared <glob>]…` prints the proposal:
+  the items in dependency levels from their `depends:`; the items of one level that cite the
+  same region of a file not shared in one phase; small clusters packed up to a cap of 9 (a
+  hook or script item weighs 3, any other 1); a cluster over the cap cut into a sequence of
+  phases; each phase depending on the phases that own what its items depend on. The **Level**
+  column is the planning wave: two phases of one level cite no region of a file that is not
+  shared, so their notes are written side by side. The shared files are the registries every
+  phase adds to and that make no two phases one — `contracts.yml`, `README.md`,
+  `CHANGELOG.md`, `hooks/hooks.json`, `evals/README.md`, `site/site.yml`, `site/flow.md`,
+  `site/workflows/*`, `.claude-plugin/plugin.json`; the plugin's own (a fixture README, a
+  test file every phase extends) go on the command's `--shared` and on the overview's
+  `**Shared files:**` line, which `E coverage` and `P notes-check` read. From a design, do
+  the same by hand: a level per **Build order** line, one phase per component or group of
+  components that share no file, the same cap, each phase's **Files** named. Change the
+  proposal where you know better — `--cap`, `--near`, a cluster split by hand into lettered
+  items — and say why in chat. A phase that one item puts over the cap stays whole.
 - **Ordered by dependency**, foundations first. A loop and the format of the file it writes go
   before the loops that read that file, with the thinnest workflow that uses a loop shipped in
   the same phase, so every phase ends with something a user can type. Scripts and their
   fixtures go before the prose that relies on them. An evaluator ships with or right after the
   unit it checks, never at the end. The phases table names each phase's dependencies
-  explicitly.
+  explicitly; `E split` prints them from the items'.
 - **review: every item in exactly one phase.** The Items cell lists ids and ranges
   (`E-001, E-004–E-009`). An item that has to land in two phases is split in the edit list
   into lettered items (`E-046a`, `E-046b`, the second depending on the first), each a whole
   block, the parent removed; that edit rides in this skill's commit. `E coverage` checks it.
 - **Suggestions accepted in a design** get their own phases, or are named as optional
   additions to one, and nothing in the core depends on them.
-- **Phase 0 is this skill's commit**: the overview, the eval sets and the ledger, plus the
-  spec's *assumed* platform facts as platform-fact evals, which `run-phase` runs first.
+- **Phase 0 is this skill's commit**: the overview, every phase's note, the eval sets and the
+  ledger, plus the spec's *assumed* platform facts as platform-fact evals, which `run-phase`
+  runs first.
   When the spec assumes no facts, this commit is the whole of phase 0, and its ledger row is
   written `done`. When it assumes any, the row is `in progress` with the evals listed under
   Notes, and the first `run-phase` chat runs them and marks it `done`.
@@ -190,14 +206,15 @@ smallest end-to-end slice is phase 1.
 
 ## Show the split, then wait
 
-In chat, not as a page, show one table: Phase · What it adds · Items (**review**) or
-Components (**new**, **change**) · Depends on · Evals (kinds, and roughly how many tokens for
-the behavioral and trigger rows, from the cost table in `eval-kinds.md`, with *checkpoint*
-on the phases that are one and *mechanical* on the rest) · May pair with. Under the table, the plan's total for the
-behavioral rows, in tokens, so the split is approved with its cost in view. Then
-list any gap answers you wrote into the spec. Then ask with one `AskUserQuestion`:
-approve the split, or change it (the user says what). Discuss, revise and re-show the whole
-table until it is approved. Nothing is written before that.
+In chat, not as a page, show one table: Phase · Level · What it adds · Items (**review**) or
+Components (**new**, **change**) · Files · Depends on · Evals (kinds, and roughly how many
+tokens for the behavioral and trigger rows, from the cost table in `eval-kinds.md`, with
+*checkpoint* on the phases that are one and *mechanical* on the rest). Under the table: how
+many phases and how many levels, `E split`'s warnings and what you did about each, and the
+plan's total for the behavioral rows, in tokens, so the split is approved with its cost in
+view. Then list any gap answers you wrote into the spec. Then ask with one
+`AskUserQuestion`: approve the split, or change it (the user says what). Discuss, revise and
+re-show the whole table until it is approved. Nothing is written before that.
 
 ## What is written
 
@@ -205,7 +222,8 @@ All under `site/notes/<slug>/`, so the site builder renders them under Notes, be
 
 | File | From template | Holds |
 |---|---|---|
-| `<slug>-00-overview.md` | `templates/phases/overview.md` | what changes, at a glance; the contents tree; files other files parse; the phases table, each row's scope, items and dependencies; every phase's eval rows |
+| `<slug>-00-overview.md` | `templates/phases/overview.md` | what changes, at a glance; the contents tree; files other files parse; the phases table, each row's level, scope, items, files and dependencies; every phase's eval rows |
+| `<slug>-NN-<name>.md`, one per phase | `templates/phases/phase.md` | the phase's decisions, its files, the exact specification anchored on quoted text, its steps, its eval rows copied, and what done looks like; written by its planner, per **The notes** |
 | `<slug>-progress.md` | `templates/phases/progress.md` | one row per phase: status, commit, eval logs, notes for the next chat |
 | `evals/sets/<target>.json` and harness sheets | `run-evals`' set shape | the prompts and expectations every behavioral row runs |
 
@@ -215,18 +233,52 @@ non-goals stay in the spec; the overview points to it rather than copying it.
 
 ### The overview carries what crosses phases
 
-A phase note is written later, by a chat that sees only its own phase. So everything one
-phase's work depends on from another phase is in the overview, exactly:
+A phase's note is written by a planner that sees only its own phase, and read by an agent
+that sees only its own phase. So everything one phase's work depends on from another phase
+is in the overview, exactly:
 
-- **The Phases table**: per phase, the note's name (`NN-<name>`; `run-phase` writes the
-  file), what it adds in one line, its Items (**review**: ids and ranges; **new** and
-  **change**: the components and build-order lines it builds), what it must not touch, and
-  its dependencies.
+- **The Phases table**: per phase, the note's name (`NN-<name>`), its level, what it adds in
+  one line, its Items (**review**: ids and ranges; **new** and **change**: the components and
+  build-order lines it builds), the files it owns, and its dependencies. Everything not in a
+  phase's Files cell, but for the shared files, is another phase's.
 - **Files other files parse**: every heading, field or column one phase writes and a file in
   another phase reads, named exactly, with the phase that writes it and the phases that read
   it. A note may not rename anything in this table; a rename is a Deviation.
-- **Evals by phase**: every phase's rows, as above. `run-phase` copies its rows into the
-  note's **Evals** and may not loosen a pass bar.
+- **Evals by phase**: every phase's rows, as above. The planner copies its phase's rows into
+  the note's **Evals** and may not loosen a pass bar; `P notes-check` compares them.
+
+## The notes
+
+Every phase from 1 up gets its note here, once the overview and the ledger are written and
+`E coverage` and `P plan-check` pass, and before the eval sets: a planner may find a gap the
+sets must know about.
+
+**One planner per phase, a level at a time.** For each level of the Phases table in order,
+spawn one general-purpose subagent per phase of that level, all in one message (a level of
+more than ten phases goes in two), each given the prompt in `references/unit-planner.md`, and
+wait for every one of them before the next level. A planner reads `P brief <slug> --phase N`
+— the row, the eval rows, the spec's sections, the items with their cited lines as they
+stand, the other phases on its files — the notes of the earlier phases the brief names on its
+files, the component references its items need, and the files its phase owns, as they are
+now; and it writes exactly `site/notes/<slug>/<slug>-NN-<name>.md`. It settles what the spec
+left to the phase and returns, as *asked*, what is the user's. Planners of one level share no
+file region, so none waits on another. When a level has returned: `P notes-check <slug>`.
+A missing note is its planner respawned once with the lines that name it; two notes of one
+level on one file is a split to redo (an item moved, or the file named shared and why).
+
+**Then the unify pass.** One general-purpose subagent with the prompt in
+`references/unify.md`. It reads every note's Decisions, Files and Specification and the
+overview's **Files other files parse**, and makes the names agree where notes meet: a module
+one phase creates and a later one imports, a heading one writes and another reads, two
+phases adding a row to one shared table, a helper two notes each invent. It edits the notes
+and that one table, runs `notes-check` until it prints `ok`, and returns what it changed and
+every question the planners returned, deduplicated.
+
+**Then the questions, in one round.** Every *asked* and *unresolved* line is the user's: ask
+them all in one `AskUserQuestion` round, the recommended option first, as **Find the gaps
+first** says; write each answer into the spec's **Decisions taken** with Origin *planning*,
+and into the Decisions of the notes that asked, by hand. An answer that would change a
+chart, a loop or a file where loops meet stops the plan, as there.
 
 ## The evals
 
@@ -253,11 +305,11 @@ wrong after that is reported in chat rather than committed.
 
 ## No ambiguity
 
-The overview is written for a model that has read only the spec, the overview and the ledger,
-and is about to write one phase's note from the files as they are. So it carries exact paths
-for every file a phase owns; exact heading, field and column names for anything another
-phase parses; each phase's items or components and what it must not touch; every eval row
-and its pass bar; and the commit-message prefix. A sentence that starts "consider" or "if
+The overview is written for a planner that has read only the spec, the overview and its own
+phase's files, and for a builder that has read only those and its note. So it carries exact
+paths for every file a phase owns; exact heading, field and column names for anything another
+phase parses; each phase's items or components; every eval row and its pass bar; and the
+commit-message prefix. A sentence that starts "consider" or "if
 appropriate" is a decision not taken: take it, or ask it as a gap.
 
 ## Steps
@@ -265,27 +317,32 @@ appropriate" is a decision not taken: take it, or ask it as a gap.
 1. Find the spec and read, per **Find the spec** and **Read, and nothing else**.
 2. Find the gaps and ask about them, per **Find the gaps first**. Stop if a design needs
    reopening.
-3. Split, per **Rules for the split**, and get the split approved, per **Show the split, then
-   wait**. Nothing below runs before that.
+3. Split, per **Rules for the split** (**review**: from `E split`'s proposal), and get the
+   split approved, per **Show the split, then wait**. Nothing below runs before that.
 4. Write the overview, then the ledger: phase 0 `done` when there are no platform-fact evals,
    otherwise `in progress` with their IDs under Notes; every other row `todo`.
 5. **review**: `E coverage site/notes/<slug>/<slug>-edits.md site/notes/<slug>/<slug>-00-overview.md`
-   prints `ok`. Fix the overview's Items or Depends on cells until it does.
-   Then, for every plan, `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/phases.py plan-check <slug>`
+   prints `ok`: every item in one phase, its dependencies reachable, no file region owned by
+   two phases of one level. Fix the overview's Items, Files, Level or Depends on cells until
+   it does. Then, for every plan, `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/phases.py plan-check <slug>`
    exits 0: every behavioral row sits in a checkpoint and the last phase is one. Read its
    warnings: a row placed before a phase the edit list has touching its target moves to the
    later checkpoint unless that phase only cites the file.
-6. Write the eval sets through the writers and check them, per **The evals**.
-7. If the plugin has a `contracts.yml`, run `check-contracts`. `site/notes/<slug>/` is in its
-   scope, so an overview that quotes a forbidden pattern must scope the pattern with `files:`
-   or be reworded. Fix the overview, not the claim.
-8. Commit the overview, the eval sets, the ledger, any gap answers added to the spec, and any
-   item split in the edit list: `<plugin> <slug> (phase 0): plan and evals for <what>`. This
-   is the only commit this skill makes, and it pushes nothing.
-9. Print, for the user to paste into the next chat:
+6. Write the notes, per **The notes**: the planners, a level at a time, with `P notes-check`
+   after each level; the unify agent; the questions in one round, their answers written into
+   the spec and the notes. `P notes-check <slug>` exits 0 at the end.
+7. Write the eval sets through the writers and check them, per **The evals**.
+8. If the plugin has a `contracts.yml`, run `check-contracts`. `site/notes/<slug>/` is in its
+   scope, so an overview or a note that quotes a forbidden pattern must scope the pattern
+   with `files:` or be reworded. Fix the note, not the claim.
+9. Commit the overview, every note, the eval sets, the ledger, any gap answers added to the
+   spec, and any item split in the edit list: `<plugin> <slug> (phase 0): plan, notes and
+   evals for <what>`. This is the only commit this skill makes, and it pushes nothing.
+10. Print, for the user to paste into the next chat:
 
-   > Branch `<plugin>-<slug>`. Run `/plugin-dev:run-phase <slug>` from `<plugin>/`, or
-   > `/plugin-dev:run-phases <slug>` to run them all from one chat.
+    > Branch `<plugin>-<slug>`. Run `/plugin-dev:run-phase <slug>` from `<plugin>/`, or
+    > `/plugin-dev:run-phases <slug>` to run them all from one chat.
 
-   And say how many phases there are, which may pair in one chat, and whether the next chat
-   starts with phase 0's platform-fact evals or, with none, with phase 1.
+    And say how many phases and levels there are, how many questions were asked and answered,
+    and whether the next chat starts with phase 0's platform-fact evals or, with none, with
+    phase 1.

@@ -45,10 +45,11 @@ care when editing it:
   `python3 evals/fixtures/run-evals-runner/check.py`, which needs no model.
 - **`scripts/phases.py` owns the ledger and reads the overview.** It parses the ledger's
   table by its column names, the overview's `## Phases` and `## Evals by phase` tables, and
-  the `**Checkpoints:**`, `**Init flags:**` and `**Checks:**` lines, all as
-  `templates/phases/` writes them. A column renamed in a
-  template is a change to the script, and `python3 evals/fixtures/phases/check.py` (no
-  model) is run before either is committed.
+  the `**Checkpoints:**`, `**Init flags:**`, `**Checks:**` and `**Shared files:**` lines, all
+  as `templates/phases/` writes them; `notes-check` holds every phase note to the phase
+  template's sections and to the overview's eval rows. A column renamed in a template is a
+  change to the script, and `python3 evals/fixtures/phases/check.py` (no model) is run
+  before either is committed.
 - **`scripts/issues.py` owns the ledger's layout and the settling rule.** The ledger is
   `runs/audits/`; an issue derives `settled` after `SETTLE_HOLDS` held checks from
   `SETTLE_SESSIONS` sessions, and `audit-run` stops handing it to auditors. A change to either
@@ -66,11 +67,12 @@ care when editing it:
   headings. `design-plugin` writes from it and `plan-phases` reads the design by those names.
   Renaming a section is a change to both, and `check-contracts` fails until they agree.
 - **`templates/review/edits.md` is the one list of the edit list's sections**, the same way
-  for `revise-plugin`'s spec: `revise-plugin` writes from it, `plan-phases` and `run-phase`
-  read it by those names, and `check-contracts` fails until they agree. Its item fields and
-  the findings file's fields (`templates/review/findings.md`) are parsed by
+  for `revise-plugin`'s spec: `revise-plugin` writes from it, `plan-phases`, its planners and
+  `run-phase` read it by those names, and `check-contracts` fails until they agree. Its item
+  fields and the findings file's fields (`templates/review/findings.md`) are parsed by
   `scripts/edits.py`, which also reads the commit the list's opening paragraph names, to
-  carry an item's line numbers to the tree as it stands (`show --located`); a field renamed
+  carry an item's line numbers to the tree as it stands (`show --located`), and proposes
+  the split from the items' `depends:` and `files:` (`split`); a field renamed
   in a template is a change to the script, and the
   script is run against the real `dev-team/site/notes/determinism/` review before it is
   committed.

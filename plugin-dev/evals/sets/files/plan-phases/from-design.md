@@ -16,7 +16,8 @@ and no `contracts.yml` yet. Skip the branch and clean-tree checks.
 # Harness override for this eval only
 Write everything the skill would write in the plugin directory into
 outputs/trading-agents/ instead, keeping plugin-relative paths under it: the overview, the
-ledger, evals/sets/*.json and evals/sets/files/**, and anything else it writes. Run the eval writers as the
-skill says, pointing them at outputs/trading-agents/ as the plugin directory for writing, and
-at the fixture for reading the design. Do not commit. Write the skill's final chat message to
+ledger, every phase's note, evals/sets/*.json and evals/sets/files/**, and anything else it
+writes. Run the eval writers, the unit planners and the unify agent as the skill says, pointing
+them at outputs/trading-agents/ as the plugin directory for writing, and at the fixture for
+reading the design. Do not commit. Write the skill's final chat message to
 outputs/chat.md.

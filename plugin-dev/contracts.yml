@@ -64,6 +64,10 @@ headings:
       - file: skills/plan-phases/SKILL.md
         cites: ['Goal', 'Decisions taken', 'Platform facts', 'Build order',
                 'What must not break', 'Needs a design']
+      - file: skills/plan-phases/references/unit-planner.md
+        cites: ['Goal', 'Decisions taken', 'What must not break']
+      - file: skills/plan-phases/references/unify.md
+        cites: ['Decisions taken']
       - file: skills/run-phase/SKILL.md
         cites: ['Goal', 'Decisions taken', 'What must not break']
       - file: skills/design-plugin/SKILL.md
@@ -78,11 +82,19 @@ headings:
       - file: scripts/edits.py
         cites: ['Findings', 'Checked, no finding']
 
-  - name: the phase note run-phase writes has only sections the phase template defines
+  - name: the phase note has only sections the phase template defines
+    # plan-phases' unit planner writes it (run-phase, for a plan from before 3.1), the unify
+    # agent edits it and run-phase builds from it, all by these section names.
     owner: templates/phases/phase.md
     owner_form: markdown
     readers:
       - file: skills/run-phase/SKILL.md
+        cites: ['Decisions', 'Files', 'Specification', 'Steps', 'Evals', 'Done when']
+      - file: skills/plan-phases/SKILL.md
+        cites: ['Decisions', 'Files', 'Specification', 'Evals']
+      - file: skills/plan-phases/references/unit-planner.md
+        cites: ['Decisions', 'Files', 'Specification', 'Steps', 'Evals', 'Done when']
+      - file: skills/plan-phases/references/unify.md
         cites: ['Decisions', 'Files', 'Specification', 'Steps', 'Evals', 'Done when']
 
   - name: plan-phases and run-phase name only overview sections the overview template defines
@@ -91,6 +103,8 @@ headings:
     readers:
       - file: skills/plan-phases/SKILL.md
         cites: ['Phases', 'Files other files parse', 'Evals by phase']
+      - file: skills/plan-phases/references/unify.md
+        cites: ['Phases', 'Files other files parse']
       - file: skills/run-phase/SKILL.md
         cites: ['Files other files parse', 'Evals by phase']
       - file: scripts/edits.py

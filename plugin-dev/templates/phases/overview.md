@@ -5,10 +5,10 @@ the last phase (a change: a bump; a new plugin: tagging `0.1.0` as scaffolded). 
 here bumps or tags anything. Date: <date>.
 
 This is the plan the phases are run from. Each row under **Phases** is one phase, done in
-the order listed, one chat and one commit each, by `/plugin-dev:run-phase <slug>`, which
-writes the phase's note when the phase starts, from its row here and the files as they are
-then. Nothing in a later phase is required by an earlier one, so the branch is mergeable at
-any phase boundary.
+the order listed, one agent and one commit each, by `/plugin-dev:run-phase <slug>`, from the
+note `plan-phases` wrote for it beside this file (`<slug>-NN-<name>.md`, one per row, the
+notes of one level written side by side). Nothing in a later phase is required by an earlier
+one, so the branch is mergeable at any phase boundary.
 
 The why and the decisions are in the spec, approved before this was written:
 <`<slug>-design.md` (its workflows, charts and non-goals) and/or `<slug>-edits.md` (its
@@ -62,18 +62,24 @@ every phase that touches an agent or skill: the plugin's own rules, `check-contr
 then the phase's evals logged with `log-eval`, then the commit. `build-site` runs once, at
 the last phase.
 
-<Items: (review) the edit-list ids and ranges the phase lands, `E-001, E-004–E-009`, every
-item in exactly one row (`scripts/edits.py coverage` checks it); (new, change) the
-components and build-order lines it builds. Must not touch: what a neighbouring phase owns
-that this one would be tempted to edit. Depends on: phase numbers, or `all`.>
+<Optional: files every phase may add to beside the defaults (`contracts.yml`, `README.md`,
+`CHANGELOG.md`, `hooks/hooks.json`, `evals/README.md`, `site/site.yml`, `site/flow.md`,
+`site/workflows/*`, `.claude-plugin/plugin.json`), each a code span:
+**Shared files:** `evals/fixtures/*/README.md` `tests/test_scripts.py`>
 
-| Phase | Note | What it adds | Items | Must not touch | Depends on |
-|---|---|---|---|---|---|
-| 0 | 00-overview | this overview, the eval sets and the ledger; platform-fact evals <IDs> from the spec's assumed facts | — | — | spec |
-| 1 | 01-<name> | <(new) the smallest working plugin: one agent or one skill, its README, `CLAUDE.md`, `contracts.yml` with one claim> | | | 0 |
-| N | 0N-<name> | end-to-end eval and the last checkpoint; README, `site/flow.md`, `site/workflows/`, `CHANGELOG.md`; release proposed in chat | | | all |
+<Level: the planning wave, from `scripts/edits.py split`; two phases of one level cite no
+region of a file that is not shared, so their notes are written side by side. Items:
+(review) the edit-list ids and ranges the phase lands, `E-001, E-004–E-009`, every item in
+exactly one row (`scripts/edits.py coverage` checks it, and the one-owner rule); (new,
+change) the components and build-order lines it builds. Files: the files the phase owns;
+anything else, but for the shared files, is another phase's. Depends on: phase numbers, or
+`all`.>
 
-<Which phases may pair in one chat, and which must not.>
+| Phase | Note | Level | What it adds | Items | Files | Depends on |
+|---|---|---|---|---|---|---|
+| 0 | 00-overview | — | this overview, every phase's note, the eval sets and the ledger; platform-fact evals <IDs> from the spec's assumed facts | — | — | spec |
+| 1 | 01-<name> | 0 | <(new) the smallest working plugin: one agent or one skill, its README, `CLAUDE.md`, `contracts.yml` with one claim> | | | 0 |
+| N | 0N-<name> | <last> | end-to-end eval and the last checkpoint; README, `site/flow.md`, `site/workflows/`, `CHANGELOG.md`; release proposed in chat | | | all |
 
 ## Evals by phase
 

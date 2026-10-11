@@ -32,5 +32,7 @@ plugin-dev's own `scripts/edits.py`.
 # Harness override for this eval only
 Write everything the skill would write into outputs/toy-plugin/, keeping plugin-relative paths
 under it. The plan has no behavioral rows unless the skill adds one; if it spawns eval
-writers, let them write into outputs/toy-plugin/evals/sets/. Do not commit. Write the skill's
+writers, let them write into outputs/toy-plugin/evals/sets/. Run the unit planners and the
+unify agent as the skill says, writing the notes into outputs/toy-plugin/site/notes/fix/. Do
+not commit. Write the skill's
 final chat message to outputs/chat.md.

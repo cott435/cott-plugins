@@ -2,25 +2,27 @@
 
 Both routes end in a spec committed on a branch: a design from
 [an idea](design-a-workflow.md), an edit list from [facts](revise-from-facts.md), or both.
-From there the path is one. `plan-phases` splits the spec into phases, each sized for one
-chat, and `run-phase` does them one at a time. Every chat starts from files, never from the
-chat before it, so no chat has to hold the whole change.
+From there the path is one. `plan-phases` splits the spec into phases by dependency and by
+file, writes every phase's note with one planner per phase, a level at a time, and `run-phase`
+builds them one at a time from those notes. Every chat starts from files, never from the chat
+before it, so no chat has to hold the whole change, and no phase plans itself.
 
 ```mermaid
 flowchart TD
   SP[("slug-design.md · slug-edits.md")] --> P["/plugin-dev:plan-phases slug<br/>(new chat: reads the spec, none of the discussion)"]
   P -->|a decision the spec did not take| Q["asked, written into the spec"] --> P
-  P -->|your yes to the split| Z["phase 0 commit:<br/>overview · ledger · eval sets"]
+  P -->|your yes to the split| N["one planner per phase, a level at a time:<br/>every phase's note · unify agent · your answers, one round"]
+  N --> Z["phase 0 commit:<br/>overview · notes · ledger · eval sets"]
   Z --> D["/plugin-dev:run-phases slug<br/>one chat drives every phase"]
   Z --> R
-  D -->|one fresh agent per phase| R["run-phase: phases.py brief → its note → edits"]
+  D -->|one fresh agent per phase| R["run-phase: phases.py brief → its note's anchors → edits"]
   R --> C["phases.py checks"]
   C --> X["at a checkpoint: run-evals, your review"]
   X --> F["phases.py finish: ledger row + one commit"]
   F -->|phases.py next| R
   F -->|last phase| B["end-to-end evals · docs · bump proposed"] --> V["bump-version, on your yes"]
   classDef stop stroke:#8a2f4a,stroke-width:2px;
-  class Q,P,X,B stop;
+  class Q,P,N,X,B stop;
 ```
 
 ## `plan-phases`: the split
@@ -31,13 +33,18 @@ to decide surfaces as a question, and the answer is written into the spec.
 | Spec | It reads | A phase owns |
 |---|---|---|
 | a design | the design, the headings of files other files parse, each component's `plugin-anatomy` reference | components and build-order lines |
-| an edit list | `edits.py index`: one line per item, opening an item only when its line cannot place it | items, by id; `edits.py coverage` refuses a plan that drops one, lands one twice, or lands it before what it depends on |
+| an edit list | `edits.py index`: one line per item; `edits.py split`: the proposed phases | items, by id; `edits.py coverage` refuses a plan that drops one, lands one twice, lands it before what it depends on, or gives one file region to two phases of a level |
 | both | the list as above, and the design for its **Needs a design** items | items and the design's components |
 
 The split is shown as a table, with its cost in tokens, for your yes. It obeys four rules:
-every phase is mergeable on its own, every phase fits one chat, foundations come first, and
-every phase has an eval. For a new plugin, phase 1 is the smallest bundle that loads: one
-loop and the thinnest workflow that uses it.
+every phase is mergeable on its own, every phase is one agent's work and the split is by
+file, foundations come first, and every phase has an eval. `edits.py split` proposes it from
+the items: their `depends:` make the levels, the items of a level that cite one region of a
+file go in one phase, small clusters pack up to a cap, a cluster over the cap becomes a
+sequence. Two phases of one level share no file region, so their notes can be written side
+by side; the shared files (`contracts.yml`, the READMEs, `hooks.json`, the ones the overview's
+`**Shared files:**` line adds) make no two phases one. For a new plugin, phase 1 is the
+smallest bundle that loads: one loop and the thinnest workflow that uses it.
 
 **Evals run at checkpoints.** A phase runs its mechanical checks and nothing else. A
 target's behavioral evals run once, at the first checkpoint at or after the last phase that
@@ -50,11 +57,14 @@ Phase 0 is one commit:
 | File | Holds |
 |---|---|
 | `site/notes/<slug>/<slug>-00-overview.md` | Each phase's scope and what it must not touch, the headings one phase writes and another reads, every phase's eval rows with pass bars, the checkpoints, breaking changes |
+| `site/notes/<slug>/<slug>-NN-<name>.md` | One note per phase: its decisions, its files, the exact specification anchored on quoted text (never a line number), its steps, its eval rows, done-when. One planner agent per phase, a level at a time; a planner reads the notes of the earlier phases on its files |
 | `site/notes/<slug>/<slug>-progress.md` | The ledger: one row per phase, with status, commit, eval logs, and notes for the next chat |
 | `evals/sets/<target>.json` | Every behavioral eval's prompt and expectations, one writer agent per target, in parallel |
 
-It writes no phase note. A note names exact lines, and one written now for a late phase
-would cite lines the earlier phases move.
+After the planners, `phases.py notes-check` holds every note to the template and to the
+overview's eval rows, one unify agent makes the names agree where notes meet, and every
+question the planners could not answer is asked in one round and written into the spec and
+the notes. The phases then run with nothing left to plan.
 
 ## `run-phase`: one phase
 
@@ -64,16 +74,16 @@ ledger whole. `scripts/phases.py` reads them, and its exit codes are the answers
 | Command | Does |
 |---|---|
 | `next` | Checks the branch and the tree, and names the next phase. Exit 1: something stops it. Exit 3: the plan is done |
-| `brief` | Prints what this phase's chat reads: its row, its eval rows, its ledger row, and against an edit list its items, each with the lines it cites as they stand now. Marks the phase begun |
+| `brief` | Prints what this phase's chat reads: its row, its eval rows, its ledger row, its note's path, the other phases on its files, and, for a plan with no notes, its items with the lines they cite as they stand now. Marks the phase begun |
 | `checks` | The whole mechanical gate in one call: `check-contracts`, the plan's own check commands, and `build-site` at the last phase only |
 | `finish` | Checks the phase is whole (its note, its logs, every eval row run, the checks passed on this tree), fills the ledger row, and makes the commit. Refuses otherwise |
-| `check N`, `status` | Phase N's commit is HEAD, the tree is clean, its row is `done`; one line per phase |
+| `check N`, `status`, `notes-check` | Phase N's commit is HEAD, the tree is clean, its row is `done`; one line per phase; every note there and whole |
 
-In order: `brief`; write the phase's note against the files as they are (purpose, files,
-the exact spec, steps, eval rows, done-when); make exactly the note's edits, reading each
-component's `plugin-anatomy` reference first; `checks`; at a checkpoint, each eval row
-through `run-evals`, which stops for your review of the viewer and logs with `log-eval`;
-`finish`; stop.
+In order: `brief`; read the note and find every anchor it quotes in the files as they are
+now (`grep -nF`); make exactly the note's edits, reading each component's `plugin-anatomy`
+reference first; `checks`; at a checkpoint, each eval row through `run-evals`, which stops
+for your review of the viewer and logs with `log-eval`; `finish`; stop. A plan from before
+notes were written with it has none: there the chat writes the phase's note first.
 
 - A missed pass bar is fixed and rerun once. Still missed, it becomes a **Deviation** in the
   note and a question to you, never a quiet pass.

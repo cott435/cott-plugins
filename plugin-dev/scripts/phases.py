@@ -14,8 +14,13 @@ what a command can decide by exit code. Run from the plugin's own directory. Std
                       exact `eval_workspace.py init` command for each behavioral one, its
                       ledger row, and the overview's prose without the other phases' rows.
                       Against an edit list, also the list's Goal, Decisions taken and What
-                      must not break, and the phase's items whole, each with the lines its
-                      `files:` cites as they stand now (`edits.py show --located`).
+                      must not break, the other phases on this phase's files, and, when the
+                      phase has no note yet, its items whole, each with the lines its
+                      `files:` cites as they stand now (`edits.py show --located`; --items
+                      prints them beside an existing note too)
+  notes-check [slug]  every phase's note is there with the template's sections, its Evals
+                      rows are the overview's for that phase, unchanged, and no two notes of
+                      one level list a file that is not shared. Exit 0 all hold · 1 not
                       Marks the phase as begun (the stop gate reads the mark); --phase N
                       prints another phase's and marks nothing
   finish [slug] --what TEXT [--log FILE]... [--iteration DIR]... [--notes TEXT]
@@ -241,11 +246,23 @@ class Plan:
     def prefix(self, n):
         return f"{self.plugin} {self.slug} (phase {n}):"
 
+    def note_path(self, n):
+        row = next((r for _, r in self.rows() if r["Phase"] == str(n)), {})
+        name = (self.phase_row(n) or {}).get("Note", row.get("Note", f"{n:02d}"))
+        return self.dir / f"{self.slug}-{name}.md"
+
     def marker(self):
         return self.root / "evals" / "workspace" / "run-phases" / self.slug / "active.json"
 
     def checks_record(self):
         return self.marker().parent / "checks.json"
+
+
+def edits_module():
+    spec = importlib.util.spec_from_file_location("edits", HERE / "edits.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def target_of(row):
@@ -341,6 +358,18 @@ def cmd_brief(args):
            f"{'' if n else ' (phase 0: the overview is its note)'}.", "",
            "## This phase, from the overview's Phases table", ""]
     out += [f"- **{k}:** {v}" for k, v in ph.items() if k not in ("Phase", "Note") and v]
+    note = plan.note_path(n)
+    has_note = n > 0 and note.is_file()
+    if n > 0:
+        rel = note.relative_to(plan.root)
+        out += ["", "## Its note", ""]
+        out += [f"`{rel}` exists: the plan for this phase's edits, written when the plan was. Read it "
+                "whole. Its **Specification** is what this phase builds and its **Files** what it may "
+                "touch. It anchors on text quoted from the files as they stood then; before the first "
+                "edit, find every anchor as it stands now (`grep -nF`), and treat one that is gone as "
+                "`run-phase`'s **Do the phase** says."] if has_note else \
+               [f"No note at `{rel}`: this plan was written before `plan-phases` wrote the notes. Write "
+                "it before any edit, per `run-phase`'s **A phase with no note**, from the items below."]
     rows = plan.eval_rows(n)
     out += ["", "## Its eval rows", "",
             "| ID | Kind | Target | Baseline | Set evals | Pass bar |", "|---|---|---|---|---|---|"]
@@ -383,7 +412,8 @@ def cmd_brief(args):
             out += ["", f"## The overview's {name}: its conventions", ""] + \
                    [l for i, l in enumerate(prose) if l.strip() or (i and prose[i - 1].strip())]
     if plan.edits.is_file() and not args.short:
-        out += spec_and_items(plan, n)
+        out += spec_and_items(plan, n, items=args.items or not has_note)
+        out += neighbours(plan, n)
     rest = []
     for i, line in enumerate(plan.ov_lines):
         m = re.fullmatch(r"##\s+(.+?)\s*", line)
@@ -400,9 +430,9 @@ def cmd_brief(args):
     return 0
 
 
-def spec_and_items(plan, n):
-    """The edit list's part of a brief: why the change is made, and this phase's items with
-    the lines they cite as they stand."""
+def spec_and_items(plan, n, items=True):
+    """The edit list's part of a brief: why the change is made, and, with `items`, this
+    phase's items with the lines they cite as they stand."""
     text = plan.edits.read_text().split("\n")
     out = []
     for name in ("Goal", "Decisions taken", "What must not break"):
@@ -410,7 +440,7 @@ def spec_and_items(plan, n):
         if start is not None:
             end = next((i for i in range(start + 1, len(text)) if text[i].startswith("## ")), len(text))
             out += ["", f"## The edit list's {name}", ""] + [l for l in text[start + 1:end]]
-    if (plan.phase_row(n) or {}).get("Items", "").strip(" —-"):
+    if items and (plan.phase_row(n) or {}).get("Items", "").strip(" —-"):
         show = sh(sys.executable, HERE / "edits.py", "show", plan.edits, "--phase", n, "--overview", plan.overview,
                   "--located", cwd=plan.root)
         out += ["", "## Its items, each with the lines it cites as they stand now", "",
@@ -418,6 +448,118 @@ def spec_and_items(plan, n):
                 "are in the tree now; open a file only for what these do not show.", "",
                 re.sub(r"(?m)^(#{2,4}) ", lambda m: "#" + m.group(1) + " ", show.stdout.rstrip())]
     return out
+
+
+def phase_files(plan):
+    """Phase number → the files its items cite that are not shared, from the edit list."""
+    E = edits_module()
+    _, items, _ = E.load_edits(str(plan.edits))
+    shared = E.shared_files(plan.overview.read_text())
+    by_id = {it["id"]: it for it in items}
+    cells, _, _ = E.phase_items(str(plan.overview))
+    out = {}
+    for ph, cell in cells.items():
+        if not ph.isdigit():
+            continue
+        out[int(ph)] = sorted({r[0] for i in E.expand(cell, list(by_id)) if i in by_id
+                               for r in E.regions(by_id[i]["fields"].get("files", "")) if not E.is_shared(r[0], shared)})
+    return out
+
+
+def neighbours(plan, n):
+    """The brief's list of the other phases whose items cite a file this phase's items cite:
+    what changed before this phase, and whose work this phase must leave alone."""
+    files = phase_files(plan)
+    mine = set(files.get(n, []))
+    if not mine:
+        return []
+    status = {int(r["Phase"]): r["Status"] for _, r in plan.rows() if r["Phase"].isdigit()}
+    cells, _, _ = edits_module().phase_items(str(plan.overview))
+    level = {int(r["Phase"]): r.get("Level", "") for _, r in plan.table_rows("Phases", ["Phase", "Note"]) if r["Phase"].isdigit()}
+    lines = {}
+    for ph, fs in files.items():
+        common = sorted(mine & set(fs))
+        if ph != n and common:
+            tag = f"level {level[ph]}, " if level.get(ph) else ""
+            lines[ph] = f"- phase {ph} ({tag}{status.get(ph, '?')}): {cells.get(str(ph), '')} — {', '.join(f'`{f}`' for f in common)}"
+    before = [lines[ph] for ph in sorted(lines) if ph < n]
+    after = [lines[ph] for ph in sorted(lines) if ph > n]
+    out = ["", "## Other phases on this phase's files", ""]
+    out += ["Before this one (their edits are in the tree, or will be, when this phase runs):"] + (before or ["- none"])
+    out += ["", "After this one (their edits are theirs; this phase leaves those lines as they are):"] + (after or ["- none"])
+    return out
+
+
+# ---------------------------------------------------------------- notes-check
+
+def note_table(lines, first_col):
+    """Rows of the first table in `lines` whose header starts with first_col, as dicts."""
+    header, out = None, []
+    for line in lines:
+        if not line.lstrip().startswith("|"):
+            if header:
+                break
+            continue
+        c = cells(line, len(header) if header else None)
+        if header is None:
+            if c and c[0] == first_col:
+                header = c
+        elif not is_rule(line) and len(c) == len(header):
+            out.append(dict(zip(header, c)))
+    return out
+
+
+def cmd_notes_check(args):
+    plan = Plan(args.slug)
+    problems, checked, listed = [], 0, {}
+    want = ["Decisions", "Files", "Specification", "Steps", "Evals", "Done when"]
+    for _, row in plan.rows():
+        if not row["Phase"].isdigit() or row["Phase"] == "0":
+            continue
+        n = int(row["Phase"])
+        note = plan.note_path(n)
+        rel = note.relative_to(plan.root)
+        if not note.is_file():
+            problems.append(f"phase {n}: no note at {rel}")
+            continue
+        checked += 1
+        text = note.read_text().split("\n")
+        heads = [m.group(1).strip() for l in text for m in [re.fullmatch(r"##\s+(.+?)\s*", l)] if m]
+        got = [h for h in heads if h in want]
+        if got != want:
+            problems.append(f"{rel}: sections {', '.join(got) or 'none'}; the template's are {', '.join(want)}, in order")
+        span = next((i for i, l in enumerate(text) if re.fullmatch(r"##\s+Evals\s*", l)), None)
+        if span is not None:
+            end = next((i for i in range(span + 1, len(text)) if text[i].startswith("## ")), len(text))
+            mine = {r["ID"]: r for r in note_table(text[span:end], "ID")}
+            theirs = {r["ID"]: r for r in plan.eval_rows(n)}
+            for rid in sorted(set(mine) - set(theirs)):
+                problems.append(f"{rel}: Evals row {rid} is not the overview's for phase {n}")
+            for rid in sorted(set(theirs) - set(mine)):
+                problems.append(f"{rel}: the overview's row {rid} is missing from Evals")
+            for rid in sorted(set(mine) & set(theirs)):
+                for col in ("Kind", "Target", "Baseline", "Set evals", "Pass bar"):
+                    if mine[rid].get(col, "").strip() != theirs[rid].get(col, "").strip():
+                        problems.append(f"{rel}: row {rid}'s {col} is `{mine[rid].get(col, '')}`, the overview's is "
+                                        f"`{theirs[rid].get(col, '')}`; a note copies its rows and loosens nothing")
+        span = next((i for i, l in enumerate(text) if re.fullmatch(r"##\s+Files\s*", l)), None)
+        if span is not None:
+            end = next((i for i in range(span + 1, len(text)) if text[i].startswith("## ")), len(text))
+            listed[n] = {re.sub(r"^`|`$", "", r["Path"].strip()).strip() for r in note_table(text[span:end], "Path")}
+    E = edits_module()
+    shared, is_shared = E.shared_files(plan.overview.read_text()), E.is_shared
+    level = {int(r["Phase"]): r.get("Level", "").strip() for _, r in plan.table_rows("Phases", ["Phase", "Note"]) if r["Phase"].isdigit()}
+    for a in sorted(listed):
+        for b in sorted(listed):
+            if a < b and level.get(a) and level.get(a) == level.get(b):
+                both = sorted(f for f in listed[a] & listed[b] if f and not is_shared(f, shared))
+                if both:
+                    problems.append(f"phases {a} and {b} are both level {level[a]} and both list "
+                                    f"{', '.join(both)} under Files; one owner per file in a level, or name it on the overview's **Shared files:** line")
+    for p in problems:
+        print(f"FAIL {p}")
+    print(f"{'ok' if not problems else 'not ok'}: {checked} notes checked, {len(problems)} problems")
+    return 1 if problems else 0
 
 
 # ---------------------------------------------------------------- checks
@@ -762,9 +904,7 @@ def touches(plan):
     """{target: {"files": [...], "phases": [...]}} from the edit list and the Phases table."""
     if not plan.edits.is_file():
         return None
-    spec = importlib.util.spec_from_file_location("edits", HERE / "edits.py")
-    edits = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(edits)
+    edits = edits_module()
     _, items, _ = edits.load_edits(str(plan.edits))
     files = {it["id"]: [p.strip() for p in edits.paths_of(it["fields"].get("files", "")).split(",") if p.strip()]
              for it in items}
@@ -854,12 +994,13 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     for name, fn in (("next", cmd_next), ("brief", cmd_brief), ("status", cmd_status),
-                     ("touch", cmd_touch), ("plan-check", cmd_plan_check)):
+                     ("touch", cmd_touch), ("plan-check", cmd_plan_check), ("notes-check", cmd_notes_check)):
         p = sub.add_parser(name)
         p.add_argument("slug", nargs="?")
         if name == "brief":
             p.add_argument("--phase", type=int, help="print another phase's brief; marks nothing")
             p.add_argument("--short", action="store_true", help="without the edit list's part")
+            p.add_argument("--items", action="store_true", help="the items with their cited lines, even beside a note")
         if name in ("touch", "plan-check"):
             p.add_argument("--remaining", action="store_true",
                            help="only the phases from the next unfinished one on")

@@ -146,8 +146,8 @@ dashed styling; rejected ones are deleted and remembered for **Non-goals**.
 Draft the writeup from `${CLAUDE_PLUGIN_ROOT}/templates/phases/design.md` in the session
 scratchpad. The template is the one list of its sections, in order, and each section's
 placeholder says what it holds; keep every heading. The writeup is for a reader who was not in
-this conversation: `plan-phases` reads it to split the phases and write every eval, and
-`run-phase` reads it to write each phase's note and for the why. Anything decided here and not written down is lost.
+this conversation: `plan-phases` reads it to split the phases and write every eval and every
+phase's note, and `run-phase` reads it for the why. Anything decided here and not written down is lost.
 
 Write every section or delete it with a line saying why. A sentence that starts "consider" or
 "if appropriate" is a decision not taken: take it, or ask it.

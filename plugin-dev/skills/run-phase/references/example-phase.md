@@ -1,9 +1,10 @@
 # A worked phase note
 
-What **Write the note** in `run-phase`'s `SKILL.md` describes, shown on a note that was
-actually run. Read the note itself alongside this; nothing here copies it, so nothing here can
-drift from it. That note was written by `plan-phases` at planning time, before notes moved to
-the start of each phase; the sections are the same.
+What a phase note holds — as `templates/phases/phase.md` lays it out, `plan-phases`' unit
+planner writes it, and `run-phase`'s **A phase with no note** writes it for a plan from before
+that — shown on a note that was actually run. Read the note itself alongside this; nothing
+here copies it, so nothing here can drift from it. That note was written by `plan-phases` at
+planning time, as every note is again; the sections are the same.
 
 ## Where it is
 

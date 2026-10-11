@@ -216,6 +216,204 @@ def checks_cases(tmp):
          r.returncode == 1 and "FAIL no-such-program-xyz" in r.stdout and "could not start" in r.stdout, r.stdout)
 
 
+EDITS2 = """# toy q — edits
+
+Reviewed today, against `fixture`.
+
+## Decisions taken
+
+| ID | Decision | Chosen | Alternatives | Why | Items | Origin |
+|---|---|---|---|---|---|---|
+
+## Edits
+
+### E-001 hello greets by name
+- files: skills/hello/SKILL.md:5
+- mechanism: prose
+- depends: none
+
+### E-002 hello shouts
+- files: skills/hello/SKILL.md:5-6, scripts/x.py
+- mechanism: prose
+- depends: E-001
+
+### E-003 the README
+- files: README.md
+- mechanism: prose
+- depends: none
+
+### E-004 a guard refuses goodbye
+- files: hooks/guard.py
+- mechanism: hook
+- depends: none
+
+### E-005 the guard logs
+- files: hooks/guard.py
+- mechanism: hook
+- depends: none
+
+### E-006 the guard's fixtures
+- files: hooks/guard.py, evals/fixtures/guard/check.py
+- mechanism: script
+- depends: none
+
+## Build order
+
+1. E-001, E-003, E-004, E-005, E-006.
+2. E-002, after E-001.
+"""
+
+OVERVIEW2 = """# toy q — overview
+
+## Phases
+
+One commit per phase.
+
+**Shared files:** `evals/fixtures/*/README.md`
+
+| Phase | Note | Level | What it adds | Items | Files | Depends on |
+|---|---|---|---|---|---|---|
+| 0 | 00-overview | — | the plan | — | — | spec |
+| 1 | 01-hello | 0 | hello greets; the README | E-001, E-003 | `skills/hello/SKILL.md`, `README.md` | 0 |
+| 2 | 02-guard | 0 | the guard | E-004, E-005 | `hooks/guard.py` | 0 |
+| 3 | 03-guard-fixtures | 1 | the guard's fixtures | E-006 | `hooks/guard.py`, `evals/fixtures/guard/check.py` | 2 |
+| 4 | 04-shout | 2 | hello shouts; the docs | E-002 | `skills/hello/SKILL.md`, `scripts/x.py` | 1, 3 |
+
+## Evals by phase
+
+**Checkpoints:** 4
+
+| Phase | ID | Kind | Target | Baseline | Set evals | Pass bar |
+|---|---|---|---|---|---|---|
+| 1–4 | Q*.a | mechanical | `check-contracts` | — | `contracts.yml` | PASS |
+| 2 | Q2.1 | mechanical | `hooks/guard.py` | — | its cases | every case passes |
+"""
+
+LEDGER2 = """# toy q — progress
+
+Branch `toy-q`.
+
+| Phase | Note | Status | Commit | Eval log(s) | Notes for the next chat |
+|---|---|---|---|---|---|
+| 0 | 00 | done | (phase 0) | | |
+| 1 | 01 | todo | | | |
+| 2 | 02 | todo | | | |
+| 3 | 03 | todo | | | |
+| 4 | 04 | todo | | | |
+"""
+
+
+def note_text(nn, name, files, evals_rows, extra=""):
+    return (f"# {nn} — {name}\n\nPhase {nn}.\n\n## Decisions\n\nNone.{extra}\n\n## Files\n\n| Path | Change |\n|---|---|\n"
+            + "".join(f"| `{f}` | the line after `Say` |\n" for f in files)
+            + "\n## Specification\n\nx\n\n## Steps\n\n1. x\n\n## Evals\n\n| ID | Kind | Target | Baseline | Set evals | Pass bar |\n|---|---|---|---|---|---|\n"
+            + "".join(f"| {r} |\n" for r in evals_rows) + "\n## Done when\n\nx\n")
+
+
+def plan_units_cases(tmp):
+    """`edits.py split` and the one-owner rule in `coverage`, `phases.py notes-check`, and a
+    brief beside a note that exists."""
+    repo = tmp / "units-repo"
+    toy, notes = build(repo, OVERVIEW2)
+    (notes / "p-edits.md").unlink()
+    (notes / "p-progress.md").unlink()
+    (notes / "p-00-overview.md").unlink()
+    q = toy / "site" / "notes" / "q"
+    q.mkdir()
+    (q / "q-edits.md").write_text(EDITS2)
+    (q / "q-00-overview.md").write_text(OVERVIEW2)
+    (q / "q-progress.md").write_text(LEDGER2)
+    (toy / "hooks").mkdir()
+    (toy / "hooks" / "guard.py").write_text("print('guard')\n")
+    sh("git", "add", "-A", cwd=repo)
+    sh(*GIT, "commit", "-qm", "toy q (phase 0): the plan", cwd=repo)
+    sh("git", "checkout", "-qb", "toy-q", cwd=repo)
+
+    def ed(*args):
+        return sh(sys.executable, EDITS_PY, *args, cwd=toy)
+
+    def ph(*args):
+        return sh(sys.executable, PHASES, *args, cwd=toy)
+
+    # split
+    r = ed("split", "site/notes/q/q-edits.md")
+    rows = [l for l in r.stdout.splitlines() if l.startswith("| ") and l[2].isdigit()]
+    case("split: items in dependency levels, the hook items on one file in one phase, the small clusters packed beside it, the dependent item a level later",
+         r.returncode == 0 and len(rows) == 3
+         and "| 1 | 01-hello | 0 |" in rows[0] and "| E-001, E-003 |" in rows[0] and rows[0].rstrip().endswith("| 0 |")
+         and "| 2 | 02-guard | 0 |" in rows[1] and "| E-004, E-005, E-006 |" in rows[1] and "`hooks/guard.py`" in rows[1]
+         and "| 3 | 03-hello | 1 |" in rows[2] and "| E-002 |" in rows[2] and rows[2].rstrip().endswith("| 1 |")
+         and "3 phases in 2 levels" in r.stdout and "warning" not in r.stdout, r.stdout)
+    r = ed("split", "site/notes/q/q-edits.md", "--cap", "6")
+    rows = [l for l in r.stdout.splitlines() if l.startswith("| ") and l[2].isdigit()]
+    case("split --cap 6: the cluster over the cap cut into a sequence, each chunk its own level and depending on the one before",
+         len(rows) == 4 and "| E-001, E-003 |" in rows[0] and "| 0 |" in rows[0]
+         and "| E-004, E-005 |" in rows[1] and "| 0 |" in rows[1]
+         and "| E-006 |" in rows[2] and "| 1 |" in rows[2] and rows[2].rstrip().endswith("| 2 |")
+         and "| E-002 |" in rows[3] and "| 2 |" in rows[3] and rows[3].rstrip().endswith("| 1 |")
+         and "4 phases in 3 levels" in r.stdout, r.stdout)
+    r = ed("split", "site/notes/q/q-edits.md", "--cap", "2")
+    case("split --cap 2: an item over the cap on its own is warned, not dropped",
+         "warning: phase" in r.stdout and "weighs 3 (cap 2)" in r.stdout and r.stdout.count("E-00") >= 6, r.stdout)
+
+    # coverage with a Level column
+    r = ed("coverage", "site/notes/q/q-edits.md", "site/notes/q/q-00-overview.md")
+    case("coverage with a Level column: ok when phases of one level own different regions; README shared",
+         r.returncode == 0 and r.stdout.startswith("ok"), r.stdout)
+    bad = OVERVIEW2.replace("| 4 | 04-shout | 2 |", "| 4 | 04-shout | 0 |")
+    (q / "q-00-overview.md").write_text(bad)
+    r = ed("coverage", "site/notes/q/q-edits.md", "site/notes/q/q-00-overview.md")
+    case("coverage: two phases of one level owning one region of a file is a FAIL naming both",
+         r.returncode == 1 and "FAIL phases 1 and 4 are both level 0 and both own skills/hello/SKILL.md (E-001, E-002)" in r.stdout, r.stdout)
+    (q / "q-00-overview.md").write_text(OVERVIEW2.replace("**Shared files:** `evals/fixtures/*/README.md`",
+                                                           "**Shared files:** `evals/fixtures/*/README.md` `skills/hello/SKILL.md`"))
+    r = ed("coverage", "site/notes/q/q-edits.md", "site/notes/q/q-00-overview.md")
+    (q / "q-00-overview.md").write_text(OVERVIEW2)
+    case("coverage: a file on the overview's **Shared files:** line is nobody's to own", r.returncode == 0, r.stdout)
+
+    # notes-check
+    r = ph("notes-check", "q")
+    case("notes-check with no notes: exit 1, one line per missing note",
+         r.returncode == 1 and r.stdout.count("no note at") == 4 and "not ok: 0 notes checked" in r.stdout, r.stdout)
+    rec = "Q*.a | mechanical | `check-contracts` | — | `contracts.yml` | PASS"
+    (q / "q-01-hello.md").write_text(note_text("01", "hello", ["skills/hello/SKILL.md", "README.md"], [rec]))
+    (q / "q-02-guard.md").write_text(note_text("02", "guard", ["hooks/guard.py", "README.md"],
+                                               [rec, "Q2.1 | mechanical | `hooks/guard.py` | — | its cases | most cases pass"]))
+    (q / "q-03-guard-fixtures.md").write_text(note_text("03", "guard fixtures", ["hooks/guard.py", "evals/fixtures/guard/check.py"], [rec]))
+    (q / "q-04-shout.md").write_text(note_text("04", "shout", ["skills/hello/SKILL.md", "scripts/x.py"], [rec]).replace("## Steps\n\n1. x\n\n", ""))
+    r = ph("notes-check", "q")
+    case("notes-check: a loosened pass bar, a missing section, nothing else",
+         r.returncode == 1 and "q-02-guard.md: row Q2.1's Pass bar is `most cases pass`, the overview's is `every case passes`" in r.stdout
+         and "q-04-shout.md: sections Decisions, Files, Specification, Evals, Done when; the template's are" in r.stdout
+         and r.stdout.count("FAIL") == 2, r.stdout)
+    (q / "q-02-guard.md").write_text(note_text("02", "guard", ["hooks/guard.py", "README.md", "skills/hello/SKILL.md"],
+                                               [rec, "Q2.1 | mechanical | `hooks/guard.py` | — | its cases | every case passes"]))
+    (q / "q-04-shout.md").write_text(note_text("04", "shout", ["skills/hello/SKILL.md", "scripts/x.py"], [rec]))
+    r = ph("notes-check", "q")
+    case("notes-check: two notes of one level listing one file that is not shared is a FAIL; the shared README is not",
+         r.returncode == 1 and "FAIL phases 1 and 2 are both level 0 and both list skills/hello/SKILL.md under Files" in r.stdout
+         and r.stdout.count("FAIL") == 1, r.stdout)
+    (q / "q-02-guard.md").write_text(note_text("02", "guard", ["hooks/guard.py", "README.md"],
+                                               [rec, "Q2.1 | mechanical | `hooks/guard.py` | — | its cases | every case passes"]))
+    r = ph("notes-check", "q")
+    case("notes-check: every note there and whole, exit 0", r.returncode == 0 and "ok: 4 notes checked, 0 problems" in r.stdout, r.stdout)
+    (q / "q-01-hello.md").write_text(note_text("01", "hello", ["skills/hello/SKILL.md", "README.md"], [rec, "Q9 | mechanical | x | — | — | y"]))
+    r = ph("notes-check", "q")
+    (q / "q-01-hello.md").write_text(note_text("01", "hello", ["skills/hello/SKILL.md", "README.md"], [rec]))
+    case("notes-check: an Evals row the overview does not have for the phase is a FAIL",
+         r.returncode == 1 and "q-01-hello.md: Evals row Q9 is not the overview's for phase 1" in r.stdout, r.stdout)
+
+    # brief beside a note
+    r = ph("brief", "q", "--phase", "1")
+    case("brief with a note: names it as the plan, prints no items, lists the later phase on its files",
+         "`site/notes/q/q-01-hello.md` exists: the plan for this phase's edits" in r.stdout
+         and "## Its items" not in r.stdout and "## The edit list's Decisions taken" in r.stdout
+         and "- phase 4 (level 2, todo): E-002 — `skills/hello/SKILL.md`" in r.stdout
+         and "Before this one" in r.stdout and r.stdout.index("- none") < r.stdout.index("After this one"), r.stdout)
+    r = ph("brief", "q", "--phase", "1", "--items")
+    case("brief --items beside a note: the items too", "## Its items" in r.stdout and "#### E-001" in r.stdout, r.stdout)
+
+
 def main():
     tmp = Path(tempfile.mkdtemp(prefix="phases-check-"))
     repo = tmp / "repo"
@@ -253,10 +451,14 @@ def main():
          "Names are exact." in r.stdout and "Breaking changes: `sed -n" in r.stdout
          and json.loads(mark.read_text())["phase"] == 1, r.stdout[-400:])
 
-    case("brief against an edit list: this phase's item whole with the lines it cites, not another phase's",
-         "## Its items, each with the lines it cites as they stand now" in r.stdout
-         and "#### E-001 hello greets by name" in r.stdout and "E-002" not in r.stdout
+    case("brief against an edit list with no note: says so, this phase's item whole with the lines it cites, not another phase's",
+         "No note at `site/notes/p/p-01-greet.md`" in r.stdout
+         and "## Its items, each with the lines it cites as they stand now" in r.stdout
+         and "#### E-001 hello greets by name" in r.stdout and "#### E-002" not in r.stdout
          and "     4  Say hello." in r.stdout and "the list names no commit" in r.stdout, r.stdout)
+    case("brief: the other phases on this phase's files, before and after",
+         "## Other phases on this phase's files" in r.stdout
+         and "After this one" in r.stdout and "- phase 2 (todo): E-002 — `skills/hello/SKILL.md`" in r.stdout, r.stdout)
     r = ph("brief", "--phase", "1", "--short")
     case("brief --short: without the edit list's part", r.returncode == 0 and "## Its items" not in r.stdout, r.stdout)
 
@@ -423,6 +625,7 @@ def main():
     case("guard: an unreadable event, exit 0 with the reason", r.returncode == 0 and "allowing" in r.stderr, r.stderr)
 
     checks_cases(tmp)
+    plan_units_cases(tmp)
 
     shutil.rmtree(tmp, ignore_errors=True)
     print(f"{sum(results)}/{len(results)} pass")

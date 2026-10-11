@@ -1,21 +1,22 @@
 ---
 name: run-phase
-description: Do the next unfinished phase of a plan written by plan-phases - a change to a plugin, a new plugin being built up, or a reviewed plugin's edit list - read the spec, the overview and the progress ledger, write that phase's note from its scope and the files as they are now (or read the note when the plan already has one), make exactly its edits, run the plugin's checks and the phase's evals, log them, commit once, update the ledger, and stop. Use only inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), one phase per Claude Code chat, typed by the user.
+description: Do the next unfinished phase of a plan written by plan-phases - a change to a plugin, a new plugin being built up, or a reviewed plugin's edit list - read the spec, the overview and the progress ledger through phases.py, read that phase's note (written with the plan; or write it first, for a plan from before notes were written there), find its anchors in the files as they are now, make exactly its edits, run the plugin's checks and the phase's evals, log them, commit once, update the ledger, and stop. Use only inside a plugin's own subdirectory (one containing .claude-plugin/plugin.json), one phase per Claude Code chat, typed by the user.
 argument-hint: "[slug]"
 disable-model-invocation: true
 ---
 
 # Running one phase
 
-A phase is one chat's worth of work. `plan-phases` fixed what it owns, what it may not
-touch and how it is proved, in the overview; this chat turns that into a note against the
-files as they are now, does what the note says, proves it with the overview's evals for the
-phase, commits once, records where things stand, and stops. The next chat starts from the
-ledger, not from a summary of this one.
+A phase is one agent's work. `plan-phases` fixed what it owns and how it is proved, in the
+overview, and wrote its note: the decisions, the files, the exact specification, the steps.
+This chat finds the note's anchors in the files as they are now, does what the note says,
+proves it with the overview's evals for the phase, commits once, records where things stand,
+and stops. The next chat starts from the ledger, not from a summary of this one.
 
-The note is written here rather than at planning time because a note names exact lines, and
-the earlier phases of a plan move them. A plan written before notes moved here already has
-every note; then this chat reads its note instead of writing one.
+The note cites no line numbers: it anchors every edit on text quoted from the file, because
+the phases before this one move lines, and this chat finds the text where it is. A plan from
+before `plan-phases` wrote the notes has none; then this chat writes the phase's note first,
+per **A phase with no note**.
 
 `E` below is `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/edits.py`.
 
@@ -50,11 +51,12 @@ exit code what a chat would otherwise decide by reading.
    exception: `plan-phases` leaves it `in progress` on purpose when it has platform-fact
    evals, listed in its notes. Running those evals is this chat's phase; the overview is
    its note.
-4. That phase's note, `site/notes/<slug>/<slug>-NN-<name>.md`, if it exists. If it does not,
-   this phase's items, when the spec is an edit list: `P brief` printed them whole, with the
-   decisions they cite and, under each item, the lines its `files:` cites as they stand in
-   the tree now (`E show … --located` prints the same for one item). Then write the note,
-   per **Write the note**.
+4. That phase's note, named in the brief's **Its note**: `site/notes/<slug>/<slug>-NN-<name>.md`,
+   whole. It is the plan for this chat's edits. When the brief says the phase has no note (a
+   plan from before `plan-phases` wrote them), this phase's items are printed under it
+   whole, with the decisions they cite and, under each item, the lines its `files:` cites as
+   they stand in the tree now (`E show … --located` prints the same for one item); then
+   write the note, per **A phase with no note**.
 
 The brief is most of the reading. What it does not show, read in as few messages as it
 takes: every read that does not depend on another goes in the same message, never one per
@@ -67,11 +69,11 @@ overview carry what they concluded, and another phase's work is not this chat's 
 phase never edits the spec or the overview: where the note cannot follow them, the
 disagreement is a Deviation.
 
-## Write the note
+## A phase with no note
 
-Only when the phase has no note yet. The note is the plan for this chat's edits, written
-before any of them, and it rides in the phase's commit, so the next reader sees what was
-planned beside what was done.
+Only when the brief says the phase has no note: a plan from before `plan-phases` wrote them.
+The note is the plan for this chat's edits, written before any of them, and it rides in the
+phase's commit, so the next reader sees what was planned beside what was done.
 
 Write it from `${CLAUDE_PLUGIN_ROOT}/templates/phases/phase.md`, at
 `site/notes/<slug>/<slug>-NN-<name>.md` with the name the overview's Phases row gives. Its
@@ -113,6 +115,13 @@ Deviation.
 
 Follow the note's **Steps** in order. Whatever the note says, these always apply:
 
+- **Find every anchor first.** The note quotes text from the files as they stood when it was
+  written. Before the first edit, `grep -nF` each quoted anchor in its file as it is now. One
+  found once: edit there. One that moved: edit where it is. One that is gone because an
+  earlier phase's commit already made this edit: say so under this note's `## Deviations`
+  and drop the edit. One gone for any other reason: the edit cannot be made as written,
+  which is a Deviation too, and the brief's **Other phases on this phase's files** says
+  whose work moved it.
 - **Only this phase's edits.** A thing that would be nice to fix but is not in the note is
   a line under this phase's Notes cell in the ledger (*noticed: …*), not an edit. One
   exception: the eval sets this phase's own `run-evals` run reads. When its graders'

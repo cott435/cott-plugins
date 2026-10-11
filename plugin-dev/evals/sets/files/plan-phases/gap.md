@@ -20,5 +20,6 @@ clean-tree checks.
 
 # Harness override for this eval only
 Write everything the skill would write into outputs/trading-agents/, keeping plugin-relative
-paths under it. Skip the eval writers: write no evals/sets/ files. Do not commit. Write the
+paths under it. Skip the eval writers and the unit planners: write no evals/sets/ files and
+no phase notes; this eval is about the question. Do not commit. Write the
 skill's final chat message to outputs/chat.md.

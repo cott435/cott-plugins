@@ -9,17 +9,19 @@
       "baseline": "none",
       "harness": "evals/sets/files/plan-phases/from-design.md",
       "prompt": "/plugin-dev:plan-phases 0.1",
-      "expected_output": "From the design alone: the split shown in chat and approved, then an overview that points to the design and carries every phase's scope and eval rows, a ledger, one eval set per behavioral target written by parallel writer subagents, and no phase note",
+      "expected_output": "From the design alone: the split shown in chat and approved, then an overview that points to the design and carries every phase's level, files, scope and eval rows, a ledger, one eval set per behavioral target written by parallel writer subagents, and one note per phase written by parallel planner subagents, level by level, then checked by `phases.py notes-check`",
       "files": [],
       "expectations": [
         "The transcript shows the design file read, and no read of any conversation, earlier plan's notes, or file outside the fixture and plugin-dev",
-        "The split was shown in chat as a table with the columns Phase, What it adds, Components, Depends on, Evals, May pair with (or the same columns in a close wording), and approved before any file was written",
+        "The split was shown in chat as a table with the columns Phase, Level, What it adds, Components, Files, Depends on, Evals (or the same columns in a close wording), and approved before any file was written",
         "outputs/trading-agents/site/notes/0.1/0.1-00-overview.md exists, names 0.1-design.md, and has no Why, Decisions taken, The flow or Non-goals section",
-        "The overview's Phases table has the columns Phase, Note, What it adds, Items, Must not touch, Depends on",
+        "The overview's Phases table has the columns Phase, Note, Level, What it adds, Items, Files, Depends on, and no two phases with the same Level list the same file under Files unless the overview's **Shared files:** line or the default shared files name it",
         "Phase 1 is the design's smallest end-to-end slice: the overview's phase-1 row builds the filing reader, its checker or the status layer, and a deep-dive stopping at the status file, and no comparison, news or thesis",
         "The filing-checker ships in the same phase as filing-reader or the phase right after it, never later",
         "thesis-critic is in its own phase or an optional addition to one, and no other phase depends on it",
-        "No phase note was written: no file outputs/trading-agents/site/notes/0.1/0.1-0N-*.md exists for any N from 1 up",
+        "A note exists for every phase from 1 up, at outputs/trading-agents/site/notes/0.1/0.1-0N-<name>.md with the name the Phases row gives, each with the sections Decisions, Files, Specification, Steps, Evals and Done when in that order, and each written before the chat's final message",
+        "The transcript shows one planner subagent per phase from 1 up, spawned level by level (every planner of one level in one message, a later level only after the earlier level's planners returned), each given the unit-planner prompt naming its phase; the main chat wrote no note itself",
+        "The transcript shows `phases.py notes-check` run after the notes were written, and its last run printed a line starting 'ok'",
         "The overview has a '## Evals by phase' table with exactly the columns Phase, ID, Kind, Target, Baseline, Set evals, Pass bar; every Kind is one of: mechanical, load, behavioral, trigger, platform-fact; and every phase from 1 in the Phases table has at least one row",
         "The overview has a '## Files other files parse' table naming at least one file or heading that one phase writes and another reads",
         "The design's two assumed platform facts appear as platform-fact rows for phase 0 in the Evals by phase table, or in the ledger's phase-0 row",
@@ -29,7 +31,7 @@
         "outputs/trading-agents/site/notes/0.1/0.1-progress.md has phase 0 'in progress' and every other row 'todo'",
         "outputs/chat.md gives the line to run /plugin-dev:run-phase 0.1 and the number of phases"
       ],
-      "added_in": "design-plugin split (replaces the old eval 4, trading-through-phase-notes); rewritten in revise-plugin for notes written by run-phase"
+      "added_in": "design-plugin split (replaces the old eval 4, trading-through-phase-notes); rewritten in revise-plugin for notes written by run-phase; rewritten in 3.1 for notes written by plan-phases' planners"
     },
     {
       "id": 2,
@@ -56,22 +58,23 @@
       "baseline": "previous",
       "harness": "evals/sets/files/plan-phases/from-edit-list.md",
       "prompt": "/plugin-dev:plan-phases fix",
-      "expected_output": "From the edit list alone, read through edits.py and never whole: the split shown with each phase's items and approved, then an overview whose Phases table puts every item in exactly one phase with E-002 after E-001, its eval rows, a ledger, and no phase note",
+      "expected_output": "From the edit list alone, read through edits.py and never whole: `edits.py split` run for the proposed levels, the split shown with each phase's level, items and files and approved, then an overview whose Phases table puts every item in exactly one phase with E-002 after E-001, its eval rows, a ledger, and one note per phase written by planner subagents and checked by `phases.py notes-check`",
       "files": [],
       "expectations": [
-        "The transcript shows `edits.py check` run with `--decided` on fix-edits.md, and `edits.py index` run on it, before the split was shown",
+        "The transcript shows `edits.py check` run with `--decided` on fix-edits.md, and `edits.py index` and `edits.py split` run on it, before the split was shown",
         "fix-edits.md was never printed whole: the transcript has no Read call on it without an offset or limit, and no cat of the whole file",
-        "The split was shown in chat as a table with an Items column naming E-ids, and approved before any file was written",
-        "outputs/toy-plugin/site/notes/fix/fix-00-overview.md exists, names fix-edits.md, and its Phases table has the columns Phase, Note, What it adds, Items, Must not touch, Depends on",
+        "The split was shown in chat as a table with Level, Items (naming E-ids) and Files columns, and approved before any file was written",
+        "outputs/toy-plugin/site/notes/fix/fix-00-overview.md exists, names fix-edits.md, and its Phases table has the columns Phase, Note, Level, What it adds, Items, Files, Depends on",
         "Every one of E-001, E-002 and E-003 appears in exactly one row's Items cell, and no other id appears",
-        "The phase holding E-002 is E-001's phase, or one whose Depends on cell reaches E-001's phase",
+        "The phase holding E-002 has a higher Level than, or is, the phase holding E-001, and its Depends on cell reaches E-001's phase",
         "The transcript shows `edits.py coverage` run on the edit list and the written overview, and its last run printed a line starting 'ok'",
         "The overview has a '## Evals by phase' table with at least one row for every phase that holds an item",
-        "No phase note was written: no file matching outputs/toy-plugin/site/notes/fix/fix-0N-*.md exists for any N from 1 up",
+        "A note exists for every phase from 1 up, at outputs/toy-plugin/site/notes/fix/fix-0N-<name>.md, each with the sections Decisions, Files, Specification, Steps, Evals and Done when in that order; the note holding E-002's edit anchors it on the text of the Write line, not on a line number",
+        "The transcript shows one planner subagent per phase from 1 up, spawned level by level, each given the unit-planner prompt; and `phases.py notes-check` run afterwards with its last run printing a line starting 'ok'",
         "outputs/toy-plugin/site/notes/fix/fix-progress.md has phase 0 'done' and every other row 'todo'",
         "outputs/chat.md gives the line to run /plugin-dev:run-phase fix"
       ],
-      "added_in": "revise-plugin; harness resets greet to the reviewed state after iteration 1"
+      "added_in": "revise-plugin; harness resets greet to the reviewed state after iteration 1; rewritten in 3.1 for notes written by plan-phases' planners"
     }
   ]
 }

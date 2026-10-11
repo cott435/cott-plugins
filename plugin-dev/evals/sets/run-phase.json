@@ -52,7 +52,7 @@
       "baseline": "previous",
       "harness": "evals/sets/files/run-phase/note-written.md",
       "prompt": "/plugin-dev:run-phase 0.2",
-      "expected_output": "With no phase-1 note in the plan, run-phase writes site/notes/0.2/0.2-01-farewell.md from the overview's row and the template before any edit, does exactly that note, and commits the note with the phase",
+      "expected_output": "With no phase-1 note in the plan (one written before plan-phases wrote the notes), run-phase writes site/notes/0.2/0.2-01-farewell.md from the overview's row and the template before any edit, does exactly that note, and commits the note with the phase",
       "files": [
         "evals/fixtures/toy-plugin/"
       ],
@@ -66,7 +66,7 @@
         "The committed ledger row for phase 1 is 'done'",
         "Nothing was pushed and no tag was created"
       ],
-      "added_in": "revise-plugin; expectation 5 reworded and the harness's hint removed after iteration 1"
+      "added_in": "revise-plugin; expectation 5 reworded and the harness's hint removed after iteration 1; kept in 3.1 as the fallback for a plan with no notes"
     },
     {
       "id": 4,
@@ -75,7 +75,7 @@
       "baseline": "previous",
       "harness": "evals/sets/files/run-phase/review-moved-lines.md",
       "prompt": "/plugin-dev:run-phase fix",
-      "expected_output": "In a plan from an edit list, run-phase prints only phase 2's items through edits.py, finds E-002's line where it is now (14, not the reviewed 8), writes the note citing the current line, makes only E-002's edit, and commits once",
+      "expected_output": "In a plan from an edit list with no notes yet, run-phase prints only phase 2's items through edits.py, finds E-002's line where it is now (14, not the reviewed 8), writes the note citing the current line, makes only E-002's edit, and commits once",
       "files": [
         "evals/fixtures/toy-plugin/"
       ],
@@ -88,7 +88,7 @@
         "The committed ledger row for phase 2 is 'done' and phase 3's is still 'todo'",
         "Nothing was pushed and no tag was created"
       ],
-      "added_in": "revise-plugin; the harness's moved-line hint removed after iteration 1"
+      "added_in": "revise-plugin; the harness's moved-line hint removed after iteration 1; kept in 3.1 as the fallback for a plan with no notes"
     }
   ]
 }

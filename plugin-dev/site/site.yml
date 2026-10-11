@@ -32,6 +32,8 @@ flow:
     - {id: reconcile-agent, label: reconcile agent, note: of revise-plugin, file: skills/revise-plugin/references/reconcile-prompt.md}
     - {id: plan-phases, note: driver}
     - {id: eval-writer, label: eval writer, note: of plan-phases, file: skills/plan-phases/references/eval-writer.md}
+    - {id: unit-planner, label: unit planner, note: of plan-phases, file: skills/plan-phases/references/unit-planner.md}
+    - {id: unify-agent, label: unify agent, note: of plan-phases, file: skills/plan-phases/references/unify.md}
     - {id: run-phases, note: driver}
     - {id: run-phase, note: one phase}
     - {id: run-evals, note: runner}
@@ -61,6 +63,10 @@ flow:
     eval-writer:
       always: [plugin-anatomy]
       names: [run-evals]
+    unit-planner:
+      always: [plugin-anatomy]
+      names: [run-phase]
+    unify-agent: {}
     run-phases:
       names: [bump-version, plugin-anatomy, run-evals]
     run-phase:
@@ -93,7 +99,7 @@ flow:
     - name: the design
       path: site/notes/<slug>/<slug>-design.md
       writes: [design-plugin]
-      reads: [plan-phases, eval-writer, {run-phase: for the why}]
+      reads: [plan-phases, eval-writer, {unit-planner: for the why}, {run-phase: for the why}]
     - name: review plan
       path: site/notes/<slug>/<slug>-review-plan.md
       match: "-review-plan.md"
@@ -109,21 +115,22 @@ flow:
       match: "-edits.md"
       writes: [reconcile-agent, {revise-plugin: the decisions you answer}]
       reads:
-        - plan-phases: "`edits.py index`"
-        - run-phase: "`edits.py show --phase`"
+        - plan-phases: "`edits.py index`, `edits.py split`"
+        - unit-planner: "its phase's items, through `phases.py brief --phase`"
+        - run-phase: "`edits.py show --phase`, for a plan with no notes"
         - design-plugin: its Needs a design items
         - eval-writer
     - name: the overview
       path: site/notes/<slug>/<slug>-00-overview.md
       match: ["-00-overview.md", "the overview"]
-      writes: [plan-phases]
-      reads: [{run-phase: "`phases.py brief`"}, eval-writer]
+      writes: [plan-phases, {unify-agent: its Files other files parse table}]
+      reads: [{run-phase: "`phases.py brief`"}, {unit-planner: "`phases.py brief --phase`"}, unify-agent, eval-writer]
       names: [run-phases]
     - name: the phase ledger
       path: site/notes/<slug>/<slug>-progress.md
       match: ["-progress.md", "phases.py"]
       writes: [{plan-phases: the empty rows}, {run-phase: "`phases.py finish`"}]
-      reads: [{run-phases: "`phases.py next`, `check`"}, {run-phase: "`phases.py brief`"}]
+      reads: [{run-phases: "`phases.py next`, `check`"}, {run-phase: "`phases.py brief`"}, {unit-planner: "`phases.py brief --phase`"}, {unify-agent: "`phases.py notes-check`"}]
     - name: eval sets
       path: evals/sets/<target>.json
       match: evals/sets
@@ -131,8 +138,8 @@ flow:
       reads: [run-evals, {fix-issues: the sets covering a file it touched}, {revise-plugin: their names}]
     - name: phase note
       path: site/notes/<slug>/<slug>-NN-<name>.md
-      writes: [run-phase]
-      reads: [{run-phase: a phase picked up in progress}]
+      writes: [unit-planner, {unify-agent: the names made to agree}, {run-phase: "its Deviations; the whole note, for a plan from before 3.1"}]
+      reads: [{run-phase: "the plan for its edits"}, {unit-planner: the earlier phases' on its files}, unify-agent, {plan-phases: "`phases.py notes-check`"}]
     - name: the plugin's files
       path: agents/ · skills/ · hooks/ · scripts/
       match: false
@@ -140,13 +147,14 @@ flow:
       reads:
         - design-plugin: what the change touches
         - unit-agent: one role, whole
+        - unit-planner: the files its phase owns
         - run-evals: the target
         - run-auditor: at the version that ran
     - name: platform facts
       path: skills/plugin-anatomy/references/
       match: plugin-anatomy/references
       writes: [{run-phase: a fact an eval proved}]
-      reads: [plan-phases, eval-writer, run-phase, fix-issues]
+      reads: [plan-phases, eval-writer, unit-planner, run-phase, fix-issues]
     - name: eval workspace
       path: evals/workspace/<target>/iteration-N/
       match: evals/workspace

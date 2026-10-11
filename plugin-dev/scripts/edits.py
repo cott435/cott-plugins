@@ -38,7 +38,19 @@ Commands:
                                  the lines at the item's own numbers. Paths are the plugin's,
                                  so run it from the plugin's directory.
   coverage <edits> <overview>    every item in exactly one phase; no unknown id; an item's
-                                 dependencies in its own phase or one its phase depends on
+                                 dependencies in its own phase or one its phase depends on;
+                                 with a Level column, no file region owned by two phases of
+                                 one level (the overview's `**Shared files:**` excepted)
+  split <edits> [--cap N] [--near N] [--shared GLOB]...
+                                 a proposed split: items in dependency levels from their
+                                 `depends:`, the items of a level that cite the same file
+                                 region (ranges within --near lines, or a whole file) in one
+                                 phase, small clusters packed up to --cap (a script item
+                                 weighs 3, any other 1), a cluster over the cap cut into a
+                                 sequence of phases, each phase depending on the phases that
+                                 own what its items depend on. The Level column is the
+                                 planning wave: phases of one level share no file region.
+                                 Prints Phases-table rows for the overview, then warnings
 
 Exit 0 on success; 1 with one line per problem on stdout otherwise; 2 on bad usage.
 Standard library only.
@@ -57,6 +69,11 @@ FINDING_KINDS = ("contradiction", "underspecified", "prose-to-script", "script-d
                  "missing-check", "duplication", "bloat", "missing-test")
 SEVERITIES = ("ERROR", "WARN", "NOTE")
 ITEM_FIELDS = ("findings", "files", "mechanism", "edit", "closes", "evals")
+# Files every phase may add to, and which make no two phases one: the registries a plugin's
+# own rules send every change to. The overview's `**Shared files:**` line adds to the list.
+SHARED_FILES = ("contracts.yml", "README.md", "CHANGELOG.md", "hooks/hooks.json", "evals/README.md",
+                "site/site.yml", "site/flow.md", "site/workflows/*", ".claude-plugin/plugin.json")
+SCRIPT_WEIGHT, PROSE_WEIGHT = 3, 1     # a hook or script item is three prose items of work
 OPEN_CHOICES = ("", "open", "decide", "-", "—")
 
 FINDING_HEAD = re.compile(r"^### (F-[A-Z][A-Z0-9-]*-\d+)\b\s*(.*)$")
@@ -420,6 +437,197 @@ def cmd_show(args) -> int:
     return 1 if missing else 0
 
 
+# ---------------------------------------------------------------- the split
+
+def regions(files: str) -> list[tuple[str, int | None, int | None]]:
+    """(path, lo, hi) per place a `files:` field cites; a path with no range is the whole
+    file (None, None)."""
+    out = []
+    for part in files.split(","):
+        m = CITED.match(part.strip("` "))
+        if not m or not m.group(1) or not re.search(r"[./]", m.group(1)):
+            continue            # a path has a slash or a dot; `(see 3)` cites nothing
+        lo = int(m.group(2)) if m.group(2) else None
+        hi = int(m.group(3)) if m.group(3) else lo
+        out.append((m.group(1), lo, hi))
+    return out
+
+
+def is_shared(path: str, shared: tuple[str, ...]) -> bool:
+    from fnmatch import fnmatch
+    return any(fnmatch(path, g) or path == g for g in shared)
+
+
+def shared_files(overview_text: str) -> tuple[str, ...]:
+    """The defaults plus every code span on the overview's `**Shared files:**` line."""
+    m = re.search(r"^\*\*Shared files:\*\*\s*(.+)$", overview_text, re.M)
+    return SHARED_FILES + (tuple(re.findall(r"`([^`]+)`", m.group(1))) if m else ())
+
+
+def overlap(a: tuple[str, int | None, int | None], b: tuple[str, int | None, int | None], near: int) -> bool:
+    """Two cited places that one planner must own: the same file, and either whole or within
+    `near` lines of each other."""
+    if a[0] != b[0]:
+        return False
+    if a[1] is None or b[1] is None:
+        return True
+    return a[1] <= b[2] + near and b[1] <= a[2] + near
+
+
+def weight(item: dict) -> int:
+    mech = item["fields"].get("mechanism", "").lower()
+    return SCRIPT_WEIGHT if re.search(r"hook|script|\.py\b", mech) else PROSE_WEIGHT
+
+
+def levels_of(items: list[dict]) -> dict[str, int]:
+    """Item id → dependency level: 0 with no known dependency, else one more than the
+    deepest dependency."""
+    known = {it["id"]: ids_in(it["fields"].get("depends", "")) for it in items}
+    memo: dict[str, int] = {}
+
+    def level(i: str, seen=()) -> int:
+        if i in memo:
+            return memo[i]
+        deps = [d for d in known.get(i, []) if d in known and d not in seen]
+        memo[i] = 0 if not deps else 1 + max(level(d, seen + (i,)) for d in deps)
+        return memo[i]
+
+    return {i: level(i) for i in known}
+
+
+def clusters(items: list[dict], shared: tuple[str, ...], near: int) -> list[list[dict]]:
+    """Items that cite the same region of a file not shared, merged until none do."""
+    groups = [[it] for it in items]
+    merged = True
+    while merged:
+        merged = False
+        for a in range(len(groups)):
+            for b in range(a + 1, len(groups)):
+                ra = [r for it in groups[a] for r in regions(it["fields"].get("files", "")) if not is_shared(r[0], shared)]
+                rb = [r for it in groups[b] for r in regions(it["fields"].get("files", "")) if not is_shared(r[0], shared)]
+                if any(overlap(x, y, near) for x in ra for y in rb):
+                    groups[a] += groups.pop(b)
+                    merged = True
+                    break
+            if merged:
+                break
+    return groups
+
+
+def chunk(members: list[dict], cap: int) -> list[list[dict]]:
+    """A cluster over the cap as a sequence of phases, each up to the cap, the items on one
+    file kept together where they fit: the phases run one after another, so each may edit
+    what the one before it left."""
+    def primary(it):
+        paths = [p for p in paths_of(it["fields"].get("files", "")).split(", ") if p]
+        return paths[0] if paths else ""
+    out, cur, used = [], [], 0
+    for it in sorted(members, key=lambda it: (primary(it), it["id"])):
+        if cur and used + weight(it) > cap:
+            out.append(cur)
+            cur, used = [], 0
+        cur.append(it)
+        used += weight(it)
+    return out + ([cur] if cur else [])
+
+
+def pack(groups: list[list[dict]], cap: int) -> list[list[dict]]:
+    """Clusters packed into phases up to `cap`, largest first; one over the cap stands
+    alone."""
+    groups = sorted(groups, key=lambda g: (-sum(weight(it) for it in g), g[0]["id"]))
+    bins: list[tuple[int, list[dict]]] = []
+    for g in groups:
+        w = sum(weight(it) for it in g)
+        for k, (used, members) in enumerate(bins):
+            if used + w <= cap:
+                bins[k] = (used + w, members + g)
+                break
+        else:
+            bins.append((w, list(g)))
+    return [sorted(m, key=lambda it: it["id"]) for _, m in sorted(bins, key=lambda b: b[1][0]["id"])]
+
+
+def phase_name(members: list[dict]) -> str:
+    """A name from the file most of the phase's items touch."""
+    count: dict[str, int] = {}
+    order: list[str] = []
+    for it in members:
+        for path in paths_of(it["fields"].get("files", "")).split(", "):
+            if path:
+                count[path] = count.get(path, 0) + 1
+                order.append(path) if path not in order else None
+    own = {k: v for k, v in count.items() if not is_shared(k, SHARED_FILES)} or count
+    if not own:
+        return re.sub(r"[^a-z0-9]+", "-", members[0]["title"].lower()).strip("-")[:24] or "items"
+    path = max(own, key=lambda k: (own[k], -order.index(k)))     # most items, then first cited
+    stem = Path(path).stem
+    if stem.upper() in ("SKILL", "README", "__INIT__") and Path(path).parent.name:
+        stem = Path(path).parent.name
+    return re.sub(r"[^a-z0-9]+", "-", stem.lower()).strip("-") or "items"
+
+
+def cmd_split(args) -> int:
+    _, items, _ = load_edits(args.edits)
+    shared = SHARED_FILES + tuple(args.shared)
+    problems = cycles({it["id"]: ids_in(it["fields"].get("depends", "")) for it in items})
+    if problems:
+        print("\n".join(f"FAIL {p}" for p in problems))
+        return 1
+    lvl = levels_of(items)
+    by_level: dict[int, list[dict]] = {}
+    for it in items:
+        by_level.setdefault(lvl[it["id"]], []).append(it)
+    # A level of the dependency graph becomes one or more planning waves: the small clusters
+    # packed into the first, and a cluster over the cap cut into a sequence of chunks, one
+    # per wave, each depending on the chunk before it. Phases of one wave share no region, so
+    # their notes are written side by side; the Level column is the wave.
+    phases: list[tuple[int, list[dict], list[int]]] = []       # (wave, members, chunk-predecessor phases)
+    wave = 0
+    for L in sorted(by_level):
+        groups = clusters(by_level[L], shared, args.near)
+        small = [g for g in groups if sum(weight(it) for it in g) <= args.cap]
+        big = [chunk(g, args.cap) for g in groups if sum(weight(it) for it in g) > args.cap]
+        waves: list[list[tuple[list[dict], list[dict] | None]]] = []
+        for members in pack(small, args.cap):
+            waves.append([]) if not waves else None
+            waves[0].append((members, None))
+        for chunks in big:
+            for k, members in enumerate(chunks):
+                while len(waves) <= k:
+                    waves.append([])
+                waves[k].append((members, chunks[k - 1] if k else None))
+        for w in waves:
+            for members, prev in w:
+                phases.append((wave, members, [p for p in [prev] if p]))
+            wave += 1
+    index = {id(members): n + 1 for n, (_, members, _) in enumerate(phases)}
+    owner = {it["id"]: index[id(members)] for _, members, _ in phases for it in members}
+    warnings = []
+    print("| Phase | Note | Level | What it adds | Items | Files | Depends on |")
+    print("|---|---|---|---|---|---|---|")
+    for n, (L, members, prev) in enumerate(phases, 1):
+        ids = ", ".join(it["id"] for it in members)
+        files = sorted({p for it in members for p in paths_of(it["fields"].get("files", "")).split(", ") if p})
+        deps = {owner[d] for it in members for d in ids_in(it["fields"].get("depends", "")) if d in owner and owner[d] != n}
+        deps |= {index[id(p)] for p in prev}
+        deps = sorted(deps)
+        what = "; ".join(it["title"] for it in members).replace("|", "\\|")
+        w = sum(weight(it) for it in members)
+        if w > args.cap:
+            warnings.append(f"phase {n} weighs {w} (cap {args.cap}): one item over the cap on its own")
+        for it in members:
+            if not regions(it["fields"].get("files", "")):
+                warnings.append(f"{it['id']} cites no file; it sits in phase {n} by its dependencies alone")
+        print(f"| {n} | {n:02d}-{phase_name(members)} | {L} | {what[:200]}{'…' if len(what) > 200 else ''} | {ids} | "
+              f"{', '.join(f'`{f}`' for f in files)} | {', '.join(map(str, deps)) or '0'} |")
+    widest = max((sum(1 for L2, _, _ in phases if L2 == L) for L in range(wave)), default=0)
+    print(f"\n{len(phases)} phases in {wave} levels (planning waves); the widest level has {widest} phases; "
+          f"cap {args.cap}, near {args.near}; shared files: {', '.join(shared)}")
+    for w in warnings:
+        print(f"warning: {w}")
+    return 0
+
+
 def depends_on(cell: str, phase: str, order: list[str]) -> set[str]:
     c = cell.lower()
     if "all" in c:
@@ -454,6 +662,28 @@ def cmd_coverage(args) -> int:
         for d in direct:
             r |= reach.get(d, set())
         reach[ph] = r
+    # With a Level column, two phases of one level never own one region of a file that is
+    # not shared: their notes are written side by side, and each must be whole on its own.
+    secs = sections(Path(args.overview).read_text())
+    rows = table(secs.get("Phases", []))
+    if rows and "Level" in rows[0]:
+        shared = shared_files(Path(args.overview).read_text())
+        by_id = {it["id"]: it for it in items}
+        regs = {ph: [(r, i) for i in expand(cells[ph], known) if i in by_id
+                     for r in regions(by_id[i]["fields"].get("files", "")) if not is_shared(r[0], shared)]
+                for ph in cells}
+        level = {r.get("Phase", "").strip(): r.get("Level", "").strip() for r in rows}
+        seen = set()
+        for a in order:
+            for b in order:
+                if a >= b or level.get(a) != level.get(b) or not level.get(a):
+                    continue
+                for ra, ia in regs.get(a, []):
+                    for rb, ib in regs.get(b, []):
+                        if overlap(ra, rb, 0) and (a, b, ra[0]) not in seen:
+                            seen.add((a, b, ra[0]))
+                            problems.append(f"phases {a} and {b} are both level {level[a]} and both own "
+                                            f"{ra[0]} ({ia}, {ib}); one owner per file in a level")
     for it in items:
         mine = where.get(it["id"], [None])[0]
         for d in ids_in(it["fields"].get("depends", "")):
@@ -484,6 +714,11 @@ def main(argv=None) -> int:
     p.set_defaults(fn=cmd_show)
     p = sub.add_parser("coverage"); p.add_argument("edits"); p.add_argument("overview")
     p.set_defaults(fn=cmd_coverage)
+    p = sub.add_parser("split"); p.add_argument("edits")
+    p.add_argument("--cap", type=int, default=9, help="the most weight one phase holds (default 9)")
+    p.add_argument("--near", type=int, default=0, help="cited ranges this close are one region (default 0: they share a line)")
+    p.add_argument("--shared", action="append", default=[], metavar="GLOB", help="a file every phase may add to")
+    p.set_defaults(fn=cmd_split)
     args = ap.parse_args(argv)
     if not Path(getattr(args, "edits", getattr(args, "dir", "."))).exists():
         print(f"no such path: {getattr(args, 'edits', getattr(args, 'dir', ''))}")
