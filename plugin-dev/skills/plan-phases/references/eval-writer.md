@@ -57,6 +57,6 @@ spec never said, and the writer reports it instead of inventing it.
 > for each, the expectation the baseline should fail; and anything the spec or the overview
 > did not say clearly enough to write an expectation for, as a list.
 
-`plan-phases` checks each set against **The evals** in its `SKILL.md` before committing. A
-writer's list of what the spec did not say is a gap: it is asked about or reported per
-**Find the gaps first**, not guessed at.
+`plan-phases` checks each set against **The eval sets** in its `SKILL.md` before committing.
+A writer's list of what the spec did not say is a gap: it is asked about or reported per
+**Ask about the gaps**, not guessed at.

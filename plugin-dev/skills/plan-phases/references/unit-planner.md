@@ -75,5 +75,5 @@ question for the user, returned, not a guess written into the note.
 
 `plan-phases` runs `notes-check` over every note when a level has returned, then the unify
 agent (`references/unify.md`) when every level has, then asks every *asked* question in one
-round. A planner's **Gaps** line is a gap in the spec: asked about or reported per **Find the
-gaps first**, not guessed at.
+round. A planner's **Gaps** line is a gap in the spec: asked about or reported per **Ask about
+the gaps**, not guessed at.

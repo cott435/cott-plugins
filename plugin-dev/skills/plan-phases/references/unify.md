@@ -50,6 +50,6 @@ user's: what it cannot settle it returns.
 > Unresolved: <a disagreement between two notes you could not settle without a decision that is the user's> | none
 > ```
 
-`plan-phases` asks every **Asked** and **Unresolved** line in one round, per **The notes**,
-and writes each answer into the spec's **Decisions taken** and into the Decisions of the notes
+`plan-phases` asks every **Asked** and **Unresolved** line in one round, per its **The
+notes** section, and writes each answer into the spec's **Decisions taken** and into the Decisions of the notes
 that asked.

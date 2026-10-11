@@ -36,15 +36,15 @@ to decide surfaces as a question, and the answer is written into the spec.
 | an edit list | `edits.py index`: one line per item; `edits.py split`: the proposed phases | items, by id; `edits.py coverage` refuses a plan that drops one, lands one twice, lands it before what it depends on, or gives one file region to two phases of a level |
 | both | the list as above, and the design for its **Needs a design** items | items and the design's components |
 
-The split is shown as a table, with its cost in tokens, for your yes. It obeys four rules:
-every phase is mergeable on its own, every phase is one agent's work and the split is by
-file, foundations come first, and every phase has an eval. `edits.py split` proposes it from
-the items: their `depends:` make the levels, the items of a level that cite one region of a
-file go in one phase, small clusters pack up to a cap, a cluster over the cap becomes a
-sequence. Two phases of one level share no file region, so their notes can be written side
-by side; the shared files (`contracts.yml`, the READMEs, `hooks.json`, the ones the overview's
-`**Shared files:**` line adds) make no two phases one. For a new plugin, phase 1 is the
-smallest bundle that loads: one loop and the thinnest workflow that uses it.
+The split is shown as a table, with its cost in tokens, for your yes. Three things decide it:
+the **level** is dependency depth, from the items' `depends:`; a **phase** is the items of one
+level that cite the same file, so two phases of a level never share a file and their notes
+can be written side by side; the **size** is a cap of 9, a hook or script item weighing 3 and
+any other 1, a cluster over the cap becoming a sequence of phases. The shared files
+(`contracts.yml`, the READMEs, `hooks.json`, the ones the overview's `**Shared files:**` line
+adds) never merge two phases. `edits.py split` prints the split from an edit list. Every
+boundary is mergeable, and for a new plugin phase 1 is the smallest bundle that loads: one
+loop and the thinnest workflow that uses it.
 
 **Evals run at checkpoints.** A phase runs its mechanical checks and nothing else. A
 target's behavioral evals run once, at the first checkpoint at or after the last phase that
